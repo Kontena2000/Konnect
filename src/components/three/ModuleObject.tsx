@@ -5,6 +5,8 @@ import { useFrame } from "@react-three/fiber";
 import { useTexture, Html } from "@react-three/drei";
 import * as THREE from "three";
 
+type ConnectionType = "power" | "network" | "cooling";
+
 interface ModuleObjectProps {
   module: {
     id: string;
@@ -20,12 +22,12 @@ interface ModuleObjectProps {
     };
     connectionPoints?: Array<{
       position: [number, number, number];
-      type: "power" | "network" | "cooling";
+      type: ConnectionType;
     }>;
   };
   selected?: boolean;
   onClick?: () => void;
-  onConnectPoint?: (moduleId: string, point: [number, number, number], type: string) => void;
+  onConnectPoint?: (moduleId: string, point: [number, number, number], type: ConnectionType) => void;
 }
 
 const CONTAINER_TEXTURES = {
@@ -42,7 +44,7 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
   metalTexture.wrapT = THREE.RepeatWrapping;
   metalTexture.repeat.set(2, 2);
 
-  const getConnectionPointColor = (type: "power" | "network" | "cooling") => {
+  const getConnectionPointColor = (type: ConnectionType) => {
     switch (type) {
       case "power": return "#ff0000";
       case "network": return "#00ff00";
@@ -58,9 +60,9 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
   });
 
   const containerDimensions = {
-    length: module.dimensions?.length || 6.096, // 20 feet
-    height: module.dimensions?.height || 2.591, // 8.5 feet
-    width: module.dimensions?.width || 2.438 // 8 feet
+    length: module.dimensions?.length || 6.096,
+    height: module.dimensions?.height || 2.591,
+    width: module.dimensions?.width || 2.438
   };
 
   return (
@@ -72,7 +74,6 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
       onPointerEnter={() => setHovered(true)}
       onPointerLeave={() => setHovered(false)}
     >
-      {/* Container body */}
       <mesh 
         ref={meshRef} 
         castShadow 
@@ -94,7 +95,6 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
         />
       </mesh>
 
-      {/* Door */}
       <mesh 
         position={[containerDimensions.length/2 - 0.1, 0, 0]} 
         castShadow
@@ -103,7 +103,6 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
         <meshStandardMaterial color="#2d3748" />
       </mesh>
 
-      {/* Connection points */}
       {module.connectionPoints?.map((point, index) => (
         <group key={index} position={point.position}>
           <mesh
