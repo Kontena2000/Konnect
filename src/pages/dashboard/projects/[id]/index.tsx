@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -136,107 +137,123 @@ export default function ProjectDetailsPage() {
   };
 
   if (loading) {
-    return <AppLayout>Loading project details...</AppLayout>;
+    return (
+      <AppLayout>
+        <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-lg">Loading project details...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
   }
 
   if (!project) {
-    return <AppLayout>Project not found</AppLayout>;
+    return (
+      <AppLayout>
+        <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
+          <div className="flex items-center justify-center h-64">
+            <p className="text-lg">Project not found</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
   }
 
   return (
     <AppLayout>
-      <div className='container mx-auto py-8 px-6 lg:px-8 space-y-8 max-w-7xl'>
-        <div className='flex justify-between items-start'>
+      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
+        <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className='text-3xl font-bold mb-2'>{project.name}</h1>
-            <p className='text-muted-foreground'>{project.description}</p>
+            <h1 className="text-3xl font-bold mb-2">{project.name}</h1>
+            <p className="text-muted-foreground">{project.description}</p>
           </div>
-          <div className='flex gap-3'>
+          <div className="flex gap-3">
             <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
               <DialogTrigger asChild>
-                <Button variant='outline' size='icon' className='hover:bg-gray-100'>
-                  <Settings className='h-4 w-4' />
+                <Button variant="outline" size="icon">
+                  <Settings className="h-4 w-4" />
                 </Button>
               </DialogTrigger>
-              <DialogContent className='sm:max-w-[500px]'>
+              <DialogContent className="sm:max-w-[500px]">
                 <DialogHeader>
                   <DialogTitle>Project Settings</DialogTitle>
                 </DialogHeader>
-                <Tabs defaultValue='general' className='w-full'>
-                  <TabsList className='w-full'>
-                    <TabsTrigger value='general' className='flex-1'>General</TabsTrigger>
-                    <TabsTrigger value='plot' className='flex-1'>Plot Size</TabsTrigger>
-                    <TabsTrigger value='sharing' className='flex-1'>Sharing</TabsTrigger>
+                <Tabs defaultValue="general" className="w-full">
+                  <TabsList className="w-full">
+                    <TabsTrigger value="general" className="flex-1">General</TabsTrigger>
+                    <TabsTrigger value="plot" className="flex-1">Plot Size</TabsTrigger>
+                    <TabsTrigger value="sharing" className="flex-1">Sharing</TabsTrigger>
                   </TabsList>
                   
-                  <TabsContent value='general' className='space-y-4 py-4'>
-                    <div className='space-y-2'>
-                      <label className='text-sm font-medium'>Project Name</label>
+                  <TabsContent value="general" className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Project Name</label>
                       <Input
                         value={projectName}
                         onChange={(e) => setProjectName(e.target.value)}
-                        placeholder='Enter project name'
+                        placeholder="Enter project name"
                       />
                     </div>
-                    <div className='space-y-2'>
-                      <label className='text-sm font-medium'>Description</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Description</label>
                       <Input
                         value={projectDescription}
                         onChange={(e) => setProjectDescription(e.target.value)}
-                        placeholder='Enter project description'
+                        placeholder="Enter project description"
                       />
                     </div>
                   </TabsContent>
 
-                  <TabsContent value='plot' className='space-y-4 py-4'>
-                    <div className='space-y-2'>
-                      <label className='text-sm font-medium'>Plot Width (meters)</label>
+                  <TabsContent value="plot" className="space-y-4 py-4">
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Plot Width (meters)</label>
                       <Input
-                        type='number'
+                        type="number"
                         value={plotWidth}
                         onChange={(e) => setPlotWidth(e.target.value)}
-                        placeholder='Enter plot width'
+                        placeholder="Enter plot width"
                       />
                     </div>
-                    <div className='space-y-2'>
-                      <label className='text-sm font-medium'>Plot Length (meters)</label>
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Plot Length (meters)</label>
                       <Input
-                        type='number'
+                        type="number"
                         value={plotLength}
                         onChange={(e) => setPlotLength(e.target.value)}
-                        placeholder='Enter plot length'
+                        placeholder="Enter plot length"
                       />
                     </div>
                   </TabsContent>
 
-                  <TabsContent value='sharing' className='space-y-4 py-4'>
-                    <div className='flex gap-2'>
+                  <TabsContent value="sharing" className="space-y-4 py-4">
+                    <div className="flex gap-2">
                       <Input
                         value={shareEmail}
                         onChange={(e) => setShareEmail(e.target.value)}
-                        placeholder='Enter email to share with'
+                        placeholder="Enter email to share with"
                       />
                       <Button 
                         onClick={handleShareProject}
-                        className='shrink-0'
+                        className="shrink-0"
                       >
-                        <Share2 className='h-4 w-4 mr-2' />
+                        <Share2 className="h-4 w-4 mr-2" />
                         Share
                       </Button>
                     </div>
-                    <div className='space-y-2'>
-                      <label className='text-sm font-medium flex items-center gap-2'>
-                        <Users className='h-4 w-4' />
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium flex items-center gap-2">
+                        <Users className="h-4 w-4" />
                         Shared With
                       </label>
-                      <ScrollArea className='h-[100px] rounded-md border p-2'>
-                        <div className='space-y-2'>
+                      <ScrollArea className="h-[100px] rounded-md border p-2">
+                        <div className="space-y-2">
                           {sharedUsers.map((email) => (
-                            <div key={email} className='flex items-center justify-between'>
-                              <span className='text-sm'>{email}</span>
+                            <div key={email} className="flex items-center justify-between">
+                              <span className="text-sm">{email}</span>
                               <Button
-                                variant='ghost'
-                                size='sm'
+                                variant="ghost"
+                                size="sm"
                                 onClick={() => handleRemoveShare(email)}
                               >
                                 Remove
@@ -250,34 +267,34 @@ export default function ProjectDetailsPage() {
                 </Tabs>
                 <Button 
                   onClick={handleUpdateProject}
-                  className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black mt-4'
+                  className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black mt-4"
                 >
                   Save Changes
                 </Button>
               </DialogContent>
             </Dialog>
             <Link href={`/dashboard/projects/${id}/editor`}>
-              <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
-                <Plus className='h-4 w-4 mr-2' />
+              <Button className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black">
+                <Plus className="h-4 w-4 mr-2" />
                 New Layout
               </Button>
             </Link>
           </div>
         </div>
 
-        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
           {layouts.map((layout) => (
-            <Card key={layout.id} className='flex flex-col shadow-lg'>
+            <Card key={layout.id} className="flex flex-col shadow-lg">
               <CardHeader>
                 <CardTitle>{layout.name || 'Untitled Layout'}</CardTitle>
               </CardHeader>
-              <CardContent className='space-y-4'>
-                <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
+              <CardContent className="space-y-4 p-6">
+                <p className="text-sm text-muted-foreground min-h-[2.5rem]">
                   {layout.description || 'No description'}
                 </p>
                 <Link href={`/dashboard/projects/${id}/editor?layout=${layout.id}`}>
-                  <Button variant='outline' className='w-full'>
-                    <Pencil className='h-4 w-4 mr-2' />
+                  <Button variant="outline" className="w-full">
+                    <Pencil className="h-4 w-4 mr-2" />
                     Edit Layout
                   </Button>
                 </Link>
