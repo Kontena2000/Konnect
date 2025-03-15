@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { moduleTemplates, ModuleTemplate } from "@/components/three/ModuleLibrary";
+import { moduleTemplates, ModuleTemplate, ModuleCategory } from "@/components/three/ModuleLibrary";
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
@@ -224,43 +224,18 @@ export default function SettingsPage() {
                 <CardTitle>Module Management</CardTitle>
               </CardHeader>
               <CardContent>
-                <ScrollArea className="h-[600px]">
-                  <div className="space-y-6">
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Containers and Modules</h3>
-                      <div className="space-y-4">
-                        {moduleTemplates.modules.map((module) => (
-                          <ModuleInput key={module.id} module={module} />
-                        ))}
+                <ScrollArea className='h-[600px]'>
+                  <div className='space-y-6'>
+                    {Object.entries(moduleTemplates).map(([category, modules]) => (
+                      <div key={category}>
+                        <h3 className='text-lg font-semibold mb-4'>{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
+                        <div className='space-y-4'>
+                          {modules.map((module) => (
+                            <ModuleInput key={module.id} module={module} />
+                          ))}
+                        </div>
                       </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Power Cables</h3>
-                      <div className="space-y-4">
-                        {moduleTemplates["power-cables"].map((cable) => (
-                          <ModuleInput key={cable.id} module={cable} />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Network Cables - Copper</h3>
-                      <div className="space-y-4">
-                        {moduleTemplates["network-cables"].copper.map((cable) => (
-                          <ModuleInput key={cable.id} module={cable} />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold mb-4">Network Cables - Fiber</h3>
-                      <div className="space-y-4">
-                        {moduleTemplates["network-cables"].fiber.map((cable) => (
-                          <ModuleInput key={cable.id} module={cable} />
-                        ))}
-                      </div>
-                    </div>
+                    ))}
                   </div>
                 </ScrollArea>
               </CardContent>
