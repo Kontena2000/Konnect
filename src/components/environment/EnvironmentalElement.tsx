@@ -14,9 +14,7 @@ interface EnvironmentalElementProps {
 export function EnvironmentalElement({ element, onClick, selected }: EnvironmentalElementProps) {
   const meshRef = useRef<Mesh>(null);
 
-  const modelUrl = `https://raw.githubusercontent.com/KhronosGroup/glTF-Sample-Models/master/2.0/${element.model}/glTF/${element.model}.gltf`;
-  const gltf = useLoader(GLTFLoader, modelUrl);
-
+  // For development, use a placeholder geometry until we have proper models
   return (
     <group
       position={element.position}
@@ -24,7 +22,14 @@ export function EnvironmentalElement({ element, onClick, selected }: Environment
       scale={element.scale}
       onClick={onClick}
     >
-      <primitive object={gltf.scene} />
+      <mesh ref={meshRef}>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial 
+          color={selected ? "#ffd700" : "#4CAF50"}
+          opacity={0.8}
+          transparent
+        />
+      </mesh>
       {selected && (
         <mesh position={[0, 2, 0]}>
           <sphereGeometry args={[0.2]} />

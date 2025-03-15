@@ -1,15 +1,8 @@
 
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { 
-  Tree, 
-  Fence, 
-  Factory,
-  ParkingSquare,
-  Lightbulb,
-  Building2
-} from "lucide-react";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Trees, ShieldCheck, Factory, Warehouse, Lightbulb, Building2 } from "lucide-react";
 
 export interface EnvironmentTemplate {
   id: string;
@@ -30,7 +23,7 @@ const environmentTemplates: EnvironmentTemplate[] = [
     category: "trees",
     description: "Mature shade tree",
     model: "Tree",
-    icon: <Tree className="h-5 w-5" />,
+    icon: <Trees className="h-5 w-5" />,
     scale: [1, 1, 1]
   },
   {
@@ -40,7 +33,7 @@ const environmentTemplates: EnvironmentTemplate[] = [
     category: "fencing",
     description: "Perimeter security fence",
     model: "Fence",
-    icon: <Fence className="h-5 w-5" />,
+    icon: <ShieldCheck className="h-5 w-5" />,
     scale: [1, 1, 1]
   },
   {
@@ -54,13 +47,13 @@ const environmentTemplates: EnvironmentTemplate[] = [
     scale: [1, 1, 1]
   },
   {
-    id: "parking",
-    name: "Parking Area",
+    id: "storage",
+    name: "Storage Area",
     type: "hardscape",
     category: "paving",
-    description: "Vehicle parking area",
-    model: "Parking",
-    icon: <ParkingSquare className="h-5 w-5" />,
+    description: "Equipment storage area",
+    model: "Storage",
+    icon: <Warehouse className="h-5 w-5" />,
     scale: [5, 0.1, 5]
   }
 ];
