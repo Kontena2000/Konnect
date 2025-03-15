@@ -354,13 +354,28 @@ export default function LayoutEditorPage() {
     });
   };
 
-  // Update handleSave to use debounced save
+  // Update handleSave to be more robust
   const handleSave = useCallback(async () => {
     if (!layout?.id || !hasChanges) return;
+    
     setSaving(true);
-    await debouncedSave(layout.id, modules, connections);
-    setSaving(false);
-  }, [layout?.id, modules, connections, hasChanges, debouncedSave]);
+    try {
+      await debouncedSave(layout.id, modules, connections);
+      toast({
+        title: "Success",
+        description: "Layout saved successfully"
+      });
+    } catch (error) {
+      console.error("Save error:", error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save layout. Please try again."
+      });
+    } finally {
+      setSaving(false);
+    }
+  }, [layout?.id, modules, connections, hasChanges, debouncedSave, toast]);
 
   if (isLoading) {
     return (
@@ -507,7 +522,7 @@ export default function LayoutEditorPage() {
               </div>
 
               {selectedModuleId && (
-                <div className='absolute top-4 right-4 w-[300px] bg-background/10 backdrop-blur-sm rounded-lg border shadow-lg'>
+                <div className="absolute top-4 right-4 w-[300px] bg-background/5 backdrop-blur-sm rounded-lg border shadow-lg">
                   <ModuleProperties
                     module={moduleMap[selectedModuleId]}
                     onUpdate={handleModuleUpdate}

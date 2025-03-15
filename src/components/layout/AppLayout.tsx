@@ -21,12 +21,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [router]);
 
   return (
-    <div className='min-h-screen w-full flex'>
+    <div className="min-h-screen w-full flex">
       <Sidebar />
-      <main className='flex-1 relative overflow-hidden'>
-        <div className="container mx-auto p-4">
-          {children}
-        </div>
+      <main className="flex-1 relative overflow-hidden">
+        {children}
       </main>
     </div>
   );
