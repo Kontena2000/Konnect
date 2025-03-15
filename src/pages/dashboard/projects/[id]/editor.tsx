@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
-import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, PointerSensor, DragOverlay } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import layoutService, { Layout, Module, Connection } from "@/services/layout";
@@ -23,6 +23,7 @@ type ConnectionType = PowerCableType | NetworkCableType;
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
+  const [layout, setLayout] = useState<Layout | null>(null);
   const [modules, setModules] = useState<Module[]>([]);
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
@@ -44,7 +45,28 @@ export default function LayoutEditorPage() {
     })
   );
 
-  const handleDragStart = (event: DragEndEvent) => {
+  useEffect(() => {
+    const loadLayout = async () => {
+      if (!id) return;
+      try {
+        const loadedLayout = await layoutService.getLayout(id as string);
+        if (loadedLayout) {
+          setLayout(loadedLayout);
+          setModules(loadedLayout.modules || []);
+          setConnections(loadedLayout.connections || []);
+        }
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load layout",
+        });
+      }
+    };
+    loadLayout();
+  }, [id, toast]);
+
+  const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const template = active.data.current as ModuleTemplate;
     setDraggingTemplate(template);
@@ -133,13 +155,15 @@ export default function LayoutEditorPage() {
   };
 
   const handleSave = async () => {
-    if (!id) return;
+    if (!id || !layout) return;
     
     setSaving(true);
     try {
       await layoutService.updateLayout(id as string, {
+        ...layout,
         modules,
         connections,
+        updatedAt: new Date()
       });
       
       toast({
@@ -158,7 +182,11 @@ export default function LayoutEditorPage() {
   };
 
   return (
-    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+    <DndContext 
+      sensors={sensors} 
+      onDragStart={handleDragStart} 
+      onDragEnd={handleDragEnd}
+    >
       <AppLayout>
         <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
           <div className="flex items-center justify-between">
@@ -235,7 +263,9 @@ export default function LayoutEditorPage() {
             </div>
           </div>
         </div>
-        <ModuleDragOverlay draggingTemplate={draggingTemplate} />
+        <DragOverlay>
+          {draggingTemplate && <ModuleDragOverlay draggingTemplate={draggingTemplate} />}
+        </DragOverlay>
       </AppLayout>
     </DndContext>
   );
