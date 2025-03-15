@@ -1,9 +1,10 @@
-import { initializeApp } from "firebase/app";
-import { getAuth } from "firebase/auth";
-import { getFirestore } from "firebase/firestore";
-import authService from "../services/auth";
-import moduleService from "../services/module";
-import { moduleTemplates } from "../components/three/ModuleLibrary";
+
+const { initializeApp } = require("firebase/app");
+const { getAuth } = require("firebase/auth");
+const { getFirestore } = require("firebase/firestore");
+const authService = require("../services/auth").default;
+const moduleService = require("../services/module").default;
+const { moduleTemplates } = require("../components/three/ModuleLibrary");
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,

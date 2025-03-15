@@ -70,7 +70,7 @@ export function Sidebar() {
         <div className='absolute bottom-4 left-0 right-0 p-2'>
           <Button
             variant='ghost'
-            className={`w-full ${collapsed ? 'justify-center' : 'justify-start'}`}
+            className={`w-full ${collapsed ? 'justify-center' : 'justify-start'} hover:bg-[#F1B73A]`}
             onClick={handleSignOut}
           >
             <LogOut className='h-5 w-5' />
