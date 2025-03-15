@@ -5,6 +5,7 @@ import { ModuleObject } from "./ModuleObject";
 import { ModuleControls } from "./ModuleControls";
 import { useRef, useState } from "react";
 import * as THREE from "three";
+import { ThreeEvent } from "@react-three/fiber";
 
 interface SceneContainerProps {
   modules: any[];
@@ -26,15 +27,17 @@ export function SceneContainer({
   const planeRef = useRef<THREE.Mesh>(null);
   const [hoverPoint, setHoverPoint] = useState<[number, number, number] | null>(null);
 
-  const handlePlanePointerMove = (event: THREE.Event) => {
+  const handlePlanePointerMove = (event: ThreeEvent<PointerEvent>) => {
     if (planeRef.current) {
-      const point = event.point.toArray() as [number, number, number];
-      point[1] = 0; // Lock Y position to ground
-      setHoverPoint(point);
+      const point = event.intersections[0]?.point.toArray() as [number, number, number];
+      if (point) {
+        point[1] = 0; // Lock Y position to ground
+        setHoverPoint(point);
+      }
     }
   };
 
-  const handlePlaneClick = () => {
+  const handlePlaneClick = (event: ThreeEvent<MouseEvent>) => {
     if (hoverPoint && onDropPoint) {
       onDropPoint(hoverPoint);
     }
