@@ -65,3 +65,12 @@ export const moduleTemplates: ModuleTemplate[] = [
     ]
   }
 ];
+
+export interface ModuleTemplateWithSpecs extends ModuleTemplate {
+  type: string;
+  id: string;
+  connectionPoints?: Array<{
+    position: [number, number, number];
+    type: ConnectionType;
+  }>;
+}

@@ -1,10 +1,10 @@
 
-import type * as THREE from "three";
 import { useRef, useState } from "react";
 import { ThreeEvent } from "@react-three/fiber";
 import { TransformControls } from "@react-three/drei";
 import { Module } from "@/services/layout";
 import { ConnectionPoint } from "./ConnectionPoint";
+import type { Mesh, Object3D } from "three";
 
 interface ModuleObjectProps {
   module: Module;
@@ -27,7 +27,7 @@ export function ModuleObject({
   readOnly = false,
   gridSnap = true
 }: ModuleObjectProps) {
-  const meshRef = useRef<THREE.Mesh>(null);
+  const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
   const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
@@ -59,9 +59,9 @@ export function ModuleObject({
 
   return (
     <group>
-      {selected && !readOnly && (
+      {selected && !readOnly && meshRef.current && (
         <TransformControls
-          object={meshRef.current}
+          object={meshRef.current as Object3D}
           mode={transformMode}
           onObjectChange={handleTransformChange}
           size={0.7}
