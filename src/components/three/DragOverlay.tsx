@@ -1,4 +1,3 @@
-
 import { DragOverlay } from "@dnd-kit/core";
 import { ModuleTemplate } from "./ModuleLibrary";
 
@@ -11,15 +10,15 @@ export function ModuleDragOverlay({ draggingTemplate }: DragPreviewProps) {
 
   return (
     <DragOverlay>
-      <div className="p-4 border rounded-lg bg-background/80 backdrop-blur-sm">
-        <div className="flex items-center gap-3">
+      <div className='p-4 border rounded-lg bg-background/30 backdrop-blur-[2px]'>
+        <div className='flex items-center gap-3'>
           <div 
-            className="w-12 h-12 rounded"
+            className='w-12 h-12 rounded'
             style={{ backgroundColor: draggingTemplate.color }}
           />
           <div>
-            <h3 className="font-medium">{draggingTemplate.name}</h3>
-            <p className="text-sm text-muted-foreground">{draggingTemplate.description}</p>
+            <h3 className='font-medium'>{draggingTemplate.name}</h3>
+            <p className='text-sm text-muted-foreground'>{draggingTemplate.description}</p>
           </div>
         </div>
       </div>

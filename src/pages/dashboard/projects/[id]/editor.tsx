@@ -19,6 +19,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { ChevronDown } from "lucide-react"; // Added import for ChevronDown
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'; // Added import for Sheet
 import { Menu } from 'lucide-react'; // Added import for Menu
+import projectService from '@/services/project';
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
@@ -45,7 +46,10 @@ export default function LayoutEditorPage() {
     future: []
   });
   const [cameraZoom, setCameraZoom] = useState(1);
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [hasChanges, setHasChanges] = useState(false);
+  const lastSavedState = useRef<string>('');
+
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -66,35 +70,45 @@ export default function LayoutEditorPage() {
   );
 
   useEffect(() => {
-    const loadLayout = async () => {
+    const loadProjectAndLayout = async () => {
       if (!id) return;
+      setIsLoading(true);
       try {
+        const project = await projectService.getProject(id as string);
+        if (!project) {
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Project not found'
+          });
+          router.push('/dashboard/projects');
+          return;
+        }
+
         const loadedLayout = await layoutService.getLayout(id as string);
         if (loadedLayout) {
           setLayout(loadedLayout);
           setModules(loadedLayout.modules || []);
           setConnections(loadedLayout.connections || []);
+          lastSavedState.current = JSON.stringify({ modules: loadedLayout.modules, connections: loadedLayout.connections });
         }
       } catch (error) {
         toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load layout",
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load project'
         });
+      } finally {
+        setIsLoading(false);
       }
     };
-    loadLayout();
-  }, [id, toast]);
+    loadProjectAndLayout();
+  }, [id, router, toast]);
 
-  // Add to history when modules change
   useEffect(() => {
-    if (modules.length > 0) {
-      setHistory(prev => ({
-        past: [...prev.past, modules],
-        future: []
-      }));
-    }
-  }, [modules]);
+    const currentState = JSON.stringify({ modules, connections });
+    setHasChanges(currentState !== lastSavedState.current);
+  }, [modules, connections]);
 
   const handleUndo = () => {
     if (history.past.length === 0) return;
@@ -260,7 +274,7 @@ export default function LayoutEditorPage() {
   };
 
   const handleSave = async () => {
-    if (!id || !layout) return;
+    if (!id || !layout || !hasChanges) return;
     
     setSaving(true);
     try {
@@ -271,20 +285,36 @@ export default function LayoutEditorPage() {
         updatedAt: new Date()
       });
       
+      lastSavedState.current = JSON.stringify({ modules, connections });
+      setHasChanges(false);
+      
       toast({
-        title: "Success",
-        description: "Layout saved successfully",
+        title: 'Success',
+        description: 'Layout saved successfully',
       });
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save layout",
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save layout',
       });
     } finally {
       setSaving(false);
     }
   };
+
+  if (isLoading) {
+    return (
+      <AppLayout>
+        <div className='h-screen flex items-center justify-center'>
+          <div className='flex items-center gap-2'>
+            <Loader2 className='h-6 w-6 animate-spin' />
+            <p>Loading project...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <DndContext 
@@ -365,7 +395,7 @@ export default function LayoutEditorPage() {
                 </Tooltip>
 
                 <Separator orientation="vertical" className="h-6" />
-                <Button onClick={handleSave} disabled={saving}>
+                <Button onClick={handleSave} disabled={saving || !hasChanges}>
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -374,7 +404,7 @@ export default function LayoutEditorPage() {
                   ) : (
                     <>
                       <Save className="h-4 w-4 mr-2" />
-                      Save Layout
+                      {hasChanges ? 'Save Changes' : 'Saved'}
                     </>
                   )}
                 </Button>
