@@ -1,17 +1,34 @@
-import Head from 'next/head'
+
+import { useEffect } from "react";
+import { useRouter } from "next/router";
+import Head from "next/head";
+import authService from "@/services/auth";
 
 export default function Home() {
+  const router = useRouter();
+
+  useEffect(() => {
+    const user = authService.getCurrentUser();
+    if (user) {
+      router.push("/dashboard");
+    } else {
+      router.push("/auth/login");
+    }
+  }, [router]);
+
   return (
     <>
       <Head>
-        <title>Hello World</title>
-        <meta name="description" content="A simple Hello World page" />
+        <title>Kontena | Layout Maker</title>
+        <meta name="description" content="Design and visualize modular data center solutions" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
       
       <main className="flex items-center justify-center min-h-screen">
-        <h1 className="text-4xl font-bold">Hello World</h1>
+        <div className="animate-pulse">
+          <h1 className="text-4xl font-bold">Loading...</h1>
+        </div>
       </main>
     </>
-  )
+  );
 }
