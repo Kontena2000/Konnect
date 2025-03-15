@@ -1,9 +1,9 @@
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
-import { AppLayout } from '@/components/layout/AppLayout';
+import { AppLayout } from "@/components/layout/AppLayout";
 
 export default function DashboardPage() {
   const recentProjects = [
