@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -8,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
-import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, PointerSensor, DragOverlay } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, PointerSensor, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import layoutService, { Layout, Module, Connection } from "@/services/layout";
@@ -37,6 +38,17 @@ export default function LayoutEditorPage() {
   const [saving, setSaving] = useState(false);
 
   const sensors = useSensors(
+    useSensor(MouseSensor, {
+      activationConstraint: {
+        distance: 10,
+      },
+    }),
+    useSensor(TouchSensor, {
+      activationConstraint: {
+        delay: 250,
+        tolerance: 5,
+      },
+    }),
     useSensor(PointerSensor, {
       activationConstraint: {
         distance: 8,
@@ -68,15 +80,29 @@ export default function LayoutEditorPage() {
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const template = active.data.current as ModuleTemplate;
-    setDraggingTemplate(template);
+    if (template) {
+      setDraggingTemplate(template);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    const { over } = event;
+    const { active, over } = event;
     
-    if (over && over.id === 'scene-container' && draggingTemplate) {
-      // Get drop position from the event
-      const dropPosition: [number, number, number] = [0, 0, 0]; // You'll need to calculate this
+    if (over && over.id === "scene-container" && draggingTemplate) {
+      // Get the client offset from the event
+      const clientOffset = {
+        x: event.activatorEvent.clientX,
+        y: event.activatorEvent.clientY,
+      };
+      
+      // Convert client coordinates to scene coordinates
+      // This will be handled by SceneContainer's onDropPoint
+      const dropPosition: [number, number, number] = [
+        (clientOffset.x / window.innerWidth) * 20 - 10,
+        0,
+        (clientOffset.y / window.innerHeight) * 20 - 10,
+      ];
+      
       createModule(dropPosition);
     }
     
@@ -100,8 +126,14 @@ export default function LayoutEditorPage() {
       },
       connectionPoints: draggingTemplate.connectionPoints
     };
+    
     setModules((prev) => [...prev, newModule]);
-  }, [draggingTemplate]);
+    
+    toast({
+      title: "Success",
+      description: `Added new ${draggingTemplate.name}`,
+    });
+  }, [draggingTemplate, toast]);
 
   const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
     setModules((prev) =>
@@ -118,6 +150,12 @@ export default function LayoutEditorPage() {
         (conn) => conn.sourceModuleId !== moduleId && conn.targetModuleId !== moduleId
       )
     );
+    setSelectedModuleId(undefined);
+    
+    toast({
+      title: "Success",
+      description: "Module deleted",
+    });
   };
 
   const handleConnectPoint = (
@@ -142,6 +180,10 @@ export default function LayoutEditorPage() {
           type: activeConnection.type
         };
         setConnections((prev) => [...prev, newConnection]);
+        toast({
+          title: "Success",
+          description: "Connection created",
+        });
       }
       setActiveConnection(null);
     }
@@ -159,6 +201,10 @@ export default function LayoutEditorPage() {
     setConnections((prev) =>
       prev.filter((conn) => conn.id !== connectionId)
     );
+    toast({
+      title: "Success",
+      description: "Connection deleted",
+    });
   };
 
   const handleSave = async () => {
@@ -270,9 +316,6 @@ export default function LayoutEditorPage() {
             </div>
           </div>
         </div>
-        <DragOverlay>
-          {draggingTemplate && <ModuleDragOverlay draggingTemplate={draggingTemplate} />}
-        </DragOverlay>
       </AppLayout>
     </DndContext>
   );

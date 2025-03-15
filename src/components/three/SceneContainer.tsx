@@ -65,7 +65,7 @@ export function SceneContainer({
   terrain,
   onEnvironmentalElementSelect
 }: SceneContainerProps) {
-  const { setNodeRef } = useDroppable({
+  const { setNodeRef, isOver } = useDroppable({
     id: 'scene-container'
   });
   
@@ -93,7 +93,9 @@ export function SceneContainer({
   return (
     <div 
       ref={setNodeRef}
-      className='w-full h-full bg-background rounded-lg overflow-hidden'
+      className={`w-full h-full bg-background rounded-lg overflow-hidden ${
+        isOver ? 'ring-2 ring-primary ring-offset-2' : ''
+      }`}
     >
       <Canvas
         camera={{ position: [10, 10, 10], fov: 50 }}
