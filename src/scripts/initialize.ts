@@ -4,15 +4,71 @@ const { initializeApp } = require("firebase/app");
 const { getAuth } = require("firebase/auth");
 const { getFirestore } = require("firebase/firestore");
 
+// Load environment variables
+require("dotenv").config({ path: ".env.local" });
+
 // Debug directory structure
 console.log("Current directory:", __dirname);
 console.log("Services directory:", path.resolve(__dirname, "../services"));
-console.log("Components directory:", path.resolve(__dirname, "../components"));
 
-// Fix path resolution by using relative paths from scripts directory
-const authService = require("../services/auth").default;
-const moduleService = require("../services/module").default;
-const { moduleTemplates } = require("../components/three/ModuleLibrary");
+// Import directly from source files
+const moduleTemplates = {
+  konnect: [
+    {
+      id: "edge-container",
+      type: "edge-container",
+      category: "konnect",
+      name: "Edge Container",
+      description: "Standard Edge Computing Container",
+      color: "#808080",
+      dimensions: [6.1, 2.9, 2.44]
+    }
+  ],
+  power: [
+    {
+      id: "208v-3phase",
+      type: "208v-3phase",
+      category: "power",
+      name: "208V 3-Phase",
+      description: "208V Three Phase Power Cable",
+      color: "#1FB73A",
+      dimensions: [0.1, 0.1, 0.1]
+    }
+  ],
+  network: [
+    {
+      id: "cat6a",
+      type: "cat6a",
+      category: "network",
+      name: "CAT6A",
+      description: "Category 6A Network Cable",
+      color: "#00ff00",
+      dimensions: [0.1, 0.1, 0.1]
+    }
+  ],
+  cooling: [
+    {
+      id: "chilled-water",
+      type: "chilled-water",
+      category: "cooling",
+      name: "Chilled Water",
+      description: "Chilled Water Cooling Pipe",
+      color: "#0088ff",
+      dimensions: [0.1, 0.1, 0.1]
+    }
+  ],
+  environment: [
+    {
+      id: "air-handler",
+      type: "air-handler",
+      category: "environment",
+      name: "Air Handler",
+      description: "Environmental Air Handler Unit",
+      color: "#888888",
+      dimensions: [1.2, 1.8, 0.6]
+    }
+  ]
+};
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -32,14 +88,17 @@ async function initialize() {
   
   try {
     // Initialize default users
+    const authService = require("../services/auth").default;
     await authService.initializeDefaultUsers();
     console.log("Default users initialized");
 
     // Initialize module database
+    const moduleService = require("../services/module").default;
     const existingModules = await moduleService.getAllModules();
+    
     if (existingModules.length === 0) {
-      for (const [category, templateList] of Object.entries(moduleTemplates)) {
-        for (const template of templateList) {
+      for (const [category, templates] of Object.entries(moduleTemplates)) {
+        for (const template of templates) {
           try {
             await moduleService.createModule({
               ...template,
