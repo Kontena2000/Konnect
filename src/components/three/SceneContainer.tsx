@@ -12,7 +12,9 @@ import { EnvironmentalElement } from '@/components/environment/EnvironmentalElem
 import { TerrainView } from '@/components/environment/TerrainView';
 import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
 
-type ConnectionType = "power" | "network" | "cooling";
+type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
+type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
+type ConnectionType = PowerCableType | NetworkCableType;
 
 interface SceneContainerProps {
   modules: any[];
@@ -33,6 +35,20 @@ interface SceneContainerProps {
   terrain?: TerrainData;
   onEnvironmentalElementSelect?: (elementId: string) => void;
 }
+
+const getConnectionColor = (type: ConnectionType): string => {
+  // Power cables
+  if (type.includes("3phase")) return "#ff0000";
+  if (type.includes("ups")) return "#ff6b00";
+  
+  // Network cables - Copper
+  if (type.startsWith("cat")) return "#00ff00";
+  
+  // Network cables - Fiber
+  if (["om3", "om4", "om5", "os2", "mtp-mpo"].includes(type)) return "#00ffff";
+  
+  return "#999999";
+};
 
 export function SceneContainer({ 
   modules, 
@@ -180,13 +196,7 @@ export function SceneContainer({
             key={connection.id}
             start={connection.sourcePoint}
             end={connection.targetPoint}
-            color={
-              connection.type === "power"
-                ? "#ff0000"
-                : connection.type === "network"
-                ? "#00ff00"
-                : "#0000ff"
-            }
+            color={getConnectionColor(connection.type)}
           />
         ))}
 
