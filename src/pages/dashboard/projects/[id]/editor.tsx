@@ -1,17 +1,17 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
-import { ModuleLibrary, ModuleTemplate, ConnectionType } from "@/components/three/ModuleLibrary";
+import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { ModuleDragOverlay } from "@/components/three/DragOverlay";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
-import { DndContext, DragEndEvent, DragStartEvent, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
-import { nanoid } from "nanoid";
+import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
-import layoutService, { Layout, Module, Connection } from "@/services/layout";
+import layoutService, { Layout } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -22,8 +22,8 @@ import { LayoutSelector } from "@/components/layout/LayoutSelector";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useModuleState } from "@/hooks/use-module-state";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { ModuleTemplate } from '@/types/module';
-import { ConnectionType } from '@/types/connection';
+import { ModuleTemplate } from "@/types/module";
+import { ConnectionType } from "@/types/connection";
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -68,19 +68,8 @@ export default function LayoutEditorPage() {
     autoSave: true
   });
 
-  const mouseSensor = useSensor(MouseSensor, {
-    activationConstraint: {
-      distance: 10
-    }
-  });
-
-  const touchSensor = useSensor(TouchSensor, {
-    activationConstraint: {
-      delay: 250,
-      tolerance: 5
-    }
-  });
-
+  const mouseSensor = useSensor(MouseSensor);
+  const touchSensor = useSensor(TouchSensor);
   const sensors = useSensors(mouseSensor, touchSensor);
 
   useKeyboardShortcuts({
@@ -135,9 +124,9 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='flex h-screen'>
+      <div className="flex h-screen">
         <DndContext sensors={sensors}>
-          <div className='flex-1 relative'>
+          <div className="flex-1 relative">
             <SceneContainer
               modules={modules}
               connections={connections}
@@ -150,7 +139,7 @@ export default function LayoutEditorPage() {
             />
           </div>
 
-          <div className='w-80 border-l bg-background'>
+          <div className="w-80 border-l bg-background">
             <ModuleLibrary onDragStart={setDraggingTemplate} />
           </div>
 

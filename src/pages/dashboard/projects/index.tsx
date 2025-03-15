@@ -119,11 +119,11 @@ export default function ProjectsPage() {
                   </AlertDialog>
                 </div>
               </CardHeader>
-              <CardContent className='flex-1 space-y-6'>
+              <CardContent className='flex-1 space-y-6 p-6'>
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='space-y-4 pt-4'>
+                <div className='space-y-4'>
                   <Link href={`/dashboard/projects/${project.id}`} className='block'>
                     <Button variant='outline' className='w-full'>
                       Open Project
