@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -8,6 +7,9 @@ import * as THREE from "three";
 import { ThreeEvent } from "@react-three/fiber";
 import { ConnectionLine } from './ConnectionLine';
 import { Connection } from '@/services/layout';
+import { EnvironmentalElement } from '@/components/environment/EnvironmentalElement';
+import { TerrainView } from '@/components/environment/TerrainView';
+import type { EnvironmentalElement as ElementType } from '@/services/environment';
 
 interface SceneContainerProps {
   modules: any[];
@@ -24,6 +26,9 @@ interface SceneContainerProps {
   } | null;
   onConnectPoint?: (moduleId: string, point: [number, number, number], type: string) => void;
   readOnly?: boolean;
+  environmentalElements?: ElementType[];
+  terrain?: TerrainData;
+  onEnvironmentalElementSelect?: (elementId: string) => void;
 }
 
 export function SceneContainer({ 
@@ -36,7 +41,10 @@ export function SceneContainer({
   connections = [],
   activeConnection,
   onConnectPoint,
-  readOnly = false
+  readOnly = false,
+  environmentalElements = [],
+  terrain,
+  onEnvironmentalElementSelect
 }: SceneContainerProps) {
   const planeRef = useRef<THREE.Mesh>(null);
   const [hoverPoint, setHoverPoint] = useState<[number, number, number] | null>(null);
@@ -143,6 +151,23 @@ export function SceneContainer({
           </mesh>
         )}
         
+        {terrain && (
+          <TerrainView
+            data={terrain}
+            showGrid={true}
+            showMeasurements={true}
+            materialType='soil'
+          />
+        )}
+
+        {environmentalElements.map((element) => (
+          <EnvironmentalElement
+            key={element.id}
+            element={element}
+            onClick={() => onEnvironmentalElementSelect?.(element.id)}
+          />
+        ))}
+
         <OrbitControls
           enableDamping
           dampingFactor={0.05}
