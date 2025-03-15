@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -96,18 +95,25 @@ const projectService = {
   async getUserProjects(userId: string): Promise<Project[]> {
     try {
       const projectsQuery = query(
-        collection(db, "projects"),
-        where("ownerId", "==", userId)
+        collection(db, 'projects'),
+        where('ownerId', '==', userId)
       );
       
       const snapshot = await getDocs(projectsQuery);
+      
+      if (snapshot.empty) {
+        return [];
+      }
+
       return snapshot.docs.map(doc => ({
         id: doc.id,
-        ...doc.data()
+        ...doc.data(),
+        createdAt: doc.data().createdAt?.toDate(),
+        updatedAt: doc.data().updatedAt?.toDate()
       } as Project));
     } catch (error) {
-      console.error("Error fetching user projects:", error);
-      throw new Error("Failed to fetch projects");
+      console.error('Error fetching user projects:', error);
+      throw new Error('Failed to fetch projects');
     }
   }
 };

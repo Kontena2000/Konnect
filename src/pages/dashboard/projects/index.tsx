@@ -6,6 +6,7 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
+import { toast } from "@/components/ui/toast"; // Added import for toast
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -21,6 +22,11 @@ export default function ProjectsPage() {
         setProjects(userProjects);
       } catch (error) {
         console.error('Error loading projects:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load projects. Please try again.'
+        });
       } finally {
         setLoading(false);
       }
@@ -63,15 +69,15 @@ export default function ProjectsPage() {
 
         <div className='grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
           {projects.map((project) => (
-            <Card key={project.id} className='flex flex-col'>
+            <Card key={project.id} className='flex flex-col shadow-lg'>
               <CardHeader className='pb-4'>
                 <CardTitle className='text-xl'>{project.name}</CardTitle>
               </CardHeader>
-              <CardContent className='flex-1 space-y-6'>
+              <CardContent className='flex-1 space-y-6 p-6'>
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='space-y-4'>
+                <div className='space-y-4 pt-4'>
                   <Link href={`/dashboard/projects/${project.id}`}>
                     <Button variant='outline' className='w-full'>
                       Open Project

@@ -495,18 +495,20 @@ export default function LayoutEditorPage() {
             </div>
 
             <div className='flex-1 h-[calc(100vh-4rem)] relative'>
-              <SceneContainer
-                modules={modules}
-                selectedModuleId={selectedModuleId}
-                transformMode={transformMode}
-                onModuleSelect={setSelectedModuleId}
-                onModuleUpdate={handleModuleUpdate}
-                onDropPoint={createModule}
-                connections={connections}
-                activeConnection={activeConnection}
-                onConnectPoint={handleConnectPoint}
-                cameraZoom={cameraZoom}
-              />
+              <div className='absolute inset-0'>
+                <SceneContainer
+                  modules={modules}
+                  selectedModuleId={selectedModuleId}
+                  transformMode={transformMode}
+                  onModuleSelect={setSelectedModuleId}
+                  onModuleUpdate={handleModuleUpdate}
+                  onDropPoint={createModule}
+                  connections={connections}
+                  activeConnection={activeConnection}
+                  onConnectPoint={handleConnectPoint}
+                  cameraZoom={cameraZoom}
+                />
+              </div>
               <div className='absolute top-4 left-4 z-10'>
                 <Sheet>
                   <SheetTrigger asChild>
