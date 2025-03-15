@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -29,91 +28,91 @@ export interface ModuleTemplate {
 export const moduleTemplates: Record<ModuleCategory, ModuleTemplate[]> = {
   konnect: [
     {
-      id: "edge-container",
-      type: "edge-container",
-      category: "konnect",
-      name: "Edge Container",
-      description: "Standard Edge Computing Container",
-      color: "#808080",
+      id: 'edge-container',
+      type: 'edge-container',
+      category: 'konnect',
+      name: 'Edge Container',
+      description: 'Standard Edge Computing Container',
+      color: '#808080',
       dimensions: [6.1, 2.9, 2.44],
       connectionPoints: [
-        { position: [3.05, 1.45, 0], type: "208v-3phase" },
-        { position: [-3.05, 1.45, 0], type: "cat6a" }
+        { position: [3.05, 1.45, 0], type: '208v-3phase' },
+        { position: [-3.05, 1.45, 0], type: 'cat6a' }
       ]
     },
     {
-      id: "network-cabinet",
-      type: "network-cabinet",
-      category: "konnect",
-      name: "Network Cabinet",
-      description: "Standard Network Equipment Cabinet",
-      color: "#404040",
+      id: 'network-cabinet',
+      type: 'network-cabinet',
+      category: 'konnect',
+      name: 'Network Cabinet',
+      description: 'Standard Network Equipment Cabinet',
+      color: '#404040',
       dimensions: [0.8, 2.1, 1.2],
       connectionPoints: [
-        { position: [0.4, 1.05, 0], type: "cat6a" },
-        { position: [-0.4, 1.05, 0], type: "om4" }
+        { position: [0.4, 1.05, 0], type: 'cat6a' },
+        { position: [-0.4, 1.05, 0], type: 'om4' }
       ]
     }
   ],
   power: [
     {
-      id: "208v-3phase",
-      type: "208v-3phase",
-      category: "power",
-      name: "208V 3-Phase",
-      description: "208V Three Phase Power Cable",
-      color: "#1FB73A",
+      id: '208v-3phase',
+      type: '208v-3phase',
+      category: 'power',
+      name: '208V 3-Phase',
+      description: '208V Three Phase Power Cable',
+      color: '#F1B73A',
       dimensions: [0.1, 0.1, 0.1]
     },
     {
-      id: "400v-3phase",
-      type: "400v-3phase",
-      category: "power",
-      name: "400V 3-Phase",
-      description: "400V Three Phase Power Cable",
-      color: "#1FB73A",
+      id: '400v-3phase',
+      type: '400v-3phase',
+      category: 'power',
+      name: '400V 3-Phase',
+      description: '400V Three Phase Power Cable',
+      color: '#F1B73A',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
   network: [
     {
-      id: "cat6a",
-      type: "cat6a",
-      category: "network",
-      name: "CAT6A",
-      description: "Category 6A Network Cable",
-      color: "#00ff00",
+      id: 'cat6a',
+      type: 'cat6a',
+      category: 'network',
+      name: 'CAT6A',
+      description: 'Category 6A Network Cable',
+      color: '#4CAF50',
       dimensions: [0.1, 0.1, 0.1]
     },
     {
-      id: "om4",
-      type: "om4",
-      category: "network",
-      name: "OM4",
-      description: "OM4 Multimode Fiber Cable",
-      color: "#00ffff",
+      id: 'om4',
+      type: 'om4',
+      category: 'network',
+      name: 'OM4',
+      description: 'OM4 Multimode Fiber Cable',
+      color: '#2196F3',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
   cooling: [
     {
-      id: "chilled-water",
-      type: "chilled-water",
-      category: "cooling",
-      name: "Chilled Water",
-      description: "Chilled Water Cooling Pipe",
-      color: "#0088ff",
+      id: 'chilled-water',
+      type: 'chilled-water',
+      category: 'cooling',
+      name: 'Chilled Water',
+      description: 'Chilled Water Cooling Pipe',
+      color: '#0088ff',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
   environment: [
     {
-      id: "air-handler",
-      type: "air-handler",
-      category: "environment",
-      name: "Air Handler",
-      description: "Environmental Air Handler Unit",
-      color: "#888888",
+      id: 'air-handler',
+      type: 'air-handler',
+      category: 'environment',
+      name: 'Air Handler',
+      description: 'Environmental Air Handler Unit',
+      color: '#888888',
       dimensions: [1.2, 1.8, 0.6]
     }
   ]
