@@ -12,13 +12,169 @@ import moduleService, { getDefaultSpecs } from "@/services/module";
 import { ModuleCategory, moduleTemplates, ModuleTemplate, ConnectionType } from '@/components/three/ModuleLibrary';
 import { auth } from '@/lib/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { nanoid } from "nanoid";
 
-interface ModuleFormProps {
-  module: ModuleTemplateWithSpecs;
-  onUpdate: (id: string, data: Partial<ModuleTemplateWithSpecs>) => Promise<void>;
-  onDelete: (id: string) => Promise<void>;
+interface CreateModuleFormData {
+  name: string;
+  description: string;
+  category: ModuleCategory;
+  color: string;
+  dimensions: [number, number, number];
+  connectionPoints: Array<{
+    position: [number, number, number];
+    type: ConnectionType;
+  }>;
+}
+
+function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: ModuleTemplateWithSpecs) => Promise<void> }) {
+  const [isOpen, setIsOpen] = useState(false);
+  const [formData, setFormData] = useState<CreateModuleFormData>({
+    name: "",
+    description: "",
+    category: "konnect",
+    color: "#808080",
+    dimensions: [1, 1, 1],
+    connectionPoints: []
+  });
+  const [isCreating, setIsCreating] = useState(false);
+  const { toast } = useToast();
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsCreating(true);
+
+    try {
+      const moduleId = nanoid();
+      const newModule: ModuleTemplateWithSpecs = {
+        id: moduleId,
+        type: moduleId,
+        ...formData,
+        technicalSpecs: getDefaultSpecs(formData.category)
+      };
+
+      await onModuleCreate(newModule);
+      setIsOpen(false);
+      toast({
+        title: "Success",
+        description: "Module created successfully"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create module"
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  return (
+    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+      <DialogTrigger asChild>
+        <Button>
+          <Plus className="h-4 w-4 mr-2" />
+          Create New Module
+        </Button>
+      </DialogTrigger>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Create New Module</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label>Name</Label>
+            <Input
+              value={formData.name}
+              onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+              required
+            />
+          </div>
+          
+          <div className="space-y-2">
+            <Label>Description</Label>
+            <Input
+              value={formData.description}
+              onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Category</Label>
+            <Select
+              value={formData.category}
+              onValueChange={(value: ModuleCategory) => setFormData(prev => ({ ...prev, category: value }))}
+            >
+              <SelectTrigger>
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="konnect">Konnect Modules</SelectItem>
+                <SelectItem value="power">Power Cables</SelectItem>
+                <SelectItem value="network">Network Cables</SelectItem>
+                <SelectItem value="cooling">Cooling Tubes</SelectItem>
+                <SelectItem value="environment">Environment</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Color</Label>
+            <div className="flex gap-2">
+              <Input
+                type="color"
+                value={formData.color}
+                onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                className="w-12 h-12 p-1"
+              />
+              <Input
+                value={formData.color}
+                onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+                placeholder="#000000"
+              />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <Label>Dimensions (meters)</Label>
+            <div className="grid grid-cols-3 gap-2">
+              {["Length", "Width", "Height"].map((dim, i) => (
+                <div key={dim}>
+                  <Label className="text-xs">{dim}</Label>
+                  <Input
+                    type="number"
+                    value={formData.dimensions[i]}
+                    onChange={(e) => {
+                      const newDimensions = [...formData.dimensions];
+                      newDimensions[i] = parseFloat(e.target.value) || 0;
+                      setFormData(prev => ({ ...prev, dimensions: newDimensions as [number, number, number] }));
+                    }}
+                    step={0.1}
+                    min={0.1}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button type="submit" disabled={isCreating}>
+              {isCreating ? (
+                <>
+                  <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                  Creating...
+                </>
+              ) : (
+                "Create Module"
+              )}
+            </Button>
+          </DialogFooter>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
 }
 
 function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
@@ -269,6 +425,16 @@ export function ModuleDatabase() {
     initializeModuleDatabase();
   }, [toast]);
 
+  const handleCreateModule = async (moduleData: ModuleTemplateWithSpecs) => {
+    try {
+      await moduleService.createModule(moduleData);
+      setModules(prev => [...prev, moduleData]);
+    } catch (error) {
+      console.error("Error creating module:", error);
+      throw error;
+    }
+  };
+
   const handleUpdateModule = async (id: string, data: Partial<ModuleTemplateWithSpecs>) => {
     try {
       await moduleService.updateModule(id, data);
@@ -303,6 +469,7 @@ export function ModuleDatabase() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold">Module Database</h2>
+        <CreateModuleDialog onModuleCreate={handleCreateModule} />
       </div>
       <ScrollArea className="h-[600px] pr-4">
         <div className="space-y-4">
