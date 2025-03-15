@@ -1,9 +1,9 @@
-
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import Link from "next/link";
+import { AppLayout } from '@/components/layout/AppLayout';
 
 export default function DashboardPage() {
   const recentProjects = [
@@ -12,7 +12,7 @@ export default function DashboardPage() {
   ];
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Dashboard</h1>
@@ -48,6 +48,6 @@ export default function DashboardPage() {
           </Card>
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

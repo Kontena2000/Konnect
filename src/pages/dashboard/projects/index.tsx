@@ -1,6 +1,5 @@
-
 import { useEffect, useState } from "react";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
@@ -31,11 +30,11 @@ export default function ProjectsPage() {
   }, [user]);
 
   if (loading) {
-    return <DashboardLayout>Loading projects...</DashboardLayout>;
+    return <AppLayout>Loading projects...</AppLayout>;
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold">Projects</h1>
@@ -69,6 +68,6 @@ export default function ProjectsPage() {
           ))}
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }
