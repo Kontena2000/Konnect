@@ -292,10 +292,13 @@ export function ModuleDatabase() {
             title: 'Success',
             description: 'Module database initialized with default modules'
           });
+          
+          // Fetch all modules after initialization
+          const updatedModules = await moduleService.getAllModules();
+          setModules(updatedModules);
+        } else {
+          setModules(existingModules);
         }
-
-        const allModules = await moduleService.getAllModules();
-        setModules(allModules);
       } catch (error) {
         console.error('Error initializing module database:', error);
         toast({

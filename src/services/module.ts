@@ -1,6 +1,6 @@
 
-import { db } from "@/lib/firebase";
-import { collection, addDoc, updateDoc, deleteDoc, doc, getDocs } from "firebase/firestore";
+import { realTimeDb } from "@/lib/firebase";
+import { ref, get, set, remove, update } from "firebase/database";
 import { ModuleTemplate } from "@/components/three/ModuleLibrary";
 
 export interface TechnicalSpecs {
@@ -23,11 +23,18 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
 const moduleService = {
   async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
     try {
-      const snapshot = await getDocs(collection(db, "modules"));
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      } as ModuleTemplateWithSpecs));
+      const modulesRef = ref(realTimeDb, "modules");
+      const snapshot = await get(modulesRef);
+      
+      if (!snapshot.exists()) {
+        return [];
+      }
+
+      const modules = snapshot.val();
+      return Object.entries(modules).map(([id, data]) => ({
+        id,
+        ...(data as Omit<ModuleTemplateWithSpecs, "id">)
+      }));
     } catch (error) {
       console.error("Error fetching modules:", error);
       throw new Error("Failed to fetch modules");
@@ -36,10 +43,10 @@ const moduleService = {
 
   async updateModule(id: string, data: Partial<ModuleTemplateWithSpecs>): Promise<void> {
     try {
-      const moduleRef = doc(db, "modules", id);
-      await updateDoc(moduleRef, {
+      const moduleRef = ref(realTimeDb, `modules/${id}`);
+      await update(moduleRef, {
         ...data,
-        updatedAt: new Date()
+        updatedAt: new Date().toISOString()
       });
     } catch (error) {
       console.error("Error updating module:", error);
@@ -49,12 +56,13 @@ const moduleService = {
 
   async createModule(data: Omit<ModuleTemplateWithSpecs, "id">): Promise<string> {
     try {
-      const moduleRef = await addDoc(collection(db, "modules"), {
+      const moduleRef = ref(realTimeDb, `modules/${data.type}`);
+      await set(moduleRef, {
         ...data,
-        createdAt: new Date(),
-        updatedAt: new Date()
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString()
       });
-      return moduleRef.id;
+      return data.type;
     } catch (error) {
       console.error("Error creating module:", error);
       throw new Error("Failed to create module");
@@ -63,8 +71,8 @@ const moduleService = {
 
   async deleteModule(id: string): Promise<void> {
     try {
-      const moduleRef = doc(db, "modules", id);
-      await deleteDoc(moduleRef);
+      const moduleRef = ref(realTimeDb, `modules/${id}`);
+      await remove(moduleRef);
     } catch (error) {
       console.error("Error deleting module:", error);
       throw new Error("Failed to delete module");
