@@ -16,6 +16,8 @@ import layoutService, { Layout, Module, Connection } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
 
+type ConnectionType = string;
+
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -27,11 +29,10 @@ export default function LayoutEditorPage() {
   const [activeConnection, setActiveConnection] = useState<{
     sourceModuleId: string;
     sourcePoint: [number, number, number];
-    type: "power" | "network" | "cooling";
+    type: ConnectionType;
   } | null>(null);
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-  const [layout, setLayout] = useState<Layout | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -91,7 +92,7 @@ export default function LayoutEditorPage() {
   const handleConnectPoint = (
     moduleId: string,
     point: [number, number, number],
-    type: "power" | "network" | "cooling"
+    type: ConnectionType
   ) => {
     if (!activeConnection) {
       setActiveConnection({
