@@ -3,6 +3,7 @@ import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 import debounce from "lodash/debounce";
 import layoutService from "@/services/layout";
+import { debouncedSave } from '@/services/layout';
 
 interface ModuleState {
   modules: Module[];
@@ -71,11 +72,15 @@ export function useModuleState({
     const hasChanges = currentState !== lastSavedState.current;
     setState(prev => ({ ...prev, hasChanges }));
 
-    if (autoSave && hasChanges && !saving) {
+    if (autoSave && hasChanges && !saving && layoutId) {
       setSaving(true);
-      debouncedSave(state.modules, state.connections);
+      debouncedSave(layoutId, {
+        modules: state.modules,
+        connections: state.connections,
+        updatedAt: new Date()
+      }).finally(() => setSaving(false));
     }
-  }, [state.modules, state.connections, autoSave, saving, debouncedSave]);
+  }, [state.modules, state.connections, autoSave, saving, layoutId]);
 
   const updateModule = useCallback((moduleId: string, updates: Partial<Module>) => {
     setState(prev => ({

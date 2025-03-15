@@ -62,10 +62,11 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
 };
 
 const handleError = (error: unknown, code: string, message: string): never => {
+  const projectError = new ProjectError(message, code);
   if (error instanceof Error) {
-    throw new ProjectError(message, code, error);
+    projectError.details = error;
   }
-  throw new ProjectError(message, code);
+  throw projectError;
 };
 
 const projectService = {
@@ -125,11 +126,10 @@ const projectService = {
 
   async deleteProject(id: string): Promise<void> {
     try {
-      const projectRef = doc(db, "projects", id);
+      const projectRef = doc(db, 'projects', id);
       await deleteDoc(projectRef);
     } catch (error) {
-      console.error("Error deleting project:", error);
-      throw new Error("Failed to delete project");
+      handleError(error, 'DELETE_FAILED', 'Failed to delete project');
     }
   },
 
@@ -153,8 +153,7 @@ const projectService = {
         updatedAt: doc.data().updatedAt?.toDate()
       } as Project));
     } catch (error) {
-      console.error('Error fetching user projects:', error);
-      throw new Error('Failed to fetch projects');
+      handleError(error, 'FETCH_FAILED', 'Failed to fetch projects');
     }
   },
 

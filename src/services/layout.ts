@@ -54,6 +54,19 @@ export interface Layout {
   updatedAt: Date;
 }
 
+export const debouncedSave = debounce(async (layoutId: string, data: Partial<Layout>): Promise<void> => {
+  try {
+    const layoutRef = doc(db, 'layouts', layoutId);
+    await updateDoc(layoutRef, {
+      ...data,
+      updatedAt: serverTimestamp()
+    });
+  } catch (error) {
+    console.error('Error saving layout:', error);
+    throw new Error('Failed to save layout');
+  }
+}, 2000);
+
 const layoutService = {
   async createLayout(data: Omit<Layout, "id" | "createdAt" | "updatedAt">): Promise<string> {
     if (!data.projectId) {
@@ -131,20 +144,7 @@ const layoutService = {
       console.error('Error fetching project layouts:', error);
       throw new Error('Failed to load project layouts');
     }
-  },
-
-  debouncedSave: debounce(async (layoutId: string, data: Partial<Layout>): Promise<void> => {
-    try {
-      const layoutRef = doc(db, 'layouts', layoutId);
-      await updateDoc(layoutRef, {
-        ...data,
-        updatedAt: serverTimestamp()
-      });
-    } catch (error) {
-      console.error('Error saving layout:', error);
-      throw new Error('Failed to save layout');
-    }
-  }, 2000)
+  }
 };
 
 export default layoutService;

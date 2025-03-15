@@ -1,24 +1,22 @@
 
 import { useMemo } from "react";
-import { MouseSensor, TouchSensor, PointerSensor, useSensor, SensorDescriptor } from "@dnd-kit/core";
+import { MouseSensor, TouchSensor, PointerSensor, useSensors, SensorDescriptor } from "@dnd-kit/core";
 
 export function useEditorSensors() {
-  return useMemo(() => [
-    useSensor(MouseSensor, {
+  const sensors = useSensors(
+    MouseSensor,
+    TouchSensor,
+    PointerSensor
+  );
+
+  return useMemo(() => sensors.map(sensor => ({
+    sensor,
+    options: {
       activationConstraint: {
-        distance: 10,
+        distance: sensor instanceof MouseSensor ? 10 : 8,
+        delay: sensor instanceof TouchSensor ? 250 : undefined,
+        tolerance: sensor instanceof TouchSensor ? 5 : undefined,
       }
-    }),
-    useSensor(TouchSensor, {
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      }
-    }),
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      }
-    })
-  ] as SensorDescriptor[], []);
+    }
+  })) as SensorDescriptor<any>[], [sensors]);
 }
