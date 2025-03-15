@@ -1,8 +1,9 @@
-import { useCallback } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
+import moduleService from '@/services/module';
 
 export type ModuleCategory = "konnect" | "power" | "network" | "cooling" | "environment";
 
@@ -118,7 +119,7 @@ export const moduleTemplates: Record<ModuleCategory, ModuleTemplate[]> = {
   ]
 };
 
-function ModuleItem({ template }: { template: ModuleTemplate }) {
+function ModuleItem({ template, specs }: { template: ModuleTemplate; specs?: TechnicalSpecs }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: template.id,
     data: template
@@ -141,16 +142,39 @@ function ModuleItem({ template }: { template: ModuleTemplate }) {
         />
         <span>{template.name}</span>
       </div>
+      {specs && <div className="mt-2 text-sm text-gray-500">{JSON.stringify(specs)}</div>}
     </div>
   );
 }
 
 export function ModuleLibrary() {
+  const [technicalSpecs, setTechnicalSpecs] = useState<Record<string, TechnicalSpecs>>({});
+
+  useEffect(() => {
+    const loadTechnicalSpecs = async () => {
+      try {
+        const modules = await moduleService.getAllModules();
+        const specs = modules.reduce((acc, module) => {
+          acc[module.type] = module.technicalSpecs;
+          return acc;
+        }, {} as Record<string, TechnicalSpecs>);
+        setTechnicalSpecs(specs);
+      } catch (error) {
+        console.error('Error loading technical specs:', error);
+      }
+    };
+    loadTechnicalSpecs();
+  }, []);
+
   const renderModules = useCallback((templates: ModuleTemplate[]) => {
     return templates.map((template) => (
-      <ModuleItem key={template.id} template={template} />
+      <ModuleItem 
+        key={template.id} 
+        template={template}
+        specs={technicalSpecs[template.type]}
+      />
     ));
-  }, []);
+  }, [technicalSpecs]);
 
   const categories = [
     { id: "konnect" as ModuleCategory, name: "Konnect Modules" },
