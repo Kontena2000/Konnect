@@ -10,6 +10,8 @@ import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { ModuleCategory, moduleTemplates } from '@/components/three/ModuleLibrary';
 import { auth } from '@/lib/firebase';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 
 interface ModuleFormProps {
   module: ModuleTemplateWithSpecs;
@@ -246,6 +248,26 @@ export function ModuleDatabase() {
   const [modules, setModules] = useState<ModuleTemplateWithSpecs[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+
+  const handleCreateModule = async (moduleData: Omit<ModuleTemplateWithSpecs, 'id'>) => {
+    try {
+      await moduleService.createModule(moduleData);
+      const updatedModules = await moduleService.getAllModules();
+      setModules(updatedModules);
+      toast({
+        title: 'Success',
+        description: 'New module created successfully'
+      });
+      setIsCreateDialogOpen(false);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create module'
+      });
+    }
+  };
 
   useEffect(() => {
     const initializeModuleDatabase = async () => {
@@ -345,17 +367,160 @@ export function ModuleDatabase() {
   }
 
   return (
-    <ScrollArea className="h-[600px] pr-4">
-      <div className="space-y-4">
-        {modules.map(module => (
-          <ModuleForm
-            key={module.id}
-            module={module}
-            onUpdate={handleUpdateModule}
-            onDelete={handleDeleteModule}
-          />
-        ))}
+    <div className='space-y-4'>
+      <div className='flex justify-between items-center'>
+        <h2 className='text-2xl font-bold'>Module Database</h2>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className='h-4 w-4 mr-2' />
+              Create New Module
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Module</DialogTitle>
+            </DialogHeader>
+            <CreateModuleForm onSubmit={handleCreateModule} onCancel={() => setIsCreateDialogOpen(false)} />
+          </DialogContent>
+        </Dialog>
       </div>
-    </ScrollArea>
+      <ScrollArea className='h-[600px] pr-4'>
+        <div className='space-y-4'>
+          {modules.map(module => (
+            <ModuleForm
+              key={module.id}
+              module={module}
+              onUpdate={handleUpdateModule}
+              onDelete={handleDeleteModule}
+            />
+          ))}
+        </div>
+      </ScrollArea>
+    </div>
+  );
+}
+
+interface CreateModuleFormProps {
+  onSubmit: (data: Omit<ModuleTemplateWithSpecs, 'id'>) => Promise<void>;
+  onCancel: () => void;
+}
+
+function CreateModuleForm({ onSubmit, onCancel }: CreateModuleFormProps) {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [formData, setFormData] = useState({
+    name: '',
+    category: 'konnect' as ModuleCategory,
+    type: '',
+    description: '',
+    color: '#808080',
+    dimensions: [1, 1, 1] as [number, number, number],
+    connectionPoints: [] as Array<{
+      position: [number, number, number];
+      type: ConnectionType;
+    }>,
+    technicalSpecs: {
+      weight: 0,
+      powerConsumption: {
+        watts: 0,
+        kWh: 0
+      },
+      wireConfigurations: [{
+        type: '',
+        gauge: '',
+        length: 0
+      }]
+    }
+  });
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+    try {
+      await onSubmit(formData);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  return (
+    <form onSubmit={handleSubmit} className='space-y-4'>
+      <div className='space-y-2'>
+        <Label>Name</Label>
+        <Input
+          value={formData.name}
+          onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+          required
+        />
+      </div>
+      
+      <div className='space-y-2'>
+        <Label>Category</Label>
+        <Select
+          value={formData.category}
+          onValueChange={(value: ModuleCategory) => 
+            setFormData(prev => ({ ...prev, category: value }))
+          }
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value='konnect'>Konnect Modules</SelectItem>
+            <SelectItem value='power'>Power Cables</SelectItem>
+            <SelectItem value='network'>Network Cables</SelectItem>
+            <SelectItem value='cooling'>Cooling Tubes</SelectItem>
+            <SelectItem value='environment'>Environment</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <div className='space-y-2'>
+        <Label>Color</Label>
+        <Input
+          type='color'
+          value={formData.color}
+          onChange={(e) => setFormData(prev => ({ ...prev, color: e.target.value }))}
+        />
+      </div>
+
+      <div className='space-y-2'>
+        <Label>Dimensions [Length, Height, Width]</Label>
+        <div className='grid grid-cols-3 gap-2'>
+          {['Length', 'Height', 'Width'].map((dim, i) => (
+            <div key={dim}>
+              <Label className='text-xs'>{dim}</Label>
+              <Input
+                type='number'
+                value={formData.dimensions[i]}
+                onChange={(e) => {
+                  const newDims = [...formData.dimensions];
+                  newDims[i] = parseFloat(e.target.value) || 0;
+                  setFormData(prev => ({ ...prev, dimensions: newDims as [number, number, number] }));
+                }}
+                step={0.1}
+                min={0.1}
+              />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className='flex justify-end gap-2'>
+        <Button variant='outline' onClick={onCancel} disabled={isSubmitting}>
+          Cancel
+        </Button>
+        <Button type='submit' disabled={isSubmitting}>
+          {isSubmitting ? (
+            <>
+              <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+              Creating...
+            </>
+          ) : (
+            'Create Module'
+          )}
+        </Button>
+      </div>
+    </form>
   );
 }
