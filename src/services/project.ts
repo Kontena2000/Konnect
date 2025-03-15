@@ -15,9 +15,16 @@ import {
 } from "firebase/firestore";
 
 // Add error types
-export interface ProjectError extends Error {
+class ProjectError extends Error {
   code: string;
   details?: unknown;
+
+  constructor(message: string, code: string, details?: unknown) {
+    super(message);
+    this.code = code;
+    this.details = details;
+    Object.setPrototypeOf(this, ProjectError.prototype);
+  }
 }
 
 // Add validation types
@@ -57,7 +64,7 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
     if (!validateProject(data)) {
-      throw new Error('Invalid project data');
+      throw new ProjectError('Invalid project data', 'VALIDATION_FAILED');
     }
 
     try {
@@ -71,10 +78,7 @@ const projectService = {
       });
       return projectRef.id;
     } catch (error) {
-      const projectError: ProjectError = new Error('Failed to create project');
-      projectError.code = 'CREATE_FAILED';
-      projectError.details = error;
-      throw projectError;
+      throw new ProjectError('Failed to create project', 'CREATE_FAILED', error);
     }
   },
 
@@ -99,7 +103,7 @@ const projectService = {
 
   async updateProject(id: string, data: Partial<Project>): Promise<void> {
     if (!validateProject(data)) {
-      throw new Error('Invalid project data');
+      throw new ProjectError('Invalid project data', 'VALIDATION_FAILED');
     }
 
     try {
@@ -109,10 +113,7 @@ const projectService = {
         updatedAt: serverTimestamp()
       });
     } catch (error) {
-      const projectError: ProjectError = new Error('Failed to update project');
-      projectError.code = 'UPDATE_FAILED';
-      projectError.details = error;
-      throw projectError;
+      throw new ProjectError('Failed to update project', 'UPDATE_FAILED', error);
     }
   },
 
@@ -153,7 +154,7 @@ const projectService = {
 
   async shareProject(projectId: string, email: string): Promise<void> {
     if (!email || !email.includes('@')) {
-      throw new Error('Invalid email address');
+      throw new ProjectError('Invalid email address', 'VALIDATION_FAILED');
     }
 
     try {
@@ -162,10 +163,7 @@ const projectService = {
         sharedWith: arrayUnion(email)
       });
     } catch (error) {
-      const projectError: ProjectError = new Error('Failed to share project');
-      projectError.code = 'SHARE_FAILED';
-      projectError.details = error;
-      throw projectError;
+      throw new ProjectError('Failed to share project', 'SHARE_FAILED', error);
     }
   },
 
