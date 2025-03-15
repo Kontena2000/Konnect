@@ -42,6 +42,22 @@ export default function LayoutEditorPage() {
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
 
+  const [activeConnection, setActiveConnection] = useState<{
+    sourceModuleId: string;
+    sourcePoint: [number, number, number];
+    type: ConnectionType;
+  } | null>(null);
+
+  const [history, setHistory] = useState<{
+    past: Module[][];
+    present: Module[];
+    future: Module[][];
+  }>({
+    past: [],
+    present: [],
+    future: []
+  });
+
   const sensors = useEditorSensors();
 
   const {

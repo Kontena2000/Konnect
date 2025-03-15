@@ -67,7 +67,7 @@ const handleError = (error: unknown, code: string, message: string): never => {
     projectError.details = error;
   }
   throw projectError;
-};
+}
 
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
@@ -86,7 +86,7 @@ const projectService = {
       });
       return projectRef.id;
     } catch (error) {
-      handleError(error, 'CREATE_FAILED', 'Failed to create project');
+      return handleError(error, 'CREATE_FAILED', 'Failed to create project');
     }
   },
 

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef, useEffect } from "react";
+import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 import debounce from "lodash/debounce";
@@ -33,38 +33,39 @@ export function useModuleState({
   
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
-  const lastSavedState = useRef<string>(JSON.stringify({ modules: initialModules, connections: initialConnections }));
+  const lastSavedState = useRef<string>(JSON.stringify({ 
+    modules: initialModules, 
+    connections: initialConnections 
+  }));
 
-  const handleSave = async (modules: Module[], connections: Connection[]) => {
-    if (!layoutId) return;
-    
-    try {
-      await layoutService.updateLayout(layoutId, {
-        modules,
-        connections,
-        updatedAt: new Date()
-      });
-      lastSavedState.current = JSON.stringify({ modules, connections });
-      setState(prev => ({ ...prev, hasChanges: false }));
-      toast({
-        title: 'Success',
-        description: 'Layout saved successfully'
-      });
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save layout'
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+  const debouncedSaveCallback = useCallback(
+    async (modules: Module[], connections: Connection[]) => {
+      if (!layoutId) return;
+      try {
+        await layoutService.updateLayout(layoutId, {
+          modules,
+          connections,
+          updatedAt: new Date()
+        });
+        lastSavedState.current = JSON.stringify({ modules, connections });
+        setState(prev => ({ ...prev, hasChanges: false }));
+      } catch (error) {
+        console.error('Save error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to save layout'
+        });
+      } finally {
+        setSaving(false);
+      }
+    },
+    [layoutId, toast]
+  );
 
-  const debouncedSave = useCallback(
-    debounce(handleSave, 2000),
-    [layoutId]
+  const debouncedSave = useMemo(
+    () => debounce(debouncedSaveCallback, 2000),
+    [debouncedSaveCallback]
   );
 
   useEffect(() => {
@@ -74,11 +75,7 @@ export function useModuleState({
 
     if (autoSave && hasChanges && !saving && layoutId) {
       setSaving(true);
-      debouncedSave(layoutId, {
-        modules: state.modules,
-        connections: state.connections,
-        updatedAt: new Date()
-      }).finally(() => setSaving(false));
+      debouncedSave(state.modules, state.connections).finally(() => setSaving(false));
     }
   }, [state.modules, state.connections, autoSave, saving, layoutId]);
 
