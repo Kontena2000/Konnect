@@ -494,7 +494,7 @@ export default function LayoutEditorPage() {
               </div>
             </div>
 
-            <div className='flex-1 h-[calc(100vh-4rem)]'>
+            <div className='flex-1 h-[calc(100vh-4rem)] relative'>
               <SceneContainer
                 modules={modules}
                 selectedModuleId={selectedModuleId}
