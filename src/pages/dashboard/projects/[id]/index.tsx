@@ -271,8 +271,8 @@ export default function ProjectDetailsPage() {
               <CardHeader>
                 <CardTitle>{layout.name || 'Untitled Layout'}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className='text-sm text-muted-foreground mb-4 min-h-[2.5rem]'>
+              <CardContent className='space-y-4'>
+                <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {layout.description || 'No description'}
                 </p>
                 <Link href={`/dashboard/projects/${id}/editor?layout=${layout.id}`}>

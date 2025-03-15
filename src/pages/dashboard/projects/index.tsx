@@ -123,7 +123,7 @@ export default function ProjectsPage() {
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='space-y-4 pt-4'>
+                <div className='space-y-3 pt-4'>
                   <Link href={`/dashboard/projects/${project.id}`} className='block'>
                     <Button variant='outline' className='w-full'>
                       Open Project

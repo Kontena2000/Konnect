@@ -11,7 +11,7 @@ import {
   getDoc,
   serverTimestamp
 } from "firebase/firestore";
-import { ConnectionType } from "@/components/three/ModuleLibrary";
+import { ConnectionType } from '@/types/connection';
 import { debounce } from "lodash"; // Assuming lodash is used for debounce
 
 export interface Module {
