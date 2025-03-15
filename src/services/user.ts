@@ -1,6 +1,5 @@
-
 import { db } from "@/lib/firebase";
-import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc } from "firebase/firestore";
+import { collection, getDocs, addDoc, deleteDoc, doc, updateDoc, query, orderBy } from "firebase/firestore";
 
 export interface User {
   id: string;
@@ -11,8 +10,9 @@ export interface User {
 
 const userService = {
   async getUsers(): Promise<User[]> {
-    const usersRef = collection(db, "users");
-    const snapshot = await getDocs(usersRef);
+    const usersRef = collection(db, 'users');
+    const q = query(usersRef, orderBy('createdAt', 'desc'));
+    const snapshot = await getDocs(q);
     return snapshot.docs.map(doc => ({
       id: doc.id,
       ...doc.data(),
