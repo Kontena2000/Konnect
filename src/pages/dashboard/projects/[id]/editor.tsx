@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -21,6 +21,7 @@ import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'; // Ad
 import { Menu } from 'lucide-react'; // Added import for Menu
 import projectService from '@/services/project';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
+import debounce from 'lodash/debounce';
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
@@ -70,6 +71,52 @@ export default function LayoutEditorPage() {
       },
     })
   );
+
+  // Optimize save operation with debounce
+  const debouncedSave = useMemo(
+    () => debounce(async (layoutId: string, moduleData: Module[], connectionData: Connection[]) => {
+      try {
+        await layoutService.updateLayout(layoutId, {
+          modules: moduleData,
+          connections: connectionData,
+          updatedAt: new Date()
+        });
+        lastSavedState.current = JSON.stringify({ modules: moduleData, connections: connectionData });
+        setHasChanges(false);
+        toast({
+          title: 'Success',
+          description: 'Layout saved successfully',
+        });
+      } catch (error) {
+        console.error('Save error:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to save layout'
+        });
+      }
+    }, 1000),
+    [toast]
+  );
+
+  // Optimize module updates with useMemo
+  const moduleMap = useMemo(() => {
+    return modules.reduce((acc, module) => {
+      acc[module.id] = module;
+      return acc;
+    }, {} as Record<string, Module>);
+  }, [modules]);
+
+  // Optimize connection filtering with useMemo
+  const moduleConnections = useMemo(() => {
+    return connections.reduce((acc, conn) => {
+      if (!acc[conn.sourceModuleId]) acc[conn.sourceModuleId] = [];
+      if (!acc[conn.targetModuleId]) acc[conn.targetModuleId] = [];
+      acc[conn.sourceModuleId].push(conn);
+      acc[conn.targetModuleId].push(conn);
+      return acc;
+    }, {} as Record<string, Connection[]>);
+  }, [connections]);
 
   useEffect(() => {
     const loadProjectAndLayouts = async () => {
@@ -307,35 +354,13 @@ export default function LayoutEditorPage() {
     });
   };
 
-  const handleSave = async () => {
+  // Update handleSave to use debounced save
+  const handleSave = useCallback(async () => {
     if (!layout?.id || !hasChanges) return;
-    
     setSaving(true);
-    try {
-      await layoutService.updateLayout(layout.id, {
-        modules,
-        connections,
-        updatedAt: new Date()
-      });
-      
-      lastSavedState.current = JSON.stringify({ modules, connections });
-      setHasChanges(false);
-      
-      toast({
-        title: 'Success',
-        description: 'Layout saved successfully',
-      });
-    } catch (error) {
-      console.error('Save error:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save layout'
-      });
-    } finally {
-      setSaving(false);
-    }
-  };
+    await debouncedSave(layout.id, modules, connections);
+    setSaving(false);
+  }, [layout?.id, modules, connections, hasChanges, debouncedSave]);
 
   if (isLoading) {
     return (
@@ -358,8 +383,8 @@ export default function LayoutEditorPage() {
     >
       <TooltipProvider>
         <AppLayout>
-          <div className='h-screen flex flex-col'>
-            <div className='flex items-center justify-between p-4 border-b'>
+          <div className='h-screen flex flex-col overflow-hidden'>
+            <div className='flex items-center justify-between px-4 py-2 border-b'>
               <div className='flex items-center gap-4'>
                 <h1 className='text-2xl font-bold'>Layout Editor</h1>
                 <LayoutSelector
@@ -454,7 +479,7 @@ export default function LayoutEditorPage() {
               </div>
             </div>
 
-            <div className='flex-1 relative'>
+            <div className='flex-1 relative w-full h-full'>
               <SceneContainer
                 modules={modules}
                 selectedModuleId={selectedModuleId}
@@ -468,23 +493,23 @@ export default function LayoutEditorPage() {
                 cameraZoom={cameraZoom}
               />
 
-              <div className='absolute top-4 left-4'>
+              <div className='absolute top-4 left-4 z-10'>
                 <Sheet>
                   <SheetTrigger asChild>
                     <Button variant='outline' size='icon'>
                       <Menu className='h-4 w-4' />
                     </Button>
                   </SheetTrigger>
-                  <SheetContent side='left' className='w-[300px]'>
+                  <SheetContent side='left' className='w-[300px] border-r'>
                     <ModuleLibrary />
                   </SheetContent>
                 </Sheet>
               </div>
 
               {selectedModuleId && (
-                <div className='absolute top-4 right-4 w-[300px] bg-background/5 backdrop-blur-[2px] rounded-lg border p-4'>
+                <div className='absolute top-4 right-4 w-[300px] bg-background/10 backdrop-blur-sm rounded-lg border shadow-lg'>
                   <ModuleProperties
-                    module={modules.find(m => m.id === selectedModuleId)!}
+                    module={moduleMap[selectedModuleId]}
                     onUpdate={handleModuleUpdate}
                     onDelete={handleModuleDelete}
                     onTransformModeChange={setTransformMode}

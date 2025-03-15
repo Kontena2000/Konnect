@@ -21,12 +21,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className='min-h-screen w-full flex'>
       <Sidebar />
-      <main className={cn(
-        "pl-[64px] lg:pl-64",
-        isMobile ? "pt-4 pr-4" : "p-8"
-      )}>
+      <main className='flex-1 relative overflow-hidden'>
         <div className="container mx-auto p-4">
           {children}
         </div>
