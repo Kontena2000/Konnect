@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, ContactShadows, AccumulativeShadows, RandomizedLight } from '@react-three/drei';
 import { ModuleObject } from "./ModuleObject";
@@ -33,6 +32,8 @@ interface SceneContainerProps {
   terrain?: TerrainData;
   onEnvironmentalElementSelect?: (elementId: string) => void;
   cameraZoom?: number;
+  connectionMode?: 'cable' | 'pipe';
+  onAddIntermediatePoint?: (point: [number, number, number]) => void;
 }
 
 const getConnectionColor = (type: ConnectionType): string => {
@@ -68,7 +69,9 @@ export function SceneContainer({
   environmentalElements = [],
   terrain,
   onEnvironmentalElementSelect,
-  cameraZoom = 1
+  cameraZoom = 1,
+  connectionMode = 'cable',
+  onAddIntermediatePoint
 }: SceneContainerProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: 'scene-container'
@@ -101,8 +104,12 @@ export function SceneContainer({
 
   const handlePlaneClick = (event: ThreeEvent<MouseEvent>) => {
     if (readOnly) return;
-    if (hoverPoint && onDropPoint) {
-      onDropPoint(hoverPoint);
+    if (hoverPoint) {
+      if (activeConnection && onAddIntermediatePoint) {
+        onAddIntermediatePoint(hoverPoint);
+      } else if (onDropPoint) {
+        onDropPoint(hoverPoint);
+      }
     }
   };
 
@@ -222,7 +229,10 @@ export function SceneContainer({
             key={connection.id}
             start={connection.sourcePoint}
             end={connection.targetPoint}
+            intermediatePoints={connection.intermediatePoints}
             color={getConnectionColor(connection.type)}
+            type={connectionMode}
+            capacity={connection.capacity}
           />
         ))}
 
@@ -231,6 +241,7 @@ export function SceneContainer({
             start={activeConnection.sourcePoint}
             end={hoverPoint || activeConnection.sourcePoint}
             color="#999999"
+            type={connectionMode}
           />
         )}
 

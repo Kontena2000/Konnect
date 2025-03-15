@@ -36,6 +36,7 @@ export interface Connection {
   targetModuleId: string;
   sourcePoint: [number, number, number];
   targetPoint: [number, number, number];
+  intermediatePoints?: [number, number, number][];
   type: ConnectionType;
   capacity?: number;
 }
