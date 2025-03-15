@@ -1,3 +1,4 @@
+
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +19,9 @@ export interface ModuleTemplate {
   description: string;
   dimensions: [number, number, number];
   color: string;
+  isFoldable?: boolean;
+  isOpen?: boolean;
+  foldedHeight?: number;
   connectionPoints: Array<{
     type: ConnectionType;
     position: [number, number, number];
@@ -26,7 +30,6 @@ export interface ModuleTemplate {
 }
 
 const powerCables: ModuleTemplate[] = [
-  // 3-Phase Power Cables
   {
     id: "208v-3phase",
     name: "208V 3-Phase Cable",
@@ -72,7 +75,6 @@ const powerCables: ModuleTemplate[] = [
     ],
     icon: <Power className="h-5 w-5" />
   },
-  // UPS Cables
   {
     id: "ups-battery",
     name: "UPS Battery Cable",
@@ -121,7 +123,6 @@ const powerCables: ModuleTemplate[] = [
 ];
 
 const networkCables: ModuleTemplate[] = [
-  // Copper Network Cables
   {
     id: "cat5e",
     name: "Cat5e Ethernet",
@@ -182,7 +183,6 @@ const networkCables: ModuleTemplate[] = [
     ],
     icon: <Network className="h-5 w-5" />
   },
-  // Fiber Optic Cables
   {
     id: "om3-fiber",
     name: "OM3 Multimode Fiber",
