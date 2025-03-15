@@ -224,18 +224,18 @@ export default function ProjectDetailsPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl">
-        <div className="flex justify-between items-center mb-6">
+      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl space-y-6'>
+        <div className='flex justify-between items-center'>
           <div>
-            <h1 className="text-3xl font-bold">{project.name}</h1>
-            <p className="text-muted-foreground">{project.description}</p>
+            <h1 className='text-3xl font-bold'>{project.name}</h1>
+            <p className='text-muted-foreground'>{project.description}</p>
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className='flex items-center gap-3'>
             <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Share className="h-4 w-4" />
+                <Button variant='outline' size='icon'>
+                  <Share className='h-4 w-4' />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -262,10 +262,10 @@ export default function ProjectDetailsPage() {
               </DialogContent>
             </Dialog>
             
-            <Dialog open={isSettingsOpen} onOpenChange={setIsSettingsOpen}>
+            <Dialog>
               <DialogTrigger asChild>
-                <Button variant="outline" size="icon">
-                  <Settings className="h-4 w-4" />
+                <Button variant='outline' size='icon'>
+                  <Settings className='h-4 w-4' />
                 </Button>
               </DialogTrigger>
               <DialogContent>
@@ -275,24 +275,24 @@ export default function ProjectDetailsPage() {
                     Configure project settings and properties.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="plotWidth">Plot Width (m)</Label>
+                <div className='grid gap-4 py-4'>
+                  <div className='grid gap-2'>
+                    <Label htmlFor='plotWidth'>Plot Width (m)</Label>
                     <Input
-                      id="plotWidth"
-                      name="plotWidth"
-                      type="number"
-                      value={formData.plotWidth || ""}
+                      id='plotWidth'
+                      name='plotWidth'
+                      type='number'
+                      value={formData.plotWidth || ''}
                       onChange={handleInputChange}
                     />
                   </div>
-                  <div className="grid gap-2">
-                    <Label htmlFor="plotLength">Plot Length (m)</Label>
+                  <div className='grid gap-2'>
+                    <Label htmlFor='plotLength'>Plot Length (m)</Label>
                     <Input
-                      id="plotLength"
-                      name="plotLength"
-                      type="number"
-                      value={formData.plotLength || ""}
+                      id='plotLength'
+                      name='plotLength'
+                      type='number'
+                      value={formData.plotLength || ''}
                       onChange={handleInputChange}
                     />
                   </div>
@@ -303,18 +303,10 @@ export default function ProjectDetailsPage() {
               </DialogContent>
             </Dialog>
             
-            <Button 
-              variant='outline' 
-              size='icon'
-              onClick={() => setIsSettingsOpen(true)}
-            >
-              <Settings className='h-4 w-4' />
-            </Button>
-            
             <AlertDialog>
               <AlertDialogTrigger asChild>
-                <Button variant="outline" size="icon" className="text-red-500 hover:text-red-600 hover:bg-red-100">
-                  <Trash2 className="h-4 w-4" />
+                <Button variant='outline' size='icon' className='text-red-500 hover:text-red-600 hover:bg-red-100'>
+                  <Trash2 className='h-4 w-4' />
                 </Button>
               </AlertDialogTrigger>
               <AlertDialogContent>
