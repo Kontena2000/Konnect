@@ -21,7 +21,11 @@ interface CreateModuleFormData {
   description: string;
   category: ModuleCategory;
   color: string;
-  dimensions: [number, number, number];
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+  };
   connectionPoints: Array<{
     position: [number, number, number];
     type: ConnectionType;
@@ -37,11 +41,15 @@ interface ModuleFormProps {
 function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: ModuleTemplateWithSpecs) => Promise<void> }) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<CreateModuleFormData>({
-    name: "",
-    description: "",
-    category: "konnect",
-    color: "#808080",
-    dimensions: [1, 1, 1],
+    name: '',
+    description: '',
+    category: ModuleCategory.Konnect,
+    color: '#808080',
+    dimensions: {
+      length: 1,
+      width: 1,
+      height: 1
+    },
     connectionPoints: []
   });
   const [connectionPoints, setConnectionPoints] = useState<Array<{
@@ -182,11 +190,11 @@ function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: Modul
                   <Label className="text-xs">{dim}</Label>
                   <Input
                     type="number"
-                    value={formData.dimensions[i]}
+                    value={formData.dimensions[dim.toLowerCase()]}
                     onChange={(e) => {
-                      const newDimensions = [...formData.dimensions];
-                      newDimensions[i] = parseFloat(e.target.value) || 0;
-                      setFormData(prev => ({ ...prev, dimensions: newDimensions as [number, number, number] }));
+                      const newDimensions = { ...formData.dimensions };
+                      newDimensions[dim.toLowerCase()] = parseFloat(e.target.value) || 0;
+                      setFormData(prev => ({ ...prev, dimensions: newDimensions }));
                     }}
                     step={0.1}
                     min={0.1}

@@ -31,8 +31,8 @@ interface ModuleInputProps {
 function ModuleInput({ module }: ModuleInputProps) {
   return (
     <Card key={module.id}>
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-2 gap-4">
+      <CardContent className='pt-6'>
+        <div className='grid grid-cols-2 gap-4'>
           <div>
             <Label>Name</Label>
             <Input defaultValue={module.name} />
@@ -43,14 +43,16 @@ function ModuleInput({ module }: ModuleInputProps) {
           </div>
           <div>
             <Label>Dimensions (m)</Label>
-            <Input defaultValue={module.dimensions.join(" x ")} />
+            <Input 
+              defaultValue={`${module.dimensions.length} x ${module.dimensions.width} x ${module.dimensions.height}`} 
+            />
           </div>
           <div>
             <Label>Color</Label>
             <Input defaultValue={module.color} />
           </div>
           {module.description && (
-            <div className="col-span-2">
+            <div className='col-span-2'>
               <Label>Description</Label>
               <Input defaultValue={module.description} />
             </div>

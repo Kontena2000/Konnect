@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,7 +17,9 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
     [ModuleCategory.Cooling]: false,
     [ModuleCategory.Network]: false,
     [ModuleCategory.Security]: false,
-    [ModuleCategory.Storage]: false
+    [ModuleCategory.Storage]: false,
+    [ModuleCategory.Konnect]: false,
+    [ModuleCategory.Environment]: false
   });
 
   const modulesByCategory = moduleTemplates.reduce((acc, template) => {

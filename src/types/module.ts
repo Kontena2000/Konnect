@@ -1,24 +1,6 @@
 
 import { ConnectionType } from "./connection";
 
-export interface ModuleTemplate {
-  id: string;
-  name: string;
-  description: string;
-  type: string;
-  category: ModuleCategory;
-  color: string;
-  dimensions: {
-    length: number;
-    height: number;
-    width: number;
-  };
-  connectionPoints?: Array<{
-    position: [number, number, number];
-    type: ConnectionType;
-  }>;
-}
-
 export enum ModuleCategory {
   Container = "container",
   Power = "power",
@@ -26,7 +8,32 @@ export enum ModuleCategory {
   Network = "network",
   Security = "security",
   Storage = "storage",
-  Konnect = "konnect"
+  Konnect = "konnect",
+  Environment = "environment"
+}
+
+export interface ModuleDimensions {
+  length: number;
+  width: number;
+  height: number;
+}
+
+export interface ModuleTemplate {
+  id: string;
+  name: string;
+  description: string;
+  type: string;
+  category: ModuleCategory;
+  color: string;
+  dimensions: ModuleDimensions;
+  connectionPoints?: Array<{
+    position: [number, number, number];
+    type: ConnectionType;
+  }>;
+}
+
+export interface ModuleTemplateWithSpecs extends ModuleTemplate {
+  technicalSpecs: any; // Define proper type from your module service
 }
 
 export const moduleTemplates: ModuleTemplate[] = [
@@ -66,12 +73,3 @@ export const moduleTemplates: ModuleTemplate[] = [
     ]
   }
 ];
-
-export interface ModuleTemplateWithSpecs extends ModuleTemplate {
-  connectionPoints?: Array<{
-    position: [number, number, number];
-    type: ConnectionType;
-  }>;
-}
-
-export type ModuleTemplateArray = ModuleTemplate[];
