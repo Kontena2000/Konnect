@@ -4,10 +4,15 @@ const { initializeApp } = require("firebase/app");
 const { getAuth } = require("firebase/auth");
 const { getFirestore } = require("firebase/firestore");
 
-// Use __dirname for correct path resolution
-const authService = require(path.join(__dirname, "../../services/auth")).default;
-const moduleService = require(path.join(__dirname, "../../services/module")).default;
-const { moduleTemplates } = require(path.join(__dirname, "../../components/three/ModuleLibrary"));
+// Debug directory structure
+console.log("Current directory:", __dirname);
+console.log("Services directory:", path.resolve(__dirname, "../services"));
+console.log("Components directory:", path.resolve(__dirname, "../components"));
+
+// Fix path resolution by using relative paths from scripts directory
+const authService = require("../services/auth").default;
+const moduleService = require("../services/module").default;
+const { moduleTemplates } = require("../components/three/ModuleLibrary");
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
