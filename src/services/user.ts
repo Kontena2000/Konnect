@@ -10,7 +10,8 @@ import {
   query, 
   orderBy,
   where,
-  getDoc
+  serverTimestamp,
+  DocumentData
 } from "firebase/firestore";
 
 export interface User {
@@ -27,11 +28,15 @@ const userService = {
       const q = query(usersRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
       
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      })) as User[];
+      return snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          email: data.email,
+          role: data.role,
+          createdAt: data.createdAt?.toDate() || new Date()
+        };
+      });
     } catch (error) {
       console.error("Error fetching users:", error);
       throw new Error("Failed to fetch users");
@@ -49,11 +54,13 @@ const userService = {
       }
 
       const doc = snapshot.docs[0];
+      const data = doc.data();
       return {
         id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate() || new Date()
-      } as User;
+        email: data.email,
+        role: data.role,
+        createdAt: data.createdAt?.toDate() || new Date()
+      };
     } catch (error) {
       console.error("Error fetching user by email:", error);
       throw new Error("Failed to fetch user");
@@ -62,7 +69,6 @@ const userService = {
 
   async addUser(email: string, role: User["role"]): Promise<User> {
     try {
-      // Check if user already exists
       const existingUser = await this.getUserByEmail(email);
       if (existingUser) {
         return existingUser;
@@ -72,9 +78,9 @@ const userService = {
       const docRef = await addDoc(usersRef, {
         email,
         role,
-        createdAt: new Date()
+        createdAt: serverTimestamp()
       });
-      
+
       return {
         id: docRef.id,
         email,
@@ -90,7 +96,10 @@ const userService = {
   async updateUserRole(userId: string, role: User["role"]): Promise<void> {
     try {
       const userRef = doc(db, "users", userId);
-      await updateDoc(userRef, { role });
+      await updateDoc(userRef, { 
+        role,
+        updatedAt: serverTimestamp()
+      });
     } catch (error) {
       console.error("Error updating user role:", error);
       throw new Error("Failed to update user role");
