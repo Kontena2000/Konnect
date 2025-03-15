@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { ChevronRight } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
 import moduleService from '@/services/module';
+import { TechnicalSpecs } from '@/services/module';
 
 export type ModuleCategory = "konnect" | "power" | "network" | "cooling" | "environment";
 
@@ -131,18 +132,29 @@ function ModuleItem({ template, specs }: { template: ModuleTemplate; specs?: Tec
       {...attributes}
       {...listeners}
       className={`p-2 mb-2 rounded-lg border cursor-move transition-colors hover:bg-accent ${
-        isDragging ? "opacity-50" : ""
+        isDragging ? 'opacity-50' : ''
       }`}
-      style={{ touchAction: "none" }}
+      style={{ touchAction: 'none' }}
     >
-      <div className="flex items-center gap-2">
+      <div className='flex items-center gap-2'>
         <div
-          className="w-4 h-4 rounded"
+          className='w-4 h-4 rounded'
           style={{ backgroundColor: template.color }}
         />
         <span>{template.name}</span>
       </div>
-      {specs && <div className="mt-2 text-sm text-gray-500">{JSON.stringify(specs)}</div>}
+      {specs && (
+        <div className='mt-2 text-sm text-muted-foreground'>
+          <div className='flex justify-between'>
+            <span>Weight:</span>
+            <span>{specs.weight} kg</span>
+          </div>
+          <div className='flex justify-between'>
+            <span>Power:</span>
+            <span>{specs.powerConsumption.watts}W</span>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
