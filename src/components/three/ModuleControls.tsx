@@ -21,7 +21,8 @@ export function ModuleControls({ object, mode = "translate", onTransformChange }
         onTransformChange?.(event.type, {
           position: object.position.toArray(),
           rotation: object.rotation.toArray(),
-          scale: object.scale.toArray()
+          scale: object.scale.toArray(),
+          dragging: event.value
         });
       };
 
@@ -33,7 +34,7 @@ export function ModuleControls({ object, mode = "translate", onTransformChange }
   return (
     <TransformControls
       ref={transformRef}
-      args={[camera, gl.domElement]}
+      camera={camera}
       mode={mode}
       object={object}
       size={1}
