@@ -17,10 +17,13 @@ interface ModuleObjectProps {
     scale: [number, number, number];
     color: string;
     type: string;
+    isFoldable?: boolean;
+    isOpen?: boolean;
     dimensions: {
       length: number;
       height: number;
       width: number;
+      foldedHeight?: number;
     };
     connectionPoints?: Array<{
       position: [number, number, number];
@@ -30,35 +33,31 @@ interface ModuleObjectProps {
   selected?: boolean;
   onClick?: () => void;
   onConnectPoint?: (moduleId: string, point: [number, number, number], type: ConnectionType) => void;
+  onToggleFold?: () => void;
 }
 
 const CONTAINER_TEXTURES = {
   metal: "https://images.unsplash.com/photo-1585202900225-6d3ac20a6962",
-  rust: "https://images.unsplash.com/photo-1560343776-97e7d202ff0e"
+  rust: "https://images.unsplash.com/photo-1560343776-97e7d202ff0e",
+  foldable: "https://images.unsplash.com/photo-1585202900225-6d3ac20a6962"
 };
 
 const getConnectionPointColor = (type: ConnectionType): string => {
-  // Power cables
   if (type.includes("3phase")) return "#ff0000";
   if (type.includes("ups")) return "#ff6b00";
-  
-  // Network cables - Copper
   if (type.startsWith("cat")) return "#00ff00";
-  
-  // Network cables - Fiber
   if (["om3", "om4", "om5", "os2", "mtp-mpo"].includes(type)) return "#00ffff";
-  
   return "#999999";
 };
 
-export function ModuleObject({ module, selected, onClick, onConnectPoint }: ModuleObjectProps) {
+export function ModuleObject({ module, selected, onClick, onConnectPoint, onToggleFold }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
   
-  const metalTexture = useTexture(CONTAINER_TEXTURES.metal);
-  metalTexture.wrapS = THREE.RepeatWrapping;
-  metalTexture.wrapT = THREE.RepeatWrapping;
-  metalTexture.repeat.set(2, 2);
+  const texture = useTexture(module.isFoldable ? CONTAINER_TEXTURES.foldable : CONTAINER_TEXTURES.metal);
+  texture.wrapS = THREE.RepeatWrapping;
+  texture.wrapT = THREE.RepeatWrapping;
+  texture.repeat.set(2, 2);
 
   useFrame((state, delta) => {
     if (meshRef.current && hovered && !selected) {
@@ -68,7 +67,9 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
 
   const containerDimensions = {
     length: module.dimensions?.length || 6.096,
-    height: module.dimensions?.height || 2.591,
+    height: module.isFoldable && !module.isOpen ? 
+      (module.dimensions?.foldedHeight || module.dimensions?.height * 0.2) : 
+      module.dimensions?.height || 2.591,
     width: module.dimensions?.width || 2.438
   };
 
@@ -94,21 +95,32 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
           ]} 
         />
         <meshStandardMaterial 
-          map={metalTexture}
-          color={selected ? "#90cdf4" : "#ffffff"}
+          map={texture}
+          color={selected ? "#90cdf4" : module.color}
           roughness={0.7}
           metalness={0.3}
           envMapIntensity={1}
         />
       </mesh>
 
-      <mesh 
-        position={[containerDimensions.length/2 - 0.1, 0, 0]} 
-        castShadow
-      >
-        <boxGeometry args={[0.1, 2.3, 2.2]} />
-        <meshStandardMaterial color="#2d3748" />
-      </mesh>
+      {module.isFoldable && (
+        <group position={[0, containerDimensions.height/2 + 0.1, 0]}>
+          <mesh 
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleFold?.();
+            }}
+          >
+            <boxGeometry args={[0.3, 0.3, 0.3]} />
+            <meshStandardMaterial color="#ff6b00" />
+          </mesh>
+          <Html position={[0, 0.2, 0]}>
+            <div className="bg-background/80 px-2 py-1 rounded text-xs">
+              {module.isOpen ? "Fold" : "Unfold"}
+            </div>
+          </Html>
+        </group>
+      )}
 
       {module.connectionPoints?.map((point, index) => (
         <group key={index} position={point.position}>
@@ -118,20 +130,27 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
               onConnectPoint?.(module.id, point.position, point.type);
             }}
           >
-            <sphereGeometry args={[0.1]} />
+            <sphereGeometry args={[0.15]} />
             <meshStandardMaterial 
               color={getConnectionPointColor(point.type)}
               emissive={getConnectionPointColor(point.type)}
               emissiveIntensity={0.5}
             />
           </mesh>
-          <Html position={[0, 0.2, 0]}>
-            <div className="bg-background/80 px-2 py-1 rounded text-xs">
+          <Html position={[0, 0.3, 0]}>
+            <div className="bg-background/80 px-2 py-1 rounded text-xs whitespace-nowrap">
               {point.type}
             </div>
           </Html>
         </group>
       ))}
+
+      {module.isFoldable && module.isOpen && (
+        <mesh position={[0, -containerDimensions.height/2, 0]}>
+          <boxGeometry args={[containerDimensions.length * 0.9, 0.1, containerDimensions.width * 0.9]} />
+          <meshStandardMaterial color="#2d3748" />
+        </mesh>
+      )}
     </group>
   );
 }

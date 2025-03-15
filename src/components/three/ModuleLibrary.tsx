@@ -1,4 +1,3 @@
-
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -273,6 +272,37 @@ const modules: ModuleTemplate[] = [
     connectionPoints: [
       { type: "cat6a", position: [3.048, 0.5, 1.219] },
       { type: "400v-3phase", position: [3.048, 0.5, -1.219] }
+    ],
+    icon: <Server className="h-5 w-5" />
+  },
+  {
+    id: "foldable-container-20",
+    name: "Foldable Container",
+    type: "foldable",
+    category: "modules",
+    description: "20' Collapsible Container System",
+    dimensions: [6.096, 2.591, 2.438],
+    color: "#4a5568",
+    isFoldable: true,
+    isOpen: false,
+    foldedHeight: 0.5,
+    connectionPoints: [
+      { type: "cat6a", position: [3.048, 0.5, 1.219] },
+      { type: "400v-3phase", position: [3.048, 0.5, -1.219] }
+    ],
+    icon: <Box className="h-5 w-5" />
+  },
+  {
+    id: "compact-edge-10",
+    name: "Compact EDGE",
+    type: "edge",
+    category: "modules",
+    description: "10' Compact Edge Computing Unit",
+    dimensions: [3.048, 2.591, 2.438],
+    color: "#2d3748",
+    connectionPoints: [
+      { type: "cat6a", position: [1.524, 0.5, 1.219] },
+      { type: "208v-3phase", position: [1.524, 0.5, -1.219] }
     ],
     icon: <Server className="h-5 w-5" />
   }
