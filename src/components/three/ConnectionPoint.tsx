@@ -1,4 +1,5 @@
 
+import type * as THREE from "three";
 import { useRef } from "react";
 import { Sphere } from "@react-three/drei";
 import { ConnectionType } from "@/types/connection";

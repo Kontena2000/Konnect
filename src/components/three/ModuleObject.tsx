@@ -1,5 +1,5 @@
 
-import * as THREE from "three";
+import type * as THREE from "three";
 import { useRef, useState } from "react";
 import { ThreeEvent } from "@react-three/fiber";
 import { TransformControls } from "@react-three/drei";
@@ -46,7 +46,6 @@ export function ModuleObject({
 
   const handleTransformChange = () => {
     if (!meshRef.current) return;
-
     const position = meshRef.current.position.toArray() as [number, number, number];
     const rotation = meshRef.current.rotation.toArray().slice(0, 3) as [number, number, number];
     const scale = meshRef.current.scale.toArray() as [number, number, number];
@@ -62,7 +61,7 @@ export function ModuleObject({
     <group>
       {selected && !readOnly && (
         <TransformControls
-          object={meshRef}
+          object={meshRef.current}
           mode={transformMode}
           onObjectChange={handleTransformChange}
           size={0.7}
