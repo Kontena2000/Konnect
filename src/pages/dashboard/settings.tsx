@@ -1,3 +1,4 @@
+
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,9 +12,8 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AppLayout } from '@/components/layout/AppLayout';
-import { modules, powerCables, networkCables } from "@/components/three/ModuleLibrary";
-import { ModuleTemplate } from '@/components/three/ModuleLibrary';
+import { AppLayout } from "@/components/layout/AppLayout";
+import { moduleTemplates, ModuleTemplate } from "@/components/three/ModuleLibrary";
 
 interface ModuleInputProps {
   module: ModuleTemplate;
@@ -22,8 +22,8 @@ interface ModuleInputProps {
 function ModuleInput({ module }: ModuleInputProps) {
   return (
     <Card key={module.id}>
-      <CardContent className='pt-6'>
-        <div className='grid grid-cols-2 gap-4'>
+      <CardContent className="pt-6">
+        <div className="grid grid-cols-2 gap-4">
           <div>
             <Label>Name</Label>
             <Input defaultValue={module.name} />
@@ -34,12 +34,18 @@ function ModuleInput({ module }: ModuleInputProps) {
           </div>
           <div>
             <Label>Dimensions (m)</Label>
-            <Input defaultValue={module.dimensions.join(' x ')} />
+            <Input defaultValue={module.dimensions.join(" x ")} />
           </div>
           <div>
             <Label>Color</Label>
             <Input defaultValue={module.color} />
           </div>
+          {module.description && (
+            <div className="col-span-2">
+              <Label>Description</Label>
+              <Input defaultValue={module.description} />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -126,7 +132,7 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Containers and Modules</h3>
                       <div className="space-y-4">
-                        {modules.map((module) => (
+                        {moduleTemplates.modules.map((module) => (
                           <ModuleInput key={module.id} module={module} />
                         ))}
                       </div>
@@ -135,16 +141,25 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Power Cables</h3>
                       <div className="space-y-4">
-                        {powerCables.map((cable) => (
+                        {moduleTemplates["power-cables"].map((cable) => (
                           <ModuleInput key={cable.id} module={cable} />
                         ))}
                       </div>
                     </div>
 
                     <div>
-                      <h3 className="text-lg font-semibold mb-4">Network Cables</h3>
+                      <h3 className="text-lg font-semibold mb-4">Network Cables - Copper</h3>
                       <div className="space-y-4">
-                        {networkCables.map((cable) => (
+                        {moduleTemplates["network-cables"].copper.map((cable) => (
+                          <ModuleInput key={cable.id} module={cable} />
+                        ))}
+                      </div>
+                    </div>
+
+                    <div>
+                      <h3 className="text-lg font-semibold mb-4">Network Cables - Fiber</h3>
+                      <div className="space-y-4">
+                        {moduleTemplates["network-cables"].fiber.map((cable) => (
                           <ModuleInput key={cable.id} module={cable} />
                         ))}
                       </div>
