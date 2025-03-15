@@ -12,7 +12,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { TerrainData, TerrainPoint } from "@/services/environment";
+import { TerrainData } from "@/services/environment";
 import { Grid3X3, Maximize, Mountain, Paintbrush } from "lucide-react";
 
 interface TerrainEditorProps {
@@ -32,15 +32,31 @@ export function TerrainEditor({ terrain, onUpdate }: TerrainEditorProps) {
   };
 
   const handleResolutionChange = (value: number) => {
-    onUpdate({ resolution: value });
+    // Recalculate points when resolution changes
+    const newResolution = value;
+    const gridSize = terrain.dimensions;
+    const points = [];
+    
+    for (let i = 0; i < newResolution; i++) {
+      for (let j = 0; j < newResolution; j++) {
+        points.push({
+          x: (i * gridSize[0]) / (newResolution - 1) - gridSize[0] / 2,
+          y: 0,
+          z: (j * gridSize[1]) / (newResolution - 1) - gridSize[1] / 2
+        });
+      }
+    }
+    
+    onUpdate({ 
+      resolution: newResolution,
+      points: points
+    });
   };
 
   const handleHeightChange = (value: number) => {
-    // Update height at brush position
-    // This is a placeholder - actual implementation will need raycasting
     const newPoints = terrain.points.map((point) => ({
       ...point,
-      y: point.y + value * brushStrength
+      y: Math.max(0, point.y + value * brushStrength)
     }));
     onUpdate({ points: newPoints });
   };
@@ -98,6 +114,26 @@ export function TerrainEditor({ terrain, onUpdate }: TerrainEditorProps) {
                   step={0.1}
                 />
               </div>
+              <div className="grid grid-cols-3 gap-2">
+                <Button 
+                  variant="outline" 
+                  onClick={() => handleHeightChange(0.1)}
+                >
+                  Raise
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => handleHeightChange(-0.1)}
+                >
+                  Lower
+                </Button>
+                <Button 
+                  variant="outline"
+                  onClick={() => onUpdate({ points: terrain.points.map(p => ({ ...p, y: 0 })) })}
+                >
+                  Flatten
+                </Button>
+              </div>
             </div>
           )}
 
@@ -106,8 +142,8 @@ export function TerrainEditor({ terrain, onUpdate }: TerrainEditorProps) {
               <div>
                 <Label>Ground Material</Label>
                 <Select
-                  onValueChange={(value) => onUpdate({ materialType: value })}
-                  defaultValue="soil"
+                  onValueChange={(value: "soil" | "concrete" | "grass") => onUpdate({ materialType: value })}
+                  defaultValue={terrain.materialType || "soil"}
                 >
                   <SelectTrigger>
                     <SelectValue placeholder="Select material" />
