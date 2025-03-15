@@ -15,6 +15,11 @@ export function EnvironmentalElement({ element, onSelect }: EnvironmentalElement
     onSelect?.();
   };
 
+  // Default dimensions if not specified in properties
+  const width = element.properties?.width || 1;
+  const height = element.properties?.height || 1;
+  const depth = element.properties?.depth || 1;
+
   return (
     <mesh
       ref={meshRef}
@@ -23,13 +28,9 @@ export function EnvironmentalElement({ element, onSelect }: EnvironmentalElement
       scale={element.scale || [1, 1, 1]}
       onClick={handleClick}
     >
-      <boxGeometry args={[
-        element.dimensions.width,
-        element.dimensions.height,
-        element.dimensions.depth
-      ]} />
+      <boxGeometry args={[width, height, depth]} />
       <meshStandardMaterial
-        color={element.color || "#4b5563"}
+        color={element.properties?.color || "#4b5563"}
         opacity={0.8}
         transparent
       />
