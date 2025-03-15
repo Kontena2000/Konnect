@@ -1,6 +1,5 @@
-
 import { useMemo } from "react";
-import { MouseSensor, TouchSensor, PointerSensor } from "@dnd-kit/core";
+import { MouseSensor, TouchSensor, PointerSensor, SensorDescriptor, SensorOptions } from "@dnd-kit/core";
 
 export function useEditorSensors() {
   return useMemo(() => [
@@ -11,7 +10,7 @@ export function useEditorSensors() {
           distance: 10,
         },
       },
-    },
+    } as SensorDescriptor<SensorOptions>,
     {
       sensor: TouchSensor,
       options: {
@@ -20,7 +19,7 @@ export function useEditorSensors() {
           tolerance: 5,
         },
       },
-    },
+    } as SensorDescriptor<SensorOptions>,
     {
       sensor: PointerSensor,
       options: {
@@ -28,6 +27,6 @@ export function useEditorSensors() {
           distance: 8,
         },
       },
-    },
+    } as SensorDescriptor<SensorOptions>,
   ], []);
 }

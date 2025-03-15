@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -66,13 +65,13 @@ const handleError = (error: unknown, code: string, message: string): never => {
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
     if (!validateProject(data)) {
-      throw new ProjectError("Invalid project data", "VALIDATION_FAILED");
+      throw new ProjectError('Invalid project data', 'VALIDATION_FAILED');
     }
 
     try {
-      const projectRef = await addDoc(collection(db, "projects"), {
+      const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
-        description: data.description?.trim() || "",
+        description: data.description?.trim() || '',
         ownerId: data.ownerId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -80,7 +79,7 @@ const projectService = {
       });
       return projectRef.id;
     } catch (error) {
-      throw new ProjectError("Failed to create project", "CREATE_FAILED", error);
+      throw new ProjectError('Failed to create project', 'CREATE_FAILED', error);
     }
   },
 
@@ -130,8 +129,8 @@ const projectService = {
   async getUserProjects(userId: string): Promise<Project[]> {
     try {
       const projectsQuery = query(
-        collection(db, "projects"),
-        where("ownerId", "==", userId)
+        collection(db, 'projects'),
+        where('ownerId', '==', userId)
       );
       
       const snapshot = await getDocs(projectsQuery);
@@ -147,7 +146,7 @@ const projectService = {
         updatedAt: doc.data().updatedAt?.toDate()
       } as Project));
     } catch (error) {
-      throw new ProjectError("Failed to fetch projects", "FETCH_FAILED", error);
+      throw new ProjectError('Failed to fetch projects', 'FETCH_FAILED', error);
     }
   },
 

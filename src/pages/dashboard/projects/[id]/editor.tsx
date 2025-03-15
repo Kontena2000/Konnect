@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -9,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
-import { DndContext, MouseSensor, TouchSensor, useSensor, useSensors } from "@dnd-kit/core";
+import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import layoutService, { Layout } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
@@ -24,6 +23,7 @@ import { useModuleState } from "@/hooks/use-module-state";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { ModuleTemplate } from "@/types/module";
 import { ConnectionType } from "@/types/connection";
+import { useEditorSensors } from "@/hooks/use-editor-sensors";
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -68,9 +68,22 @@ export default function LayoutEditorPage() {
     autoSave: true
   });
 
-  const mouseSensor = useSensor(MouseSensor);
-  const touchSensor = useSensor(TouchSensor);
+  const mouseSensor = useSensor(MouseSensor, {
+    activationConstraint: {
+      distance: 10,
+    },
+  });
+  
+  const touchSensor = useSensor(TouchSensor, {
+    activationConstraint: {
+      delay: 250,
+      tolerance: 5,
+    },
+  });
+  
   const sensors = useSensors(mouseSensor, touchSensor);
+  // Alternative: use the custom hook
+  // const sensors = useEditorSensors();
 
   useKeyboardShortcuts({
     onSave: saveChanges,
