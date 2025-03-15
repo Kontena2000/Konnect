@@ -74,6 +74,7 @@ export default function LayoutEditorPage() {
       if (!id) return;
       setIsLoading(true);
       try {
+        // First load the project to verify it exists
         const project = await projectService.getProject(id as string);
         if (!project) {
           toast({
@@ -85,14 +86,30 @@ export default function LayoutEditorPage() {
           return;
         }
 
-        const loadedLayout = await layoutService.getLayout(id as string);
-        if (loadedLayout) {
-          setLayout(loadedLayout);
-          setModules(loadedLayout.modules || []);
-          setConnections(loadedLayout.connections || []);
-          lastSavedState.current = JSON.stringify({ modules: loadedLayout.modules, connections: loadedLayout.connections });
+        // Then load all layouts for this project
+        const layouts = await layoutService.getProjectLayouts(id as string);
+        
+        // Use the first layout or create a new one
+        let currentLayout = layouts[0];
+        if (!currentLayout) {
+          const layoutId = await layoutService.createLayout({
+            projectId: id as string,
+            name: 'Default Layout',
+            modules: [],
+            connections: []
+          });
+          currentLayout = await layoutService.getLayout(layoutId) as Layout;
         }
+
+        setLayout(currentLayout);
+        setModules(currentLayout.modules || []);
+        setConnections(currentLayout.connections || []);
+        lastSavedState.current = JSON.stringify({ 
+          modules: currentLayout.modules, 
+          connections: currentLayout.connections 
+        });
       } catch (error) {
+        console.error('Load error:', error);
         toast({
           variant: 'destructive',
           title: 'Error',
@@ -274,12 +291,11 @@ export default function LayoutEditorPage() {
   };
 
   const handleSave = async () => {
-    if (!id || !layout || !hasChanges) return;
+    if (!layout?.id || !hasChanges) return;
     
     setSaving(true);
     try {
-      await layoutService.updateLayout(id as string, {
-        ...layout,
+      await layoutService.updateLayout(layout.id, {
         modules,
         connections,
         updatedAt: new Date()
@@ -293,10 +309,11 @@ export default function LayoutEditorPage() {
         description: 'Layout saved successfully',
       });
     } catch (error) {
+      console.error('Save error:', error);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to save layout',
+        description: 'Failed to save layout'
       });
     } finally {
       setSaving(false);
@@ -439,7 +456,7 @@ export default function LayoutEditorPage() {
               </div>
 
               {selectedModuleId && (
-                <div className='absolute top-4 right-4 w-[300px] bg-background/20 backdrop-blur-[1px] rounded-lg border p-4'>
+                <div className='absolute top-4 right-4 w-[300px] bg-background/5 backdrop-blur-[2px] rounded-lg border p-4'>
                   <ModuleProperties
                     module={modules.find(m => m.id === selectedModuleId)!}
                     onUpdate={handleModuleUpdate}
