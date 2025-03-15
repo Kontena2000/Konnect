@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -18,6 +19,15 @@ export interface Module {
   rotation: [number, number, number];
   scale: [number, number, number];
   color: string;
+  dimensions: {
+    length: number;
+    height: number;
+    width: number;
+  };
+  connectionPoints?: Array<{
+    position: [number, number, number];
+    type: "power" | "network" | "cooling";
+  }>;
 }
 
 export interface Connection {
