@@ -398,7 +398,7 @@ export default function LayoutEditorPage() {
     >
       <TooltipProvider>
         <AppLayout>
-          <div className='h-screen flex flex-col overflow-hidden'>
+          <div className='h-screen flex flex-col'>
             <div className='flex items-center justify-between px-4 py-2 border-b'>
               <div className='flex items-center gap-4'>
                 <h1 className='text-2xl font-bold'>Layout Editor</h1>
@@ -494,7 +494,7 @@ export default function LayoutEditorPage() {
               </div>
             </div>
 
-            <div className='flex-1 relative w-full h-full'>
+            <div className='flex-1 relative w-full h-full p-0 m-0'>
               <SceneContainer
                 modules={modules}
                 selectedModuleId={selectedModuleId}

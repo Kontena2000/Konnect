@@ -101,16 +101,25 @@ const layoutService = {
   },
 
   async getProjectLayouts(projectId: string): Promise<Layout[]> {
-    const layoutsQuery = query(
-      collection(db, "layouts"),
-      where("projectId", "==", projectId)
-    );
-    
-    const snapshot = await getDocs(layoutsQuery);
-    return snapshot.docs.map(doc => ({
-      id: doc.id,
-      ...doc.data()
-    } as Layout));
+    try {
+      const layoutsQuery = query(
+        collection(db, 'layouts'),
+        where('projectId', '==', projectId)
+      );
+      
+      const snapshot = await getDocs(layoutsQuery);
+      const layouts = snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data(),
+        modules: doc.data().modules || [],
+        connections: doc.data().connections || []
+      } as Layout));
+
+      return layouts;
+    } catch (error) {
+      console.error('Error fetching project layouts:', error);
+      throw new Error('Failed to load project layouts');
+    }
   }
 };
 
