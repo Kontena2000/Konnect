@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -23,6 +22,7 @@ export interface TerrainData {
   points: TerrainPoint[];
   resolution: number;
   dimensions: [number, number];
+  materialType?: 'soil' | 'concrete' | 'grass';
 }
 
 export interface EnvironmentalElement {
@@ -82,6 +82,14 @@ const environmentService = {
       id: snapshot.docs[0].id,
       ...snapshot.docs[0].data()
     } as SiteData;
+  },
+
+  async updateTerrainData(siteId: string, terrainData: Partial<TerrainData>): Promise<void> {
+    const siteRef = doc(db, 'sites', siteId);
+    await updateDoc(siteRef, {
+      'terrain': terrainData,
+      updatedAt: new Date()
+    });
   }
 };
 
