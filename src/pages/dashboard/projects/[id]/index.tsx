@@ -145,13 +145,13 @@ export default function ProjectDetailsPage() {
 
   return (
     <AppLayout>
-      <div className='container mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-6 max-w-7xl'>
+      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-6 max-w-7xl'>
         <div className='flex justify-between items-center'>
           <div>
             <h1 className='text-3xl font-bold'>{project.name}</h1>
             <p className='text-muted-foreground'>{project.description}</p>
           </div>
-          <div className='flex gap-2'>
+          <div className='flex gap-3'>
             <Dialog open={isConfigOpen} onOpenChange={setIsConfigOpen}>
               <DialogTrigger asChild>
                 <Button variant='outline' size='icon'>
@@ -267,22 +267,20 @@ export default function ProjectDetailsPage() {
 
         <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {layouts.map((layout) => (
-            <Card key={layout.id}>
+            <Card key={layout.id} className='flex flex-col'>
               <CardHeader>
-                <CardTitle>{layout.name || "Untitled Layout"}</CardTitle>
+                <CardTitle>{layout.name || 'Untitled Layout'}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {layout.description || "No description"}
+                <p className='text-sm text-muted-foreground mb-4'>
+                  {layout.description || 'No description'}
                 </p>
-                <div className="mt-4 flex gap-2">
-                  <Link href={`/dashboard/projects/${id}/editor?layout=${layout.id}`} className="flex-1">
-                    <Button variant="outline" className="w-full">
-                      <Pencil className="h-4 w-4 mr-2" />
-                      Edit
-                    </Button>
-                  </Link>
-                </div>
+                <Link href={`/dashboard/projects/${id}/editor?layout=${layout.id}`}>
+                  <Button variant='outline' className='w-full'>
+                    <Pencil className='h-4 w-4 mr-2' />
+                    Edit Layout
+                  </Button>
+                </Link>
               </CardContent>
             </Card>
           ))}

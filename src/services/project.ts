@@ -64,6 +64,7 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
 const handleError = (error: unknown, code: string, message: string): never => {
   const projectError = new ProjectError(message, code);
   if (error instanceof Error) {
+    projectError.code = code;
     projectError.details = error;
   }
   throw projectError;
@@ -104,7 +105,7 @@ const projectService = {
         ...snapshot.data()
       } as Project;
     } catch (error) {
-      handleError(error, 'FETCH_FAILED', 'Failed to fetch project details');
+      throw handleError(error, 'FETCH_FAILED', 'Failed to fetch project details');
     }
   },
 
@@ -153,7 +154,7 @@ const projectService = {
         updatedAt: doc.data().updatedAt?.toDate()
       } as Project));
     } catch (error) {
-      handleError(error, 'FETCH_FAILED', 'Failed to fetch projects');
+      throw handleError(error, 'FETCH_FAILED', 'Failed to fetch projects');
     }
   },
 
