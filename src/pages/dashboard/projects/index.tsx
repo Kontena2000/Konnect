@@ -50,7 +50,7 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='container mx-auto p-6 lg:p-8 max-w-7xl'>
+      <div className='p-6 lg:p-8'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>
@@ -61,17 +61,17 @@ export default function ProjectsPage() {
           </Link>
         </div>
 
-        <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
           {projects.map((project) => (
             <Card key={project.id} className='flex flex-col'>
               <CardHeader className='pb-4'>
                 <CardTitle className='text-xl'>{project.name}</CardTitle>
               </CardHeader>
-              <CardContent className='flex-1 space-y-4'>
+              <CardContent className='flex-1 space-y-6'>
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='space-y-3 pt-4'>
+                <div className='space-y-4'>
                   <Link href={`/dashboard/projects/${project.id}`}>
                     <Button variant='outline' className='w-full'>
                       Open Project
