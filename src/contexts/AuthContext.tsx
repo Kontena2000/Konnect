@@ -3,6 +3,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import type { AuthUser, UserRole } from "@/services/auth";
+import userService from "@/services/user";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -24,9 +25,14 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       if (user) {
-        // TODO: Fetch user role from Firestore
-        setUser(user as AuthUser);
-        setRole("client"); // Default role, update this with actual role from DB
+        try {
+          const userDoc = await userService.getUserByEmail(user.email!);
+          setUser(user as AuthUser);
+          setRole(userDoc?.role || "editor");
+        } catch (error) {
+          console.error("Error fetching user role:", error);
+          setRole("editor");
+        }
       } else {
         setUser(null);
         setRole(null);

@@ -522,7 +522,7 @@ export default function LayoutEditorPage() {
               </div>
 
               {selectedModuleId && (
-                <div className="absolute top-4 right-4 w-[300px] bg-background/5 backdrop-blur-sm rounded-lg border shadow-lg">
+                <div className='absolute top-4 right-4 w-[300px] bg-background/5 backdrop-blur-sm rounded-lg border shadow-lg'>
                   <ModuleProperties
                     module={moduleMap[selectedModuleId]}
                     onUpdate={handleModuleUpdate}

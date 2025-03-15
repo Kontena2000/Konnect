@@ -16,14 +16,14 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (!user) {
-      router.push("/auth/login");
+      router.push('/auth/login');
     }
   }, [router]);
 
   return (
-    <div className="min-h-screen w-full flex">
+    <div className='min-h-screen w-full flex'>
       <Sidebar />
-      <main className="flex-1 relative overflow-hidden">
+      <main className='flex-1 relative overflow-hidden p-0'>
         {children}
       </main>
     </div>

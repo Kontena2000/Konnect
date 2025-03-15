@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
@@ -38,7 +37,7 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 z-50 ${collapsed ? "w-16" : "w-64"}`}>
+    <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 z-50 ${collapsed ? 'w-16' : 'w-64'}`}>
       <div className="flex h-16 items-center justify-between px-4 border-b">
         {!collapsed && <h1 className="text-lg font-semibold">Kontena</h1>}
         <Button
@@ -57,9 +56,9 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-3 py-2 rounded-md hover:bg-accent transition-colors
-                ${router.pathname === item.href ? "bg-accent" : ""}
-                ${collapsed ? "justify-center" : "space-x-2"}
+              className={`flex items-center px-3 py-2 rounded-md hover:bg-[#1FB73A] transition-colors
+                ${router.pathname === item.href ? 'bg-[#1FB73A]' : ''}
+                ${collapsed ? 'justify-center' : 'space-x-2'}
               `}
             >
               {item.icon}
