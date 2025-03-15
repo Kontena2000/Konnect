@@ -1,3 +1,4 @@
+
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -22,6 +23,7 @@ interface SceneContainerProps {
     type: string;
   } | null;
   onConnectPoint?: (moduleId: string, point: [number, number, number], type: string) => void;
+  readOnly?: boolean;
 }
 
 export function SceneContainer({ 
@@ -33,12 +35,14 @@ export function SceneContainer({
   onDropPoint,
   connections = [],
   activeConnection,
-  onConnectPoint
+  onConnectPoint,
+  readOnly = false
 }: SceneContainerProps) {
   const planeRef = useRef<THREE.Mesh>(null);
   const [hoverPoint, setHoverPoint] = useState<[number, number, number] | null>(null);
 
   const handlePlanePointerMove = (event: ThreeEvent<PointerEvent>) => {
+    if (readOnly) return;
     if (planeRef.current) {
       const point = event.intersections[0]?.point.toArray() as [number, number, number];
       if (point) {
@@ -49,6 +53,7 @@ export function SceneContainer({
   };
 
   const handlePlaneClick = (event: ThreeEvent<MouseEvent>) => {
+    if (readOnly) return;
     if (hoverPoint && onDropPoint) {
       onDropPoint(hoverPoint);
     }
@@ -90,11 +95,11 @@ export function SceneContainer({
           <group key={module.id}>
             <ModuleObject
               module={module}
-              onClick={() => onModuleSelect?.(module.id)}
-              selected={module.id === selectedModuleId}
-              onConnectPoint={onConnectPoint}
+              onClick={readOnly ? undefined : () => onModuleSelect?.(module.id)}
+              selected={!readOnly && module.id === selectedModuleId}
+              onConnectPoint={readOnly ? undefined : onConnectPoint}
             />
-            {module.id === selectedModuleId && (
+            {!readOnly && module.id === selectedModuleId && (
               <ModuleControls
                 object={module}
                 mode={transformMode}
@@ -123,7 +128,7 @@ export function SceneContainer({
           />
         ))}
 
-        {activeConnection && (
+        {!readOnly && activeConnection && (
           <ConnectionLine
             start={activeConnection.sourcePoint}
             end={hoverPoint || activeConnection.sourcePoint}
@@ -131,7 +136,7 @@ export function SceneContainer({
           />
         )}
 
-        {hoverPoint && (
+        {!readOnly && hoverPoint && (
           <mesh position={hoverPoint}>
             <sphereGeometry args={[0.1]} />
             <meshStandardMaterial color="red" transparent opacity={0.5} />
