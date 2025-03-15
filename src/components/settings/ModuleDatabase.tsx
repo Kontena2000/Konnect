@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Minus, Save, Trash2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
+import { moduleTemplates } from '@/components/three/ModuleLibrary';
 
 interface ModuleFormProps {
   module: ModuleTemplateWithSpecs;
@@ -203,39 +204,110 @@ export function ModuleDatabase() {
   const [modules, setModules] = useState<ModuleTemplateWithSpecs[]>([]);
   const { toast } = useToast();
 
-  const handleUpdateModule = async (id: string, data: Partial<ModuleTemplateWithSpecs>) => {
-    try {
-      await moduleService.updateModule(id, data);
-      setModules(prev => 
-        prev.map(module => 
-          module.id === id ? { ...module, ...data } : module
-        )
-      );
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update module"
-      });
-    }
-  };
+  useEffect(() => {
+    const initializeModuleDatabase = async () => {
+      try {
+        const existingModules = await moduleService.getAllModules();
+        
+        if (existingModules.length === 0) {
+          // Convert existing templates to ModuleTemplateWithSpecs
+          const modulesToAdd: Omit<ModuleTemplateWithSpecs, 'id'>[] = [
+            ...moduleTemplates.modules.map(module => ({
+              ...module,
+              technicalSpecs: {
+                weight: module.type === 'edge-container' ? 2500 : 150,
+                powerConsumption: {
+                  watts: module.type === 'edge-container' ? 15000 : 2000,
+                  kWh: module.type === 'edge-container' ? 360 : 48
+                },
+                wireConfigurations: [
+                  {
+                    type: '3-phase',
+                    gauge: 'AWG 4',
+                    length: 10
+                  }
+                ]
+              }
+            })),
+            ...moduleTemplates['power-cables'].map(cable => ({
+              ...cable,
+              technicalSpecs: {
+                weight: 5,
+                powerConsumption: {
+                  watts: 0,
+                  kWh: 0
+                },
+                wireConfigurations: [
+                  {
+                    type: cable.type,
+                    gauge: 'AWG 8',
+                    length: 5
+                  }
+                ]
+              }
+            })),
+            ...moduleTemplates['network-cables'].copper.map(cable => ({
+              ...cable,
+              technicalSpecs: {
+                weight: 0.5,
+                powerConsumption: {
+                  watts: 0,
+                  kWh: 0
+                },
+                wireConfigurations: [
+                  {
+                    type: cable.type,
+                    gauge: cable.type,
+                    length: 3
+                  }
+                ]
+              }
+            })),
+            ...moduleTemplates['network-cables'].fiber.map(cable => ({
+              ...cable,
+              technicalSpecs: {
+                weight: 0.3,
+                powerConsumption: {
+                  watts: 0,
+                  kWh: 0
+                },
+                wireConfigurations: [
+                  {
+                    type: cable.type,
+                    gauge: cable.type,
+                    length: 3
+                  }
+                ]
+              }
+            }))
+          ];
 
-  const handleDeleteModule = async (id: string) => {
-    try {
-      await moduleService.deleteModule(id);
-      setModules(prev => prev.filter(module => module.id !== id));
-      toast({
-        title: "Success",
-        description: "Module deleted successfully"
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete module"
-      });
-    }
-  };
+          // Add all modules to database
+          for (const moduleData of modulesToAdd) {
+            await moduleService.createModule(moduleData);
+          }
+
+          toast({
+            title: 'Success',
+            description: 'Module database initialized with default modules'
+          });
+        }
+
+        // Load all modules
+        const allModules = await moduleService.getAllModules();
+        setModules(allModules);
+      } catch (error) {
+        console.error('Error initializing module database:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to initialize module database'
+        });
+      }
+    };
+
+    initializeModuleDatabase();
+  }, [toast]);
 
   return (
     <ScrollArea className="h-[600px] pr-4">
