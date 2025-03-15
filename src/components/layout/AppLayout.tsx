@@ -24,9 +24,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     <div className='min-h-screen bg-background'>
       <Sidebar />
       <main className='ml-16 md:ml-64 min-h-screen'>
-        <div className='container mx-auto max-w-[2000px] p-6 md:p-8 lg:p-10'>
-          {children}
-        </div>
+        {children}
       </main>
     </div>
   );

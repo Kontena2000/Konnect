@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
-import { ModuleLibrary, ModuleTemplate } from "@/components/three/ModuleLibrary";
+import { ModuleLibrary, ModuleTemplate, ConnectionType } from "@/components/three/ModuleLibrary"; // Updated import for ConnectionType
 import { ModuleDragOverlay } from "@/components/three/DragOverlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,10 +23,6 @@ import projectService from '@/services/project';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import debounce from 'lodash/debounce';
 
-type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
-type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
-type ConnectionType = PowerCableType | NetworkCableType;
-
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -40,7 +36,7 @@ export default function LayoutEditorPage() {
   const [activeConnection, setActiveConnection] = useState<{
     sourceModuleId: string;
     sourcePoint: [number, number, number];
-    type: ConnectionType;
+    type: ConnectionType; // Updated to use imported ConnectionType
   } | null>(null);
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -398,7 +394,7 @@ export default function LayoutEditorPage() {
     >
       <TooltipProvider>
         <AppLayout>
-          <div className='h-[calc(100vh-2rem)] -m-6 md:-m-8 lg:-m-10 flex flex-col'>
+          <div className='h-screen -m-6 md:-m-8 lg:-m-10 flex flex-col'> {/* Updated layout to extend to edges */}
             <div className='flex items-center justify-between px-6 py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
               <div className='flex items-center gap-4'>
                 <h1 className='text-2xl font-bold'>Layout Editor</h1>
