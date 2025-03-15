@@ -21,13 +21,30 @@ export default function NewProjectPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!user) return;
+    
+    if (!user) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "You must be logged in to create a project",
+      });
+      return;
+    }
+
+    if (!name.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Project name is required",
+      });
+      return;
+    }
 
     try {
       setLoading(true);
       const projectData = {
-        name,
-        description,
+        name: name.trim(),
+        description: description.trim(),
         ownerId: user.uid,
       };
 
@@ -44,7 +61,7 @@ export default function NewProjectPage() {
       toast({
         variant: "destructive",
         title: "Error",
-        description: "Failed to create project. Please try again.",
+        description: error instanceof Error ? error.message : "Failed to create project. Please try again.",
       });
     } finally {
       setLoading(false);
@@ -53,9 +70,9 @@ export default function NewProjectPage() {
 
   return (
     <DashboardLayout>
-      <div className="max-w-2xl mx-auto">
+      <div className="max-w-2xl mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6">Create New Project</h1>
-        <Card>
+        <Card className="shadow-lg">
           <form onSubmit={handleSubmit}>
             <CardHeader>
               <CardTitle>Project Details</CardTitle>
@@ -69,6 +86,8 @@ export default function NewProjectPage() {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Enter project name"
                   required
+                  className="w-full"
+                  maxLength={100}
                 />
               </div>
               <div className="space-y-2">
@@ -79,6 +98,8 @@ export default function NewProjectPage() {
                   onChange={(e) => setDescription(e.target.value)}
                   placeholder="Enter project description"
                   rows={4}
+                  className="w-full"
+                  maxLength={500}
                 />
               </div>
             </CardContent>
@@ -87,6 +108,7 @@ export default function NewProjectPage() {
                 type="button"
                 variant="outline"
                 onClick={() => router.back()}
+                disabled={loading}
               >
                 Cancel
               </Button>
