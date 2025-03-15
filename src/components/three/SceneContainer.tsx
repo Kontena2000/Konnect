@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, ContactShadows, AccumulativeShadows, RandomizedLight } from '@react-three/drei';
 import { ModuleObject } from "./ModuleObject";
@@ -11,6 +10,7 @@ import { Connection } from '@/services/layout';
 import { EnvironmentalElement } from '@/components/environment/EnvironmentalElement';
 import { TerrainView } from '@/components/environment/TerrainView';
 import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
+import { useDroppable } from '@dnd-kit/core';
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
@@ -65,6 +65,10 @@ export function SceneContainer({
   terrain,
   onEnvironmentalElementSelect
 }: SceneContainerProps) {
+  const { setNodeRef } = useDroppable({
+    id: 'scene-container'
+  });
+  
   const planeRef = useRef<THREE.Mesh>(null);
   const [hoverPoint, setHoverPoint] = useState<[number, number, number] | null>(null);
 
@@ -87,7 +91,10 @@ export function SceneContainer({
   };
 
   return (
-    <div className="w-full h-full bg-background rounded-lg overflow-hidden">
+    <div 
+      ref={setNodeRef}
+      className='w-full h-full bg-background rounded-lg overflow-hidden'
+    >
       <Canvas
         camera={{ position: [10, 10, 10], fov: 50 }}
         shadows

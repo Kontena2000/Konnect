@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -72,7 +71,15 @@ export default function LayoutEditorPage() {
     setDraggingTemplate(template);
   };
 
-  const handleDragEnd = () => {
+  const handleDragEnd = (event: DragEndEvent) => {
+    const { over } = event;
+    
+    if (over && over.id === 'scene-container' && draggingTemplate) {
+      // Get drop position from the event
+      const dropPosition: [number, number, number] = [0, 0, 0]; // You'll need to calculate this
+      createModule(dropPosition);
+    }
+    
     setDraggingTemplate(null);
   };
 

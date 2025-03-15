@@ -1,153 +1,200 @@
 
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
+import { useCallback } from "react";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Box, Power, Network, Cable, Wifi, Server, Battery, Zap, ChevronLeft, ChevronRight } from "lucide-react";
+import { ChevronRight, ChevronDown } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-
-export type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
-export type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
-export type ConnectionType = PowerCableType | NetworkCableType;
 
 export interface ModuleTemplate {
   id: string;
-  name: string;
   type: string;
-  category: "modules" | "power-cables" | "network-cables";
-  subCategory?: string;
-  description: string;
-  dimensions: [number, number, number];
+  name: string;
   color: string;
-  isFoldable?: boolean;
-  isOpen?: boolean;
-  foldedHeight?: number;
-  connectionPoints: Array<{
-    type: ConnectionType;
+  dimensions: [number, number, number];
+  connectionPoints?: Array<{
     position: [number, number, number];
+    type: string;
   }>;
-  icon: React.ReactNode;
 }
 
-// Keep existing module data arrays but export them
-export const powerCables: ModuleTemplate[] = [/* existing power cables data */];
-export const networkCables: ModuleTemplate[] = [/* existing network cables data */];
-export const modules: ModuleTemplate[] = [/* existing modules data */];
+const moduleTemplates: Record<string, ModuleTemplate[]> = {
+  modules: [
+    {
+      id: "edge-container",
+      type: "edge-container",
+      name: "Edge Container",
+      color: "#808080",
+      dimensions: [6.1, 2.9, 2.44],
+      connectionPoints: [
+        { position: [3.05, 1.45, 0], type: "208v-3phase" },
+        { position: [-3.05, 1.45, 0], type: "cat6a" }
+      ]
+    },
+    {
+      id: "network-cabinet",
+      type: "network-cabinet",
+      name: "Network Cabinet",
+      color: "#404040",
+      dimensions: [0.8, 2.1, 1.2],
+      connectionPoints: [
+        { position: [0.4, 1.05, 0], type: "cat6a" },
+        { position: [-0.4, 1.05, 0], type: "om4" }
+      ]
+    }
+  ],
+  "power-cables": [
+    {
+      id: "208v-3phase",
+      type: "208v-3phase",
+      name: "208V 3-Phase",
+      color: "#ff0000",
+      dimensions: [0.1, 0.1, 0.1]
+    },
+    {
+      id: "400v-3phase",
+      type: "400v-3phase",
+      name: "400V 3-Phase",
+      color: "#ff0000",
+      dimensions: [0.1, 0.1, 0.1]
+    }
+  ],
+  "network-cables": {
+    copper: [
+      {
+        id: "cat6a",
+        type: "cat6a",
+        name: "CAT6A",
+        color: "#00ff00",
+        dimensions: [0.1, 0.1, 0.1]
+      },
+      {
+        id: "cat8",
+        type: "cat8",
+        name: "CAT8",
+        color: "#00ff00",
+        dimensions: [0.1, 0.1, 0.1]
+      }
+    ],
+    fiber: [
+      {
+        id: "om4",
+        type: "om4",
+        name: "OM4",
+        color: "#00ffff",
+        dimensions: [0.1, 0.1, 0.1]
+      },
+      {
+        id: "os2",
+        type: "os2",
+        name: "OS2",
+        color: "#00ffff",
+        dimensions: [0.1, 0.1, 0.1]
+      }
+    ]
+  }
+};
 
-interface DraggableModuleProps {
-  template: ModuleTemplate;
-}
-
-function DraggableModule({ template }: DraggableModuleProps) {
+function ModuleItem({ template }: { template: ModuleTemplate }) {
   const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
     id: template.id,
     data: template
   });
 
   return (
-    <Button
+    <div
       ref={setNodeRef}
-      variant="outline"
-      className={`w-full justify-start ${isDragging ? "opacity-50" : ""}`}
-      {...listeners}
       {...attributes}
+      {...listeners}
+      className={`p-2 mb-2 rounded-lg border cursor-move transition-colors hover:bg-accent ${
+        isDragging ? "opacity-50" : ""
+      }`}
+      style={{ touchAction: "none" }}
     >
-      {template.icon}
-      <div className="ml-2 text-left">
-        <div className="font-medium">{template.name}</div>
-        <div className="text-xs text-muted-foreground">
-          {template.description}
-        </div>
+      <div className="flex items-center gap-2">
+        <div
+          className="w-4 h-4 rounded"
+          style={{ backgroundColor: template.color }}
+        />
+        <span>{template.name}</span>
       </div>
-    </Button>
-  );
-}
-
-function CableSection({ title, cables, subCategories }: { 
-  title: string;
-  cables: ModuleTemplate[];
-  subCategories: string[];
-}) {
-  return (
-    <AccordionItem value={title.toLowerCase()}>
-      <AccordionTrigger>{title}</AccordionTrigger>
-      <AccordionContent>
-        <Accordion type="multiple" className="ml-4">
-          {subCategories.map(subCat => (
-            <AccordionItem key={subCat} value={subCat}>
-              <AccordionTrigger className="text-sm">{subCat}</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-2">
-                  {cables
-                    .filter(cable => cable.subCategory === subCat.toLowerCase())
-                    .map(template => (
-                      <DraggableModule key={template.id} template={template} />
-                    ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
-      </AccordionContent>
-    </AccordionItem>
+    </div>
   );
 }
 
 export function ModuleLibrary() {
-  const [collapsed, setCollapsed] = useState(false);
+  const renderModules = useCallback((templates: ModuleTemplate[]) => {
+    return templates.map((template) => (
+      <ModuleItem key={template.id} template={template} />
+    ));
+  }, []);
 
   return (
-    <div className={`relative border-r transition-all duration-200 ${collapsed ? "w-12" : "w-80"}`}>
-      <Button
-        variant="ghost"
-        size="icon"
-        className="absolute -right-4 top-2 z-10"
-        onClick={() => setCollapsed(!collapsed)}
-      >
-        {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-      </Button>
-      
-      {!collapsed ? (
-        <ScrollArea className="h-[400px] pr-4">
-          <Accordion type="multiple" className="w-full">
-            <AccordionItem value="modules">
-              <AccordionTrigger>Modules</AccordionTrigger>
-              <AccordionContent>
-                <div className="space-y-2">
-                  {modules.map((template) => (
-                    <DraggableModule key={template.id} template={template} />
-                  ))}
-                </div>
-              </AccordionContent>
-            </AccordionItem>
+    <div className="space-y-4">
+      <Collapsible defaultOpen>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="flex w-full justify-between">
+            <span>Modules</span>
+            <ChevronDown className="h-4 w-4" />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {renderModules(moduleTemplates.modules)}
+        </CollapsibleContent>
+      </Collapsible>
 
-            <CableSection 
-              title="Power Cables" 
-              cables={powerCables}
-              subCategories={["3-Phase", "UPS"]}
-            />
+      <Collapsible>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="flex w-full justify-between">
+            <span>Power Cables</span>
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {renderModules(moduleTemplates["power-cables"])}
+        </CollapsibleContent>
+      </Collapsible>
 
-            <CableSection 
-              title="Network Cables" 
-              cables={networkCables}
-              subCategories={["Copper", "Fiber"]}
-            />
-          </Accordion>
-        </ScrollArea>
-      ) : (
-        <div className="flex flex-col items-center pt-2 space-y-4">
-          <Button variant="ghost" size="icon">
-            <Server className="h-4 w-4" />
+      <Collapsible>
+        <CollapsibleTrigger asChild>
+          <Button variant="ghost" className="flex w-full justify-between">
+            <span>Network Cables</span>
+            <ChevronRight className="h-4 w-4" />
           </Button>
-          <Button variant="ghost" size="icon">
-            <Power className="h-4 w-4" />
-          </Button>
-          <Button variant="ghost" size="icon">
-            <Network className="h-4 w-4" />
-          </Button>
-        </div>
-      )}
+        </CollapsibleTrigger>
+        <CollapsibleContent className="space-y-4">
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex w-full justify-between pl-4"
+              >
+                <span>Copper</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pl-4">
+              {renderModules(moduleTemplates["network-cables"].copper)}
+            </CollapsibleContent>
+          </Collapsible>
+
+          <Collapsible>
+            <CollapsibleTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="flex w-full justify-between pl-4"
+              >
+                <span>Fiber</span>
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </CollapsibleTrigger>
+            <CollapsibleContent className="pl-4">
+              {renderModules(moduleTemplates["network-cables"].fiber)}
+            </CollapsibleContent>
+          </Collapsible>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
