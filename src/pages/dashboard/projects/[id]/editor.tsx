@@ -13,6 +13,7 @@ import { nanoid } from "nanoid";
 import { ModuleProperties } from '@/components/three/ModuleProperties';
 import { Module } from "@/services/layout";
 import { Connection } from '@/services/layout';
+import { ConnectionManager } from '@/components/three/ConnectionManager';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -134,6 +135,16 @@ export default function LayoutEditorPage() {
     }
   };
 
+  const handleUpdateConnection = (id: string, updates: Partial<Connection>) => {
+    setConnections(connections.map(conn => 
+      conn.id === id ? { ...conn, ...updates } : conn
+    ));
+  };
+
+  const handleDeleteConnection = (id: string) => {
+    setConnections(connections.filter(conn => conn.id !== id));
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -199,6 +210,11 @@ export default function LayoutEditorPage() {
                   onTransformModeChange={setTransformMode}
                 />
               )}
+              <ConnectionManager
+                connections={connections}
+                onUpdateConnection={handleUpdateConnection}
+                onDeleteConnection={handleDeleteConnection}
+              />
             </div>
           </div>
         </div>

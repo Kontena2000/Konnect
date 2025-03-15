@@ -7,13 +7,15 @@ interface ConnectionLineProps {
   color?: string;
   width?: number;
   capacity?: number;
+  onClick?: () => void;
 }
 
 export function ConnectionLine({ 
   start, 
   end, 
   color = '#2196F3',
-  capacity
+  capacity,
+  onClick
 }: ConnectionLineProps) {
   const geometry = new BufferGeometry().setFromPoints([
     new Vector3(...start),
@@ -26,5 +28,16 @@ export function ConnectionLine({
   });
   const line = new Line(geometry, material);
 
-  return <primitive object={line} />;
+  return (
+    <primitive 
+      object={line} 
+      onClick={onClick}
+      onPointerOver={() => {
+        document.body.style.cursor = onClick ? 'pointer' : 'default';
+      }}
+      onPointerOut={() => {
+        document.body.style.cursor = 'default';
+      }}
+    />
+  );
 }
