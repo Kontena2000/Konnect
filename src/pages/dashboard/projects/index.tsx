@@ -50,8 +50,8 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='space-y-6'>
-        <div className='flex justify-between items-center'>
+      <div className='space-y-8'>
+        <div className='flex justify-between items-center pb-6 border-b'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>
             <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
@@ -61,24 +61,22 @@ export default function ProjectsPage() {
           </Link>
         </div>
 
-        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {projects.map((project) => (
-            <Card key={project.id}>
+            <Card key={project.id} className='flex flex-col'>
               <CardHeader>
                 <CardTitle>{project.name}</CardTitle>
               </CardHeader>
-              <CardContent>
-                <p className='text-sm text-muted-foreground'>
+              <CardContent className='flex-1 space-y-4'>
+                <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='mt-4'>
+                <div className='space-y-3 pt-4'>
                   <Link href={`/dashboard/projects/${project.id}`}>
                     <Button variant='outline' className='w-full'>
                       Open Project
                     </Button>
                   </Link>
-                </div>
-                <div className='mt-4'>
                   <Link href={`/dashboard/projects/${project.id}/editor`}>
                     <Button className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
                       Open Editor

@@ -398,8 +398,8 @@ export default function LayoutEditorPage() {
     >
       <TooltipProvider>
         <AppLayout>
-          <div className='h-screen flex flex-col'>
-            <div className='flex items-center justify-between px-4 py-2 border-b'>
+          <div className='h-[calc(100vh-2rem)] -m-6 md:-m-8 lg:-m-10 flex flex-col'>
+            <div className='flex items-center justify-between px-6 py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
               <div className='flex items-center gap-4'>
                 <h1 className='text-2xl font-bold'>Layout Editor</h1>
                 <LayoutSelector
@@ -498,7 +498,7 @@ export default function LayoutEditorPage() {
               </div>
             </div>
 
-            <div className='flex-1 relative w-full h-full p-0 m-0'>
+            <div className='flex-1 relative'>
               <SceneContainer
                 modules={modules}
                 selectedModuleId={selectedModuleId}
@@ -511,7 +511,6 @@ export default function LayoutEditorPage() {
                 onConnectPoint={handleConnectPoint}
                 cameraZoom={cameraZoom}
               />
-
               <div className='absolute top-4 left-4 z-10'>
                 <Sheet>
                   <SheetTrigger asChild>
