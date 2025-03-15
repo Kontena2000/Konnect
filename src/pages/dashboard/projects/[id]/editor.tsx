@@ -22,6 +22,8 @@ import { LayoutSelector } from "@/components/layout/LayoutSelector";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useModuleState } from "@/hooks/use-module-state";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
+import { ModuleTemplate } from '@/types/module';
+import { ConnectionType } from '@/types/connection';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
