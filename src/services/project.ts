@@ -6,7 +6,8 @@ import {
   updateDoc, 
   deleteDoc, 
   doc, 
-  getDocs, 
+  getDocs,
+  getDoc, 
   query, 
   where 
 } from "firebase/firestore";
@@ -29,6 +30,20 @@ const projectService = {
       updatedAt: new Date()
     });
     return projectRef.id;
+  },
+
+  async getProject(id: string): Promise<Project | null> {
+    const projectRef = doc(db, "projects", id);
+    const snapshot = await getDoc(projectRef);
+    
+    if (!snapshot.exists()) {
+      return null;
+    }
+
+    return {
+      id: snapshot.id,
+      ...snapshot.data()
+    } as Project;
   },
 
   async updateProject(id: string, data: Partial<Project>): Promise<void> {
