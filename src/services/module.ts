@@ -1,6 +1,7 @@
+
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
-import { ModuleTemplate } from "@/components/three/ModuleLibrary";
+import { ModuleTemplate, ModuleCategory, moduleTemplates } from "@/components/three/ModuleLibrary";
 
 export interface TechnicalSpecs {
   weight: number;
@@ -19,42 +20,40 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
   technicalSpecs: TechnicalSpecs;
 }
 
+const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
+  weight: category === "konnect" ? 2500 : 
+         category === "power" ? 5 :
+         category === "network" ? 0.5 :
+         category === "cooling" ? 2 : 10,
+  powerConsumption: {
+    watts: category === "konnect" ? 15000 : 0,
+    kWh: category === "konnect" ? 360 : 0
+  },
+  wireConfigurations: [{
+    type: category,
+    gauge: category === "power" ? "AWG 8" : 
+           category === "network" ? category : "N/A",
+    length: category === "konnect" ? 10 :
+            category === "power" ? 5 :
+            category === "network" ? 3 : 1
+  }]
+});
+
 const moduleService = {
   async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
     try {
-      // First get the templates from code
       const baseTemplates = Object.values(moduleTemplates).flat();
-      
-      // Then get the technical specs from Firebase
-      const modulesRef = ref(realTimeDb, 'modules');
+      const modulesRef = ref(realTimeDb, "modules");
       const snapshot = await get(modulesRef);
       const dbSpecs = snapshot.exists() ? snapshot.val() : {};
       
-      // Combine them
       return baseTemplates.map(template => ({
         ...template,
-        technicalSpecs: dbSpecs[template.type]?.technicalSpecs || {
-          weight: template.category === 'konnect' ? 2500 : 
-                 template.category === 'power' ? 5 :
-                 template.category === 'network' ? 0.5 :
-                 template.category === 'cooling' ? 2 : 10,
-          powerConsumption: {
-            watts: template.category === 'konnect' ? 15000 : 0,
-            kWh: template.category === 'konnect' ? 360 : 0
-          },
-          wireConfigurations: [{
-            type: template.type,
-            gauge: template.category === 'power' ? 'AWG 8' : 
-                   template.category === 'network' ? template.type : 'N/A',
-            length: template.category === 'konnect' ? 10 :
-                    template.category === 'power' ? 5 :
-                    template.category === 'network' ? 3 : 1
-          }]
-        }
+        technicalSpecs: dbSpecs[template.type]?.technicalSpecs || getDefaultSpecs(template.category)
       }));
     } catch (error) {
-      console.error('Error fetching modules:', error);
-      throw new Error('Failed to fetch modules');
+      console.error("Error fetching modules:", error);
+      throw new Error("Failed to fetch modules");
     }
   },
 
