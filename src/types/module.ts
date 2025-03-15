@@ -25,7 +25,8 @@ export enum ModuleCategory {
   Cooling = "cooling",
   Network = "network",
   Security = "security",
-  Storage = "storage"
+  Storage = "storage",
+  Konnect = "konnect"
 }
 
 export const moduleTemplates: ModuleTemplate[] = [
@@ -72,3 +73,5 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
     type: ConnectionType;
   }>;
 }
+
+export type ModuleTemplateArray = ModuleTemplate[];

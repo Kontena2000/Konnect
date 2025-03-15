@@ -1,5 +1,5 @@
 
-export type ConnectionType = "power" | "network" | "cooling" | "security";
+export type ConnectionType = "power" | "network" | "cooling" | "security" | "cat6a";
 
 export interface ConnectionPoint {
   position: [number, number, number];
