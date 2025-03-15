@@ -28,6 +28,12 @@ interface CreateModuleFormData {
   }>;
 }
 
+interface ModuleFormProps {
+  module: ModuleTemplateWithSpecs;
+  onUpdate: (id: string, data: Partial<ModuleTemplateWithSpecs>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
+}
+
 function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: ModuleTemplateWithSpecs) => Promise<void> }) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<CreateModuleFormData>({
