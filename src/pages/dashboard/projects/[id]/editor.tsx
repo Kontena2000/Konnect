@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -11,6 +10,7 @@ import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut } from "lucide-react";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
+import { ModuleProperties } from '@/components/three/ModuleProperties';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -34,6 +34,8 @@ export default function LayoutEditorPage() {
   ]);
 
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
+  const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
+  const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -72,8 +74,31 @@ export default function LayoutEditorPage() {
     }
   };
 
-  const handleModuleSelect = (moduleId: string) => {
-    console.log("Selected module:", moduleId);
+  const handleModuleUpdate = (moduleId: string, updates: any) => {
+    setModules(modules.map(module => 
+      module.id === moduleId ? { ...module, ...updates } : module
+    ));
+  };
+
+  const handleModuleDelete = (moduleId: string) => {
+    setModules(modules.filter(module => module.id !== moduleId));
+    setSelectedModuleId(undefined);
+  };
+
+  const handleDropPoint = (point: [number, number, number]) => {
+    if (draggingTemplate) {
+      const newModule = {
+        id: nanoid(),
+        position: point,
+        rotation: [0, 0, 0],
+        scale: draggingTemplate.dimensions,
+        color: draggingTemplate.color,
+        type: draggingTemplate.type
+      };
+      
+      setModules([...modules, newModule]);
+      setDraggingTemplate(null);
+    }
   };
 
   return (
@@ -83,7 +108,7 @@ export default function LayoutEditorPage() {
       onDragEnd={handleDragEnd}
     >
       <DashboardLayout>
-        <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
+        <div className='h-[calc(100vh-2rem)] flex flex-col gap-4'>
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Layout Editor</h1>
             <div className="flex items-center gap-2">
@@ -108,22 +133,37 @@ export default function LayoutEditorPage() {
             </div>
           </div>
 
-          <div className="flex-1 grid grid-cols-[300px_1fr] gap-4">
+          <div className='flex-1 grid grid-cols-[300px_1fr_300px] gap-4'>
             <Card>
-              <CardContent className="p-4">
-                <h2 className="text-lg font-semibold mb-4">Module Library</h2>
+              <CardContent className='p-4'>
+                <h2 className='text-lg font-semibold mb-4'>Module Library</h2>
                 <ModuleLibrary />
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className="p-4 h-full">
+              <CardContent className='p-4 h-full'>
                 <SceneContainer
                   modules={modules}
-                  onModuleSelect={handleModuleSelect}
+                  selectedModuleId={selectedModuleId}
+                  transformMode={transformMode}
+                  onModuleSelect={setSelectedModuleId}
+                  onModuleUpdate={handleModuleUpdate}
+                  onDropPoint={handleDropPoint}
                 />
               </CardContent>
             </Card>
+
+            <div className='space-y-4'>
+              {selectedModuleId && (
+                <ModuleProperties
+                  module={modules.find(m => m.id === selectedModuleId)!}
+                  onUpdate={handleModuleUpdate}
+                  onDelete={handleModuleDelete}
+                  onTransformModeChange={setTransformMode}
+                />
+              )}
+            </div>
           </div>
         </div>
         <ModuleDragOverlay draggingTemplate={draggingTemplate} />

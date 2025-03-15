@@ -11,15 +11,16 @@ interface ModuleObjectProps {
     scale: [number, number, number];
     color: string;
   };
+  selected?: boolean;
   onClick?: () => void;
 }
 
-export function ModuleObject({ module, onClick }: ModuleObjectProps) {
+export function ModuleObject({ module, selected, onClick }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
 
   useFrame((state, delta) => {
-    if (meshRef.current && hovered) {
+    if (meshRef.current && hovered && !selected) {
       meshRef.current.rotation.y += delta * 0.5;
     }
   });
@@ -38,9 +39,11 @@ export function ModuleObject({ module, onClick }: ModuleObjectProps) {
     >
       <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial 
-        color={hovered ? "#ff9900" : module.color} 
+        color={selected ? "#ff9900" : hovered ? "#ff7700" : module.color}
         metalness={0.5}
         roughness={0.5}
+        opacity={selected || hovered ? 0.8 : 1}
+        transparent
       />
     </mesh>
   );

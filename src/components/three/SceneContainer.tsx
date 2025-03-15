@@ -2,14 +2,44 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
-import { useEffect, useState } from "react";
+import { ModuleControls } from "./ModuleControls";
+import { useRef, useState } from "react";
+import * as THREE from "three";
 
 interface SceneContainerProps {
   modules: any[];
+  selectedModuleId?: string;
+  transformMode?: "translate" | "rotate" | "scale";
   onModuleSelect?: (moduleId: string) => void;
+  onModuleUpdate?: (moduleId: string, updates: any) => void;
+  onDropPoint?: (point: [number, number, number]) => void;
 }
 
-export function SceneContainer({ modules, onModuleSelect }: SceneContainerProps) {
+export function SceneContainer({ 
+  modules, 
+  selectedModuleId,
+  transformMode = "translate",
+  onModuleSelect,
+  onModuleUpdate,
+  onDropPoint 
+}: SceneContainerProps) {
+  const planeRef = useRef<THREE.Mesh>(null);
+  const [hoverPoint, setHoverPoint] = useState<[number, number, number] | null>(null);
+
+  const handlePlanePointerMove = (event: THREE.Event) => {
+    if (planeRef.current) {
+      const point = event.point.toArray() as [number, number, number];
+      point[1] = 0; // Lock Y position to ground
+      setHoverPoint(point);
+    }
+  };
+
+  const handlePlaneClick = () => {
+    if (hoverPoint && onDropPoint) {
+      onDropPoint(hoverPoint);
+    }
+  };
+
   return (
     <div className="w-full h-full bg-background rounded-lg overflow-hidden">
       <Canvas
@@ -31,13 +61,44 @@ export function SceneContainer({ modules, onModuleSelect }: SceneContainerProps)
           fadeStrength={1}
         />
         
+        <mesh
+          ref={planeRef}
+          rotation={[-Math.PI / 2, 0, 0]}
+          onPointerMove={handlePlanePointerMove}
+          onClick={handlePlaneClick}
+          visible={false}
+        >
+          <planeGeometry args={[1000, 1000]} />
+          <meshStandardMaterial color="white" />
+        </mesh>
+
         {modules.map((module) => (
-          <ModuleObject
-            key={module.id}
-            module={module}
-            onClick={() => onModuleSelect?.(module.id)}
-          />
+          <group key={module.id}>
+            <ModuleObject
+              module={module}
+              onClick={() => onModuleSelect?.(module.id)}
+              selected={module.id === selectedModuleId}
+            />
+            {module.id === selectedModuleId && (
+              <ModuleControls
+                object={module}
+                mode={transformMode}
+                onTransformChange={(type, value) => {
+                  if (type === "dragging-changed" && !value.dragging) {
+                    onModuleUpdate?.(module.id, value);
+                  }
+                }}
+              />
+            )}
+          </group>
         ))}
+        
+        {hoverPoint && (
+          <mesh position={hoverPoint}>
+            <sphereGeometry args={[0.1]} />
+            <meshStandardMaterial color="red" transparent opacity={0.5} />
+          </mesh>
+        )}
         
         <OrbitControls
           enableDamping
