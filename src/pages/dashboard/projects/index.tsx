@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
@@ -58,7 +57,7 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='p-8 max-w-[2000px] mx-auto'>
+      <div className='container py-8'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>
@@ -69,13 +68,13 @@ export default function ProjectsPage() {
           </Link>
         </div>
 
-        <div className='grid gap-8 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
+        <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {projects.map((project) => (
-            <Card key={project.id} className='flex flex-col shadow-lg'>
+            <Card key={project.id} className='flex flex-col h-full shadow-lg'>
               <CardHeader className='pb-4'>
                 <CardTitle className='text-xl'>{project.name}</CardTitle>
               </CardHeader>
-              <CardContent className='flex-1 space-y-6 p-6'>
+              <CardContent className='flex-1 space-y-6'>
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>

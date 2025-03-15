@@ -22,6 +22,7 @@ import { Trash2, Loader2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ModuleDatabase } from '@/components/settings/ModuleDatabase';
+import { ThemeEditor } from '@/components/settings/ThemeEditor';
 
 interface ModuleInputProps {
   module: ModuleTemplate;
@@ -149,17 +150,22 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className='space-y-6'>
+      <div className='container py-8 space-y-6'>
         <h1 className='text-3xl font-bold'>Settings</h1>
 
         <Tabs defaultValue='profile'>
           <TabsList>
             <TabsTrigger value='profile'>Profile</TabsTrigger>
+            <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='preferences'>Preferences</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
             <TabsTrigger value='module-database'>Module Database</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
           </TabsList>
+
+          <TabsContent value='theme'>
+            <ThemeEditor />
+          </TabsContent>
 
           <TabsContent value='profile'>
             <Card>
