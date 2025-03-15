@@ -22,7 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { ModuleDatabase } from '@/components/settings/ModuleDatabase';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
-import { moduleTemplates, ModuleTemplate, ModuleCategory } from '@/types/module';
+import { moduleTemplates, ModuleTemplate, ModuleCategory, moduleTemplatesByCategory } from '@/types/module';
 
 interface ModuleInputProps {
   module: ModuleTemplate;
@@ -234,7 +234,7 @@ export default function SettingsPage() {
               <CardContent>
                 <ScrollArea className='h-[600px]'>
                   <div className='space-y-6'>
-                    {Object.entries(moduleTemplates).map(([category, modules]) => (
+                    {Object.entries(moduleTemplatesByCategory).map(([category, modules]) => (
                       <div key={category}>
                         <h3 className='text-lg font-semibold mb-4'>{category.charAt(0).toUpperCase() + category.slice(1)}</h3>
                         <div className='space-y-4'>

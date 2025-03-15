@@ -1,4 +1,3 @@
-
 import { ConnectionType } from "./connection";
 
 export enum ModuleCategory {
@@ -33,43 +32,68 @@ export interface ModuleTemplate {
 }
 
 export interface ModuleTemplateWithSpecs extends ModuleTemplate {
-  technicalSpecs: any; // Define proper type from your module service
+  technicalSpecs: {
+    weight: {
+      empty: number;
+      loaded: number;
+    };
+    formFactor: {
+      rackUnits: number;
+      containmentType: string;
+    };
+    powerConsumption: {
+      typical: number;
+      maximum: number;
+    };
+    cooling: {
+      heatOutput: {
+        btu: number;
+        kW: number;
+      };
+    };
+  };
 }
 
-export const moduleTemplates: ModuleTemplate[] = [
-  {
-    id: "edge-container",
-    name: "Edge Container",
-    description: "Standard edge computing container",
-    type: "container",
-    category: ModuleCategory.Container,
-    color: "#64748b",
-    dimensions: {
-      length: 6.1,
-      width: 2.44,
-      height: 2.59
-    },
-    connectionPoints: [
-      { position: [3.05, 1.295, 0], type: "power" },
-      { position: [-3.05, 1.295, 0], type: "network" },
-      { position: [0, 2.59, 0], type: "cooling" }
-    ]
-  },
-  {
-    id: "power-unit",
-    name: "Power Distribution Unit",
-    description: "Main power distribution unit",
-    type: "power",
-    category: ModuleCategory.Power,
-    color: "#eab308",
-    dimensions: {
-      length: 1.2,
-      width: 0.8,
-      height: 2.0
-    },
-    connectionPoints: [
-      { position: [0.6, 1.0, 0], type: "power" },
-      { position: [-0.6, 1.0, 0], type: "power" }
-    ]
-  }
-];
+export const moduleTemplatesByCategory: Record<string, ModuleTemplate[]> = {
+  container: [
+    {
+      id: "edge-container",
+      name: "Edge Container",
+      description: "Standard edge computing container",
+      type: "container",
+      category: ModuleCategory.Container,
+      color: "#64748b",
+      dimensions: {
+        length: 6.1,
+        width: 2.44,
+        height: 2.59
+      },
+      connectionPoints: [
+        { position: [3.05, 1.295, 0], type: "power" },
+        { position: [-3.05, 1.295, 0], type: "network" },
+        { position: [0, 2.59, 0], type: "cooling" }
+      ]
+    }
+  ],
+  power: [
+    {
+      id: "power-unit",
+      name: "Power Distribution Unit",
+      description: "Main power distribution unit",
+      type: "power",
+      category: ModuleCategory.Power,
+      color: "#eab308",
+      dimensions: {
+        length: 1.2,
+        width: 0.8,
+        height: 2.0
+      },
+      connectionPoints: [
+        { position: [0.6, 1.0, 0], type: "power" },
+        { position: [-0.6, 1.0, 0], type: "power" }
+      ]
+    }
+  ]
+};
+
+export const moduleTemplates = Object.values(moduleTemplatesByCategory).flat();

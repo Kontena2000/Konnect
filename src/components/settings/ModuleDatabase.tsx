@@ -85,6 +85,17 @@ function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: Modul
     }));
   };
 
+  const handleDimensionChange = (dimension: keyof CreateModuleFormData['dimensions'], value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setFormData(prev => ({
+      ...prev,
+      dimensions: {
+        ...prev.dimensions,
+        [dimension]: numValue
+      }
+    }));
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
@@ -185,17 +196,13 @@ function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: Modul
           <div className="space-y-2">
             <Label>Dimensions (meters)</Label>
             <div className="grid grid-cols-3 gap-2">
-              {["Length", "Width", "Height"].map((dim, i) => (
+              {(['length', 'width', 'height'] as const).map((dim) => (
                 <div key={dim}>
-                  <Label className="text-xs">{dim}</Label>
+                  <Label className='text-xs'>{dim.charAt(0).toUpperCase() + dim.slice(1)}</Label>
                   <Input
-                    type="number"
-                    value={formData.dimensions[dim.toLowerCase()]}
-                    onChange={(e) => {
-                      const newDimensions = { ...formData.dimensions };
-                      newDimensions[dim.toLowerCase()] = parseFloat(e.target.value) || 0;
-                      setFormData(prev => ({ ...prev, dimensions: newDimensions }));
-                    }}
+                    type='number'
+                    value={formData.dimensions[dim]}
+                    onChange={(e) => handleDimensionChange(dim, e.target.value)}
                     step={0.1}
                     min={0.1}
                   />
