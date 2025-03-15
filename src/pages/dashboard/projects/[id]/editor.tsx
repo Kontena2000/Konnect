@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -35,7 +35,12 @@ export default function LayoutEditorPage() {
   } | null>(null);
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
-
+  const [history, setHistory] = useState<{past: Module[][], future: Module[][]}>({
+    past: [],
+    future: []
+  });
+  const [cameraZoom, setCameraZoom] = useState(1);
+  
   const sensors = useSensors(
     useSensor(MouseSensor, {
       activationConstraint: {
@@ -75,6 +80,52 @@ export default function LayoutEditorPage() {
     };
     loadLayout();
   }, [id, toast]);
+
+  // Add to history when modules change
+  useEffect(() => {
+    if (modules.length > 0) {
+      setHistory(prev => ({
+        past: [...prev.past, modules],
+        future: []
+      }));
+    }
+  }, [modules]);
+
+  const handleUndo = () => {
+    if (history.past.length === 0) return;
+    
+    const newPast = [...history.past];
+    const lastState = newPast.pop()!;
+    
+    setHistory({
+      past: newPast,
+      future: [modules, ...history.future]
+    });
+    
+    setModules(lastState);
+  };
+
+  const handleRedo = () => {
+    if (history.future.length === 0) return;
+    
+    const newFuture = [...history.future];
+    const nextState = newFuture.shift()!;
+    
+    setHistory({
+      past: [...history.past, modules],
+      future: newFuture
+    });
+    
+    setModules(nextState);
+  };
+
+  const handleZoomIn = () => {
+    setCameraZoom(prev => Math.min(prev * 1.2, 2));
+  };
+
+  const handleZoomOut = () => {
+    setCameraZoom(prev => Math.max(prev / 1.2, 0.5));
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
@@ -236,18 +287,38 @@ export default function LayoutEditorPage() {
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Layout Editor</h1>
             <div className="flex items-center gap-2">
-              <Button variant="outline" size="icon">
-                <Undo className="h-4 w-4" />
+              <Button 
+                variant='outline' 
+                size='icon'
+                onClick={handleUndo}
+                disabled={history.past.length === 0}
+              >
+                <Undo className='h-4 w-4' />
               </Button>
-              <Button variant="outline" size="icon">
-                <Redo className="h-4 w-4" />
+              <Button 
+                variant='outline' 
+                size='icon'
+                onClick={handleRedo}
+                disabled={history.future.length === 0}
+              >
+                <Redo className='h-4 w-4' />
               </Button>
-              <Separator orientation="vertical" className="h-6" />
-              <Button variant="outline" size="icon">
-                <ZoomIn className="h-4 w-4" />
+              <Separator orientation='vertical' className='h-6' />
+              <Button 
+                variant='outline' 
+                size='icon'
+                onClick={handleZoomIn}
+                disabled={cameraZoom >= 2}
+              >
+                <ZoomIn className='h-4 w-4' />
               </Button>
-              <Button variant="outline" size="icon">
-                <ZoomOut className="h-4 w-4" />
+              <Button 
+                variant='outline' 
+                size='icon'
+                onClick={handleZoomOut}
+                disabled={cameraZoom <= 0.5}
+              >
+                <ZoomOut className='h-4 w-4' />
               </Button>
               <Separator orientation="vertical" className="h-6" />
               <Button onClick={handleSave} disabled={saving}>
@@ -286,6 +357,7 @@ export default function LayoutEditorPage() {
                   connections={connections}
                   activeConnection={activeConnection}
                   onConnectPoint={handleConnectPoint}
+                  cameraZoom={cameraZoom}
                 />
               </CardContent>
             </Card>

@@ -34,6 +34,7 @@ interface SceneContainerProps {
   environmentalElements?: ElementType[];
   terrain?: TerrainData;
   onEnvironmentalElementSelect?: (elementId: string) => void;
+  cameraZoom?: number;
 }
 
 const getConnectionColor = (type: ConnectionType): string => {
@@ -63,7 +64,8 @@ export function SceneContainer({
   readOnly = false,
   environmentalElements = [],
   terrain,
-  onEnvironmentalElementSelect
+  onEnvironmentalElementSelect,
+  cameraZoom = 1
 }: SceneContainerProps) {
   const { setNodeRef, isOver } = useDroppable({
     id: 'scene-container'
@@ -98,7 +100,10 @@ export function SceneContainer({
       }`}
     >
       <Canvas
-        camera={{ position: [10, 10, 10], fov: 50 }}
+        camera={{ 
+          position: [10 * cameraZoom, 10 * cameraZoom, 10 * cameraZoom], 
+          fov: 50 
+        }}
         shadows
         gl={{ 
           antialias: true,
@@ -238,6 +243,7 @@ export function SceneContainer({
           minDistance={5}
           maxDistance={50}
           maxPolarAngle={Math.PI / 2.1}
+          zoom={cameraZoom}
         />
       </Canvas>
     </div>
