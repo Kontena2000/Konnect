@@ -19,9 +19,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <AuthProvider>
       <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
         <TooltipProvider>
-          <AppLayout>
-            <Component {...pageProps} />
-          </AppLayout>
+          <Component {...pageProps} />
           <Toaster />
         </TooltipProvider>
       </ThemeProvider>
