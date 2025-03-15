@@ -2,18 +2,20 @@
 import { useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
-import { ChevronRight, ChevronDown } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { useDraggable } from "@dnd-kit/core";
+
+export type ModuleCategory = "konnect" | "power" | "network" | "cooling" | "environment";
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
 type CoolingType = "chilled-water" | "refrigerant" | "air-duct";
-type ConnectionType = PowerCableType | NetworkCableType | CoolingType;
+export type ConnectionType = PowerCableType | NetworkCableType | CoolingType;
 
 export interface ModuleTemplate {
   id: string;
   type: string;
-  category: "konnect" | "power" | "network" | "cooling" | "environment";
+  category: ModuleCategory;
   name: string;
   description?: string;
   color: string;
@@ -24,7 +26,7 @@ export interface ModuleTemplate {
   }>;
 }
 
-export const moduleTemplates: Record<string, ModuleTemplate[]> = {
+export const moduleTemplates: Record<ModuleCategory, ModuleTemplate[]> = {
   konnect: [
     {
       id: "edge-container",
@@ -152,11 +154,11 @@ export function ModuleLibrary() {
   }, []);
 
   const categories = [
-    { id: "konnect", name: "Konnect Modules" },
-    { id: "power", name: "Power Cables" },
-    { id: "network", name: "Network Cables" },
-    { id: "cooling", name: "Cooling Tubes" },
-    { id: "environment", name: "Environment" }
+    { id: "konnect" as ModuleCategory, name: "Konnect Modules" },
+    { id: "power" as ModuleCategory, name: "Power Cables" },
+    { id: "network" as ModuleCategory, name: "Network Cables" },
+    { id: "cooling" as ModuleCategory, name: "Cooling Tubes" },
+    { id: "environment" as ModuleCategory, name: "Environment" }
   ];
 
   return (

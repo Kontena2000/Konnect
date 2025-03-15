@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -9,7 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Minus, Save, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
-import { moduleTemplates } from '@/components/three/ModuleLibrary';
+import { ModuleCategory, moduleTemplates } from '@/components/three/ModuleLibrary';
 
 interface ModuleFormProps {
   module: ModuleTemplateWithSpecs;
@@ -253,79 +252,33 @@ export function ModuleDatabase() {
         const existingModules = await moduleService.getAllModules();
         
         if (existingModules.length === 0) {
-          // Convert existing templates to ModuleTemplateWithSpecs
-          const modulesToAdd: Omit<ModuleTemplateWithSpecs, 'id'>[] = [
-            ...moduleTemplates.modules.map(module => ({
-              ...module,
-              technicalSpecs: {
-                weight: module.type === 'edge-container' ? 2500 : 150,
-                powerConsumption: {
-                  watts: module.type === 'edge-container' ? 15000 : 2000,
-                  kWh: module.type === 'edge-container' ? 360 : 48
-                },
-                wireConfigurations: [
-                  {
-                    type: '3-phase',
-                    gauge: 'AWG 4',
-                    length: 10
-                  }
-                ]
-              }
-            })),
-            ...moduleTemplates['power-cables'].map(cable => ({
-              ...cable,
-              technicalSpecs: {
-                weight: 5,
-                powerConsumption: {
-                  watts: 0,
-                  kWh: 0
-                },
-                wireConfigurations: [
-                  {
-                    type: cable.type,
-                    gauge: 'AWG 8',
-                    length: 5
-                  }
-                ]
-              }
-            })),
-            ...moduleTemplates['network-cables'].copper.map(cable => ({
-              ...cable,
-              technicalSpecs: {
-                weight: 0.5,
-                powerConsumption: {
-                  watts: 0,
-                  kWh: 0
-                },
-                wireConfigurations: [
-                  {
-                    type: cable.type,
-                    gauge: cable.type,
-                    length: 3
-                  }
-                ]
-              }
-            })),
-            ...moduleTemplates['network-cables'].fiber.map(cable => ({
-              ...cable,
-              technicalSpecs: {
-                weight: 0.3,
-                powerConsumption: {
-                  watts: 0,
-                  kWh: 0
-                },
-                wireConfigurations: [
-                  {
-                    type: cable.type,
-                    gauge: cable.type,
-                    length: 3
-                  }
-                ]
-              }
-            }))
-          ];
+          const modulesToAdd: Omit<ModuleTemplateWithSpecs, 'id'>[] = Object.entries(moduleTemplates)
+            .flatMap(([category, templates]) => 
+              templates.map(template => ({
+                ...template,
+                technicalSpecs: {
+                  weight: template.category === 'konnect' ? 2500 : 
+                         template.category === 'power' ? 5 :
+                         template.category === 'network' ? 0.5 :
+                         template.category === 'cooling' ? 2 : 10,
+                  powerConsumption: {
+                    watts: template.category === 'konnect' ? 15000 : 0,
+                    kWh: template.category === 'konnect' ? 360 : 0
+                  },
+                  wireConfigurations: [
+                    {
+                      type: template.type,
+                      gauge: template.category === 'power' ? 'AWG 8' : 
+                             template.category === 'network' ? template.type : 'N/A',
+                      length: template.category === 'konnect' ? 10 :
+                              template.category === 'power' ? 5 :
+                              template.category === 'network' ? 3 : 1
+                    }
+                  ]
+                }
+              }))
+            );
 
-          // Add all modules to database
           for (const moduleData of modulesToAdd) {
             await moduleService.createModule(moduleData);
           }
@@ -336,7 +289,6 @@ export function ModuleDatabase() {
           });
         }
 
-        // Load all modules
         const allModules = await moduleService.getAllModules();
         setModules(allModules);
       } catch (error) {
