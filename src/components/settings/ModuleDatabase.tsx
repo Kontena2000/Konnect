@@ -396,18 +396,7 @@ function CreateModuleForm({ onSubmit, onCancel }: CreateModuleFormProps) {
       position: [number, number, number];
       type: ConnectionType;
     }>,
-    technicalSpecs: {
-      weight: 0,
-      powerConsumption: {
-        watts: 0,
-        kWh: 0
-      },
-      wireConfigurations: [{
-        type: '',
-        gauge: '',
-        length: 0
-      }]
-    }
+    technicalSpecs: getDefaultSpecs('konnect')
   });
 
   const handleAddConnectionPoint = () => {
@@ -563,7 +552,7 @@ function CreateModuleForm({ onSubmit, onCancel }: CreateModuleFormProps) {
               </div>
               <Button
                 type='button'
-                variant='destructive'
+                variant='destructive',
                 size='icon'
                 onClick={() => handleRemoveConnectionPoint(index)}
               >

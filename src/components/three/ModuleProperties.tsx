@@ -88,11 +88,11 @@ export function ModuleProperties({ module, onUpdate, onDelete, onTransformModeCh
             <div className='mb-4 space-y-2 text-sm'>
               <div className='flex justify-between'>
                 <span>Weight:</span>
-                <span>{specs.weight} kg</span>
+                <span>{specs.weight.empty} kg</span>
               </div>
               <div className='flex justify-between'>
                 <span>Power:</span>
-                <span>{specs.powerConsumption.watts}W / {specs.powerConsumption.kWh}kWh</span>
+                <span>{specs.powerConsumption.typical}W</span>
               </div>
             </div>
           )}

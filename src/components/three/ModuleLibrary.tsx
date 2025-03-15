@@ -147,11 +147,11 @@ function ModuleItem({ template, specs }: { template: ModuleTemplate; specs?: Tec
         <div className='mt-2 text-sm text-muted-foreground'>
           <div className='flex justify-between'>
             <span>Weight:</span>
-            <span>{specs.weight} kg</span>
+            <span>{specs.weight.empty} kg</span>
           </div>
           <div className='flex justify-between'>
             <span>Power:</span>
-            <span>{specs.powerConsumption.watts}W</span>
+            <span>{specs.powerConsumption.typical}W</span>
           </div>
         </div>
       )}

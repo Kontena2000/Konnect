@@ -151,54 +151,54 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
 
 const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
   weight: {
-    empty: category === "konnect" ? 2500 : 
-           category === "power" ? 5 :
-           category === "network" ? 0.5 :
-           category === "cooling" ? 2 : 10,
-    loaded: category === "konnect" ? 2500 : 
-           category === "power" ? 5 :
-           category === "network" ? 0.5 :
-           category === "cooling" ? 2 : 10
+    empty: category === 'konnect' ? 2500 : 
+           category === 'power' ? 5 :
+           category === 'network' ? 0.5 :
+           category === 'cooling' ? 2 : 10,
+    loaded: category === 'konnect' ? 3000 : 
+           category === 'power' ? 5 :
+           category === 'network' ? 0.5 :
+           category === 'cooling' ? 2 : 10
   },
   formFactor: {
-    rackUnits: 1,
-    containmentType: "standard"
+    rackUnits: category === 'konnect' ? 42 : 1,
+    containmentType: category === 'konnect' ? 'standard-rack' : 'component'
   },
   accessClearance: {
-    front: 1,
-    rear: 1
+    front: 1.2,
+    rear: 1.0
   },
   powerConsumption: {
-    typical: category === "konnect" ? 15000 : 0,
-    maximum: category === "konnect" ? 18000 : 0,
+    typical: category === 'konnect' ? 15000 : 100,
+    maximum: category === 'konnect' ? 18000 : 150,
     voltage: {
       min: 100,
       max: 240,
-      phases: 1
+      phases: category === 'konnect' ? 3 : 1
     },
     connections: [{
-      type: "AC",
-      quantity: 1
+      type: category === 'konnect' ? '208v-3phase' : 'standard',
+      quantity: 2
     }],
     redundancy: {
-      type: "N+1",
-      configuration: "active"
+      type: 'N+1',
+      configuration: 'active-passive'
     },
-    upsCompatibility: [],
-    monitoring: []
+    upsCompatibility: ['online', 'line-interactive'],
+    monitoring: ['power', 'current', 'voltage']
   },
   cooling: {
     heatOutput: {
-      btu: 5000,
-      kW: 1.5
+      btu: category === 'konnect' ? 51180 : 1000,
+      kW: category === 'konnect' ? 15 : 0.3
     },
     requirements: {
-      type: "air",
-      capacity: 2000
+      type: 'forced-air',
+      capacity: category === 'konnect' ? 5000 : 500
     },
     airflow: {
       pattern: 'front-to-back',
-      cfm: 100
+      cfm: category === 'konnect' ? 1000 : 100
     },
     temperature: {
       min: 10,
@@ -206,85 +206,82 @@ const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
       optimal: 22
     },
     redundancy: {
-      type: "N+1",
-      configuration: "active"
+      type: 'N+1',
+      configuration: 'active'
     },
     hotColdAisle: {
       compatible: true,
-      configuration: "standard"
+      configuration: 'standard'
     }
   },
   connectivity: {
     networkPorts: [{
-      type: "Ethernet",
+      type: 'ethernet',
       quantity: 4,
-      speed: 1000
+      speed: 10000
     }],
     bandwidth: {
-      uplink: 1000,
-      downlink: 1000
+      uplink: 40000,
+      downlink: 40000
     },
     fiberConnections: [{
-      type: "single-mode",
+      type: 'single-mode',
       quantity: 2
     }],
     copperConnections: [{
-      type: "RJ45",
-      quantity: 4
+      type: 'cat6a',
+      quantity: 24
     }],
     redundancy: {
-      type: "N+1",
-      configuration: "active"
+      type: 'N+1',
+      configuration: 'active-active'
     },
-    cableManagement: []
+    cableManagement: ['vertical', 'horizontal']
   },
   performance: {
     computing: {
-      cores: 8,
-      threads: 16,
+      cores: 64,
+      threads: 128,
       clockSpeed: 3.5,
-      memory: 32
+      memory: 512
     },
     storage: {
-      capacity: 1000,
-      type: "SSD",
-      iops: 100000
+      capacity: 10000,
+      type: 'nvme',
+      iops: 1000000
     },
     network: {
-      throughput: 1000,
-      latency: 10
+      throughput: 40000,
+      latency: 0.1
     },
     benchmarks: [{
-      name: "SPEC CPU",
-      score: 20000
+      name: 'SPECpower_ssj2008',
+      score: 12000
     }]
   },
   environmental: {
     noise: {
-      idle: 30,
-      load: 50
+      idle: 45,
+      load: 65
     },
     humidity: {
       min: 20,
       max: 80,
-      optimal: 50
+      optimal: 45
     },
-    dustTolerance: "IP20",
+    dustTolerance: 'IP52',
     altitude: {
-      max: 2000,
-      derating: "none"
+      max: 3000,
+      derating: 'none'
     },
-    seismicRating: "Seismic Zone 2"
+    seismicRating: 'Zone 4'
   },
-  watts: category === "konnect" ? 15000 : 0,
-  kWh: category === "konnect" ? 360 : 0,
+  watts: category === 'konnect' ? 15000 : 100,
+  kWh: category === 'konnect' ? 360 : 2.4,
   wireConfigurations: [{
     type: category,
-    gauge: category === "power" ? "AWG 8" : 
-           category === "network" ? category : "N/A",
-    length: category === "konnect" ? 10 :
-            category === "power" ? 5 :
-            category === "network" ? 3 : 1
+    gauge: category === 'power' ? 'AWG 8' : 'N/A',
+    length: category === 'konnect' ? 10 : 1
   }]
 });
 
