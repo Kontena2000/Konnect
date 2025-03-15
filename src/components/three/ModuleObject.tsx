@@ -1,4 +1,3 @@
-
 import { useRef, useState } from "react";
 import { Mesh } from "three";
 import { useFrame } from "@react-three/fiber";
@@ -28,10 +27,10 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
     }
   });
 
-  const connectionPoints: Array<{ position: [number, number, number]; type: "power" | "network" | "cooling" }> = [
-    { position: [0.5, 0, 0], type: "power" },
-    { position: [-0.5, 0, 0], type: "network" },
-    { position: [0, 0.5, 0], type: "cooling" }
+  const connectionPoints: Array<{ position: [number, number, number]; type: 'power' | 'network' | 'cooling' }> = [
+    { position: [0.5, 0, 0], type: 'power' },
+    { position: [-0.5, 0, 0], type: 'network' },
+    { position: [0, 0.5, 0], type: 'cooling' }
   ];
 
   return (
@@ -64,6 +63,8 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
           position={point.position}
           type={point.type}
           onConnect={(position, type) => onConnectPoint?.(module.id, position, type)}
+          isValidTarget={true} // This will be updated based on active connection
+          activeConnectionType={null} // This will be updated based on active connection
         />
       ))}
     </group>
