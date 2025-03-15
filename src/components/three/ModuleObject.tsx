@@ -2,7 +2,8 @@ import { useRef, useState } from "react";
 import { Mesh } from "three";
 import { useFrame } from "@react-three/fiber";
 import { ConnectionPoint } from './ConnectionPoint';
-import { useTexture } from '@react-three/drei';
+import { useTexture, Html } from '@react-three/drei';
+import * as THREE from 'three';
 
 interface ModuleObjectProps {
   module: {

@@ -7,7 +7,7 @@ import { ModuleDragOverlay } from "@/components/three/DragOverlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Undo, Redo, ZoomIn, ZoomOut } from "lucide-react";
+import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { ModuleProperties } from '@/components/three/ModuleProperties';
