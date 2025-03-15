@@ -1,6 +1,6 @@
 
 import { useRef } from "react";
-import { Vector3, BufferGeometry, LineBasicMaterial } from "three";
+import { Vector3, BufferGeometry, LineBasicMaterial, Line } from "three";
 
 interface ConnectionLineProps {
   start: [number, number, number];
@@ -20,8 +20,7 @@ export function ConnectionLine({
   ]);
   
   const material = new LineBasicMaterial({ color });
+  const line = new Line(geometry, material);
 
-  return (
-    <primitive object={new THREE.Line(geometry, material)} />
-  );
+  return <primitive object={line} />;
 }

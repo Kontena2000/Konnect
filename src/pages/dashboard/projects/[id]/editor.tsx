@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -13,6 +12,7 @@ import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "
 import { nanoid } from "nanoid";
 import { ModuleProperties } from '@/components/three/ModuleProperties';
 import { Module } from "@/services/layout";
+import { Connection } from '@/services/layout';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -40,6 +40,12 @@ export default function LayoutEditorPage() {
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [activeConnection, setActiveConnection] = useState<{
+    sourceModuleId: string;
+    sourcePoint: [number, number, number];
+    type: 'power' | 'network' | 'cooling';
+  } | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -105,6 +111,29 @@ export default function LayoutEditorPage() {
     }
   };
 
+  const handleConnectPoint = (moduleId: string, point: [number, number, number], type: string) => {
+    if (!activeConnection) {
+      setActiveConnection({
+        sourceModuleId: moduleId,
+        sourcePoint: point,
+        type: type as 'power' | 'network' | 'cooling'
+      });
+    } else {
+      if (moduleId !== activeConnection.sourceModuleId && type === activeConnection.type) {
+        const newConnection: Connection = {
+          id: nanoid(),
+          sourceModuleId: activeConnection.sourceModuleId,
+          targetModuleId: moduleId,
+          sourcePoint: activeConnection.sourcePoint,
+          targetPoint: point,
+          type: activeConnection.type
+        };
+        setConnections([...connections, newConnection]);
+      }
+      setActiveConnection(null);
+    }
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -154,6 +183,9 @@ export default function LayoutEditorPage() {
                   onModuleSelect={setSelectedModuleId}
                   onModuleUpdate={handleModuleUpdate}
                   onDropPoint={handleDropPoint}
+                  connections={connections}
+                  activeConnection={activeConnection}
+                  onConnectPoint={handleConnectPoint}
                 />
               </CardContent>
             </Card>

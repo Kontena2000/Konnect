@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -6,6 +5,8 @@ import { ModuleControls } from "./ModuleControls";
 import { useRef, useState } from "react";
 import * as THREE from "three";
 import { ThreeEvent } from "@react-three/fiber";
+import { ConnectionLine } from './ConnectionLine';
+import { Connection } from '@/services/layout';
 
 interface SceneContainerProps {
   modules: any[];
@@ -14,6 +15,13 @@ interface SceneContainerProps {
   onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: any) => void;
   onDropPoint?: (point: [number, number, number]) => void;
+  connections?: Connection[];
+  activeConnection?: {
+    sourceModuleId: string;
+    sourcePoint: [number, number, number];
+    type: string;
+  } | null;
+  onConnectPoint?: (moduleId: string, point: [number, number, number], type: string) => void;
 }
 
 export function SceneContainer({ 
@@ -22,7 +30,10 @@ export function SceneContainer({
   transformMode = "translate",
   onModuleSelect,
   onModuleUpdate,
-  onDropPoint 
+  onDropPoint,
+  connections = [],
+  activeConnection,
+  onConnectPoint
 }: SceneContainerProps) {
   const planeRef = useRef<THREE.Mesh>(null);
   const [hoverPoint, setHoverPoint] = useState<[number, number, number] | null>(null);
@@ -81,6 +92,7 @@ export function SceneContainer({
               module={module}
               onClick={() => onModuleSelect?.(module.id)}
               selected={module.id === selectedModuleId}
+              onConnectPoint={onConnectPoint}
             />
             {module.id === selectedModuleId && (
               <ModuleControls
@@ -96,6 +108,29 @@ export function SceneContainer({
           </group>
         ))}
         
+        {connections.map((connection) => (
+          <ConnectionLine
+            key={connection.id}
+            start={connection.sourcePoint}
+            end={connection.targetPoint}
+            color={
+              connection.type === 'power'
+                ? '#ff0000'
+                : connection.type === 'network'
+                ? '#00ff00'
+                : '#0000ff'
+            }
+          />
+        ))}
+
+        {activeConnection && (
+          <ConnectionLine
+            start={activeConnection.sourcePoint}
+            end={hoverPoint || activeConnection.sourcePoint}
+            color='#999999'
+          />
+        )}
+
         {hoverPoint && (
           <mesh position={hoverPoint}>
             <sphereGeometry args={[0.1]} />
