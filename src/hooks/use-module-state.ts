@@ -25,12 +25,10 @@ export function useModuleState({
   initialConnections = [],
   autoSave = true
 }: UseModuleStateProps) {
-  const [state, setState] = useState<ModuleState>({
-    modules: initialModules,
-    connections: initialConnections,
-    hasChanges: false
-  });
-  
+  const [modules, setModules] = useState<Module[]>(initialModules);
+  const [connections, setConnections] = useState<Connection[]>(initialConnections);
+  const [selectedModuleId, setSelectedModuleId] = useState<string>();
+  const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
   const lastSavedState = useRef<string>(JSON.stringify({ 
@@ -48,7 +46,7 @@ export function useModuleState({
           updatedAt: new Date()
         });
         lastSavedState.current = JSON.stringify({ modules, connections });
-        setState(prev => ({ ...prev, hasChanges: false }));
+        setHasChanges(false);
       } catch (error) {
         console.error('Save error:', error);
         toast({
@@ -69,88 +67,67 @@ export function useModuleState({
   );
 
   useEffect(() => {
-    const currentState = JSON.stringify({ modules: state.modules, connections: state.connections });
+    const currentState = JSON.stringify({ modules, connections });
     const hasChanges = currentState !== lastSavedState.current;
-    setState(prev => ({ ...prev, hasChanges }));
+    setHasChanges(hasChanges);
 
     if (autoSave && hasChanges && !saving && layoutId) {
       setSaving(true);
-      debouncedSave(state.modules, state.connections).finally(() => setSaving(false));
+      debouncedSave(modules, connections);
     }
-  }, [state.modules, state.connections, autoSave, saving, layoutId]);
+  }, [modules, connections, autoSave, saving, layoutId, debouncedSave]);
 
   const updateModule = useCallback((moduleId: string, updates: Partial<Module>) => {
-    setState(prev => ({
-      ...prev,
-      modules: prev.modules.map(module =>
-        module.id === moduleId ? { ...module, ...updates } : module
-      )
-    }));
+    setModules(prev => prev.map(module =>
+      module.id === moduleId ? { ...module, ...updates } : module
+    ));
   }, []);
 
   const addModule = useCallback((module: Module) => {
-    setState(prev => ({
-      ...prev,
-      modules: [...prev.modules, module]
-    }));
+    setModules(prev => [...prev, module]);
   }, []);
 
   const deleteModule = useCallback((moduleId: string) => {
-    setState(prev => ({
-      ...prev,
-      modules: prev.modules.filter(m => m.id !== moduleId),
-      connections: prev.connections.filter(
-        c => c.sourceModuleId !== moduleId && c.targetModuleId !== moduleId
-      ),
-      selectedModuleId: prev.selectedModuleId === moduleId ? undefined : prev.selectedModuleId
-    }));
+    setModules(prev => prev.filter(m => m.id !== moduleId));
+    setConnections(prev => prev.filter(
+      c => c.sourceModuleId !== moduleId && c.targetModuleId !== moduleId
+    ));
+    setSelectedModuleId(prev => (prev === moduleId ? undefined : prev));
   }, []);
 
   const addConnection = useCallback((connection: Connection) => {
-    setState(prev => ({
-      ...prev,
-      connections: [...prev.connections, connection]
-    }));
+    setConnections(prev => [...prev, connection]);
   }, []);
 
   const updateConnection = useCallback((connectionId: string, updates: Partial<Connection>) => {
-    setState(prev => ({
-      ...prev,
-      connections: prev.connections.map(conn =>
-        conn.id === connectionId ? { ...conn, ...updates } : conn
-      )
-    }));
+    setConnections(prev => prev.map(conn =>
+      conn.id === connectionId ? { ...conn, ...updates } : conn
+    ));
   }, []);
 
   const deleteConnection = useCallback((connectionId: string) => {
-    setState(prev => ({
-      ...prev,
-      connections: prev.connections.filter(c => c.id !== connectionId)
-    }));
+    setConnections(prev => prev.filter(c => c.id !== connectionId));
   }, []);
 
   const selectModule = useCallback((moduleId: string | undefined) => {
-    setState(prev => ({
-      ...prev,
-      selectedModuleId: moduleId
-    }));
+    setSelectedModuleId(moduleId);
   }, []);
 
   const saveChanges = useCallback(async () => {
-    if (!layoutId || !state.hasChanges) return;
+    if (!layoutId || !hasChanges) return;
     
     setSaving(true);
     try {
       await layoutService.updateLayout(layoutId, {
-        modules: state.modules,
-        connections: state.connections,
+        modules,
+        connections,
         updatedAt: new Date()
       });
       lastSavedState.current = JSON.stringify({ 
-        modules: state.modules, 
-        connections: state.connections 
+        modules, 
+        connections 
       });
-      setState(prev => ({ ...prev, hasChanges: false }));
+      setHasChanges(false);
       toast({
         title: "Success",
         description: "Layout saved successfully"
@@ -165,11 +142,17 @@ export function useModuleState({
     } finally {
       setSaving(false);
     }
-  }, [layoutId, state.modules, state.connections, state.hasChanges, toast]);
+  }, [layoutId, modules, connections, hasChanges, toast]);
 
   return {
-    ...state,
+    modules,
+    connections,
+    selectedModuleId,
+    hasChanges,
     saving,
+    setModules,
+    setConnections,
+    setSelectedModuleId,
     updateModule,
     addModule,
     deleteModule,

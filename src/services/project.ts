@@ -87,7 +87,7 @@ const projectService = {
       });
       return projectRef.id;
     } catch (error) {
-      return handleError(error, 'CREATE_FAILED', 'Failed to create project');
+      throw handleError(error, 'CREATE_FAILED', 'Failed to create project');
     }
   },
 
@@ -129,8 +129,9 @@ const projectService = {
     try {
       const projectRef = doc(db, 'projects', id);
       await deleteDoc(projectRef);
+      return;
     } catch (error) {
-      handleError(error, 'DELETE_FAILED', 'Failed to delete project');
+      throw handleError(error, 'DELETE_FAILED', 'Failed to delete project');
     }
   },
 
@@ -173,11 +174,16 @@ const projectService = {
     }
   },
 
-  async removeShare(projectId: string, email: string) {
-    const projectRef = doc(db, 'projects', projectId);
-    await updateDoc(projectRef, {
-      sharedWith: arrayRemove(email)
-    });
+  async removeShare(projectId: string, email: string): Promise<void> {
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      await updateDoc(projectRef, {
+        sharedWith: arrayRemove(email)
+      });
+      return;
+    } catch (error) {
+      throw handleError(error, 'SHARE_REMOVE_FAILED', 'Failed to remove share');
+    }
   }
 };
 
