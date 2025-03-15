@@ -20,6 +20,7 @@ import { ChevronDown } from "lucide-react"; // Added import for ChevronDown
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'; // Added import for Sheet
 import { Menu } from 'lucide-react'; // Added import for Menu
 import projectService from '@/services/project';
+import { LayoutSelector } from '@/components/layout/LayoutSelector';
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
@@ -29,6 +30,7 @@ export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
   const [layout, setLayout] = useState<Layout | null>(null);
+  const [layouts, setLayouts] = useState<Layout[]>([]);
   const [modules, setModules] = useState<Module[]>([]);
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
@@ -70,11 +72,10 @@ export default function LayoutEditorPage() {
   );
 
   useEffect(() => {
-    const loadProjectAndLayout = async () => {
+    const loadProjectAndLayouts = async () => {
       if (!id) return;
       setIsLoading(true);
       try {
-        // First load the project to verify it exists
         const project = await projectService.getProject(id as string);
         if (!project) {
           toast({
@@ -86,11 +87,10 @@ export default function LayoutEditorPage() {
           return;
         }
 
-        // Then load all layouts for this project
-        const layouts = await layoutService.getProjectLayouts(id as string);
+        const projectLayouts = await layoutService.getProjectLayouts(id as string);
+        setLayouts(projectLayouts);
         
-        // Use the first layout or create a new one
-        let currentLayout = layouts[0];
+        let currentLayout = projectLayouts[0];
         if (!currentLayout) {
           const layoutId = await layoutService.createLayout({
             projectId: id as string,
@@ -99,6 +99,7 @@ export default function LayoutEditorPage() {
             connections: []
           });
           currentLayout = await layoutService.getLayout(layoutId) as Layout;
+          setLayouts([currentLayout]);
         }
 
         setLayout(currentLayout);
@@ -119,8 +120,24 @@ export default function LayoutEditorPage() {
         setIsLoading(false);
       }
     };
-    loadProjectAndLayout();
+    loadProjectAndLayouts();
   }, [id, router, toast]);
+
+  const handleLayoutChange = (newLayout: Layout) => {
+    setLayout(newLayout);
+    setModules(newLayout.modules || []);
+    setConnections(newLayout.connections || []);
+    lastSavedState.current = JSON.stringify({ 
+      modules: newLayout.modules, 
+      connections: newLayout.connections 
+    });
+    setHistory({ past: [], future: [] });
+  };
+
+  const handleLayoutCreate = (newLayout: Layout) => {
+    setLayouts((prev) => [...prev, newLayout]);
+    handleLayoutChange(newLayout);
+  };
 
   useEffect(() => {
     const currentState = JSON.stringify({ modules, connections });
@@ -343,7 +360,16 @@ export default function LayoutEditorPage() {
         <AppLayout>
           <div className='h-screen flex flex-col'>
             <div className='flex items-center justify-between p-4 border-b'>
-              <h1 className='text-2xl font-bold'>Layout Editor</h1>
+              <div className='flex items-center gap-4'>
+                <h1 className='text-2xl font-bold'>Layout Editor</h1>
+                <LayoutSelector
+                  projectId={id as string}
+                  layouts={layouts}
+                  currentLayout={layout}
+                  onLayoutChange={handleLayoutChange}
+                  onLayoutCreate={handleLayoutCreate}
+                />
+              </div>
               <div className='flex items-center gap-2'>
                 <Tooltip>
                   <TooltipTrigger asChild>
