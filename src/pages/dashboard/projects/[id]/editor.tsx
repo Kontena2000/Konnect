@@ -478,7 +478,11 @@ export default function LayoutEditorPage() {
                 </Tooltip>
 
                 <Separator orientation="vertical" className="h-6" />
-                <Button onClick={handleSave} disabled={saving || !hasChanges}>
+                <Button 
+                  onClick={handleSave} 
+                  disabled={saving || !hasChanges}
+                  className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+                >
                   {saving ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

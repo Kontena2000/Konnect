@@ -50,37 +50,37 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold">Projects</h1>
-          <Link href="/dashboard/projects/new">
-            <Button>
-              <Plus className="h-4 w-4 mr-2" />
+      <div className='space-y-6'>
+        <div className='flex justify-between items-center'>
+          <h1 className='text-3xl font-bold'>Projects</h1>
+          <Link href='/dashboard/projects/new'>
+            <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+              <Plus className='h-4 w-4 mr-2' />
               New Project
             </Button>
           </Link>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className='grid gap-6 md:grid-cols-2 lg:grid-cols-3'>
           {projects.map((project) => (
             <Card key={project.id}>
               <CardHeader>
                 <CardTitle>{project.name}</CardTitle>
               </CardHeader>
               <CardContent>
-                <p className="text-sm text-muted-foreground">
-                  {project.description || "No description"}
+                <p className='text-sm text-muted-foreground'>
+                  {project.description || 'No description'}
                 </p>
-                <div className="mt-4">
+                <div className='mt-4'>
                   <Link href={`/dashboard/projects/${project.id}`}>
-                    <Button variant="outline" className="w-full">
+                    <Button variant='outline' className='w-full'>
                       Open Project
                     </Button>
                   </Link>
                 </div>
                 <div className='mt-4'>
                   <Link href={`/dashboard/projects/${project.id}/editor`}>
-                    <Button variant='outline' className='w-full'>
+                    <Button className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
                       Open Editor
                     </Button>
                   </Link>

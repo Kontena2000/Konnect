@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -85,34 +84,34 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
   };
 
   return (
-    <Card className="mb-4">
+    <Card className='mb-4'>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className='flex items-center justify-between'>
           <span>{module.name}</span>
-          <div className="flex gap-2">
+          <div className='flex gap-2'>
             <Button 
-              variant="outline" 
-              size="sm"
+              variant='outline' 
+              size='sm'
               onClick={() => setIsEditing(!isEditing)}
             >
-              {isEditing ? "Cancel" : "Edit"}
+              {isEditing ? 'Cancel' : 'Edit'}
             </Button>
             {isEditing && (
               <Button 
-                variant="default" 
-                size="sm"
+                size='sm'
                 onClick={handleSave}
+                className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
               >
-                <Save className="h-4 w-4 mr-2" />
+                <Save className='h-4 w-4 mr-2' />
                 Save
               </Button>
             )}
             <Button 
-              variant="destructive" 
-              size="sm"
+              variant='destructive' 
+              size='sm'
               onClick={() => onDelete(module.id)}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className='h-4 w-4' />
             </Button>
           </div>
         </CardTitle>
