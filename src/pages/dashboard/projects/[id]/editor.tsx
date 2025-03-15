@@ -70,21 +70,20 @@ export default function LayoutEditorPage() {
             setModules(existingLayout.modules);
             setConnections(existingLayout.connections);
           } else {
-            // Create new layout if none exists
-            const newLayoutId = await layoutService.createLayout({
+            // Create new layout with all required fields
+            const newLayout = {
               projectId: id as string,
               name: 'New Layout',
               description: 'Created from editor',
               modules: [],
               connections: []
-            });
+            };
+            
+            const newLayoutId = await layoutService.createLayout(newLayout);
+            
             setLayout({
               id: newLayoutId,
-              projectId: id as string,
-              name: 'New Layout',
-              description: 'Created from editor',
-              modules: [],
-              connections: [],
+              ...newLayout,
               createdAt: new Date(),
               updatedAt: new Date()
             });
