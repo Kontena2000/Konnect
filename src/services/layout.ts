@@ -12,6 +12,10 @@ import {
   getDoc
 } from "firebase/firestore";
 
+type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
+type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
+type ConnectionType = PowerCableType | NetworkCableType;
+
 export interface Module {
   id: string;
   type: string;
@@ -26,7 +30,7 @@ export interface Module {
   };
   connectionPoints?: Array<{
     position: [number, number, number];
-    type: "power" | "network" | "cooling";
+    type: ConnectionType;
   }>;
 }
 
@@ -36,7 +40,7 @@ export interface Connection {
   targetModuleId: string;
   sourcePoint: [number, number, number];
   targetPoint: [number, number, number];
-  type: 'power' | 'network' | 'cooling';
+  type: ConnectionType;
   capacity?: number;
 }
 
