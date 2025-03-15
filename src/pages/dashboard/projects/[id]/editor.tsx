@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -11,14 +12,16 @@ import { Save, Undo, Redo, ZoomIn, ZoomOut } from "lucide-react";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { ModuleProperties } from '@/components/three/ModuleProperties';
+import { Module } from "@/services/layout";
 
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
   
-  const [modules, setModules] = useState([
+  const [modules, setModules] = useState<Module[]>([
     {
       id: "1",
+      type: "datacenter",
       position: [0, 0, 0],
       rotation: [0, 0, 0],
       scale: [2, 1, 3],
@@ -26,6 +29,7 @@ export default function LayoutEditorPage() {
     },
     {
       id: "2",
+      type: "ups",
       position: [3, 0, 0],
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
@@ -61,20 +65,20 @@ export default function LayoutEditorPage() {
     // Create new module
     const template = event.active.data.current as ModuleTemplate;
     if (template) {
-      const newModule = {
+      const newModule: Module = {
         id: nanoid(),
+        type: template.type,
         position: dropPoint as [number, number, number],
         rotation: [0, 0, 0],
         scale: template.dimensions,
-        color: template.color,
-        type: template.type
+        color: template.color
       };
       
       setModules([...modules, newModule]);
     }
   };
 
-  const handleModuleUpdate = (moduleId: string, updates: any) => {
+  const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
     setModules(modules.map(module => 
       module.id === moduleId ? { ...module, ...updates } : module
     ));
@@ -87,13 +91,13 @@ export default function LayoutEditorPage() {
 
   const handleDropPoint = (point: [number, number, number]) => {
     if (draggingTemplate) {
-      const newModule = {
+      const newModule: Module = {
         id: nanoid(),
+        type: draggingTemplate.type,
         position: point,
         rotation: [0, 0, 0],
         scale: draggingTemplate.dimensions,
-        color: draggingTemplate.color,
-        type: draggingTemplate.type
+        color: draggingTemplate.color
       };
       
       setModules([...modules, newModule]);
