@@ -56,8 +56,8 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-3 py-2 rounded-md hover:bg-[#1FB73A] transition-colors
-                ${router.pathname === item.href ? 'bg-[#1FB73A]' : ''}
+              className={`flex items-center px-3 py-2 rounded-md hover:bg-[#F1B73A] transition-colors
+                ${router.pathname === item.href ? 'bg-[#F1B73A]' : ''}
                 ${collapsed ? 'justify-center' : 'space-x-2'}
               `}
             >

@@ -4,33 +4,48 @@ import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Plus } from "lucide-react";
+import { Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
 
 export default function ProjectsPage() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const loadProjects = async () => {
-      if (user) {
-        try {
-          const userProjects = await projectService.getUserProjects(user.uid);
-          setProjects(userProjects);
-        } catch (error) {
-          console.error("Error loading projects:", error);
-        } finally {
-          setLoading(false);
-        }
+      if (!user) return;
+      
+      try {
+        const userProjects = await projectService.getUserProjects(user.uid);
+        setProjects(userProjects);
+      } catch (error) {
+        console.error('Error loading projects:', error);
+      } finally {
+        setLoading(false);
       }
     };
 
-    loadProjects();
-  }, [user]);
+    if (!authLoading) {
+      loadProjects();
+    }
+  }, [user, authLoading]);
 
-  if (loading) {
-    return <AppLayout>Loading projects...</AppLayout>;
+  if (authLoading || loading) {
+    return (
+      <AppLayout>
+        <div className='h-screen flex items-center justify-center'>
+          <div className='flex items-center gap-2'>
+            <Loader2 className='h-6 w-6 animate-spin' />
+            <p>Loading projects...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (!user) {
+    return null;
   }
 
   return (
