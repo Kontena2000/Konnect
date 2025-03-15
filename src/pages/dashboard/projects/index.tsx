@@ -80,7 +80,7 @@ export default function ProjectsPage() {
                 </p>
                 <div className='space-y-4 pt-4'>
                   <Link href={`/dashboard/projects/${project.id}`}>
-                    <Button variant='outline' className='w-full'>
+                    <Button variant='outline' className='w-full mb-3'>
                       Open Project
                     </Button>
                   </Link>
