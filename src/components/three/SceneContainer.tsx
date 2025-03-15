@@ -1,3 +1,4 @@
+
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -9,7 +10,7 @@ import { ConnectionLine } from './ConnectionLine';
 import { Connection } from '@/services/layout';
 import { EnvironmentalElement } from '@/components/environment/EnvironmentalElement';
 import { TerrainView } from '@/components/environment/TerrainView';
-import type { EnvironmentalElement as ElementType } from '@/services/environment';
+import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
 
 interface SceneContainerProps {
   modules: any[];
@@ -80,13 +81,22 @@ export function SceneContainer({
           castShadow
         />
         
-        <Grid
-          infiniteGrid
-          cellSize={1}
-          sectionSize={3}
-          fadeDistance={50}
-          fadeStrength={1}
-        />
+        {terrain ? (
+          <TerrainView
+            data={terrain}
+            showGrid={true}
+            showMeasurements={true}
+            materialType="soil"
+          />
+        ) : (
+          <Grid
+            infiniteGrid
+            cellSize={1}
+            sectionSize={3}
+            fadeDistance={50}
+            fadeStrength={1}
+          />
+        )}
         
         <mesh
           ref={planeRef}
@@ -149,15 +159,6 @@ export function SceneContainer({
             <sphereGeometry args={[0.1]} />
             <meshStandardMaterial color="red" transparent opacity={0.5} />
           </mesh>
-        )}
-        
-        {terrain && (
-          <TerrainView
-            data={terrain}
-            showGrid={true}
-            showMeasurements={true}
-            materialType='soil'
-          />
         )}
 
         {environmentalElements.map((element) => (
