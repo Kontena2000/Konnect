@@ -50,7 +50,7 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='container mx-auto px-4 py-8 max-w-7xl'>
+      <div className='container mx-auto p-6 lg:p-8 max-w-7xl'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>
@@ -64,7 +64,7 @@ export default function ProjectsPage() {
         <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
           {projects.map((project) => (
             <Card key={project.id} className='flex flex-col'>
-              <CardHeader>
+              <CardHeader className='pb-4'>
                 <CardTitle>{project.name}</CardTitle>
               </CardHeader>
               <CardContent className='flex-1 space-y-4'>

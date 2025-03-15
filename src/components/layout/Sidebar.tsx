@@ -38,20 +38,20 @@ export function Sidebar() {
 
   return (
     <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 z-50 ${collapsed ? 'w-16' : 'w-64'}`}>
-      <div className="flex h-16 items-center justify-between px-4 border-b">
-        {!collapsed && <h1 className="text-lg font-semibold">Kontena</h1>}
+      <div className='flex h-16 items-center justify-between px-4 border-b'>
+        {!collapsed && <h1 className='text-lg font-semibold'>Kontena</h1>}
         <Button
-          variant="ghost"
-          size="icon"
+          variant='ghost'
+          size='icon'
           onClick={() => setCollapsed(!collapsed)}
-          className={collapsed ? "mx-auto" : ""}
+          className={collapsed ? 'mx-auto' : ''}
         >
-          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+          {collapsed ? <ChevronRight className='h-4 w-4' /> : <ChevronLeft className='h-4 w-4' />}
         </Button>
       </div>
       
-      <ScrollArea className="h-[calc(100vh-4rem)]">
-        <div className="space-y-1 p-2">
+      <ScrollArea className='h-[calc(100vh-4rem)]'>
+        <div className='space-y-1 p-2'>
           {navigationItems.map((item) => (
             <Link
               key={item.href}
@@ -67,14 +67,14 @@ export function Sidebar() {
           ))}
         </div>
         
-        <div className="absolute bottom-4 left-0 right-0 p-2">
+        <div className='absolute bottom-4 left-0 right-0 p-2'>
           <Button
-            variant="ghost"
-            className={`w-full ${collapsed ? "justify-center" : "justify-start"}`}
+            variant='ghost'
+            className={`w-full ${collapsed ? 'justify-center' : 'justify-start'}`}
             onClick={handleSignOut}
           >
-            <LogOut className="h-5 w-5" />
-            {!collapsed && <span className="ml-2">Sign Out</span>}
+            <LogOut className='h-5 w-5' />
+            {!collapsed && <span className='ml-2'>Sign Out</span>}
           </Button>
         </div>
       </ScrollArea>

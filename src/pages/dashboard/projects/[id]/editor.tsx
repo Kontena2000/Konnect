@@ -394,7 +394,7 @@ export default function LayoutEditorPage() {
     >
       <TooltipProvider>
         <AppLayout>
-          <div className='h-screen -m-6 md:-m-8 lg:-m-10 flex flex-col'> {/* Updated layout to extend to edges */}
+          <div className='h-screen -m-6 md:-m-8 lg:-m-10 flex flex-col'>
             <div className='flex items-center justify-between px-6 py-4 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60'>
               <div className='flex items-center gap-4'>
                 <h1 className='text-2xl font-bold'>Layout Editor</h1>
@@ -494,7 +494,7 @@ export default function LayoutEditorPage() {
               </div>
             </div>
 
-            <div className='flex-1 relative'>
+            <div className='flex-1 relative h-[calc(100vh-4rem)]'>
               <SceneContainer
                 modules={modules}
                 selectedModuleId={selectedModuleId}
