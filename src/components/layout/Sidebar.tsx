@@ -37,14 +37,14 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 z-50 ${collapsed ? 'w-16' : 'w-64'}`}>
+    <div className={`fixed top-0 left-0 h-screen bg-white border-r transition-all duration-200 z-50 ${collapsed ? 'w-16' : 'w-64'}`}>
       <div className='flex h-16 items-center justify-between px-4 border-b'>
-        {!collapsed && <h1 className='text-lg font-semibold'>Kontena</h1>}
+        {!collapsed && <h1 className='text-lg font-semibold text-black'>Kontena</h1>}
         <Button
           variant='ghost'
           size='icon'
           onClick={() => setCollapsed(!collapsed)}
-          className={collapsed ? 'mx-auto' : ''}
+          className={`${collapsed ? 'mx-auto' : ''} text-black hover:bg-[#F1B73A]/10`}
         >
           {collapsed ? <ChevronRight className='h-4 w-4' /> : <ChevronLeft className='h-4 w-4' />}
         </Button>
@@ -56,8 +56,8 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center px-3 py-2 rounded-md hover:bg-[#F1B73A] transition-colors
-                ${router.pathname === item.href ? 'bg-[#F1B73A]' : ''}
+              className={`flex items-center px-3 py-2 rounded-md text-black hover:bg-[#F1B73A]/10 transition-colors
+                ${router.pathname === item.href ? 'bg-[#F1B73A]/20' : ''}
                 ${collapsed ? 'justify-center' : 'space-x-2'}
               `}
             >
@@ -70,7 +70,7 @@ export function Sidebar() {
         <div className='absolute bottom-4 left-0 right-0 p-2'>
           <Button
             variant='ghost'
-            className={`w-full ${collapsed ? 'justify-center' : 'justify-start'} hover:bg-[#F1B73A]`}
+            className={`w-full ${collapsed ? 'justify-center' : 'justify-start'} text-black hover:bg-[#F1B73A]/10`}
             onClick={handleSignOut}
           >
             <LogOut className='h-5 w-5' />

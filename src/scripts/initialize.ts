@@ -1,4 +1,3 @@
-
 const path = require("path");
 const { initializeApp } = require("firebase/app");
 const { getAuth } = require("firebase/auth");
@@ -15,56 +14,56 @@ console.log("Services directory:", path.resolve(__dirname, "../services"));
 const moduleTemplates = {
   konnect: [
     {
-      id: "edge-container",
-      type: "edge-container",
-      category: "konnect",
-      name: "Edge Container",
-      description: "Standard Edge Computing Container",
-      color: "#808080",
+      id: 'edge-container',
+      type: 'edge-container',
+      category: 'konnect',
+      name: 'Edge Container',
+      description: 'Standard Edge Computing Container',
+      color: '#808080',
       dimensions: [6.1, 2.9, 2.44]
     }
   ],
   power: [
     {
-      id: "208v-3phase",
-      type: "208v-3phase",
-      category: "power",
-      name: "208V 3-Phase",
-      description: "208V Three Phase Power Cable",
-      color: "#1FB73A",
+      id: '208v-3phase',
+      type: '208v-3phase',
+      category: 'power',
+      name: '208V 3-Phase',
+      description: '208V Three Phase Power Cable',
+      color: '#F1B73A',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
   network: [
     {
-      id: "cat6a",
-      type: "cat6a",
-      category: "network",
-      name: "CAT6A",
-      description: "Category 6A Network Cable",
-      color: "#00ff00",
+      id: 'cat6a',
+      type: 'cat6a',
+      category: 'network',
+      name: 'CAT6A',
+      description: 'Category 6A Network Cable',
+      color: '#00ff00',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
   cooling: [
     {
-      id: "chilled-water",
-      type: "chilled-water",
-      category: "cooling",
-      name: "Chilled Water",
-      description: "Chilled Water Cooling Pipe",
-      color: "#0088ff",
+      id: 'chilled-water',
+      type: 'chilled-water',
+      category: 'cooling',
+      name: 'Chilled Water',
+      description: 'Chilled Water Cooling Pipe',
+      color: '#0088ff',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
   environment: [
     {
-      id: "air-handler",
-      type: "air-handler",
-      category: "environment",
-      name: "Air Handler",
-      description: "Environmental Air Handler Unit",
-      color: "#888888",
+      id: 'air-handler',
+      type: 'air-handler',
+      category: 'environment',
+      name: 'Air Handler',
+      description: 'Environmental Air Handler Unit',
+      color: '#888888',
       dimensions: [1.2, 1.8, 0.6]
     }
   ]

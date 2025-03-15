@@ -81,7 +81,7 @@ export const moduleTemplates: Record<ModuleCategory, ModuleTemplate[]> = {
       category: 'network',
       name: 'CAT6A',
       description: 'Category 6A Network Cable',
-      color: '#4CAF50',
+      color: '#00ff00',
       dimensions: [0.1, 0.1, 0.1]
     },
     {
@@ -90,7 +90,7 @@ export const moduleTemplates: Record<ModuleCategory, ModuleTemplate[]> = {
       category: 'network',
       name: 'OM4',
       description: 'OM4 Multimode Fiber Cable',
-      color: '#2196F3',
+      color: '#00ffff',
       dimensions: [0.1, 0.1, 0.1]
     }
   ],

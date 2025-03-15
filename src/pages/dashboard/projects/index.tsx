@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
@@ -6,12 +7,13 @@ import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2 } from "lucide-react";
 import Link from "next/link";
-import { toast } from "@/components/ui/toast"; // Added import for toast
+import { useToast } from "@/hooks/use-toast";
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const { toast } = useToast();
 
   useEffect(() => {
     const loadProjects = async () => {
@@ -35,7 +37,7 @@ export default function ProjectsPage() {
     if (!authLoading) {
       loadProjects();
     }
-  }, [user, authLoading]);
+  }, [user, authLoading, toast]);
 
   if (authLoading || loading) {
     return (

@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -69,11 +68,22 @@ const layoutService = {
   },
 
   async updateLayout(id: string, data: Partial<Layout>): Promise<void> {
-    const layoutRef = doc(db, "layouts", id);
-    await updateDoc(layoutRef, {
-      ...data,
-      updatedAt: new Date()
-    });
+    try {
+      const layoutRef = doc(db, 'layouts', id);
+      const currentLayout = await getDoc(layoutRef);
+      
+      if (!currentLayout.exists()) {
+        throw new Error('Layout not found');
+      }
+
+      await updateDoc(layoutRef, {
+        ...data,
+        updatedAt: new Date()
+      });
+    } catch (error) {
+      console.error('Error updating layout:', error);
+      throw new Error('Failed to save layout changes. Please try again.');
+    }
   },
 
   async getLayout(id: string): Promise<Layout | null> {
