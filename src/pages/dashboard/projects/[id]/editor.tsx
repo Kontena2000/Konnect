@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -89,20 +88,12 @@ export default function LayoutEditorPage() {
     const { active, over } = event;
     
     if (over && over.id === "scene-container" && draggingTemplate) {
-      // Get the client offset from the event
-      const clientOffset = {
-        x: event.activatorEvent.clientX,
-        y: event.activatorEvent.clientY,
-      };
-      
-      // Convert client coordinates to scene coordinates
-      // This will be handled by SceneContainer's onDropPoint
-      const dropPosition: [number, number, number] = [
-        (clientOffset.x / window.innerWidth) * 20 - 10,
-        0,
-        (clientOffset.y / window.innerHeight) * 20 - 10,
-      ];
-      
+      const dropPosition: [number, number, number] = [0, 0, 0];
+      if ('delta' in event) {
+        const delta = event.delta;
+        dropPosition[0] = delta.x / 50;
+        dropPosition[2] = delta.y / 50;
+      }
       createModule(dropPosition);
     }
     
