@@ -124,12 +124,12 @@ export default function ProjectsPage() {
                   {project.description || 'No description'}
                 </p>
                 <div className='space-y-4 pt-4'>
-                  <Link href={`/dashboard/projects/${project.id}`}>
-                    <Button variant='outline' className='w-full mb-3'>
+                  <Link href={`/dashboard/projects/${project.id}`} className='block'>
+                    <Button variant='outline' className='w-full'>
                       Open Project
                     </Button>
                   </Link>
-                  <Link href={`/dashboard/projects/${project.id}/editor`}>
+                  <Link href={`/dashboard/projects/${project.id}/editor`} className='block'>
                     <Button className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
                       Open Editor
                     </Button>

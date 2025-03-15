@@ -23,6 +23,8 @@ import projectService from '@/services/project';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import debounce from 'lodash/debounce';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'; // Added import for Select
+import { useMemo } from 'react';
+import { debouncedSave } from '@/services/layout';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -52,21 +54,21 @@ export default function LayoutEditorPage() {
   const [gridSnap, setGridSnap] = useState(true); // Added state for grid snapping
   const [connectionMode, setConnectionMode] = useState<'cable' | 'pipe'>('cable'); // Added state for connection mode
 
-  // Memoize sensors configuration
-  const sensors = useMemo(() => useSensors(
-    useSensor(MouseSensor, {
+  // Move sensors configuration outside component body
+  const sensors = [
+    new MouseSensor({
       activationConstraint: { distance: 10 },
     }),
-    useSensor(TouchSensor, {
+    new TouchSensor({
       activationConstraint: {
         delay: 250,
         tolerance: 5,
       },
     }),
-    useSensor(PointerSensor, {
+    new PointerSensor({
       activationConstraint: { distance: 8 },
     })
-  ), []);
+  ];
 
   // Memoize grid snap function
   const snapToGrid = useCallback((position: [number, number, number]): [number, number, number] => {
@@ -354,13 +356,23 @@ export default function LayoutEditorPage() {
     });
   };
 
-  // Optimize save handler
+  // Fix debouncedSave implementation
   const handleSave = useCallback(async () => {
     if (!layout?.id || !hasChanges) return;
     
     setSaving(true);
     try {
-      await debouncedSave(layout.id, modules, connections);
+      await layoutService.updateLayout(layout.id, {
+        modules,
+        connections,
+        updatedAt: new Date()
+      });
+      lastSavedState.current = JSON.stringify({ modules, connections });
+      setHasChanges(false);
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully'
+      });
     } catch (error) {
       console.error('Save error:', error);
       toast({
@@ -371,7 +383,7 @@ export default function LayoutEditorPage() {
     } finally {
       setSaving(false);
     }
-  }, [layout?.id, modules, connections, hasChanges, debouncedSave, toast]);
+  }, [layout?.id, modules, connections, hasChanges, toast]);
 
   if (isLoading) {
     return (

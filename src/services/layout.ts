@@ -8,9 +8,11 @@ import {
   getDocs, 
   query, 
   where,
-  getDoc
+  getDoc,
+  serverTimestamp
 } from "firebase/firestore";
 import { ConnectionType } from "@/components/three/ModuleLibrary";
+import { debounce } from "lodash"; // Assuming lodash is used for debounce
 
 export interface Module {
   id: string;
@@ -129,7 +131,20 @@ const layoutService = {
       console.error('Error fetching project layouts:', error);
       throw new Error('Failed to load project layouts');
     }
-  }
+  },
+
+  debouncedSave: debounce(async (layoutId: string, data: Partial<Layout>): Promise<void> => {
+    try {
+      const layoutRef = doc(db, 'layouts', layoutId);
+      await updateDoc(layoutRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      throw new Error('Failed to save layout');
+    }
+  }, 2000)
 };
 
 export default layoutService;
