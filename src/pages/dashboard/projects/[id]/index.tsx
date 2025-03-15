@@ -224,35 +224,35 @@ export default function ProjectDetailsPage() {
 
   return (
     <AppLayout>
-      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl space-y-6'>
+      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl space-y-8'>
         <div className='flex justify-between items-center'>
           <div>
-            <h1 className='text-3xl font-bold'>{project.name}</h1>
+            <h1 className='text-3xl font-bold mb-2'>{project.name}</h1>
             <p className='text-muted-foreground'>{project.description}</p>
           </div>
           
-          <div className='flex items-center gap-3'>
+          <div className='flex items-center gap-4'>
             <Dialog>
               <DialogTrigger asChild>
                 <Button variant='outline' size='icon'>
                   <Share className='h-4 w-4' />
                 </Button>
               </DialogTrigger>
-              <DialogContent>
+              <DialogContent className='sm:max-w-md'>
                 <DialogHeader>
                   <DialogTitle>Share Project</DialogTitle>
                   <DialogDescription>
                     Enter an email address to share this project with a collaborator.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid gap-2">
-                    <Label htmlFor="email">Email address</Label>
+                <div className='grid gap-4 py-4'>
+                  <div className='grid gap-2'>
+                    <Label htmlFor='email'>Email address</Label>
                     <Input
-                      id="email"
+                      id='email'
                       value={shareEmail}
                       onChange={(e) => setShareEmail(e.target.value)}
-                      placeholder="collaborator@example.com"
+                      placeholder='collaborator@example.com'
                     />
                   </div>
                 </div>
@@ -275,31 +275,45 @@ export default function ProjectDetailsPage() {
                     Configure project settings and properties.
                   </DialogDescription>
                 </DialogHeader>
-                <div className='grid gap-4 py-4'>
-                  <div className='grid gap-2'>
-                    <Label htmlFor='plotWidth'>Plot Width (m)</Label>
-                    <Input
-                      id='plotWidth'
-                      name='plotWidth'
-                      type='number'
-                      value={formData.plotWidth || ''}
-                      onChange={handleInputChange}
-                    />
+                <form onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSaveProject();
+                }}>
+                  <div className='grid gap-6 py-4'>
+                    <div className='grid gap-2'>
+                      <Label htmlFor='plotWidth'>Plot Width (m)</Label>
+                      <Input
+                        id='plotWidth'
+                        name='plotWidth'
+                        type='number'
+                        value={formData.plotWidth || ''}
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className='grid gap-2'>
+                      <Label htmlFor='plotLength'>Plot Length (m)</Label>
+                      <Input
+                        id='plotLength'
+                        name='plotLength'
+                        type='number'
+                        value={formData.plotLength || ''}
+                        onChange={handleInputChange}
+                      />
+                    </div>
                   </div>
-                  <div className='grid gap-2'>
-                    <Label htmlFor='plotLength'>Plot Length (m)</Label>
-                    <Input
-                      id='plotLength'
-                      name='plotLength'
-                      type='number'
-                      value={formData.plotLength || ''}
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                <DialogFooter>
-                  <Button onClick={handleSaveProject}>Save Changes</Button>
-                </DialogFooter>
+                  <DialogFooter>
+                    <Button type='submit' disabled={saving}>
+                      {saving ? (
+                        <>
+                          <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                          Saving...
+                        </>
+                      ) : (
+                        'Save Changes'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </form>
               </DialogContent>
             </Dialog>
             
@@ -320,7 +334,7 @@ export default function ProjectDetailsPage() {
                   <AlertDialogCancel>Cancel</AlertDialogCancel>
                   <AlertDialogAction
                     onClick={handleDeleteProject}
-                    className="bg-red-500 hover:bg-red-600"
+                    className='bg-red-500 hover:bg-red-600'
                   >
                     Delete
                   </AlertDialogAction>
