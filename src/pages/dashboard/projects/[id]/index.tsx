@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Pencil, Plus, Settings } from "lucide-react";
@@ -37,15 +37,15 @@ export default function ProjectDetailsPage() {
   }, [id]);
 
   if (loading) {
-    return <DashboardLayout>Loading project details...</DashboardLayout>;
+    return <AppLayout>Loading project details...</AppLayout>;
   }
 
   if (!project) {
-    return <DashboardLayout>Project not found</DashboardLayout>;
+    return <AppLayout>Project not found</AppLayout>;
   }
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <div>
@@ -88,6 +88,6 @@ export default function ProjectDetailsPage() {
           ))}
         </div>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }

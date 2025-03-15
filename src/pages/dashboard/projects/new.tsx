@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/router";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -69,7 +69,7 @@ export default function NewProjectPage() {
   };
 
   return (
-    <DashboardLayout>
+    <AppLayout>
       <div className="max-w-2xl mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6">Create New Project</h1>
         <Card className="shadow-lg">
@@ -119,6 +119,6 @@ export default function NewProjectPage() {
           </form>
         </Card>
       </div>
-    </DashboardLayout>
+    </AppLayout>
   );
 }
