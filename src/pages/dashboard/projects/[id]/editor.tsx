@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -51,23 +51,25 @@ export default function LayoutEditorPage() {
     setDraggingTemplate(null);
   };
 
-  const handleDropPoint = (position: [number, number, number], template: ModuleTemplate) => {
+  const createModule = useCallback((position: [number, number, number]) => {
+    if (!draggingTemplate) return;
+    
     const newModule: Module = {
       id: nanoid(),
-      type: template.type,
+      type: draggingTemplate.type,
       position,
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
-      color: template.color,
+      color: draggingTemplate.color,
       dimensions: {
-        length: template.dimensions[0],
-        height: template.dimensions[1],
-        width: template.dimensions[2]
+        length: draggingTemplate.dimensions[0],
+        height: draggingTemplate.dimensions[1],
+        width: draggingTemplate.dimensions[2]
       },
-      connectionPoints: template.connectionPoints
+      connectionPoints: draggingTemplate.connectionPoints
     };
     setModules((prev) => [...prev, newModule]);
-  };
+  }, [draggingTemplate]);
 
   const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
     setModules((prev) =>
@@ -205,7 +207,7 @@ export default function LayoutEditorPage() {
                   transformMode={transformMode}
                   onModuleSelect={setSelectedModuleId}
                   onModuleUpdate={handleModuleUpdate}
-                  onDropPoint={handleDropPoint}
+                  onDropPoint={createModule}
                   connections={connections}
                   activeConnection={activeConnection}
                   onConnectPoint={handleConnectPoint}
