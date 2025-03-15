@@ -5,7 +5,9 @@ import { useFrame } from "@react-three/fiber";
 import { useTexture, Html } from "@react-three/drei";
 import * as THREE from "three";
 
-type ConnectionType = "power" | "network" | "cooling";
+type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
+type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
+type ConnectionType = PowerCableType | NetworkCableType;
 
 interface ModuleObjectProps {
   module: {
@@ -35,6 +37,20 @@ const CONTAINER_TEXTURES = {
   rust: "https://images.unsplash.com/photo-1560343776-97e7d202ff0e"
 };
 
+const getConnectionPointColor = (type: ConnectionType): string => {
+  // Power cables
+  if (type.includes("3phase")) return "#ff0000";
+  if (type.includes("ups")) return "#ff6b00";
+  
+  // Network cables - Copper
+  if (type.startsWith("cat")) return "#00ff00";
+  
+  // Network cables - Fiber
+  if (["om3", "om4", "om5", "os2", "mtp-mpo"].includes(type)) return "#00ffff";
+  
+  return "#999999";
+};
+
 export function ModuleObject({ module, selected, onClick, onConnectPoint }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
@@ -43,15 +59,6 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
   metalTexture.wrapS = THREE.RepeatWrapping;
   metalTexture.wrapT = THREE.RepeatWrapping;
   metalTexture.repeat.set(2, 2);
-
-  const getConnectionPointColor = (type: ConnectionType) => {
-    switch (type) {
-      case "power": return "#ff0000";
-      case "network": return "#00ff00";
-      case "cooling": return "#0000ff";
-      default: return "#999999";
-    }
-  };
 
   useFrame((state, delta) => {
     if (meshRef.current && hovered && !selected) {
