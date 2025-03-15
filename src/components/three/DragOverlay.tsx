@@ -1,6 +1,6 @@
+
 import { DragOverlay } from "@dnd-kit/core";
 import { ModuleTemplate } from '@/types/module';
-import { ModuleTemplate } from "./ModuleLibrary";
 
 export interface DragOverlayProps {
   template: ModuleTemplate | null;

@@ -145,7 +145,7 @@ export default function ProjectDetailsPage() {
 
   return (
     <AppLayout>
-      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 space-y-8 max-w-7xl'>
+      <div className='container mx-auto py-8 px-6 lg:px-8 space-y-8 max-w-7xl'>
         <div className='flex justify-between items-start'>
           <div>
             <h1 className='text-3xl font-bold mb-2'>{project.name}</h1>
