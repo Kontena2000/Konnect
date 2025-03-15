@@ -1,8 +1,7 @@
 
 import { useRef } from "react";
 import { Mesh } from "three";
-import { useLoader } from "@react-three/fiber";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { useGLTF } from "@react-three/drei";
 import { EnvironmentalElement as ElementType } from "@/services/environment";
 
 interface EnvironmentalElementProps {
