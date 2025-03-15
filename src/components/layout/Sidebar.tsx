@@ -9,13 +9,17 @@ import {
   FolderOpen, 
   Settings, 
   LogOut,
-  Menu
+  Menu,
+  ChevronLeft,
+  ChevronRight
 } from "lucide-react";
 import authService from "@/services/auth";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 export function Sidebar() {
   const router = useRouter();
-  const [collapsed, setCollapsed] = useState(false);
+  const isMobile = useIsMobile();
+  const [collapsed, setCollapsed] = useState(isMobile);
 
   const handleSignOut = async () => {
     await authService.signOut();
@@ -41,15 +45,16 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`border-r bg-card ${collapsed ? "w-16" : "w-64"} transition-all duration-200`}>
+    <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 ${collapsed ? "w-16" : "w-64"}`}>
       <div className="flex h-16 items-center justify-between px-4 border-b">
         {!collapsed && <h1 className="text-lg font-semibold">Kontena</h1>}
         <Button
           variant="ghost"
           size="icon"
           onClick={() => setCollapsed(!collapsed)}
+          className={collapsed ? "mx-auto" : ""}
         >
-          <Menu className="h-5 w-5" />
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
         </Button>
       </div>
       
@@ -59,8 +64,9 @@ export function Sidebar() {
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center space-x-2 px-3 py-2 rounded-md hover:bg-accent
+              className={`flex items-center px-3 py-2 rounded-md hover:bg-accent transition-colors
                 ${router.pathname === item.href ? "bg-accent" : ""}
+                ${collapsed ? "justify-center" : "space-x-2"}
               `}
             >
               {item.icon}
@@ -72,11 +78,11 @@ export function Sidebar() {
         <div className="absolute bottom-4 left-0 right-0 p-2">
           <Button
             variant="ghost"
-            className="w-full justify-start"
+            className={`w-full ${collapsed ? "justify-center" : "justify-start"}`}
             onClick={handleSignOut}
           >
-            <LogOut className="h-5 w-5 mr-2" />
-            {!collapsed && <span>Sign Out</span>}
+            <LogOut className="h-5 w-5" />
+            {!collapsed && <span className="ml-2">Sign Out</span>}
           </Button>
         </div>
       </ScrollArea>
