@@ -16,7 +16,7 @@ import layoutService, { Layout, Module, Connection } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
 
-type ConnectionType = string;
+type ConnectionType = "power" | "network" | "cooling";
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -108,7 +108,7 @@ export default function LayoutEditorPage() {
           targetModuleId: moduleId,
           sourcePoint: activeConnection.sourcePoint,
           targetPoint: point,
-          type: activeConnection.type,
+          type: activeConnection.type as ConnectionType,
         };
         setConnections((prev) => [...prev, newConnection]);
       }
