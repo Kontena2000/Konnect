@@ -50,8 +50,8 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='space-y-8 px-4 md:px-6 lg:px-8'>
-        <div className='flex justify-between items-center pb-6 border-b'>
+      <div className='container mx-auto px-4 py-8 max-w-7xl'>
+        <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>
             <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>

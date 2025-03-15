@@ -1,3 +1,4 @@
+
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment, ContactShadows, AccumulativeShadows, RandomizedLight } from '@react-three/drei';
 import { ModuleObject } from "./ModuleObject";
@@ -11,10 +12,7 @@ import { EnvironmentalElement } from '@/components/environment/EnvironmentalElem
 import { TerrainView } from '@/components/environment/TerrainView';
 import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
 import { useDroppable } from '@dnd-kit/core';
-
-type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
-type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
-type ConnectionType = PowerCableType | NetworkCableType;
+import { ConnectionType } from "@/components/three/ModuleLibrary";
 
 interface SceneContainerProps {
   modules: any[];
@@ -47,6 +45,11 @@ const getConnectionColor = (type: ConnectionType): string => {
   
   // Network cables - Fiber
   if (["om3", "om4", "om5", "os2", "mtp-mpo"].includes(type)) return "#00ffff";
+
+  // Cooling tubes
+  if (type === "chilled-water") return "#0088ff";
+  if (type === "refrigerant") return "#00aaff";
+  if (type === "air-duct") return "#88ccff";
   
   return "#999999";
 };
@@ -79,7 +82,6 @@ export function SceneContainer({
     if (planeRef.current) {
       const point = event.intersections[0]?.point.toArray() as [number, number, number];
       if (point) {
-        // Snap to grid
         point[0] = Math.round(point[0]);
         point[1] = 0;
         point[2] = Math.round(point[2]);
@@ -90,7 +92,6 @@ export function SceneContainer({
 
   const handleModuleUpdate = (moduleId: string, updates: any) => {
     if (updates.position) {
-      // Snap position to grid
       updates.position[0] = Math.round(updates.position[0]);
       updates.position[1] = Math.max(0, Math.round(updates.position[1]));
       updates.position[2] = Math.round(updates.position[2]);
@@ -108,9 +109,7 @@ export function SceneContainer({
   return (
     <div 
       ref={setNodeRef}
-      className={`w-full h-full bg-background rounded-lg overflow-hidden ${
-        isOver ? 'ring-2 ring-primary ring-offset-2' : ''
-      }`}
+      className="w-full h-full bg-background rounded-lg overflow-hidden"
     >
       <Canvas
         camera={{ 
