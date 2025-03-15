@@ -9,17 +9,21 @@ import {
   getDoc, 
   query, 
   where,
-  serverTimestamp 
+  serverTimestamp,
+  arrayUnion,
+  arrayRemove
 } from "firebase/firestore";
 
 export interface Project {
   id: string;
   name: string;
   description?: string;
+  userId: string;
+  plotWidth?: number;
+  plotLength?: number;
+  sharedWith?: string[];
   createdAt: Date;
   updatedAt: Date;
-  ownerId: string;
-  collaborators?: string[];
 }
 
 export interface CreateProjectData {
@@ -115,6 +119,20 @@ const projectService = {
       console.error('Error fetching user projects:', error);
       throw new Error('Failed to fetch projects');
     }
+  },
+
+  async shareProject(projectId: string, email: string) {
+    const projectRef = doc(db, 'projects', projectId);
+    await updateDoc(projectRef, {
+      sharedWith: arrayUnion(email)
+    });
+  },
+
+  async removeShare(projectId: string, email: string) {
+    const projectRef = doc(db, 'projects', projectId);
+    await updateDoc(projectRef, {
+      sharedWith: arrayRemove(email)
+    });
   }
 };
 
