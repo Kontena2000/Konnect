@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
@@ -124,7 +123,7 @@ export default function ProjectsPage() {
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='flex flex-col gap-4'>
+                <div className='flex flex-col gap-6'>
                   <Link href={`/dashboard/projects/${project.id}`} className='block'>
                     <Button variant='outline' className='w-full'>
                       Open Project

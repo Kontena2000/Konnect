@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -303,6 +302,14 @@ export default function ProjectDetailsPage() {
                 </DialogFooter>
               </DialogContent>
             </Dialog>
+            
+            <Button 
+              variant='outline' 
+              size='icon'
+              onClick={() => setIsSettingsOpen(true)}
+            >
+              <Settings className='h-4 w-4' />
+            </Button>
             
             <AlertDialog>
               <AlertDialogTrigger asChild>
