@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -6,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Minus, Save, Trash2, Loader2 } from "lucide-react";
+import { Plus, Minus, Save, Trash2, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService, { getDefaultSpecs } from "@/services/module";
 import { ModuleCategory, moduleTemplates, ModuleTemplate, ConnectionType } from '@/components/three/ModuleLibrary';
@@ -44,8 +43,38 @@ function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: Modul
     dimensions: [1, 1, 1],
     connectionPoints: []
   });
+  const [connectionPoints, setConnectionPoints] = useState<Array<{
+    position: [number, number, number];
+    type: ConnectionType;
+  }>>([]);
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+
+  const handleAddConnectionPoint = () => {
+    setConnectionPoints(prev => [...prev, {
+      position: [0, 0, 0],
+      type: 'cat6a'
+    }]);
+  };
+
+  const handleRemoveConnectionPoint = (index: number) => {
+    setConnectionPoints(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const handleConnectionPointChange = (index: number, field: 'position' | 'type', value: any) => {
+    setConnectionPoints(prev => prev.map((point, i) => {
+      if (i === index) {
+        if (field === 'position') {
+          const [axis, val] = value;
+          const newPosition = [...point.position];
+          newPosition[axis] = parseFloat(val) || 0;
+          return { ...point, position: newPosition as [number, number, number] };
+        }
+        return { ...point, [field]: value };
+      }
+      return point;
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -57,7 +86,8 @@ function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: Modul
         id: moduleId,
         type: moduleId,
         ...formData,
-        technicalSpecs: getDefaultSpecs(formData.category)
+        technicalSpecs: getDefaultSpecs(formData.category),
+        connectionPoints
       };
 
       await onModuleCreate(newModule);
@@ -162,6 +192,67 @@ function CreateModuleDialog({ onModuleCreate }: { onModuleCreate: (module: Modul
                   />
                 </div>
               ))}
+            </div>
+          </div>
+
+          <div className='space-y-2'>
+            <Label>Connection Points</Label>
+            <div className='space-y-4'>
+              {connectionPoints.map((point, index) => (
+                <div key={index} className='space-y-2 p-2 border rounded-lg relative'>
+                  <Button
+                    variant='ghost'
+                    size='icon'
+                    className='absolute top-2 right-2'
+                    onClick={() => handleRemoveConnectionPoint(index)}
+                  >
+                    <X className='h-4 w-4' />
+                  </Button>
+                  
+                  <div className='grid grid-cols-3 gap-2'>
+                    {['X', 'Y', 'Z'].map((axis, i) => (
+                      <div key={axis}>
+                        <Label className='text-xs'>{axis}</Label>
+                        <Input
+                          type='number'
+                          value={point.position[i]}
+                          onChange={(e) => handleConnectionPointChange(index, 'position', [i, e.target.value])}
+                          step={0.1}
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  <div>
+                    <Label>Type</Label>
+                    <Select
+                      value={point.type}
+                      onValueChange={(value: ConnectionType) => handleConnectionPointChange(index, 'type', value)}
+                    >
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='208v-3phase'>208V 3-Phase Power</SelectItem>
+                        <SelectItem value='400v-3phase'>400V 3-Phase Power</SelectItem>
+                        <SelectItem value='cat6a'>CAT6A Network</SelectItem>
+                        <SelectItem value='om4'>OM4 Fiber</SelectItem>
+                        <SelectItem value='chilled-water'>Chilled Water</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              ))}
+
+              <Button
+                type='button'
+                variant='outline'
+                onClick={handleAddConnectionPoint}
+                className='w-full'
+              >
+                <Plus className='h-4 w-4 mr-2' />
+                Add Connection Point
+              </Button>
             </div>
           </div>
 

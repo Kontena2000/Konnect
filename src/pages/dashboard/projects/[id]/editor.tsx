@@ -7,7 +7,7 @@ import { ModuleDragOverlay } from "@/components/three/DragOverlay";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
+import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react"; // Added import for Grid
 import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, PointerSensor, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
@@ -22,6 +22,7 @@ import { Menu } from 'lucide-react'; // Added import for Menu
 import projectService from '@/services/project';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import debounce from 'lodash/debounce';
+import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'; // Added import for Select
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -48,6 +49,8 @@ export default function LayoutEditorPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [hasChanges, setHasChanges] = useState(false);
   const lastSavedState = useRef<string>('');
+  const [gridSnap, setGridSnap] = useState(true); // Added state for grid snapping
+  const [connectionMode, setConnectionMode] = useState<'cable' | 'pipe'>('cable'); // Added state for connection mode
 
   const sensors = useSensors(
     useSensor(MouseSensor, {
@@ -67,6 +70,15 @@ export default function LayoutEditorPage() {
       },
     })
   );
+
+  const snapToGrid = (position: [number, number, number]): [number, number, number] => { // Added function to snap to grid
+    if (!gridSnap) return position;
+    return [
+      Math.round(position[0] * 2) / 2,
+      position[1],
+      Math.round(position[2] * 2) / 2
+    ];
+  };
 
   // Optimize save operation with debounce
   const debouncedSave = useMemo(
@@ -246,7 +258,7 @@ export default function LayoutEditorPage() {
         dropPosition[2] = z;
       }
       
-      createModule(dropPosition);
+      createModule(snapToGrid(dropPosition)); // Updated to snap to grid
     }
     
     setDraggingTemplate(null);
@@ -281,7 +293,12 @@ export default function LayoutEditorPage() {
   const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
     setModules((prev) =>
       prev.map((module) =>
-        module.id === moduleId ? { ...module, ...updates } : module
+        module.id === moduleId ? {
+          ...module,
+          ...updates,
+          position: updates.position ? snapToGrid(updates.position as [number, number, number]) : module.position,
+          rotation: updates.rotation ? [0, updates.rotation[1], 0] : module.rotation // Lock rotation to Y axis
+        } : module
       )
     );
   };
@@ -532,6 +549,35 @@ export default function LayoutEditorPage() {
                   />
                 </div>
               )}
+            </div>
+            <div className='flex items-center gap-2'>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant={gridSnap ? 'default' : 'outline'}
+                    size='icon'
+                    onClick={() => setGridSnap(!gridSnap)}
+                  >
+                    <Grid className='h-4 w-4' />
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>Toggle Grid Snap</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Select
+                value={connectionMode}
+                onValueChange={(value: 'cable' | 'pipe') => setConnectionMode(value)}
+              >
+                <SelectTrigger className='w-[120px]'>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value='cable'>Cable</SelectItem>
+                  <SelectItem value='pipe'>Pipe</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
           </div>
         </AppLayout>
