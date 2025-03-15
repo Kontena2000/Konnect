@@ -28,28 +28,28 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 99%;
-    --foreground: 20 8% 12%;
+    --background: 60 11% 98%;
+    --foreground: 25 14% 11%;
     
-    --card: 0 0% 98%;
-    --card-foreground: 20 8% 12%;
+    --card: 60 11% 96%;
+    --card-foreground: 25 14% 11%;
     
-    --popover: 0 0% 98%;
-    --popover-foreground: 20 8% 12%;
+    --popover: 60 11% 96%;
+    --popover-foreground: 25 14% 11%;
     
     --primary: 147 30% 25%;
     --primary-foreground: 0 0% 98%;
     
     --secondary: 20 8% 96%;
-    --secondary-foreground: 20 8% 12%;
+    --secondary-foreground: 25 14% 11%;
     
     --muted: 20 8% 96%;
-    --muted-foreground: 20 8% 38%;
+    --muted-foreground: 25 14% 35%;
     
     --accent: 358 65% 40%;
     --accent-foreground: 0 0% 98%;
     
-    --destructive: 0 84.2% 60.2%;
+    --destructive: 0 84% 60%;
     --destructive-foreground: 0 0% 98%;
 
     --border: 20 8% 90%;
@@ -61,19 +61,19 @@ body {
 
   .dark {
     --background: 20 8% 8%;
-    --foreground: 0 0% 95%;
+    --foreground: 60 11% 98%;
     
     --card: 20 8% 10%;
-    --card-foreground: 0 0% 95%;
+    --card-foreground: 60 11% 98%;
     
     --popover: 20 8% 10%;
-    --popover-foreground: 0 0% 95%;
+    --popover-foreground: 60 11% 98%;
     
     --primary: 147 30% 30%;
     --primary-foreground: 0 0% 98%;
     
     --secondary: 20 8% 15%;
-    --secondary-foreground: 0 0% 95%;
+    --secondary-foreground: 60 11% 98%;
     
     --muted: 20 8% 15%;
     --muted-foreground: 20 8% 65%;
@@ -81,12 +81,44 @@ body {
     --accent: 358 65% 45%;
     --accent-foreground: 0 0% 98%;
     
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 63% 31%;
     --destructive-foreground: 0 0% 98%;
     
     --border: 20 8% 20%;
     --input: 20 8% 20%;
     --ring: 20 8% 20%;
+  }
+
+  .design {
+    --background: 60 33% 97%;
+    --foreground: 24 25% 19%;
+    
+    --card: 60 33% 95%;
+    --card-foreground: 24 25% 19%;
+    
+    --popover: 60 33% 95%;
+    --popover-foreground: 24 25% 19%;
+    
+    --primary: 162 32% 25%;
+    --primary-foreground: 60 33% 97%;
+    
+    --secondary: 24 25% 92%;
+    --secondary-foreground: 24 25% 19%;
+    
+    --muted: 24 25% 92%;
+    --muted-foreground: 24 25% 40%;
+    
+    --accent: 15 67% 40%;
+    --accent-foreground: 60 33% 97%;
+    
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 60 33% 97%;
+
+    --border: 24 25% 87%;
+    --input: 24 25% 87%;
+    --ring: 24 25% 87%;
+    
+    --radius: 0.3rem;
   }
 }
 
@@ -96,6 +128,7 @@ body {
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Helvetica Neue', Arial, sans-serif;
   }
 }
 
