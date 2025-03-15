@@ -58,6 +58,13 @@ export default function LayoutEditorPage() {
       position,
       rotation: [0, 0, 0],
       scale: [1, 1, 1],
+      color: template.color,
+      dimensions: {
+        length: template.dimensions[0],
+        height: template.dimensions[1],
+        width: template.dimensions[2]
+      },
+      connectionPoints: template.connectionPoints
     };
     setModules((prev) => [...prev, newModule]);
   };
@@ -74,7 +81,7 @@ export default function LayoutEditorPage() {
     setModules((prev) => prev.filter((module) => module.id !== moduleId));
     setConnections((prev) =>
       prev.filter(
-        (conn) => conn.sourceId !== moduleId && conn.targetId !== moduleId
+        (conn) => conn.sourceModuleId !== moduleId && conn.targetModuleId !== moduleId
       )
     );
   };
@@ -94,8 +101,8 @@ export default function LayoutEditorPage() {
       if (activeConnection.sourceModuleId !== moduleId) {
         const newConnection: Connection = {
           id: nanoid(),
-          sourceId: activeConnection.sourceModuleId,
-          targetId: moduleId,
+          sourceModuleId: activeConnection.sourceModuleId,
+          targetModuleId: moduleId,
           sourcePoint: activeConnection.sourcePoint,
           targetPoint: point,
           type: activeConnection.type,
