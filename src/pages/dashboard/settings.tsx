@@ -21,6 +21,7 @@ import userService, { User } from '@/services/user';
 import { Trash2, Loader2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
+import { ModuleDatabase } from '@/components/settings/ModuleDatabase';
 
 interface ModuleInputProps {
   module: ModuleTemplate;
@@ -148,18 +149,19 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="space-y-6">
-        <h1 className="text-3xl font-bold">Settings</h1>
+      <div className='space-y-6'>
+        <h1 className='text-3xl font-bold'>Settings</h1>
 
-        <Tabs defaultValue="profile">
+        <Tabs defaultValue='profile'>
           <TabsList>
-            <TabsTrigger value="profile">Profile</TabsTrigger>
-            <TabsTrigger value="preferences">Preferences</TabsTrigger>
-            <TabsTrigger value="modules">Modules</TabsTrigger>
-            <TabsTrigger value="users">Users</TabsTrigger>
+            <TabsTrigger value='profile'>Profile</TabsTrigger>
+            <TabsTrigger value='preferences'>Preferences</TabsTrigger>
+            <TabsTrigger value='modules'>Modules</TabsTrigger>
+            <TabsTrigger value='module-database'>Module Database</TabsTrigger>
+            <TabsTrigger value='users'>Users</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="profile">
+          <TabsContent value='profile'>
             <Card>
               <CardHeader>
                 <CardTitle>Profile Settings</CardTitle>
@@ -178,7 +180,7 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="preferences">
+          <TabsContent value='preferences'>
             <Card>
               <CardHeader>
                 <CardTitle>Preferences</CardTitle>
@@ -216,7 +218,7 @@ export default function SettingsPage() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="modules">
+          <TabsContent value='modules'>
             <Card>
               <CardHeader>
                 <CardTitle>Module Management</CardTitle>
@@ -261,6 +263,17 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value='module-database'>
+            <Card>
+              <CardHeader>
+                <CardTitle>Module Database</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ModuleDatabase />
               </CardContent>
             </Card>
           </TabsContent>
