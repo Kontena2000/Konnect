@@ -149,7 +149,7 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
   technicalSpecs: TechnicalSpecs;
 }
 
-const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
+export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
   weight: {
     empty: category === 'konnect' ? 2500 : 
            category === 'power' ? 5 :
@@ -343,3 +343,4 @@ const moduleService = {
 };
 
 export default moduleService;
+export { getDefaultSpecs };
