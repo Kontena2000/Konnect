@@ -1,4 +1,3 @@
-
 import { useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -66,7 +65,7 @@ export const moduleTemplates: ModuleTemplates = {
       type: "208v-3phase",
       name: "208V 3-Phase",
       description: "208V Three Phase Power Cable",
-      color: "#ff0000",
+      color: "#1FB73A",
       dimensions: [0.1, 0.1, 0.1]
     },
     {
@@ -74,7 +73,7 @@ export const moduleTemplates: ModuleTemplates = {
       type: "400v-3phase",
       name: "400V 3-Phase",
       description: "400V Three Phase Power Cable",
-      color: "#ff0000",
+      color: "#1FB73A",
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
