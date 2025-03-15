@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -21,12 +20,23 @@ export interface Module {
   color: string;
 }
 
+export interface Connection {
+  id: string;
+  sourceModuleId: string;
+  targetModuleId: string;
+  sourcePoint: [number, number, number];
+  targetPoint: [number, number, number];
+  type: 'power' | 'network' | 'cooling';
+  capacity?: number;
+}
+
 export interface Layout {
   id: string;
   projectId: string;
   name: string;
   description?: string;
   modules: Module[];
+  connections: Connection[];
   createdAt: Date;
   updatedAt: Date;
 }
