@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
 import { ModuleLibrary, ModuleTemplate } from "@/components/three/ModuleLibrary";
 import { ModuleDragOverlay } from "@/components/three/DragOverlay";
@@ -11,24 +11,23 @@ import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2 } from "lucide-react";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
-import { ModuleProperties } from '@/components/three/ModuleProperties';
-import layoutService, { Layout, Module, Connection } from '@/services/layout';
-import { ConnectionManager } from '@/components/three/ConnectionManager';
-import { useToast } from '@/hooks/use-toast';
+import { ModuleProperties } from "@/components/three/ModuleProperties";
+import layoutService, { Layout, Module, Connection } from "@/services/layout";
+import { ConnectionManager } from "@/components/three/ConnectionManager";
+import { useToast } from "@/hooks/use-toast";
 
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
-  
   const [modules, setModules] = useState<Module[]>([]);
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
-  const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+  const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
   const [connections, setConnections] = useState<Connection[]>([]);
   const [activeConnection, setActiveConnection] = useState<{
     sourceModuleId: string;
     sourcePoint: [number, number, number];
-    type: 'power' | 'network' | 'cooling';
+    type: "power" | "network" | "cooling";
   } | null>(null);
   const { toast } = useToast();
   const [saving, setSaving] = useState(false);
@@ -42,142 +41,104 @@ export default function LayoutEditorPage() {
     })
   );
 
-  useEffect(() => {
-    const loadLayout = async () => {
-      if (id) {
-        try {
-          const existingLayout = await layoutService.getLayout(id as string);
-          if (existingLayout) {
-            setLayout(existingLayout);
-            setModules(existingLayout.modules || []);
-            setConnections(existingLayout.connections || []);
-          } else {
-            const newLayout = {
-              projectId: id as string,
-              name: 'New Layout',
-              description: 'Created from editor',
-              modules: [],
-              connections: []
-            };
-            
-            const newLayoutId = await layoutService.createLayout(newLayout);
-            
-            setLayout({
-              id: newLayoutId,
-              ...newLayout,
-              createdAt: new Date(),
-              updatedAt: new Date()
-            });
-          }
-        } catch (error) {
-          console.error('Error loading layout:', error);
-          toast({
-            variant: 'destructive',
-            title: 'Error',
-            description: 'Failed to load project layout.'
-          });
-        }
-      }
-    };
-    loadLayout();
-  }, [id, toast]);
-
-  const handleDragStart = (event: any) => {
-    const template = event.active.data.current;
-    if (template) {
-      setDraggingTemplate(template);
-    }
+  const handleDragStart = (event: DragEndEvent) => {
+    const { active } = event;
+    const template = active.data.current as ModuleTemplate;
+    setDraggingTemplate(template);
   };
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const handleDragEnd = () => {
     setDraggingTemplate(null);
   };
 
+  const handleDropPoint = (position: [number, number, number], template: ModuleTemplate) => {
+    const newModule: Module = {
+      id: nanoid(),
+      type: template.type,
+      position,
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1],
+    };
+    setModules((prev) => [...prev, newModule]);
+  };
+
   const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
-    setModules(modules.map(module => 
-      module.id === moduleId ? { ...module, ...updates } : module
-    ));
+    setModules((prev) =>
+      prev.map((module) =>
+        module.id === moduleId ? { ...module, ...updates } : module
+      )
+    );
   };
 
   const handleModuleDelete = (moduleId: string) => {
-    setModules(modules.filter(module => module.id !== moduleId));
-    setSelectedModuleId(undefined);
+    setModules((prev) => prev.filter((module) => module.id !== moduleId));
+    setConnections((prev) =>
+      prev.filter(
+        (conn) => conn.sourceId !== moduleId && conn.targetId !== moduleId
+      )
+    );
   };
 
-  const handleDropPoint = (point: [number, number, number]) => {
-    if (draggingTemplate) {
-      const newModule: Module = {
-        id: nanoid(),
-        type: draggingTemplate.type,
-        position: point,
-        rotation: [0, 0, 0],
-        scale: [1, 1, 1],
-        color: draggingTemplate.color,
-        dimensions: {
-          length: draggingTemplate.dimensions[0],
-          height: draggingTemplate.dimensions[1],
-          width: draggingTemplate.dimensions[2]
-        },
-        connectionPoints: draggingTemplate.connectionPoints
-      };
-      
-      setModules([...modules, newModule]);
-      setDraggingTemplate(null);
-    }
-  };
-
-  const handleConnectPoint = (moduleId: string, point: [number, number, number], type: string) => {
+  const handleConnectPoint = (
+    moduleId: string,
+    point: [number, number, number],
+    type: "power" | "network" | "cooling"
+  ) => {
     if (!activeConnection) {
       setActiveConnection({
         sourceModuleId: moduleId,
         sourcePoint: point,
-        type: type as 'power' | 'network' | 'cooling'
+        type,
       });
     } else {
-      if (moduleId !== activeConnection.sourceModuleId && type === activeConnection.type) {
+      if (activeConnection.sourceModuleId !== moduleId) {
         const newConnection: Connection = {
           id: nanoid(),
-          sourceModuleId: activeConnection.sourceModuleId,
-          targetModuleId: moduleId,
+          sourceId: activeConnection.sourceModuleId,
+          targetId: moduleId,
           sourcePoint: activeConnection.sourcePoint,
           targetPoint: point,
-          type: activeConnection.type
+          type: activeConnection.type,
         };
-        setConnections([...connections, newConnection]);
+        setConnections((prev) => [...prev, newConnection]);
       }
       setActiveConnection(null);
     }
   };
 
-  const handleUpdateConnection = (id: string, updates: Partial<Connection>) => {
-    setConnections(connections.map(conn => 
-      conn.id === id ? { ...conn, ...updates } : conn
-    ));
+  const handleUpdateConnection = (connectionId: string, updates: Partial<Connection>) => {
+    setConnections((prev) =>
+      prev.map((conn) =>
+        conn.id === connectionId ? { ...conn, ...updates } : conn
+      )
+    );
   };
 
-  const handleDeleteConnection = (id: string) => {
-    setConnections(connections.filter(conn => conn.id !== id));
+  const handleDeleteConnection = (connectionId: string) => {
+    setConnections((prev) =>
+      prev.filter((conn) => conn.id !== connectionId)
+    );
   };
 
   const handleSave = async () => {
-    if (!layout) return;
+    if (!id) return;
     
+    setSaving(true);
     try {
-      setSaving(true);
-      await layoutService.updateLayout(layout.id, {
+      await layoutService.updateLayout(id as string, {
         modules,
-        connections
+        connections,
       });
+      
       toast({
-        title: 'Success',
-        description: 'Layout saved successfully.'
+        title: "Success",
+        description: "Layout saved successfully",
       });
     } catch (error) {
-      console.error('Error saving layout:', error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save layout changes.'
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save layout",
       });
     } finally {
       setSaving(false);
@@ -185,13 +146,9 @@ export default function LayoutEditorPage() {
   };
 
   return (
-    <DndContext
-      sensors={sensors}
-      onDragStart={handleDragStart}
-      onDragEnd={handleDragEnd}
-    >
-      <DashboardLayout>
-        <div className='h-[calc(100vh-2rem)] flex flex-col gap-4'>
+    <DndContext sensors={sensors} onDragStart={handleDragStart} onDragEnd={handleDragEnd}>
+      <AppLayout>
+        <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold">Layout Editor</h1>
             <div className="flex items-center gap-2">
@@ -212,7 +169,7 @@ export default function LayoutEditorPage() {
               <Button onClick={handleSave} disabled={saving}>
                 {saving ? (
                   <>
-                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Saving...
                   </>
                 ) : (
@@ -225,16 +182,16 @@ export default function LayoutEditorPage() {
             </div>
           </div>
 
-          <div className='flex-1 grid grid-cols-[300px_1fr_300px] gap-4'>
+          <div className="flex-1 grid grid-cols-[300px_1fr_300px] gap-4">
             <Card>
-              <CardContent className='p-4'>
-                <h2 className='text-lg font-semibold mb-4'>Module Library</h2>
+              <CardContent className="p-4">
+                <h2 className="text-lg font-semibold mb-4">Module Library</h2>
                 <ModuleLibrary />
               </CardContent>
             </Card>
 
             <Card>
-              <CardContent className='p-4 h-full'>
+              <CardContent className="p-4 h-full">
                 <SceneContainer
                   modules={modules}
                   selectedModuleId={selectedModuleId}
@@ -249,7 +206,7 @@ export default function LayoutEditorPage() {
               </CardContent>
             </Card>
 
-            <div className='space-y-4'>
+            <div className="space-y-4">
               {selectedModuleId && (
                 <ModuleProperties
                   module={modules.find(m => m.id === selectedModuleId)!}
@@ -267,7 +224,7 @@ export default function LayoutEditorPage() {
           </div>
         </div>
         <ModuleDragOverlay draggingTemplate={draggingTemplate} />
-      </DashboardLayout>
+      </AppLayout>
     </DndContext>
   );
 }
