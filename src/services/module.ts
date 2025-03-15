@@ -1,4 +1,3 @@
-
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
 import { ModuleTemplate } from "@/components/three/ModuleLibrary";
@@ -23,21 +22,39 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
 const moduleService = {
   async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
     try {
-      const modulesRef = ref(realTimeDb, "modules");
-      const snapshot = await get(modulesRef);
+      // First get the templates from code
+      const baseTemplates = Object.values(moduleTemplates).flat();
       
-      if (!snapshot.exists()) {
-        return [];
-      }
-
-      const modules = snapshot.val();
-      return Object.entries(modules).map(([id, data]) => ({
-        id,
-        ...(data as Omit<ModuleTemplateWithSpecs, "id">)
+      // Then get the technical specs from Firebase
+      const modulesRef = ref(realTimeDb, 'modules');
+      const snapshot = await get(modulesRef);
+      const dbSpecs = snapshot.exists() ? snapshot.val() : {};
+      
+      // Combine them
+      return baseTemplates.map(template => ({
+        ...template,
+        technicalSpecs: dbSpecs[template.type]?.technicalSpecs || {
+          weight: template.category === 'konnect' ? 2500 : 
+                 template.category === 'power' ? 5 :
+                 template.category === 'network' ? 0.5 :
+                 template.category === 'cooling' ? 2 : 10,
+          powerConsumption: {
+            watts: template.category === 'konnect' ? 15000 : 0,
+            kWh: template.category === 'konnect' ? 360 : 0
+          },
+          wireConfigurations: [{
+            type: template.type,
+            gauge: template.category === 'power' ? 'AWG 8' : 
+                   template.category === 'network' ? template.type : 'N/A',
+            length: template.category === 'konnect' ? 10 :
+                    template.category === 'power' ? 5 :
+                    template.category === 'network' ? 3 : 1
+          }]
+        }
       }));
     } catch (error) {
-      console.error("Error fetching modules:", error);
-      throw new Error("Failed to fetch modules");
+      console.error('Error fetching modules:', error);
+      throw new Error('Failed to fetch modules');
     }
   },
 
