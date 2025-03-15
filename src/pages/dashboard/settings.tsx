@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -14,6 +13,38 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { modules, powerCables, networkCables } from "@/components/three/ModuleLibrary";
+import { ModuleTemplate } from '@/components/three/ModuleLibrary';
+
+interface ModuleInputProps {
+  module: ModuleTemplate;
+}
+
+function ModuleInput({ module }: ModuleInputProps) {
+  return (
+    <Card key={module.id}>
+      <CardContent className='pt-6'>
+        <div className='grid grid-cols-2 gap-4'>
+          <div>
+            <Label>Name</Label>
+            <Input defaultValue={module.name} />
+          </div>
+          <div>
+            <Label>Type</Label>
+            <Input defaultValue={module.type} />
+          </div>
+          <div>
+            <Label>Dimensions (m)</Label>
+            <Input defaultValue={module.dimensions.join(' x ')} />
+          </div>
+          <div>
+            <Label>Color</Label>
+            <Input defaultValue={module.color} />
+          </div>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 export default function SettingsPage() {
   return (
@@ -95,29 +126,8 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Containers and Modules</h3>
                       <div className="space-y-4">
-                        {modules.map(module => (
-                          <Card key={module.id}>
-                            <CardContent className="pt-6">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Name</Label>
-                                  <Input defaultValue={module.name} />
-                                </div>
-                                <div>
-                                  <Label>Type</Label>
-                                  <Input defaultValue={module.type} />
-                                </div>
-                                <div>
-                                  <Label>Dimensions (m)</Label>
-                                  <Input defaultValue={module.dimensions.join(" x ")} />
-                                </div>
-                                <div>
-                                  <Label>Color</Label>
-                                  <Input defaultValue={module.color} />
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                        {modules.map((module) => (
+                          <ModuleInput key={module.id} module={module} />
                         ))}
                       </div>
                     </div>
@@ -125,29 +135,8 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Power Cables</h3>
                       <div className="space-y-4">
-                        {powerCables.map(cable => (
-                          <Card key={cable.id}>
-                            <CardContent className="pt-6">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Name</Label>
-                                  <Input defaultValue={cable.name} />
-                                </div>
-                                <div>
-                                  <Label>Type</Label>
-                                  <Input defaultValue={cable.type} />
-                                </div>
-                                <div>
-                                  <Label>Category</Label>
-                                  <Input defaultValue={cable.subCategory} />
-                                </div>
-                                <div>
-                                  <Label>Color</Label>
-                                  <Input defaultValue={cable.color} />
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                        {powerCables.map((cable) => (
+                          <ModuleInput key={cable.id} module={cable} />
                         ))}
                       </div>
                     </div>
@@ -155,29 +144,8 @@ export default function SettingsPage() {
                     <div>
                       <h3 className="text-lg font-semibold mb-4">Network Cables</h3>
                       <div className="space-y-4">
-                        {networkCables.map(cable => (
-                          <Card key={cable.id}>
-                            <CardContent className="pt-6">
-                              <div className="grid grid-cols-2 gap-4">
-                                <div>
-                                  <Label>Name</Label>
-                                  <Input defaultValue={cable.name} />
-                                </div>
-                                <div>
-                                  <Label>Type</Label>
-                                  <Input defaultValue={cable.type} />
-                                </div>
-                                <div>
-                                  <Label>Category</Label>
-                                  <Input defaultValue={cable.subCategory} />
-                                </div>
-                                <div>
-                                  <Label>Color</Label>
-                                  <Input defaultValue={cable.color} />
-                                </div>
-                              </div>
-                            </CardContent>
-                          </Card>
+                        {networkCables.map((cable) => (
+                          <ModuleInput key={cable.id} module={cable} />
                         ))}
                       </div>
                     </div>
