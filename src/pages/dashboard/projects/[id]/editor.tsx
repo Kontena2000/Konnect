@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
@@ -19,25 +20,7 @@ export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
   
-  const [modules, setModules] = useState<Module[]>([
-    {
-      id: "1",
-      type: "datacenter",
-      position: [0, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [2, 1, 3],
-      color: "#4CAF50"
-    },
-    {
-      id: "2",
-      type: "ups",
-      position: [3, 0, 0],
-      rotation: [0, 0, 0],
-      scale: [1, 1, 1],
-      color: "#2196F3"
-    }
-  ]);
-
+  const [modules, setModules] = useState<Module[]>([]);
   const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
@@ -63,14 +46,12 @@ export default function LayoutEditorPage() {
     const loadLayout = async () => {
       if (id) {
         try {
-          // First try to load existing layout
           const existingLayout = await layoutService.getLayout(id as string);
           if (existingLayout) {
             setLayout(existingLayout);
-            setModules(existingLayout.modules);
-            setConnections(existingLayout.connections);
+            setModules(existingLayout.modules || []);
+            setConnections(existingLayout.connections || []);
           } else {
-            // Create new layout with all required fields
             const newLayout = {
               projectId: id as string,
               name: 'New Layout',
@@ -110,24 +91,6 @@ export default function LayoutEditorPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingTemplate(null);
-    
-    // Get drop point in 3D space
-    const dropPoint = [0, 0, 0]; // TODO: Get actual drop point from three.js
-    
-    // Create new module
-    const template = event.active.data.current as ModuleTemplate;
-    if (template) {
-      const newModule: Module = {
-        id: nanoid(),
-        type: template.type,
-        position: dropPoint as [number, number, number],
-        rotation: [0, 0, 0],
-        scale: template.dimensions,
-        color: template.color
-      };
-      
-      setModules([...modules, newModule]);
-    }
   };
 
   const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
@@ -148,8 +111,14 @@ export default function LayoutEditorPage() {
         type: draggingTemplate.type,
         position: point,
         rotation: [0, 0, 0],
-        scale: draggingTemplate.dimensions,
-        color: draggingTemplate.color
+        scale: [1, 1, 1],
+        color: draggingTemplate.color,
+        dimensions: {
+          length: draggingTemplate.dimensions[0],
+          height: draggingTemplate.dimensions[1],
+          width: draggingTemplate.dimensions[2]
+        },
+        connectionPoints: draggingTemplate.connectionPoints
       };
       
       setModules([...modules, newModule]);

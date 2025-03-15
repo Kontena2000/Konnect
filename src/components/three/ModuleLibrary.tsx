@@ -3,6 +3,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Box, Power, Network } from "lucide-react";
+import { useDraggable } from "@dnd-kit/core";
 
 export interface ModuleTemplate {
   id: string;
@@ -34,36 +35,48 @@ const moduleTemplates: ModuleTemplate[] = [
   }
 ];
 
-interface ModuleLibraryProps {
-  onSelect?: (template: ModuleTemplate) => void;
+interface DraggableModuleProps {
+  template: ModuleTemplate;
 }
 
-export function ModuleLibrary({ onSelect }: ModuleLibraryProps) {
+function DraggableModule({ template }: DraggableModuleProps) {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: template.id,
+    data: template
+  });
+
+  return (
+    <Button
+      ref={setNodeRef}
+      variant="outline"
+      className={`w-full justify-start ${isDragging ? "opacity-50" : ""}`}
+      {...listeners}
+      {...attributes}
+    >
+      {template.icon}
+      <div className="ml-2 text-left">
+        <div className="font-medium">{template.name}</div>
+        <div className="text-xs text-muted-foreground">
+          {template.description}
+        </div>
+        <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
+          <span>{template.dimensions[0]}m × {template.dimensions[2]}m × {template.dimensions[1]}m</span>
+          <div className="flex gap-1">
+            <Power className="h-3 w-3" />
+            <Network className="h-3 w-3" />
+          </div>
+        </div>
+      </div>
+    </Button>
+  );
+}
+
+export function ModuleLibrary() {
   return (
     <ScrollArea className="h-[400px] pr-4">
       <div className="space-y-2">
         {moduleTemplates.map((template) => (
-          <Button
-            key={template.id}
-            variant="outline"
-            className="w-full justify-start"
-            onClick={() => onSelect?.(template)}
-          >
-            {template.icon}
-            <div className="ml-2 text-left">
-              <div className="font-medium">{template.name}</div>
-              <div className="text-xs text-muted-foreground">
-                {template.description}
-              </div>
-              <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                <span>{template.dimensions[0]}m × {template.dimensions[2]}m × {template.dimensions[1]}m</span>
-                <div className="flex gap-1">
-                  <Power className="h-3 w-3" />
-                  <Network className="h-3 w-3" />
-                </div>
-              </div>
-            </div>
-          </Button>
+          <DraggableModule key={template.id} template={template} />
         ))}
       </div>
     </ScrollArea>
