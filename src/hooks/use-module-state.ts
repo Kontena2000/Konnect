@@ -3,7 +3,6 @@ import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 import debounce from "lodash/debounce";
 import layoutService from "@/services/layout";
-import { debouncedSave } from '@/services/layout';
 
 interface ModuleState {
   modules: Module[];
