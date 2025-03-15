@@ -1,3 +1,4 @@
+
 import { ReactNode, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { Button } from "@/components/ui/button";
@@ -5,8 +6,8 @@ import { Menu } from "lucide-react";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
-import { useRouter } from 'next/router';
-import authService from '@/services/auth';
+import { useRouter } from "next/router";
+import authService from "@/services/auth";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -19,12 +20,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (!user) {
-      router.push('/auth/login');
+      router.push("/auth/login");
     }
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background flex">
       {isMobile ? (
         <Sheet>
           <SheetTrigger asChild>
@@ -37,13 +38,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           </SheetContent>
         </Sheet>
       ) : (
-        <div className="hidden lg:block fixed inset-y-0 left-0 z-50">
-          <Sidebar />
-        </div>
+        <Sidebar />
       )}
       <main className={cn(
-        "min-h-screen",
-        isMobile ? "pt-16 px-4" : "lg:pl-72 p-8"
+        "flex-1 min-h-screen",
+        isMobile ? "pt-16 px-4" : "p-8"
       )}>
         {children}
       </main>
