@@ -1,10 +1,10 @@
 
+import * as THREE from "three";
 import { useRef, useState } from "react";
-import { Instance, Instances } from "@react-three/drei";
 import { ThreeEvent } from "@react-three/fiber";
+import { TransformControls } from "@react-three/drei";
 import { Module } from "@/services/layout";
 import { ConnectionPoint } from "./ConnectionPoint";
-import { TransformControls } from "@react-three/drei";
 
 interface ModuleObjectProps {
   module: Module;
@@ -69,7 +69,8 @@ export function ModuleObject({
           showX={true}
           showY={true}
           showZ={true}
-          snapMode={gridSnap ? "grid" : "none"}
+          translationSnap={gridSnap ? 1 : undefined}
+          rotationSnap={gridSnap ? Math.PI / 12 : undefined}
         />
       )}
 
