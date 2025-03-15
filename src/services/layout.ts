@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -10,10 +11,7 @@ import {
   where,
   getDoc
 } from "firebase/firestore";
-
-type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
-type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
-type ConnectionType = PowerCableType | NetworkCableType;
+import { ConnectionType } from "@/components/three/ModuleLibrary";
 
 export interface Module {
   id: string;
