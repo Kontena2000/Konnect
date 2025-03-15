@@ -4,7 +4,7 @@ import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Pencil, Plus, Settings, Share2, Users } from "lucide-react";
+import { Pencil, Plus, Settings, Share2, Users, Trash2 } from "lucide-react";
 import Link from "next/link";
 import layoutService, { Layout } from "@/services/layout";
 import projectService, { Project } from "@/services/project";
@@ -13,6 +13,7 @@ import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { ScrollArea } from '@/components/ui/scroll-area';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -132,6 +133,26 @@ export default function ProjectDetailsPage() {
         variant: 'destructive',
         title: 'Error',
         description: 'Failed to remove access'
+      });
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!id) return;
+    
+    try {
+      await projectService.deleteProject(id as string);
+      toast({
+        title: 'Success',
+        description: 'Project deleted successfully'
+      });
+      router.push('/dashboard/projects');
+    } catch (error) {
+      console.error('Error deleting project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete project'
       });
     }
   };
@@ -265,12 +286,40 @@ export default function ProjectDetailsPage() {
                     </div>
                   </TabsContent>
                 </Tabs>
-                <Button 
-                  onClick={handleUpdateProject}
-                  className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black mt-4"
-                >
-                  Save Changes
-                </Button>
+                <div className="flex flex-col gap-4 mt-4">
+                  <Button 
+                    onClick={handleUpdateProject}
+                    className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
+                  >
+                    Save Changes
+                  </Button>
+                  
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button variant="outline" className="w-full text-red-500 hover:text-red-600 hover:bg-red-50">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Delete Project
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Are you sure you want to delete this project? This action cannot be undone and all layouts will be permanently deleted.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancel</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={handleDeleteProject}
+                          className="bg-red-500 hover:bg-red-600"
+                        >
+                          Delete
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               </DialogContent>
             </Dialog>
             <Link href={`/dashboard/projects/${id}/editor`}>

@@ -124,7 +124,7 @@ export default function ProjectsPage() {
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='flex flex-col gap-3'>
+                <div className='flex flex-col gap-4'>
                   <Link href={`/dashboard/projects/${project.id}`} className='block'>
                     <Button variant='outline' className='w-full'>
                       Open Project
