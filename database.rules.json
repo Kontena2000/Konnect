@@ -1,6 +1,15 @@
+
 {
   "rules": {
-    ".read": false,
-    ".write": false
+    ".read": "auth != null",
+    ".write": "auth != null",
+    "modules": {
+      ".read": "auth != null",
+      ".write": "auth != null",
+      "$moduleId": {
+        ".read": "auth != null",
+        ".write": "auth != null"
+      }
+    }
   }
 }

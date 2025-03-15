@@ -9,6 +9,7 @@ import { Plus, Minus, Save, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { ModuleCategory, moduleTemplates } from '@/components/three/ModuleLibrary';
+import { auth } from '@/lib/firebase';
 
 interface ModuleFormProps {
   module: ModuleTemplateWithSpecs;
@@ -249,6 +250,10 @@ export function ModuleDatabase() {
   useEffect(() => {
     const initializeModuleDatabase = async () => {
       try {
+        if (!auth.currentUser) {
+          throw new Error('Authentication required');
+        }
+
         const existingModules = await moduleService.getAllModules();
         
         if (existingModules.length === 0) {
@@ -296,7 +301,7 @@ export function ModuleDatabase() {
         toast({
           variant: 'destructive',
           title: 'Error',
-          description: 'Failed to initialize module database'
+          description: error instanceof Error ? error.message : 'Failed to initialize module database'
         });
       } finally {
         setLoading(false);
