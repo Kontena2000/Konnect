@@ -1,3 +1,4 @@
+
 import { useRef, useState } from "react";
 import { Mesh } from "three";
 import { useFrame } from "@react-three/fiber";
@@ -27,10 +28,10 @@ export function ModuleObject({ module, selected, onClick, onConnectPoint }: Modu
     }
   });
 
-  const connectionPoints = [
-    { position: [0.5, 0, 0], type: 'power' as const },
-    { position: [-0.5, 0, 0], type: 'network' as const },
-    { position: [0, 0.5, 0], type: 'cooling' as const }
+  const connectionPoints: Array<{ position: [number, number, number]; type: "power" | "network" | "cooling" }> = [
+    { position: [0.5, 0, 0], type: "power" },
+    { position: [-0.5, 0, 0], type: "network" },
+    { position: [0, 0.5, 0], type: "cooling" }
   ];
 
   return (
