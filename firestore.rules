@@ -1,14 +1,39 @@
 
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+    
+    function isOwner(resource) {
+      return isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    }
+    
+    function hasRole(role) {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && (hasRole('admin') || request.auth.uid == userId);
+    }
+
+    // Projects collection
     match /projects/{projectId} {
-      allow create: if request.auth != null;
-      allow read, update, delete: if request.auth != null && (
-        resource.data.ownerId == request.auth.uid ||
-        request.auth.uid in resource.data.collaborators
-      );
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isOwner(resource);
+    }
+
+    // Layouts collection
+    match /layouts/{layoutId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
+        isOwner(get(/databases/$(database)/documents/projects/$(resource.data.projectId)));
     }
   }
 }
