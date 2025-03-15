@@ -61,6 +61,13 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
   return true;
 };
 
+const handleError = (error: unknown, code: string, message: string): never => {
+  if (error instanceof Error) {
+    throw new ProjectError(message, code, error);
+  }
+  throw new ProjectError(message, code);
+};
+
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
     if (!validateProject(data)) {
@@ -78,13 +85,13 @@ const projectService = {
       });
       return projectRef.id;
     } catch (error) {
-      throw new ProjectError('Failed to create project', 'CREATE_FAILED', error);
+      handleError(error, 'CREATE_FAILED', 'Failed to create project');
     }
   },
 
   async getProject(id: string): Promise<Project | null> {
     try {
-      const projectRef = doc(db, "projects", id);
+      const projectRef = doc(db, 'projects', id);
       const snapshot = await getDoc(projectRef);
       
       if (!snapshot.exists()) {
@@ -96,8 +103,7 @@ const projectService = {
         ...snapshot.data()
       } as Project;
     } catch (error) {
-      console.error("Error fetching project:", error);
-      throw new Error("Failed to fetch project details");
+      handleError(error, 'FETCH_FAILED', 'Failed to fetch project details');
     }
   },
 

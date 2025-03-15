@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect } from "react";
 import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
@@ -35,34 +34,36 @@ export function useModuleState({
   const { toast } = useToast();
   const lastSavedState = useRef<string>(JSON.stringify({ modules: initialModules, connections: initialConnections }));
 
+  const handleSave = async (modules: Module[], connections: Connection[]) => {
+    if (!layoutId) return;
+    
+    try {
+      await layoutService.updateLayout(layoutId, {
+        modules,
+        connections,
+        updatedAt: new Date()
+      });
+      lastSavedState.current = JSON.stringify({ modules, connections });
+      setState(prev => ({ ...prev, hasChanges: false }));
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully'
+      });
+    } catch (error) {
+      console.error('Save error:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save layout'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   const debouncedSave = useCallback(
-    debounce(async (modules: Module[], connections: Connection[]) => {
-      if (!layoutId) return;
-      
-      try {
-        await layoutService.updateLayout(layoutId, {
-          modules,
-          connections,
-          updatedAt: new Date()
-        });
-        lastSavedState.current = JSON.stringify({ modules, connections });
-        setState(prev => ({ ...prev, hasChanges: false }));
-        toast({
-          title: "Success",
-          description: "Layout saved successfully"
-        });
-      } catch (error) {
-        console.error("Save error:", error);
-        toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to save layout"
-        });
-      } finally {
-        setSaving(false);
-      }
-    }, 2000),
-    [layoutId, toast]
+    debounce(handleSave, 2000),
+    [layoutId]
   );
 
   useEffect(() => {

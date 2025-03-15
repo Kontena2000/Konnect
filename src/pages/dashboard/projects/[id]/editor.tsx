@@ -25,50 +25,66 @@ import debounce from 'lodash/debounce';
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from '@/components/ui/select'; // Added import for Select
 import { useMemo } from 'react';
 import { debouncedSave } from '@/services/layout';
+import { useEditorSensors } from '@/hooks/use-editor-sensors';
+import { useModuleState } from '@/hooks/use-module-state';
+import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { toast } = useToast();
   const [layout, setLayout] = useState<Layout | null>(null);
   const [layouts, setLayouts] = useState<Layout[]>([]);
-  const [modules, setModules] = useState<Module[]>([]);
-  const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
-  const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
-  const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
-  const [connections, setConnections] = useState<Connection[]>([]);
-  const [activeConnection, setActiveConnection] = useState<{
-    sourceModuleId: string;
-    sourcePoint: [number, number, number];
-    type: ConnectionType; // Updated to use imported ConnectionType
-  } | null>(null);
-  const { toast } = useToast();
-  const [saving, setSaving] = useState(false);
-  const [history, setHistory] = useState<{past: Module[][], future: Module[][]}>({
-    past: [],
-    future: []
-  });
-  const [cameraZoom, setCameraZoom] = useState(1);
   const [isLoading, setIsLoading] = useState(true);
-  const [hasChanges, setHasChanges] = useState(false);
-  const lastSavedState = useRef<string>('');
-  const [gridSnap, setGridSnap] = useState(true); // Added state for grid snapping
-  const [connectionMode, setConnectionMode] = useState<'cable' | 'pipe'>('cable'); // Added state for connection mode
+  const [cameraZoom, setCameraZoom] = useState(1);
+  const [gridSnap, setGridSnap] = useState(true);
+  const [connectionMode, setConnectionMode] = useState<'cable' | 'pipe'>('cable');
+  const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
+  const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+
+  const sensors = useEditorSensors();
+
+  const {
+    modules,
+    connections,
+    selectedModuleId,
+    hasChanges,
+    saving,
+    updateModule,
+    addModule,
+    deleteModule,
+    addConnection,
+    updateConnection,
+    deleteConnection,
+    selectModule,
+    saveChanges
+  } = useModuleState({
+    layoutId: layout?.id,
+    initialModules: layout?.modules || [],
+    initialConnections: layout?.connections || [],
+    autoSave: true
+  });
+
+  useKeyboardShortcuts({
+    onSave: saveChanges,
+    onDelete: () => selectedModuleId && deleteModule(selectedModuleId)
+  });
 
   // Move sensors configuration outside component body
-  const sensors = [
-    new MouseSensor({
-      activationConstraint: { distance: 10 },
-    }),
-    new TouchSensor({
-      activationConstraint: {
-        delay: 250,
-        tolerance: 5,
-      },
-    }),
-    new PointerSensor({
-      activationConstraint: { distance: 8 },
-    })
-  ];
+  // const sensors = [
+  //   new MouseSensor({
+  //     activationConstraint: { distance: 10 },
+  //   }),
+  //   new TouchSensor({
+  //     activationConstraint: {
+  //       delay: 250,
+  //       tolerance: 5,
+  //     },
+  //   }),
+  //   new PointerSensor({
+  //     activationConstraint: { distance: 8 },
+  //   })
+  // ];
 
   // Memoize grid snap function
   const snapToGrid = useCallback((position: [number, number, number]): [number, number, number] => {
@@ -131,8 +147,6 @@ export default function LayoutEditorPage() {
         }
 
         setLayout(currentLayout);
-        setModules(currentLayout.modules || []);
-        setConnections(currentLayout.connections || []);
         lastSavedState.current = JSON.stringify({ 
           modules: currentLayout.modules, 
           connections: currentLayout.connections 
@@ -153,13 +167,10 @@ export default function LayoutEditorPage() {
 
   const handleLayoutChange = (newLayout: Layout) => {
     setLayout(newLayout);
-    setModules(newLayout.modules || []);
-    setConnections(newLayout.connections || []);
     lastSavedState.current = JSON.stringify({ 
       modules: newLayout.modules, 
       connections: newLayout.connections 
     });
-    setHistory({ past: [], future: [] });
   };
 
   const handleLayoutCreate = (newLayout: Layout) => {
@@ -231,7 +242,7 @@ export default function LayoutEditorPage() {
         dropPosition[2] = z;
       }
       
-      createModule(snapToGrid(dropPosition)); // Updated to snap to grid
+      addModule(snapToGrid(dropPosition)); // Updated to snap to grid
     }
     
     setDraggingTemplate(null);
@@ -265,47 +276,28 @@ export default function LayoutEditorPage() {
 
   // Optimize module update handler
   const handleModuleUpdate = useCallback((moduleId: string, updates: Partial<Module>) => {
-    setModules((prev) =>
-      prev.map((module) =>
-        module.id === moduleId ? {
-          ...module,
-          ...updates,
-          position: updates.position ? snapToGrid(updates.position as [number, number, number]) : module.position,
-          rotation: updates.rotation ? [0, updates.rotation[1], 0] : module.rotation // Lock rotation to Y axis
-        } : module
-      )
-    );
-    
-    setHistory(prev => ({
-      past: [...prev.past, modules],
-      future: []
-    }));
-  }, [modules, snapToGrid]);
+    updateModule(moduleId, {
+      ...updates,
+      position: updates.position ? snapToGrid(updates.position as [number, number, number]) : undefined,
+      rotation: updates.rotation ? [0, updates.rotation[1], 0] : undefined // Lock rotation to Y axis
+    });
+  }, [updateModule, snapToGrid]);
 
   // Optimize module delete handler
   const handleModuleDelete = useCallback((moduleId: string) => {
-    setModules((prev) => {
-      const newModules = prev.filter((module) => module.id !== moduleId);
-      setHistory(h => ({
-        past: [...h.past, prev],
-        future: []
-      }));
-      return newModules;
-    });
-    
+    deleteModule(moduleId);
     setConnections((prev) =>
       prev.filter(
         (conn) => conn.sourceModuleId !== moduleId && conn.targetModuleId !== moduleId
       )
     );
-    
     setSelectedModuleId(undefined);
     
     toast({
       title: 'Success',
       description: 'Module deleted'
     });
-  }, [toast]);
+  }, [deleteModule, toast]);
 
   const handleConnectPoint = (
     moduleId: string,
@@ -328,7 +320,7 @@ export default function LayoutEditorPage() {
           targetPoint: point,
           type: activeConnection.type
         };
-        setConnections((prev) => [...prev, newConnection]);
+        addConnection(newConnection);
         toast({
           title: "Success",
           description: "Connection created",
@@ -339,17 +331,11 @@ export default function LayoutEditorPage() {
   };
 
   const handleUpdateConnection = (connectionId: string, updates: Partial<Connection>) => {
-    setConnections((prev) =>
-      prev.map((conn) =>
-        conn.id === connectionId ? { ...conn, ...updates } : conn
-      )
-    );
+    updateConnection(connectionId, updates);
   };
 
   const handleDeleteConnection = (connectionId: string) => {
-    setConnections((prev) =>
-      prev.filter((conn) => conn.id !== connectionId)
-    );
+    deleteConnection(connectionId);
     toast({
       title: "Success",
       description: "Connection deleted",
