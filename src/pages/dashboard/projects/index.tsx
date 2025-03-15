@@ -63,6 +63,13 @@ export default function ProjectsPage() {
                     </Button>
                   </Link>
                 </div>
+                <div className='mt-4'>
+                  <Link href={`/dashboard/projects/${project.id}/editor`}>
+                    <Button variant='outline' className='w-full'>
+                      Open Editor
+                    </Button>
+                  </Link>
+                </div>
               </CardContent>
             </Card>
           ))}

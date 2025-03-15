@@ -79,10 +79,23 @@ export function SceneContainer({
     if (planeRef.current) {
       const point = event.intersections[0]?.point.toArray() as [number, number, number];
       if (point) {
+        // Snap to grid
+        point[0] = Math.round(point[0]);
         point[1] = 0;
+        point[2] = Math.round(point[2]);
         setHoverPoint(point);
       }
     }
+  };
+
+  const handleModuleUpdate = (moduleId: string, updates: any) => {
+    if (updates.position) {
+      // Snap position to grid
+      updates.position[0] = Math.round(updates.position[0]);
+      updates.position[1] = Math.max(0, Math.round(updates.position[1]));
+      updates.position[2] = Math.round(updates.position[2]);
+    }
+    onModuleUpdate?.(moduleId, updates);
   };
 
   const handlePlaneClick = (event: ThreeEvent<MouseEvent>) => {
@@ -197,7 +210,7 @@ export function SceneContainer({
                 mode={transformMode}
                 onTransformChange={(type, value) => {
                   if (type === "dragging-changed" && !value.dragging) {
-                    onModuleUpdate?.(module.id, value);
+                    handleModuleUpdate(module.id, value);
                   }
                 }}
               />

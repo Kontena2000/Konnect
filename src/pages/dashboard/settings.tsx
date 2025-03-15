@@ -13,6 +13,10 @@ import {
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { moduleTemplates, ModuleTemplate } from "@/components/three/ModuleLibrary";
+import { useEffect, useState } from 'react';
+import { useAuth } from '@/contexts/AuthContext';
+import { db } from '@/lib/firebase';
+import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 
 interface ModuleInputProps {
   module: ModuleTemplate;
@@ -62,6 +66,7 @@ export default function SettingsPage() {
             <TabsTrigger value="profile">Profile</TabsTrigger>
             <TabsTrigger value="preferences">Preferences</TabsTrigger>
             <TabsTrigger value="modules">Modules</TabsTrigger>
+            <TabsTrigger value="users">Users</TabsTrigger>
           </TabsList>
 
           <TabsContent value="profile">
@@ -166,6 +171,43 @@ export default function SettingsPage() {
                     </div>
                   </div>
                 </ScrollArea>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value='users'>
+            <Card>
+              <CardHeader>
+                <CardTitle>User Management</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className='space-y-4'>
+                  <div className='flex items-center gap-4'>
+                    <Input placeholder='Email address' />
+                    <Select defaultValue='editor'>
+                      <SelectTrigger className='w-[200px]'>
+                        <SelectValue placeholder='Select role' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='admin'>Admin</SelectItem>
+                        <SelectItem value='editor'>Editor</SelectItem>
+                        <SelectItem value='viewer'>Viewer</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <Button>Add User</Button>
+                  </div>
+
+                  <div className='border rounded-lg'>
+                    <div className='grid grid-cols-3 gap-4 p-4 font-medium border-b'>
+                      <div>Email</div>
+                      <div>Role</div>
+                      <div>Actions</div>
+                    </div>
+                    <div className='divide-y'>
+                      {/* User list will be populated here */}
+                    </div>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>

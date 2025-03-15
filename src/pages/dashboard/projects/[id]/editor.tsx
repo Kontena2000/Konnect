@@ -17,6 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible"; // Added import for Collapsible
 import { ChevronDown } from "lucide-react"; // Added import for ChevronDown
+import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet'; // Added import for Sheet
+import { Menu } from 'lucide-react'; // Added import for Menu
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
@@ -292,10 +294,10 @@ export default function LayoutEditorPage() {
     >
       <TooltipProvider>
         <AppLayout>
-          <div className="h-[calc(100vh-4rem)] flex flex-col gap-4 p-4 overflow-hidden">
-            <div className="flex items-center justify-between">
-              <h1 className="text-2xl font-bold">Layout Editor</h1>
-              <div className="flex items-center gap-2">
+          <div className='h-screen flex flex-col'>
+            <div className='flex items-center justify-between p-4 border-b'>
+              <h1 className='text-2xl font-bold'>Layout Editor</h1>
+              <div className='flex items-center gap-2'>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
@@ -379,55 +381,43 @@ export default function LayoutEditorPage() {
               </div>
             </div>
 
-            <div className="flex-1 grid grid-cols-[300px_1fr_300px] gap-4 min-h-0">
-              <Card className="overflow-auto">
-                <CardContent className="p-4">
-                  <Collapsible>
-                    <CollapsibleTrigger asChild>
-                      <Button variant="ghost" className="flex w-full justify-between mb-4">
-                        <h2 className="text-lg font-semibold">Module Library</h2>
-                        <ChevronDown className="h-4 w-4" />
-                      </Button>
-                    </CollapsibleTrigger>
-                    <CollapsibleContent>
-                      <ModuleLibrary />
-                    </CollapsibleContent>
-                  </Collapsible>
-                </CardContent>
-              </Card>
+            <div className='flex-1 relative'>
+              <SceneContainer
+                modules={modules}
+                selectedModuleId={selectedModuleId}
+                transformMode={transformMode}
+                onModuleSelect={setSelectedModuleId}
+                onModuleUpdate={handleModuleUpdate}
+                onDropPoint={createModule}
+                connections={connections}
+                activeConnection={activeConnection}
+                onConnectPoint={handleConnectPoint}
+                cameraZoom={cameraZoom}
+              />
 
-              <Card>
-                <CardContent className="p-4 h-full">
-                  <SceneContainer
-                    modules={modules}
-                    selectedModuleId={selectedModuleId}
-                    transformMode={transformMode}
-                    onModuleSelect={setSelectedModuleId}
-                    onModuleUpdate={handleModuleUpdate}
-                    onDropPoint={createModule}
-                    connections={connections}
-                    activeConnection={activeConnection}
-                    onConnectPoint={handleConnectPoint}
-                    cameraZoom={cameraZoom}
-                  />
-                </CardContent>
-              </Card>
+              <div className='absolute top-4 left-4'>
+                <Sheet>
+                  <SheetTrigger asChild>
+                    <Button variant='outline' size='icon'>
+                      <Menu className='h-4 w-4' />
+                    </Button>
+                  </SheetTrigger>
+                  <SheetContent side='left' className='w-[300px]'>
+                    <ModuleLibrary />
+                  </SheetContent>
+                </Sheet>
+              </div>
 
-              <div className="space-y-4 overflow-auto">
-                {selectedModuleId && (
+              {selectedModuleId && (
+                <div className='absolute top-4 right-4 w-[300px] bg-background/80 backdrop-blur-sm rounded-lg border p-4'>
                   <ModuleProperties
                     module={modules.find(m => m.id === selectedModuleId)!}
                     onUpdate={handleModuleUpdate}
                     onDelete={handleModuleDelete}
                     onTransformModeChange={setTransformMode}
                   />
-                )}
-                <ConnectionManager
-                  connections={connections}
-                  onUpdateConnection={handleUpdateConnection}
-                  onDeleteConnection={handleDeleteConnection}
-                />
-              </div>
+                </div>
+              )}
             </div>
           </div>
         </AppLayout>
