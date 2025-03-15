@@ -14,7 +14,7 @@ import { ModuleProperties } from "@/components/three/ModuleProperties";
 import layoutService, { Layout, Module, Connection } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
-import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from '@/components/ui/tooltip';
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
@@ -288,137 +288,139 @@ export default function LayoutEditorPage() {
       onDragStart={handleDragStart} 
       onDragEnd={handleDragEnd}
     >
-      <AppLayout>
-        <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">Layout Editor</h1>
-            <div className='flex items-center gap-2'>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant='outline' 
-                    size='icon'
-                    onClick={handleUndo}
-                    disabled={history.past.length === 0}
-                  >
-                    <Undo className='h-4 w-4' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Undo last change (Ctrl+Z)</p>
-                </TooltipContent>
-              </Tooltip>
+      <TooltipProvider>
+        <AppLayout>
+          <div className="h-[calc(100vh-2rem)] flex flex-col gap-4">
+            <div className="flex items-center justify-between">
+              <h1 className="text-2xl font-bold">Layout Editor</h1>
+              <div className='flex items-center gap-2'>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size='icon'
+                      onClick={handleUndo}
+                      disabled={history.past.length === 0}
+                    >
+                      <Undo className='h-4 w-4' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Undo last change (Ctrl+Z)</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant='outline' 
-                    size='icon'
-                    onClick={handleRedo}
-                    disabled={history.future.length === 0}
-                  >
-                    <Redo className='h-4 w-4' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Redo last change (Ctrl+Y)</p>
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size='icon'
+                      onClick={handleRedo}
+                      disabled={history.future.length === 0}
+                    >
+                      <Redo className='h-4 w-4' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Redo last change (Ctrl+Y)</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Separator orientation='vertical' className='h-6' />
+                <Separator orientation='vertical' className='h-6' />
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant='outline' 
-                    size='icon'
-                    onClick={handleZoomIn}
-                    disabled={cameraZoom >= 2}
-                  >
-                    <ZoomIn className='h-4 w-4' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Zoom in (+)</p>
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size='icon'
+                      onClick={handleZoomIn}
+                      disabled={cameraZoom >= 2}
+                    >
+                      <ZoomIn className='h-4 w-4' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Zoom in (+)</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant='outline' 
-                    size='icon'
-                    onClick={handleZoomOut}
-                    disabled={cameraZoom <= 0.5}
-                  >
-                    <ZoomOut className='h-4 w-4' />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>Zoom out (-)</p>
-                </TooltipContent>
-              </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size='icon'
+                      onClick={handleZoomOut}
+                      disabled={cameraZoom <= 0.5}
+                    >
+                      <ZoomOut className='h-4 w-4' />
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Zoom out (-)</p>
+                  </TooltipContent>
+                </Tooltip>
 
-              <Separator orientation="vertical" className="h-6" />
-              <Button onClick={handleSave} disabled={saving}>
-                {saving ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Saving...
-                  </>
-                ) : (
-                  <>
-                    <Save className="h-4 w-4 mr-2" />
-                    Save Layout
-                  </>
+                <Separator orientation="vertical" className="h-6" />
+                <Button onClick={handleSave} disabled={saving}>
+                  {saving ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className="h-4 w-4 mr-2" />
+                      Save Layout
+                    </>
+                  )}
+                </Button>
+              </div>
+            </div>
+
+            <div className="flex-1 grid grid-cols-[300px_1fr_300px] gap-4">
+              <Card>
+                <CardContent className="p-4">
+                  <h2 className="text-lg font-semibold mb-4">Module Library</h2>
+                  <ModuleLibrary />
+                </CardContent>
+              </Card>
+
+              <Card>
+                <CardContent className="p-4 h-full">
+                  <SceneContainer
+                    modules={modules}
+                    selectedModuleId={selectedModuleId}
+                    transformMode={transformMode}
+                    onModuleSelect={setSelectedModuleId}
+                    onModuleUpdate={handleModuleUpdate}
+                    onDropPoint={createModule}
+                    connections={connections}
+                    activeConnection={activeConnection}
+                    onConnectPoint={handleConnectPoint}
+                    cameraZoom={cameraZoom}
+                  />
+                </CardContent>
+              </Card>
+
+              <div className="space-y-4">
+                {selectedModuleId && (
+                  <ModuleProperties
+                    module={modules.find(m => m.id === selectedModuleId)!}
+                    onUpdate={handleModuleUpdate}
+                    onDelete={handleModuleDelete}
+                    onTransformModeChange={setTransformMode}
+                  />
                 )}
-              </Button>
-            </div>
-          </div>
-
-          <div className="flex-1 grid grid-cols-[300px_1fr_300px] gap-4">
-            <Card>
-              <CardContent className="p-4">
-                <h2 className="text-lg font-semibold mb-4">Module Library</h2>
-                <ModuleLibrary />
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-4 h-full">
-                <SceneContainer
-                  modules={modules}
-                  selectedModuleId={selectedModuleId}
-                  transformMode={transformMode}
-                  onModuleSelect={setSelectedModuleId}
-                  onModuleUpdate={handleModuleUpdate}
-                  onDropPoint={createModule}
+                <ConnectionManager
                   connections={connections}
-                  activeConnection={activeConnection}
-                  onConnectPoint={handleConnectPoint}
-                  cameraZoom={cameraZoom}
+                  onUpdateConnection={handleUpdateConnection}
+                  onDeleteConnection={handleDeleteConnection}
                 />
-              </CardContent>
-            </Card>
-
-            <div className="space-y-4">
-              {selectedModuleId && (
-                <ModuleProperties
-                  module={modules.find(m => m.id === selectedModuleId)!}
-                  onUpdate={handleModuleUpdate}
-                  onDelete={handleModuleDelete}
-                  onTransformModeChange={setTransformMode}
-                />
-              )}
-              <ConnectionManager
-                connections={connections}
-                onUpdateConnection={handleUpdateConnection}
-                onDeleteConnection={handleDeleteConnection}
-              />
+              </div>
             </div>
           </div>
-        </div>
-      </AppLayout>
+        </AppLayout>
+      </TooltipProvider>
     </DndContext>
   );
 }
