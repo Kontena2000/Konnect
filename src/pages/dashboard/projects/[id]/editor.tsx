@@ -138,13 +138,18 @@ export default function LayoutEditorPage() {
   const handleDragEnd = (event: DragEndEvent) => {
     const { active, over } = event;
     
-    if (over && over.id === "scene-container" && draggingTemplate) {
+    if (over && over.id === 'scene-container' && draggingTemplate) {
       const dropPosition: [number, number, number] = [0, 0, 0];
-      if ('delta' in event) {
-        const delta = event.delta;
-        dropPosition[0] = delta.x / 50;
-        dropPosition[2] = delta.y / 50;
+      
+      // Calculate drop position based on pointer coordinates
+      if (event.activatorEvent instanceof MouseEvent) {
+        const rect = (event.activatorEvent.target as HTMLElement).getBoundingClientRect();
+        const x = (event.activatorEvent.clientX - rect.left) / 50 - 10;
+        const z = (event.activatorEvent.clientY - rect.top) / 50 - 10;
+        dropPosition[0] = x;
+        dropPosition[2] = z;
       }
+      
       createModule(dropPosition);
     }
     

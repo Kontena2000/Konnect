@@ -243,7 +243,8 @@ export function SceneContainer({
           minDistance={5}
           maxDistance={50}
           maxPolarAngle={Math.PI / 2.1}
-          zoom={cameraZoom}
+          target={[0, 0, 0]}
+          makeDefault
         />
       </Canvas>
     </div>
