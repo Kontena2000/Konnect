@@ -5,11 +5,9 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { 
-  LayoutGrid, 
   FolderOpen, 
   Settings, 
   LogOut,
-  Menu,
   ChevronLeft,
   ChevronRight
 } from "lucide-react";
@@ -28,11 +26,6 @@ export function Sidebar() {
 
   const navigationItems = [
     {
-      title: "Dashboard",
-      icon: <LayoutGrid className="h-5 w-5" />,
-      href: "/dashboard"
-    },
-    {
       title: "Projects",
       icon: <FolderOpen className="h-5 w-5" />,
       href: "/dashboard/projects"
@@ -45,7 +38,7 @@ export function Sidebar() {
   ];
 
   return (
-    <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 ${collapsed ? "w-16" : "w-64"}`}>
+    <div className={`fixed top-0 left-0 h-screen bg-card border-r transition-all duration-200 z-50 ${collapsed ? "w-16" : "w-64"}`}>
       <div className="flex h-16 items-center justify-between px-4 border-b">
         {!collapsed && <h1 className="text-lg font-semibold">Kontena</h1>}
         <Button

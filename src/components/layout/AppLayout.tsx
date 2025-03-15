@@ -1,4 +1,3 @@
-
 import { ReactNode, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
 import { cn } from "@/lib/utils";
@@ -22,13 +21,15 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [router]);
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="min-h-screen bg-background">
       <Sidebar />
       <main className={cn(
-        "flex-1 min-h-screen",
-        isMobile ? "pl-16 pt-4 pr-4" : "p-8"
+        "pl-[64px] lg:pl-64",
+        isMobile ? "pt-4 pr-4" : "p-8"
       )}>
-        {children}
+        <div className="container mx-auto p-4">
+          {children}
+        </div>
       </main>
     </div>
   );
