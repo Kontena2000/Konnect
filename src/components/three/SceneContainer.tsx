@@ -1,5 +1,6 @@
+
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Grid, Environment, ContactShadows, AccumulativeShadows, RandomizedLight, Lightformer } from '@react-three/drei';
+import { OrbitControls, Grid, Environment, ContactShadows, AccumulativeShadows, RandomizedLight } from '@react-three/drei';
 import { ModuleObject } from "./ModuleObject";
 import { ModuleControls } from "./ModuleControls";
 import { useRef, useState } from "react";
@@ -10,6 +11,8 @@ import { Connection } from '@/services/layout';
 import { EnvironmentalElement } from '@/components/environment/EnvironmentalElement';
 import { TerrainView } from '@/components/environment/TerrainView';
 import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
+
+type ConnectionType = "power" | "network" | "cooling";
 
 interface SceneContainerProps {
   modules: any[];
@@ -22,9 +25,9 @@ interface SceneContainerProps {
   activeConnection?: {
     sourceModuleId: string;
     sourcePoint: [number, number, number];
-    type: string;
+    type: ConnectionType;
   } | null;
-  onConnectPoint?: (moduleId: string, point: [number, number, number], type: string) => void;
+  onConnectPoint?: (moduleId: string, point: [number, number, number], type: ConnectionType) => void;
   readOnly?: boolean;
   environmentalElements?: ElementType[];
   terrain?: TerrainData;
@@ -54,7 +57,7 @@ export function SceneContainer({
     if (planeRef.current) {
       const point = event.intersections[0]?.point.toArray() as [number, number, number];
       if (point) {
-        point[1] = 0; // Lock Y position to ground
+        point[1] = 0;
         setHoverPoint(point);
       }
     }
@@ -68,7 +71,7 @@ export function SceneContainer({
   };
 
   return (
-    <div className='w-full h-full bg-background rounded-lg overflow-hidden'>
+    <div className="w-full h-full bg-background rounded-lg overflow-hidden">
       <Canvas
         camera={{ position: [10, 10, 10], fov: 50 }}
         shadows
@@ -78,10 +81,10 @@ export function SceneContainer({
           toneMappingExposure: 1
         }}
       >
-        <color attach='background' args={['#f5f5f5']} />
-        <fog attach='fog' args={['#f5f5f5', 30, 100]} />
+        <color attach="background" args={["#f5f5f5"]} />
+        <fog attach="fog" args={["#f5f5f5", 30, 100]} />
         
-        <Environment preset='sunset' />
+        <Environment preset="sunset" />
         
         <ambientLight intensity={0.5} />
         <directionalLight
@@ -93,7 +96,7 @@ export function SceneContainer({
         <directionalLight
           position={[-10, 5, -5]}
           intensity={0.5}
-          color='#ffd7b5'
+          color="#ffd7b5"
         />
         
         <AccumulativeShadows
@@ -102,7 +105,7 @@ export function SceneContainer({
           alphaTest={0.85}
           scale={20}
           position={[0, -0.01, 0]}
-          color='#404040'
+          color="#404040"
         >
           <RandomizedLight
             amount={8}
@@ -136,7 +139,7 @@ export function SceneContainer({
           blur={1}
           far={10}
           resolution={256}
-          color='#000000'
+          color="#000000"
         />
 
         <mesh
@@ -178,11 +181,11 @@ export function SceneContainer({
             start={connection.sourcePoint}
             end={connection.targetPoint}
             color={
-              connection.type === 'power'
-                ? '#ff0000'
-                : connection.type === 'network'
-                ? '#00ff00'
-                : '#0000ff'
+              connection.type === "power"
+                ? "#ff0000"
+                : connection.type === "network"
+                ? "#00ff00"
+                : "#0000ff"
             }
           />
         ))}
@@ -191,7 +194,7 @@ export function SceneContainer({
           <ConnectionLine
             start={activeConnection.sourcePoint}
             end={hoverPoint || activeConnection.sourcePoint}
-            color='#999999'
+            color="#999999"
           />
         )}
 
