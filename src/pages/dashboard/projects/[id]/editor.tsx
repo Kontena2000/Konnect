@@ -11,9 +11,9 @@ import { Save, Undo, Redo, ZoomIn, ZoomOut } from "lucide-react";
 import { DndContext, DragEndEvent, useSensor, useSensors, PointerSensor } from "@dnd-kit/core";
 import { nanoid } from "nanoid";
 import { ModuleProperties } from '@/components/three/ModuleProperties';
-import { Module } from "@/services/layout";
-import { Connection } from '@/services/layout';
+import layoutService, { Layout, Module, Connection } from '@/services/layout';
 import { ConnectionManager } from '@/components/three/ConnectionManager';
+import { useToast } from '@/hooks/use-toast';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -47,6 +47,9 @@ export default function LayoutEditorPage() {
     sourcePoint: [number, number, number];
     type: 'power' | 'network' | 'cooling';
   } | null>(null);
+  const { toast } = useToast();
+  const [saving, setSaving] = useState(false);
+  const [layout, setLayout] = useState<Layout | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -55,6 +58,34 @@ export default function LayoutEditorPage() {
       },
     })
   );
+
+  useEffect(() => {
+    const loadLayout = async () => {
+      if (id) {
+        try {
+          // First try to load existing layout
+          const existingLayout = await layoutService.getLayout(id as string);
+          if (existingLayout) {
+            setLayout(existingLayout);
+            setModules(existingLayout.modules);
+            setConnections(existingLayout.connections);
+          } else {
+            // Create new layout if none exists
+            const newLayoutId = await layoutService.createLayout(id as string);
+            setLayout({ id: newLayoutId, projectId: id as string, modules: [], connections: [], lastModified: null as any });
+          }
+        } catch (error) {
+          console.error('Error loading layout:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to load project layout.'
+          });
+        }
+      }
+    };
+    loadLayout();
+  }, [id]);
 
   const handleDragStart = (event: any) => {
     const template = event.active.data.current;
@@ -145,6 +176,31 @@ export default function LayoutEditorPage() {
     setConnections(connections.filter(conn => conn.id !== id));
   };
 
+  const handleSave = async () => {
+    if (!layout) return;
+    
+    try {
+      setSaving(true);
+      await layoutService.updateLayout(layout.id, {
+        modules,
+        connections
+      });
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully.'
+      });
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save layout changes.'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   return (
     <DndContext
       sensors={sensors}
@@ -170,9 +226,18 @@ export default function LayoutEditorPage() {
                 <ZoomOut className="h-4 w-4" />
               </Button>
               <Separator orientation="vertical" className="h-6" />
-              <Button>
-                <Save className="h-4 w-4 mr-2" />
-                Save Layout
+              <Button onClick={handleSave} disabled={saving}>
+                {saving ? (
+                  <>
+                    <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4 mr-2" />
+                    Save Layout
+                  </>
+                )}
               </Button>
             </div>
           </div>
