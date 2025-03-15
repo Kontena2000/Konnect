@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -57,8 +56,14 @@ export interface Layout {
 
 const layoutService = {
   async createLayout(data: Omit<Layout, "id" | "createdAt" | "updatedAt">): Promise<string> {
+    if (!data.projectId) {
+      throw new Error('Project ID is required');
+    }
+
     const layoutRef = await addDoc(collection(db, "layouts"), {
       ...data,
+      modules: data.modules || [],
+      connections: data.connections || [],
       createdAt: new Date(),
       updatedAt: new Date()
     });
@@ -74,17 +79,25 @@ const layoutService = {
   },
 
   async getLayout(id: string): Promise<Layout | null> {
-    const layoutRef = doc(db, "layouts", id);
-    const snapshot = await getDoc(layoutRef);
-    
-    if (!snapshot.exists()) {
+    try {
+      const layoutRef = doc(db, "layouts", id);
+      const snapshot = await getDoc(layoutRef);
+      
+      if (!snapshot.exists()) {
+        return null;
+      }
+
+      const data = snapshot.data();
+      return {
+        id: snapshot.id,
+        modules: data.modules || [],
+        connections: data.connections || [],
+        ...data
+      } as Layout;
+    } catch (error) {
+      console.error('Error fetching layout:', error);
       return null;
     }
-
-    return {
-      id: snapshot.id,
-      ...snapshot.data()
-    } as Layout;
   },
 
   async getProjectLayouts(projectId: string): Promise<Layout[]> {

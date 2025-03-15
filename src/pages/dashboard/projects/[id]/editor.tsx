@@ -439,7 +439,7 @@ export default function LayoutEditorPage() {
               </div>
 
               {selectedModuleId && (
-                <div className='absolute top-4 right-4 w-[300px] bg-background/80 backdrop-blur-sm rounded-lg border p-4'>
+                <div className='absolute top-4 right-4 w-[300px] bg-background/20 backdrop-blur-[1px] rounded-lg border p-4'>
                   <ModuleProperties
                     module={modules.find(m => m.id === selectedModuleId)!}
                     onUpdate={handleModuleUpdate}
