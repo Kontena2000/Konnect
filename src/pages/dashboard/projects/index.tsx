@@ -61,11 +61,11 @@ export default function ProjectsPage() {
           </Link>
         </div>
 
-        <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+        <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3'>
           {projects.map((project) => (
             <Card key={project.id} className='flex flex-col'>
               <CardHeader className='pb-4'>
-                <CardTitle>{project.name}</CardTitle>
+                <CardTitle className='text-xl'>{project.name}</CardTitle>
               </CardHeader>
               <CardContent className='flex-1 space-y-4'>
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>

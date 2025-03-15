@@ -1,4 +1,3 @@
-
 import { auth } from "@/lib/firebase";
 import { 
   createUserWithEmailAndPassword, 
@@ -49,13 +48,14 @@ const authService = {
   },
 
   getCurrentUser(): AuthUser | null {
-    return auth.currentUser as AuthUser | null;
+    const user = auth.currentUser as AuthUser | null;
+    return user;
   },
 
   async initializeDefaultUsers(): Promise<void> {
     const defaultUsers = [
-      { email: "jef@kontena.eu", password: "123456", role: "admin" as UserRole },
-      { email: "lars@kontena.eu", password: "123456", role: "admin" as UserRole }
+      { email: 'jef@kontena.eu', password: '123456', role: 'admin' as UserRole },
+      { email: 'lars@kontena.eu', password: '123456', role: 'admin' as UserRole }
     ];
 
     for (const user of defaultUsers) {
@@ -63,8 +63,14 @@ const authService = {
         await this.register(user.email, user.password, user.role);
         console.log(`Created user: ${user.email}`);
       } catch (error: any) {
-        if (error.code === "auth/email-already-in-use") {
-          console.log(`User ${user.email} already exists`);
+        if (error.code === 'auth/email-already-in-use') {
+          // Try to sign in instead to get the user
+          try {
+            await this.login(user.email, user.password);
+            console.log(`User ${user.email} already exists and credentials are valid`);
+          } catch (signInError) {
+            console.error(`Failed to verify existing user ${user.email}:`, signInError);
+          }
         } else {
           console.error(`Failed to create user ${user.email}:`, error);
         }
