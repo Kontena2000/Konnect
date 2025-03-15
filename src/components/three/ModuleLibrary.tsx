@@ -1,3 +1,4 @@
+
 import { useCallback } from "react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Button } from "@/components/ui/button";
@@ -6,11 +7,13 @@ import { useDraggable } from "@dnd-kit/core";
 
 type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
 type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
-type ConnectionType = PowerCableType | NetworkCableType;
+type CoolingType = "chilled-water" | "refrigerant" | "air-duct";
+type ConnectionType = PowerCableType | NetworkCableType | CoolingType;
 
 export interface ModuleTemplate {
   id: string;
   type: string;
+  category: "konnect" | "power" | "network" | "cooling" | "environment";
   name: string;
   description?: string;
   color: string;
@@ -21,22 +24,12 @@ export interface ModuleTemplate {
   }>;
 }
 
-interface NetworkCables {
-  copper: ModuleTemplate[];
-  fiber: ModuleTemplate[];
-}
-
-interface ModuleTemplates {
-  modules: ModuleTemplate[];
-  "power-cables": ModuleTemplate[];
-  "network-cables": NetworkCables;
-}
-
-export const moduleTemplates: ModuleTemplates = {
-  modules: [
+export const moduleTemplates: Record<string, ModuleTemplate[]> = {
+  konnect: [
     {
       id: "edge-container",
       type: "edge-container",
+      category: "konnect",
       name: "Edge Container",
       description: "Standard Edge Computing Container",
       color: "#808080",
@@ -49,6 +42,7 @@ export const moduleTemplates: ModuleTemplates = {
     {
       id: "network-cabinet",
       type: "network-cabinet",
+      category: "konnect",
       name: "Network Cabinet",
       description: "Standard Network Equipment Cabinet",
       color: "#404040",
@@ -59,10 +53,11 @@ export const moduleTemplates: ModuleTemplates = {
       ]
     }
   ],
-  "power-cables": [
+  power: [
     {
       id: "208v-3phase",
       type: "208v-3phase",
+      category: "power",
       name: "208V 3-Phase",
       description: "208V Three Phase Power Cable",
       color: "#1FB73A",
@@ -71,50 +66,55 @@ export const moduleTemplates: ModuleTemplates = {
     {
       id: "400v-3phase",
       type: "400v-3phase",
+      category: "power",
       name: "400V 3-Phase",
       description: "400V Three Phase Power Cable",
       color: "#1FB73A",
       dimensions: [0.1, 0.1, 0.1]
     }
   ],
-  "network-cables": {
-    copper: [
-      {
-        id: "cat6a",
-        type: "cat6a",
-        name: "CAT6A",
-        description: "Category 6A Network Cable",
-        color: "#00ff00",
-        dimensions: [0.1, 0.1, 0.1]
-      },
-      {
-        id: "cat8",
-        type: "cat8",
-        name: "CAT8",
-        description: "Category 8 Network Cable",
-        color: "#00ff00",
-        dimensions: [0.1, 0.1, 0.1]
-      }
-    ],
-    fiber: [
-      {
-        id: "om4",
-        type: "om4",
-        name: "OM4",
-        description: "OM4 Multimode Fiber Cable",
-        color: "#00ffff",
-        dimensions: [0.1, 0.1, 0.1]
-      },
-      {
-        id: "os2",
-        type: "os2",
-        name: "OS2",
-        description: "OS2 Single Mode Fiber Cable",
-        color: "#00ffff",
-        dimensions: [0.1, 0.1, 0.1]
-      }
-    ]
-  }
+  network: [
+    {
+      id: "cat6a",
+      type: "cat6a",
+      category: "network",
+      name: "CAT6A",
+      description: "Category 6A Network Cable",
+      color: "#00ff00",
+      dimensions: [0.1, 0.1, 0.1]
+    },
+    {
+      id: "om4",
+      type: "om4",
+      category: "network",
+      name: "OM4",
+      description: "OM4 Multimode Fiber Cable",
+      color: "#00ffff",
+      dimensions: [0.1, 0.1, 0.1]
+    }
+  ],
+  cooling: [
+    {
+      id: "chilled-water",
+      type: "chilled-water",
+      category: "cooling",
+      name: "Chilled Water",
+      description: "Chilled Water Cooling Pipe",
+      color: "#0088ff",
+      dimensions: [0.1, 0.1, 0.1]
+    }
+  ],
+  environment: [
+    {
+      id: "air-handler",
+      type: "air-handler",
+      category: "environment",
+      name: "Air Handler",
+      description: "Environmental Air Handler Unit",
+      color: "#888888",
+      dimensions: [1.2, 1.8, 0.6]
+    }
+  ]
 };
 
 function ModuleItem({ template }: { template: ModuleTemplate }) {
@@ -151,73 +151,29 @@ export function ModuleLibrary() {
     ));
   }, []);
 
+  const categories = [
+    { id: "konnect", name: "Konnect Modules" },
+    { id: "power", name: "Power Cables" },
+    { id: "network", name: "Network Cables" },
+    { id: "cooling", name: "Cooling Tubes" },
+    { id: "environment", name: "Environment" }
+  ];
+
   return (
     <div className="space-y-4">
-      <Collapsible defaultOpen>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="flex w-full justify-between">
-            <span>Modules</span>
-            <ChevronDown className="h-4 w-4" />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {renderModules(moduleTemplates.modules)}
-        </CollapsibleContent>
-      </Collapsible>
-
-      <Collapsible>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="flex w-full justify-between">
-            <span>Power Cables</span>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent>
-          {renderModules(moduleTemplates["power-cables"])}
-        </CollapsibleContent>
-      </Collapsible>
-
-      <Collapsible>
-        <CollapsibleTrigger asChild>
-          <Button variant="ghost" className="flex w-full justify-between">
-            <span>Network Cables</span>
-            <ChevronRight className="h-4 w-4" />
-          </Button>
-        </CollapsibleTrigger>
-        <CollapsibleContent className="space-y-4">
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex w-full justify-between pl-4"
-              >
-                <span>Copper</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-4">
-              {renderModules(moduleTemplates["network-cables"].copper)}
-            </CollapsibleContent>
-          </Collapsible>
-
-          <Collapsible>
-            <CollapsibleTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="flex w-full justify-between pl-4"
-              >
-                <span>Fiber</span>
-                <ChevronRight className="h-4 w-4" />
-              </Button>
-            </CollapsibleTrigger>
-            <CollapsibleContent className="pl-4">
-              {renderModules(moduleTemplates["network-cables"].fiber)}
-            </CollapsibleContent>
-          </Collapsible>
-        </CollapsibleContent>
-      </Collapsible>
+      {categories.map(category => (
+        <Collapsible key={category.id}>
+          <CollapsibleTrigger asChild>
+            <Button variant="ghost" className="flex w-full justify-between">
+              <span>{category.name}</span>
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </CollapsibleTrigger>
+          <CollapsibleContent>
+            {renderModules(moduleTemplates[category.id] || [])}
+          </CollapsibleContent>
+        </Collapsible>
+      ))}
     </div>
   );
 }
