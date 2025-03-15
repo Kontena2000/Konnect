@@ -1,6 +1,5 @@
-
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Grid } from "@react-three/drei";
+import { OrbitControls, Grid, Environment, ContactShadows, AccumulativeShadows, RandomizedLight, Lightformer } from '@react-three/drei';
 import { ModuleObject } from "./ModuleObject";
 import { ModuleControls } from "./ModuleControls";
 import { useRef, useState } from "react";
@@ -69,18 +68,51 @@ export function SceneContainer({
   };
 
   return (
-    <div className="w-full h-full bg-background rounded-lg overflow-hidden">
+    <div className='w-full h-full bg-background rounded-lg overflow-hidden'>
       <Canvas
         camera={{ position: [10, 10, 10], fov: 50 }}
         shadows
+        gl={{ 
+          antialias: true,
+          toneMapping: THREE.ACESFilmicToneMapping,
+          toneMappingExposure: 1
+        }}
       >
+        <color attach='background' args={['#f5f5f5']} />
+        <fog attach='fog' args={['#f5f5f5', 30, 100]} />
+        
+        <Environment preset='sunset' />
+        
         <ambientLight intensity={0.5} />
         <directionalLight
           position={[10, 10, 5]}
           intensity={1}
           castShadow
+          shadow-mapSize={[2048, 2048]}
+        />
+        <directionalLight
+          position={[-10, 5, -5]}
+          intensity={0.5}
+          color='#ffd7b5'
         />
         
+        <AccumulativeShadows
+          temporal
+          frames={60}
+          alphaTest={0.85}
+          scale={20}
+          position={[0, -0.01, 0]}
+          color='#404040'
+        >
+          <RandomizedLight
+            amount={8}
+            radius={10}
+            intensity={1}
+            ambient={0.5}
+            position={[10, 10, -5]}
+          />
+        </AccumulativeShadows>
+
         {terrain ? (
           <TerrainView
             data={terrain}
@@ -98,6 +130,15 @@ export function SceneContainer({
           />
         )}
         
+        <ContactShadows
+          opacity={0.5}
+          scale={20}
+          blur={1}
+          far={10}
+          resolution={256}
+          color='#000000'
+        />
+
         <mesh
           ref={planeRef}
           rotation={[-Math.PI / 2, 0, 0]}
@@ -174,6 +215,7 @@ export function SceneContainer({
           dampingFactor={0.05}
           minDistance={5}
           maxDistance={50}
+          maxPolarAngle={Math.PI / 2.1}
         />
       </Canvas>
     </div>
