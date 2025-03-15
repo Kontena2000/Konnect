@@ -50,7 +50,7 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='p-6 lg:p-8'>
+      <div className='p-8 max-w-[2000px] mx-auto'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>

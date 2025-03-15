@@ -4,10 +4,10 @@ const { initializeApp } = require("firebase/app");
 const { getAuth } = require("firebase/auth");
 const { getFirestore } = require("firebase/firestore");
 
-// Fix path resolution for local imports
-const authService = require(path.join(__dirname, "..", "services", "auth")).default;
-const moduleService = require(path.join(__dirname, "..", "services", "module")).default;
-const { moduleTemplates } = require(path.join(__dirname, "..", "components", "three", "ModuleLibrary"));
+// Use __dirname for correct path resolution
+const authService = require(path.join(__dirname, "../../services/auth")).default;
+const moduleService = require(path.join(__dirname, "../../services/module")).default;
+const { moduleTemplates } = require(path.join(__dirname, "../../components/three/ModuleLibrary"));
 
 const firebaseConfig = {
   apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
@@ -33,33 +33,36 @@ async function initialize() {
     // Initialize module database
     const existingModules = await moduleService.getAllModules();
     if (existingModules.length === 0) {
-      const moduleCategories = Object.entries(moduleTemplates);
-      for (const [category, templates] of moduleCategories) {
-        for (const template of templates) {
-          await moduleService.createModule({
-            ...template,
-            technicalSpecs: {
-              weight: template.category === "konnect" ? 2500 : 
-                     template.category === "power" ? 5 :
-                     template.category === "network" ? 0.5 :
-                     template.category === "cooling" ? 2 : 10,
-              powerConsumption: {
-                watts: template.category === "konnect" ? 15000 : 0,
-                kWh: template.category === "konnect" ? 360 : 0
-              },
-              wireConfigurations: [
-                {
-                  type: template.type,
-                  gauge: template.category === "power" ? "AWG 8" : 
-                         template.category === "network" ? template.type : "N/A",
-                  length: template.category === "konnect" ? 10 :
-                          template.category === "power" ? 5 :
-                          template.category === "network" ? 3 : 1
-                }
-              ]
-            }
-          });
-          console.log(`Created module: ${template.name}`);
+      for (const [category, templateList] of Object.entries(moduleTemplates)) {
+        for (const template of templateList) {
+          try {
+            await moduleService.createModule({
+              ...template,
+              technicalSpecs: {
+                weight: template.category === "konnect" ? 2500 : 
+                       template.category === "power" ? 5 :
+                       template.category === "network" ? 0.5 :
+                       template.category === "cooling" ? 2 : 10,
+                powerConsumption: {
+                  watts: template.category === "konnect" ? 15000 : 0,
+                  kWh: template.category === "konnect" ? 360 : 0
+                },
+                wireConfigurations: [
+                  {
+                    type: template.type,
+                    gauge: template.category === "power" ? "AWG 8" : 
+                           template.category === "network" ? template.type : "N/A",
+                    length: template.category === "konnect" ? 10 :
+                            template.category === "power" ? 5 :
+                            template.category === "network" ? 3 : 1
+                  }
+                ]
+              }
+            });
+            console.log(`Created module: ${template.name}`);
+          } catch (error) {
+            console.error(`Failed to create module ${template.name}:`, error);
+          }
         }
       }
       console.log("Module database initialized");
