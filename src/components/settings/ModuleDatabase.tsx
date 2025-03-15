@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -5,20 +6,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Minus, Save, Trash2 } from "lucide-react";
+import { Plus, Minus, Save, Trash2, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { moduleTemplates } from '@/components/three/ModuleLibrary';
 
 interface ModuleFormProps {
   module: ModuleTemplateWithSpecs;
-  onUpdate: (id: string, data: Partial<ModuleTemplateWithSpecs>) => void;
-  onDelete: (id: string) => void;
+  onUpdate: (id: string, data: Partial<ModuleTemplateWithSpecs>) => Promise<void>;
+  onDelete: (id: string) => Promise<void>;
 }
 
 function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
   const [specs, setSpecs] = useState<TechnicalSpecs>(module.technicalSpecs);
   const [isEditing, setIsEditing] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
   const { toast } = useToast();
 
   const handleSpecsChange = (field: string, value: any) => {
@@ -68,6 +71,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
   };
 
   const handleSave = async () => {
+    setIsSaving(true);
     try {
       await onUpdate(module.id, { technicalSpecs: specs });
       setIsEditing(false);
@@ -81,6 +85,26 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
         title: "Error",
         description: "Failed to update module specifications"
       });
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    setIsDeleting(true);
+    try {
+      await onDelete(module.id);
+      toast({
+        title: "Success",
+        description: "Module deleted successfully"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete module"
+      });
+      setIsDeleting(false);
     }
   };
 
@@ -94,6 +118,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
               variant='outline' 
               size='sm'
               onClick={() => setIsEditing(!isEditing)}
+              disabled={isSaving || isDeleting}
             >
               {isEditing ? 'Cancel' : 'Edit'}
             </Button>
@@ -101,18 +126,33 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
               <Button 
                 size='sm'
                 onClick={handleSave}
+                disabled={isSaving}
                 className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
               >
-                <Save className='h-4 w-4 mr-2' />
-                Save
+                {isSaving ? (
+                  <>
+                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    Saving...
+                  </>
+                ) : (
+                  <>
+                    <Save className='h-4 w-4 mr-2' />
+                    Save
+                  </>
+                )}
               </Button>
             )}
             <Button 
               variant='destructive' 
               size='sm'
-              onClick={() => onDelete(module.id)}
+              onClick={handleDelete}
+              disabled={isDeleting || isSaving}
             >
-              <Trash2 className='h-4 w-4' />
+              {isDeleting ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className='h-4 w-4' />
+              )}
             </Button>
           </div>
         </CardTitle>
@@ -126,7 +166,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
                 type="number"
                 value={specs.weight}
                 onChange={(e) => handleSpecsChange("weight", parseFloat(e.target.value))}
-                disabled={!isEditing}
+                disabled={!isEditing || isSaving}
               />
             </div>
             <div>
@@ -135,7 +175,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
                 type="number"
                 value={specs.powerConsumption.watts}
                 onChange={(e) => handlePowerChange("watts", e.target.value)}
-                disabled={!isEditing}
+                disabled={!isEditing || isSaving}
               />
             </div>
             <div>
@@ -144,7 +184,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
                 type="number"
                 value={specs.powerConsumption.kWh}
                 onChange={(e) => handlePowerChange("kWh", e.target.value)}
-                disabled={!isEditing}
+                disabled={!isEditing || isSaving}
               />
             </div>
           </div>
@@ -157,26 +197,27 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
                   placeholder="Type"
                   value={config.type}
                   onChange={(e) => handleWireConfigChange(index, "type", e.target.value)}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isSaving}
                 />
                 <Input
                   placeholder="Gauge"
                   value={config.gauge}
                   onChange={(e) => handleWireConfigChange(index, "gauge", e.target.value)}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isSaving}
                 />
                 <Input
                   type="number"
                   placeholder="Length"
                   value={config.length}
                   onChange={(e) => handleWireConfigChange(index, "length", parseFloat(e.target.value))}
-                  disabled={!isEditing}
+                  disabled={!isEditing || isSaving}
                 />
                 {isEditing && (
                   <Button
                     variant="destructive"
                     size="icon"
                     onClick={() => removeWireConfig(index)}
+                    disabled={isSaving}
                   >
                     <Minus className="h-4 w-4" />
                   </Button>
@@ -188,6 +229,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
                 variant="outline"
                 className="mt-2"
                 onClick={addWireConfig}
+                disabled={isSaving}
               >
                 <Plus className="h-4 w-4 mr-2" />
                 Add Wire Configuration
@@ -202,6 +244,7 @@ function ModuleForm({ module, onUpdate, onDelete }: ModuleFormProps) {
 
 export function ModuleDatabase() {
   const [modules, setModules] = useState<ModuleTemplateWithSpecs[]>([]);
+  const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -303,11 +346,43 @@ export function ModuleDatabase() {
           title: 'Error',
           description: 'Failed to initialize module database'
         });
+      } finally {
+        setLoading(false);
       }
     };
 
     initializeModuleDatabase();
   }, [toast]);
+
+  const handleUpdateModule = async (id: string, data: Partial<ModuleTemplateWithSpecs>) => {
+    try {
+      await moduleService.updateModule(id, data);
+      setModules(prev => prev.map(module => 
+        module.id === id ? { ...module, ...data } : module
+      ));
+    } catch (error) {
+      console.error('Error updating module:', error);
+      throw error;
+    }
+  };
+
+  const handleDeleteModule = async (id: string) => {
+    try {
+      await moduleService.deleteModule(id);
+      setModules(prev => prev.filter(module => module.id !== id));
+    } catch (error) {
+      console.error('Error deleting module:', error);
+      throw error;
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-[600px]">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <ScrollArea className="h-[600px] pr-4">
