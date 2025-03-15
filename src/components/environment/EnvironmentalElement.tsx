@@ -1,40 +1,38 @@
 
 import { useRef } from "react";
 import { Mesh } from "three";
-import { useGLTF } from "@react-three/drei";
 import { EnvironmentalElement as ElementType } from "@/services/environment";
 
-interface EnvironmentalElementProps {
+export interface EnvironmentalElementProps {
   element: ElementType;
-  onClick?: () => void;
-  selected?: boolean;
+  onSelect?: () => void;
 }
 
-export function EnvironmentalElement({ element, onClick, selected }: EnvironmentalElementProps) {
+export function EnvironmentalElement({ element, onSelect }: EnvironmentalElementProps) {
   const meshRef = useRef<Mesh>(null);
 
-  // For development, use a placeholder geometry until we have proper models
+  const handleClick = () => {
+    onSelect?.();
+  };
+
   return (
-    <group
+    <mesh
+      ref={meshRef}
       position={element.position}
-      rotation={element.rotation}
-      scale={element.scale}
-      onClick={onClick}
+      rotation={element.rotation || [0, 0, 0]}
+      scale={element.scale || [1, 1, 1]}
+      onClick={handleClick}
     >
-      <mesh ref={meshRef}>
-        <boxGeometry args={[1, 1, 1]} />
-        <meshStandardMaterial 
-          color={selected ? "#ffd700" : "#4CAF50"}
-          opacity={0.8}
-          transparent
-        />
-      </mesh>
-      {selected && (
-        <mesh position={[0, 2, 0]}>
-          <sphereGeometry args={[0.2]} />
-          <meshBasicMaterial color="yellow" />
-        </mesh>
-      )}
-    </group>
+      <boxGeometry args={[
+        element.dimensions.width,
+        element.dimensions.height,
+        element.dimensions.depth
+      ]} />
+      <meshStandardMaterial
+        color={element.color || "#4b5563"}
+        opacity={0.8}
+        transparent
+      />
+    </mesh>
   );
 }
