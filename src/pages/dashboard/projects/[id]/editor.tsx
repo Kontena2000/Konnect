@@ -71,8 +71,23 @@ export default function LayoutEditorPage() {
             setConnections(existingLayout.connections);
           } else {
             // Create new layout if none exists
-            const newLayoutId = await layoutService.createLayout(id as string);
-            setLayout({ id: newLayoutId, projectId: id as string, modules: [], connections: [], lastModified: null as any });
+            const newLayoutId = await layoutService.createLayout({
+              projectId: id as string,
+              name: 'New Layout',
+              description: 'Created from editor',
+              modules: [],
+              connections: []
+            });
+            setLayout({
+              id: newLayoutId,
+              projectId: id as string,
+              name: 'New Layout',
+              description: 'Created from editor',
+              modules: [],
+              connections: [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
           }
         } catch (error) {
           console.error('Error loading layout:', error);
@@ -85,7 +100,7 @@ export default function LayoutEditorPage() {
       }
     };
     loadLayout();
-  }, [id]);
+  }, [id, toast]);
 
   const handleDragStart = (event: any) => {
     const template = event.active.data.current;
