@@ -76,7 +76,7 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='container py-8'>
+      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl'>
         <div className='flex justify-between items-center mb-8'>
           <h1 className='text-3xl font-bold'>Projects</h1>
           <Link href='/dashboard/projects/new'>
@@ -123,9 +123,9 @@ export default function ProjectsPage() {
                 <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                   {project.description || 'No description'}
                 </p>
-                <div className='space-y-3 pt-4'>
+                <div className='space-y-4 pt-4'>
                   <Link href={`/dashboard/projects/${project.id}`} className='block'>
-                    <Button variant='outline' className='w-full mb-2'>
+                    <Button variant='outline' className='w-full'>
                       Open Project
                     </Button>
                   </Link>
