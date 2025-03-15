@@ -4,6 +4,7 @@ import { TerrainData } from "@/services/environment";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { Grid } from "@react-three/drei";
+import { Html } from "@/components/environment/Html";
 
 interface TerrainViewProps {
   data: TerrainData;
