@@ -1,7 +1,6 @@
-
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
-import { ModuleTemplate, ModuleCategory, moduleTemplates } from "@/components/three/ModuleLibrary";
+import { ModuleTemplate, ModuleCategory, moduleTemplates } from '@/types/module';
 
 export interface TechnicalSpecs {
   // Physical Specifications

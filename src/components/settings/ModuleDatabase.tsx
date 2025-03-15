@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
+import { ModuleTemplateWithSpecs, TechnicalSpecs } from '@/services/module';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,8 +7,9 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Minus, Save, Trash2, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import moduleService, { getDefaultSpecs } from "@/services/module";
-import { ModuleCategory, moduleTemplates, ModuleTemplate, ConnectionType } from '@/components/three/ModuleLibrary';
+import moduleService, { getDefaultSpecs } from '@/services/module';
+import { ModuleCategory, moduleTemplates, ModuleTemplate } from '@/types/module';
+import { ConnectionType } from '@/types/connection';
 import { auth } from '@/lib/firebase';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from '@/components/ui/dialog';

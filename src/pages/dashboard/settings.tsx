@@ -12,7 +12,6 @@ import {
 } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { moduleTemplates, ModuleTemplate, ModuleCategory } from "@/components/three/ModuleLibrary";
 import { useEffect, useState, useCallback } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
@@ -23,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { ModuleDatabase } from '@/components/settings/ModuleDatabase';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
+import { moduleTemplates, ModuleTemplate, ModuleCategory } from '@/types/module';
 
 interface ModuleInputProps {
   module: ModuleTemplate;
