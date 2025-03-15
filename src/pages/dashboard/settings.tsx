@@ -17,6 +17,9 @@ import { useEffect, useState } from 'react';
 import { useAuth } from '@/contexts/AuthContext';
 import { db } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
+import userService, { User } from '@/services/user';
+import { Trash2, Loader2 } from 'lucide-react';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 
 interface ModuleInputProps {
   module: ModuleTemplate;
@@ -56,6 +59,92 @@ function ModuleInput({ module }: ModuleInputProps) {
 }
 
 export default function SettingsPage() {
+  const [users, setUsers] = useState<User[]>([]);
+  const [newUserEmail, setNewUserEmail] = useState('');
+  const [newUserRole, setNewUserRole] = useState<'editor' | 'admin' | 'viewer'>('editor');
+  const [loading, setLoading] = useState(false);
+  const [addingUser, setAddingUser] = useState(false);
+  const { toast } = useToast();
+
+  useEffect(() => {
+    loadUsers();
+  }, []);
+
+  const loadUsers = async () => {
+    setLoading(true);
+    try {
+      const loadedUsers = await userService.getUsers();
+      setUsers(loadedUsers);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load users'
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleAddUser = async () => {
+    if (!newUserEmail) return;
+    
+    setAddingUser(true);
+    try {
+      const newUser = await userService.addUser(newUserEmail, newUserRole);
+      setUsers(prev => [...prev, newUser]);
+      setNewUserEmail('');
+      toast({
+        title: 'Success',
+        description: 'User added successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to add user'
+      });
+    } finally {
+      setAddingUser(false);
+    }
+  };
+
+  const handleUpdateRole = async (userId: string, newRole: User['role']) => {
+    try {
+      await userService.updateUserRole(userId, newRole);
+      setUsers(prev => prev.map(user => 
+        user.id === userId ? { ...user, role: newRole } : user
+      ));
+      toast({
+        title: 'Success',
+        description: 'User role updated'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to update user role'
+      });
+    }
+  };
+
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await userService.deleteUser(userId);
+      setUsers(prev => prev.filter(user => user.id !== userId));
+      toast({
+        title: 'Success',
+        description: 'User deleted'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete user'
+      });
+    }
+  };
+
   return (
     <AppLayout>
       <div className="space-y-6">
@@ -183,8 +272,15 @@ export default function SettingsPage() {
               <CardContent>
                 <div className='space-y-4'>
                   <div className='flex items-center gap-4'>
-                    <Input placeholder='Email address' />
-                    <Select defaultValue='editor'>
+                    <Input 
+                      placeholder='Email address' 
+                      value={newUserEmail}
+                      onChange={(e) => setNewUserEmail(e.target.value)}
+                    />
+                    <Select 
+                      value={newUserRole}
+                      onValueChange={(value: 'admin' | 'editor' | 'viewer') => setNewUserRole(value)}
+                    >
                       <SelectTrigger className='w-[200px]'>
                         <SelectValue placeholder='Select role' />
                       </SelectTrigger>
@@ -194,7 +290,16 @@ export default function SettingsPage() {
                         <SelectItem value='viewer'>Viewer</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button>Add User</Button>
+                    <Button onClick={handleAddUser} disabled={addingUser || !newUserEmail}>
+                      {addingUser ? (
+                        <>
+                          <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                          Adding...
+                        </>
+                      ) : (
+                        'Add User'
+                      )}
+                    </Button>
                   </div>
 
                   <div className='border rounded-lg'>
@@ -204,7 +309,59 @@ export default function SettingsPage() {
                       <div>Actions</div>
                     </div>
                     <div className='divide-y'>
-                      {/* User list will be populated here */}
+                      {loading ? (
+                        <div className='p-4 text-center'>
+                          <Loader2 className='h-6 w-6 animate-spin mx-auto' />
+                        </div>
+                      ) : users.length === 0 ? (
+                        <div className='p-4 text-center text-muted-foreground'>
+                          No users found
+                        </div>
+                      ) : (
+                        users.map((user) => (
+                          <div key={user.id} className='grid grid-cols-3 gap-4 p-4 items-center'>
+                            <div>{user.email}</div>
+                            <div>
+                              <Select
+                                value={user.role}
+                                onValueChange={(value: User['role']) => handleUpdateRole(user.id, value)}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value='admin'>Admin</SelectItem>
+                                  <SelectItem value='editor'>Editor</SelectItem>
+                                  <SelectItem value='viewer'>Viewer</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div>
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant='destructive' size='icon'>
+                                    <Trash2 className='h-4 w-4' />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>Delete User</AlertDialogTitle>
+                                    <AlertDialogDescription>
+                                      Are you sure you want to delete this user? This action cannot be undone.
+                                    </AlertDialogDescription>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                    <AlertDialogAction onClick={() => handleDeleteUser(user.id)}>
+                                      Delete
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </div>
+                        ))
+                      )}
                     </div>
                   </div>
                 </div>
