@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -134,9 +133,9 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className="flex h-screen">
+      <div className='flex h-screen'>
         <DndContext sensors={sensors}>
-          <div className="flex-1 relative">
+          <div className='flex-1 relative'>
             <SceneContainer
               modules={modules}
               connections={connections}
@@ -144,12 +143,12 @@ export default function LayoutEditorPage() {
               onModuleSelect={selectModule}
               onModuleUpdate={updateModule}
               onModuleDelete={deleteModule}
+              cameraZoom={cameraZoom}
               gridSnap={gridSnap}
-              zoom={cameraZoom}
             />
           </div>
 
-          <div className="w-80 border-l bg-background">
+          <div className='w-80 border-l bg-background'>
             <ModuleLibrary onDragStart={setDraggingTemplate} />
           </div>
 
