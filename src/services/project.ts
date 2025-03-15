@@ -14,6 +14,20 @@ import {
   arrayRemove
 } from "firebase/firestore";
 
+// Add error types
+export interface ProjectError extends Error {
+  code: string;
+  details?: unknown;
+}
+
+// Add validation types
+export interface ProjectValidation {
+  name: string;
+  description?: string;
+  plotWidth?: number;
+  plotLength?: number;
+}
+
 export interface Project {
   id: string;
   name: string;
@@ -32,16 +46,24 @@ export interface CreateProjectData {
   ownerId: string;
 }
 
+// Add validation function
+const validateProject = (data: Partial<ProjectValidation>): boolean => {
+  if (!data.name || data.name.trim().length === 0) return false;
+  if (data.plotWidth && (data.plotWidth <= 0 || data.plotWidth > 1000)) return false;
+  if (data.plotLength && (data.plotLength <= 0 || data.plotLength > 1000)) return false;
+  return true;
+};
+
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
-    if (!data.name || !data.ownerId) {
-      throw new Error("Project name and owner ID are required");
+    if (!validateProject(data)) {
+      throw new Error('Invalid project data');
     }
 
     try {
-      const projectRef = await addDoc(collection(db, "projects"), {
+      const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
-        description: data.description?.trim() || "",
+        description: data.description?.trim() || '',
         ownerId: data.ownerId,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
@@ -49,8 +71,10 @@ const projectService = {
       });
       return projectRef.id;
     } catch (error) {
-      console.error("Error creating project:", error);
-      throw new Error("Failed to create project. Please try again.");
+      const projectError: ProjectError = new Error('Failed to create project');
+      projectError.code = 'CREATE_FAILED';
+      projectError.details = error;
+      throw projectError;
     }
   },
 
@@ -74,15 +98,21 @@ const projectService = {
   },
 
   async updateProject(id: string, data: Partial<Project>): Promise<void> {
+    if (!validateProject(data)) {
+      throw new Error('Invalid project data');
+    }
+
     try {
-      const projectRef = doc(db, "projects", id);
+      const projectRef = doc(db, 'projects', id);
       await updateDoc(projectRef, {
         ...data,
         updatedAt: serverTimestamp()
       });
     } catch (error) {
-      console.error("Error updating project:", error);
-      throw new Error("Failed to update project");
+      const projectError: ProjectError = new Error('Failed to update project');
+      projectError.code = 'UPDATE_FAILED';
+      projectError.details = error;
+      throw projectError;
     }
   },
 
@@ -121,11 +151,22 @@ const projectService = {
     }
   },
 
-  async shareProject(projectId: string, email: string) {
-    const projectRef = doc(db, 'projects', projectId);
-    await updateDoc(projectRef, {
-      sharedWith: arrayUnion(email)
-    });
+  async shareProject(projectId: string, email: string): Promise<void> {
+    if (!email || !email.includes('@')) {
+      throw new Error('Invalid email address');
+    }
+
+    try {
+      const projectRef = doc(db, 'projects', projectId);
+      await updateDoc(projectRef, {
+        sharedWith: arrayUnion(email)
+      });
+    } catch (error) {
+      const projectError: ProjectError = new Error('Failed to share project');
+      projectError.code = 'SHARE_FAILED';
+      projectError.details = error;
+      throw projectError;
+    }
   },
 
   async removeShare(projectId: string, email: string) {

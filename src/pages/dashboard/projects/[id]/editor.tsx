@@ -52,11 +52,10 @@ export default function LayoutEditorPage() {
   const [gridSnap, setGridSnap] = useState(true); // Added state for grid snapping
   const [connectionMode, setConnectionMode] = useState<'cable' | 'pipe'>('cable'); // Added state for connection mode
 
-  const sensors = useSensors(
+  // Memoize sensors configuration
+  const sensors = useMemo(() => useSensors(
     useSensor(MouseSensor, {
-      activationConstraint: {
-        distance: 10,
-      },
+      activationConstraint: { distance: 10 },
     }),
     useSensor(TouchSensor, {
       activationConstraint: {
@@ -65,66 +64,38 @@ export default function LayoutEditorPage() {
       },
     }),
     useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 8,
-      },
+      activationConstraint: { distance: 8 },
     })
-  );
+  ), []);
 
-  const snapToGrid = (position: [number, number, number]): [number, number, number] => { // Added function to snap to grid
+  // Memoize grid snap function
+  const snapToGrid = useCallback((position: [number, number, number]): [number, number, number] => {
     if (!gridSnap) return position;
     return [
       Math.round(position[0] * 2) / 2,
       position[1],
       Math.round(position[2] * 2) / 2
     ];
-  };
+  }, [gridSnap]);
 
-  // Optimize save operation with debounce
-  const debouncedSave = useMemo(
-    () => debounce(async (layoutId: string, moduleData: Module[], connectionData: Connection[]) => {
-      try {
-        await layoutService.updateLayout(layoutId, {
-          modules: moduleData,
-          connections: connectionData,
-          updatedAt: new Date()
-        });
-        lastSavedState.current = JSON.stringify({ modules: moduleData, connections: connectionData });
-        setHasChanges(false);
-        toast({
-          title: 'Success',
-          description: 'Layout saved successfully',
-        });
-      } catch (error) {
-        console.error('Save error:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to save layout'
-        });
-      }
-    }, 1000),
-    [toast]
-  );
+  // Optimize module map calculation
+  const moduleMap = useMemo(() => 
+    modules.reduce((acc, module) => ({
+      ...acc,
+      [module.id]: module
+    }), {} as Record<string, Module>)
+  , [modules]);
 
-  // Optimize module updates with useMemo
-  const moduleMap = useMemo(() => {
-    return modules.reduce((acc, module) => {
-      acc[module.id] = module;
-      return acc;
-    }, {} as Record<string, Module>);
-  }, [modules]);
-
-  // Optimize connection filtering with useMemo
-  const moduleConnections = useMemo(() => {
-    return connections.reduce((acc, conn) => {
+  // Optimize connection filtering
+  const moduleConnections = useMemo(() => 
+    connections.reduce((acc, conn) => {
       if (!acc[conn.sourceModuleId]) acc[conn.sourceModuleId] = [];
       if (!acc[conn.targetModuleId]) acc[conn.targetModuleId] = [];
       acc[conn.sourceModuleId].push(conn);
       acc[conn.targetModuleId].push(conn);
       return acc;
-    }, {} as Record<string, Connection[]>);
-  }, [connections]);
+    }, {} as Record<string, Connection[]>)
+  , [connections]);
 
   useEffect(() => {
     const loadProjectAndLayouts = async () => {
@@ -290,7 +261,8 @@ export default function LayoutEditorPage() {
     });
   }, [draggingTemplate, toast]);
 
-  const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
+  // Optimize module update handler
+  const handleModuleUpdate = useCallback((moduleId: string, updates: Partial<Module>) => {
     setModules((prev) =>
       prev.map((module) =>
         module.id === moduleId ? {
@@ -301,22 +273,37 @@ export default function LayoutEditorPage() {
         } : module
       )
     );
-  };
+    
+    setHistory(prev => ({
+      past: [...prev.past, modules],
+      future: []
+    }));
+  }, [modules, snapToGrid]);
 
-  const handleModuleDelete = (moduleId: string) => {
-    setModules((prev) => prev.filter((module) => module.id !== moduleId));
+  // Optimize module delete handler
+  const handleModuleDelete = useCallback((moduleId: string) => {
+    setModules((prev) => {
+      const newModules = prev.filter((module) => module.id !== moduleId);
+      setHistory(h => ({
+        past: [...h.past, prev],
+        future: []
+      }));
+      return newModules;
+    });
+    
     setConnections((prev) =>
       prev.filter(
         (conn) => conn.sourceModuleId !== moduleId && conn.targetModuleId !== moduleId
       )
     );
+    
     setSelectedModuleId(undefined);
     
     toast({
-      title: "Success",
-      description: "Module deleted",
+      title: 'Success',
+      description: 'Module deleted'
     });
-  };
+  }, [toast]);
 
   const handleConnectPoint = (
     moduleId: string,
@@ -367,23 +354,19 @@ export default function LayoutEditorPage() {
     });
   };
 
-  // Update handleSave to be more robust
+  // Optimize save handler
   const handleSave = useCallback(async () => {
     if (!layout?.id || !hasChanges) return;
     
     setSaving(true);
     try {
       await debouncedSave(layout.id, modules, connections);
-      toast({
-        title: "Success",
-        description: "Layout saved successfully"
-      });
     } catch (error) {
-      console.error("Save error:", error);
+      console.error('Save error:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save layout. Please try again."
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save layout'
       });
     } finally {
       setSaving(false);
