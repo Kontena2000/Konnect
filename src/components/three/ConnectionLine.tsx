@@ -1,7 +1,6 @@
 
 import { useRef } from "react";
-import { Vector3, Line } from "three";
-import { useFrame } from "@react-three/fiber";
+import { Vector3, BufferGeometry, LineBasicMaterial } from "three";
 
 interface ConnectionLineProps {
   start: [number, number, number];
@@ -15,24 +14,14 @@ export function ConnectionLine({
   end, 
   color = "#2196F3"
 }: ConnectionLineProps) {
-  const lineRef = useRef<Line>(null);
-
-  const points = [
+  const geometry = new BufferGeometry().setFromPoints([
     new Vector3(...start),
     new Vector3(...end)
-  ];
+  ]);
+  
+  const material = new LineBasicMaterial({ color });
 
   return (
-    <line ref={lineRef}>
-      <bufferGeometry>
-        <float32BufferAttribute 
-          attach="attributes-position"
-          count={2}
-          array={new Float32Array([...start, ...end])}
-          itemSize={3}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial color={color} linewidth={2} />
-    </line>
+    <primitive object={new THREE.Line(geometry, material)} />
   );
 }
