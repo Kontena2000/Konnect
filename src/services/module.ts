@@ -1,3 +1,4 @@
+
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
 import { ModuleTemplate, ModuleCategory, moduleTemplates } from "@/components/three/ModuleLibrary";
@@ -343,4 +344,3 @@ const moduleService = {
 };
 
 export default moduleService;
-export { getDefaultSpecs };
