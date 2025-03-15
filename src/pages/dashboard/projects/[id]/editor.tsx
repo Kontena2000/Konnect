@@ -16,7 +16,9 @@ import layoutService, { Layout, Module, Connection } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
 
-type ConnectionType = "power" | "network" | "cooling";
+type PowerCableType = "208v-3phase" | "400v-3phase" | "whip" | "ups-battery" | "ups-output" | "ups-input";
+type NetworkCableType = "cat5e" | "cat6" | "cat6a" | "cat8" | "om3" | "om4" | "om5" | "os2" | "mtp-mpo";
+type ConnectionType = PowerCableType | NetworkCableType;
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -98,7 +100,7 @@ export default function LayoutEditorPage() {
       setActiveConnection({
         sourceModuleId: moduleId,
         sourcePoint: point,
-        type,
+        type
       });
     } else {
       if (activeConnection.sourceModuleId !== moduleId) {
@@ -108,7 +110,7 @@ export default function LayoutEditorPage() {
           targetModuleId: moduleId,
           sourcePoint: activeConnection.sourcePoint,
           targetPoint: point,
-          type: activeConnection.type as ConnectionType,
+          type: activeConnection.type
         };
         setConnections((prev) => [...prev, newConnection]);
       }
