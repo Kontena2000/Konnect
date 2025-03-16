@@ -1,11 +1,12 @@
-import { useState, useEffect } from "react";
+
+import { useState, useCallback } from "react";
 import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Eye, EyeOff, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { ModuleCategory } from "@/types/module";
@@ -23,11 +24,7 @@ export function ModuleManager() {
   const { toast } = useToast();
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
 
-  useEffect(() => {
-    loadModules();
-  }, [loadModules]); // Add loadModules to dependency array
-
-  const loadModules = async () => {
+  const loadModules = useCallback(async () => {
     try {
       const loadedModules = await moduleService.getAllModules();
       setModules(loadedModules);
@@ -40,7 +37,12 @@ export function ModuleManager() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
+
+  // Run loadModules on component mount
+  useState(() => {
+    loadModules();
+  });
 
   const handleUpdateModule = async (id: string, data: Partial<ModuleTemplateWithSpecs>) => {
     try {
@@ -94,8 +96,8 @@ export function ModuleManager() {
     setExpandedModuleId(moduleId === expandedModuleId ? null : moduleId);
   };
 
-  const handleAddConnectionPoint = (moduleId: string) => {
-    const newPoints = [...(module.connectionPoints || []), {
+  const handleAddConnectionPoint = (moduleId: string, currentModule: ModuleTemplateWithSpecs) => {
+    const newPoints = [...(currentModule.connectionPoints || []), {
       position: [0, 0, 0] as [number, number, number],
       type: 'power' as ConnectionType
     }];
@@ -292,7 +294,7 @@ export function ModuleManager() {
                       ))}
                       <Button
                         variant="outline"
-                        onClick={() => handleAddConnectionPoint(module.id)}
+                        onClick={() => handleAddConnectionPoint(module.id, module)}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Connection Point
