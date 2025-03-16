@@ -20,7 +20,6 @@ import userService, { User } from '@/services/user';
 import { Trash2, Loader2 } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
-import { ModuleDatabase } from '@/components/settings/ModuleDatabase';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
 import { ModuleManager } from '@/components/settings/ModuleManager';
 import { moduleTemplates, ModuleTemplate, ModuleCategory, moduleTemplatesByCategory } from '@/types/module';
