@@ -22,6 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { ModuleDatabase } from '@/components/settings/ModuleDatabase';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
+import { ModuleManager } from '@/components/settings/ModuleManager';
 import { moduleTemplates, ModuleTemplate, ModuleCategory, moduleTemplatesByCategory } from '@/types/module';
 
 interface ModuleInputProps {
@@ -160,8 +161,7 @@ export default function SettingsPage() {
             <TabsTrigger value='profile'>Profile</TabsTrigger>
             <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='preferences'>Preferences</TabsTrigger>
-            <TabsTrigger value='modules'>Modules</TabsTrigger>
-            <TabsTrigger value='module-database'>Module Database</TabsTrigger>
+            <TabsTrigger value='modules'>Module Management</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
           </TabsList>
 
@@ -229,63 +229,25 @@ export default function SettingsPage() {
           <TabsContent value='modules'>
             <Card>
               <CardHeader>
-                <CardTitle>Module Categories & Organization</CardTitle>
+                <CardTitle>Module Management</CardTitle>
                 <p className='text-muted-foreground'>
-                  Organize your module templates into categories and manage their basic properties like names, 
-                  dimensions, and colors. This is where you organize your module library structure.
+                  Create and manage your module library, including technical specifications, 
+                  visual properties, and connection points. Configure which modules are visible 
+                  in the editor and organize them by category.
                 </p>
               </CardHeader>
               <CardContent>
                 <div className='mb-6 p-4 bg-muted rounded-lg'>
-                  <h3 className='font-semibold mb-2'>What is Module Management?</h3>
+                  <h3 className='font-semibold mb-2'>Unified Module Management</h3>
                   <ul className='list-disc pl-4 space-y-1 text-sm text-muted-foreground'>
-                    <li>Organize modules into categories (Konnect, Power, Network, etc.)</li>
-                    <li>Edit basic module properties (names, dimensions, colors)</li>
-                    <li>Manage module templates and their organization</li>
-                    <li>Structure your module library</li>
+                    <li>Create and edit modules with detailed specifications</li>
+                    <li>Configure visual properties and connection points</li>
+                    <li>Organize modules by category</li>
+                    <li>Control module visibility in the editor</li>
+                    <li>Search and filter your module library</li>
                   </ul>
                 </div>
-                <ScrollArea className='h-[600px]'>
-                  <div className='space-y-6'>
-                    {Object.entries(moduleTemplatesByCategory).map(([category, modules]) => (
-                      <div key={category} className='bg-card border rounded-lg p-4'>
-                        <h3 className='text-lg font-semibold mb-4 flex items-center'>
-                          {category.charAt(0).toUpperCase() + category.slice(1)}
-                          <span className='ml-2 text-sm text-muted-foreground'>({modules.length} modules)</span>
-                        </h3>
-                        <div className='space-y-4'>
-                          {modules.map((module) => (
-                            <ModuleInput key={module.id} module={module} />
-                          ))}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                </ScrollArea>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value='module-database'>
-            <Card>
-              <CardHeader>
-                <CardTitle>Technical Module Database</CardTitle>
-                <p className='text-muted-foreground'>
-                  Create and manage detailed technical specifications for your modules. This is where you define 
-                  the core characteristics, capabilities, and technical requirements of each module.
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className='mb-6 p-4 bg-muted rounded-lg'>
-                  <h3 className='font-semibold mb-2'>What is Module Database?</h3>
-                  <ul className='list-disc pl-4 space-y-1 text-sm text-muted-foreground'>
-                    <li>Define detailed technical specifications</li>
-                    <li>Set up power requirements and cooling specifications</li>
-                    <li>Configure connection points and interfaces</li>
-                    <li>Manage performance characteristics</li>
-                  </ul>
-                </div>
-                <ModuleDatabase />
+                <ModuleManager />
               </CardContent>
             </Card>
           </TabsContent>
