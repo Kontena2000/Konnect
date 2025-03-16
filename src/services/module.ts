@@ -1,9 +1,10 @@
+
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
-import { ModuleTemplate, ModuleCategory, moduleTemplates } from '@/types/module';
+import { ModuleTemplate, ModuleCategory, moduleTemplates, moduleTemplatesByCategory } from '@/types/module';
 
+// Keep existing TechnicalSpecs interface and other interfaces...
 export interface TechnicalSpecs {
-  // Physical Specifications
   weight: {
     empty: number;
     loaded: number;
@@ -16,8 +17,6 @@ export interface TechnicalSpecs {
     front: number;
     rear: number;
   };
-
-  // Power Characteristics
   powerConsumption: {
     typical: number;
     maximum: number;
@@ -37,8 +36,6 @@ export interface TechnicalSpecs {
     upsCompatibility: string[];
     monitoring: string[];
   };
-
-  // Cooling Properties
   cooling: {
     heatOutput: {
       btu: number;
@@ -66,8 +63,6 @@ export interface TechnicalSpecs {
       configuration: string;
     };
   };
-
-  // Connectivity
   connectivity: {
     networkPorts: {
       type: string;
@@ -92,8 +87,6 @@ export interface TechnicalSpecs {
     };
     cableManagement: string[];
   };
-
-  // Performance Metrics
   performance: {
     computing?: {
       cores: number;
@@ -115,8 +108,6 @@ export interface TechnicalSpecs {
       score: number;
     }[];
   };
-
-  // Environmental Factors
   environmental: {
     noise: {
       idle: number;
@@ -134,8 +125,6 @@ export interface TechnicalSpecs {
     };
     seismicRating: string;
   };
-
-  // Legacy support for existing code
   watts: number;
   kWh: number;
   wireConfigurations: {
@@ -147,6 +136,7 @@ export interface TechnicalSpecs {
 
 export interface ModuleTemplateWithSpecs extends ModuleTemplate {
   technicalSpecs: TechnicalSpecs;
+  visibleInEditor?: boolean;
 }
 
 export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
@@ -288,17 +278,58 @@ export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
 const moduleService = {
   async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
     try {
-      const baseTemplates = Object.values(moduleTemplates).flat();
+      // Get database reference
       const modulesRef = ref(realTimeDb, "modules");
-      const snapshot = await get(modulesRef);
-      const dbSpecs = snapshot.exists() ? snapshot.val() : {};
       
-      return baseTemplates.map(template => ({
-        ...template,
-        technicalSpecs: dbSpecs[template.type]?.technicalSpecs || getDefaultSpecs(template.category)
-      }));
+      // Get all module templates
+      const defaultTemplates = Object.values(moduleTemplatesByCategory).flat();
+      
+      // Try to get existing modules from database
+      const snapshot = await get(modulesRef);
+      const dbModules = snapshot.exists() ? snapshot.val() : {};
+      
+      // If database is empty, initialize with default templates
+      if (!snapshot.exists() || Object.keys(dbModules).length === 0) {
+        console.log("Initializing database with default modules...");
+        
+        // Prepare default modules with specs
+        const defaultModules = defaultTemplates.map(template => ({
+          ...template,
+          technicalSpecs: getDefaultSpecs(template.category),
+          visibleInEditor: true
+        }));
+        
+        // Create a batch operation to add all modules
+        const batch: Promise<void>[] = [];
+        defaultModules.forEach(module => {
+          const moduleRef = ref(realTimeDb, `modules/${module.type}`);
+          batch.push(set(moduleRef, {
+            ...module,
+            createdAt: new Date().toISOString(),
+            updatedAt: new Date().toISOString()
+          }));
+        });
+        
+        // Execute all create operations
+        await Promise.all(batch);
+        console.log("Default modules initialized successfully");
+        
+        return defaultModules;
+      }
+      
+      // If database has modules, merge with default templates
+      return defaultTemplates.map(template => {
+        const storedModule = dbModules[template.type];
+        return {
+          ...template,
+          technicalSpecs: storedModule?.technicalSpecs || getDefaultSpecs(template.category),
+          visibleInEditor: storedModule?.visibleInEditor ?? true,
+          // Preserve any additional stored data
+          ...(storedModule || {})
+        };
+      });
     } catch (error) {
-      console.error("Error fetching modules:", error);
+      console.error("Error in getAllModules:", error);
       throw new Error("Failed to fetch modules");
     }
   },
