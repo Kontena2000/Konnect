@@ -10,7 +10,7 @@ export default function Home() {
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (user) {
-      router.push("/dashboard");
+      router.push("/dashboard/projects");
     } else {
       router.push("/auth/login");
     }
