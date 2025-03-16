@@ -1,4 +1,3 @@
-
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
 import { ModuleTemplate, ModuleCategory, moduleTemplates, moduleTemplatesByCategory } from '@/types/module';
@@ -278,59 +277,44 @@ export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
 const moduleService = {
   async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
     try {
-      // Get database reference
-      const modulesRef = ref(realTimeDb, "modules");
-      
-      // Get all module templates
-      const defaultTemplates = Object.values(moduleTemplatesByCategory).flat();
-      
-      // Try to get existing modules from database
+      const modulesRef = ref(realTimeDb, 'modules');
       const snapshot = await get(modulesRef);
       const dbModules = snapshot.exists() ? snapshot.val() : {};
       
-      // If database is empty, initialize with default templates
+      // Get default templates
+      const defaultTemplates = Object.values(moduleTemplatesByCategory).flat();
+      
+      // If database is empty, initialize with defaults
       if (!snapshot.exists() || Object.keys(dbModules).length === 0) {
-        console.log("Initializing database with default modules...");
+        console.log('Initializing default modules...');
         
-        // Prepare default modules with specs
         const defaultModules = defaultTemplates.map(template => ({
           ...template,
           technicalSpecs: getDefaultSpecs(template.category),
-          visibleInEditor: true
+          visibleInEditor: true,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString()
         }));
         
-        // Create a batch operation to add all modules
-        const batch: Promise<void>[] = [];
-        defaultModules.forEach(module => {
-          const moduleRef = ref(realTimeDb, `modules/${module.type}`);
-          batch.push(set(moduleRef, {
-            ...module,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-          }));
-        });
-        
-        // Execute all create operations
-        await Promise.all(batch);
-        console.log("Default modules initialized successfully");
+        // Create all modules in one batch
+        await set(modulesRef, defaultModules.reduce((acc, module) => ({
+          ...acc,
+          [module.id]: module
+        }), {}));
         
         return defaultModules;
       }
       
-      // If database has modules, merge with default templates
-      return defaultTemplates.map(template => {
-        const storedModule = dbModules[template.type];
-        return {
-          ...template,
-          technicalSpecs: storedModule?.technicalSpecs || getDefaultSpecs(template.category),
-          visibleInEditor: storedModule?.visibleInEditor ?? true,
-          // Preserve any additional stored data
-          ...(storedModule || {})
-        };
-      });
+      // Return existing modules with fallback to defaults
+      return defaultTemplates.map(template => ({
+        ...template,
+        ...dbModules[template.id],
+        technicalSpecs: dbModules[template.id]?.technicalSpecs || getDefaultSpecs(template.category),
+        visibleInEditor: dbModules[template.id]?.visibleInEditor ?? true
+      }));
     } catch (error) {
-      console.error("Error in getAllModules:", error);
-      throw new Error("Failed to fetch modules");
+      console.error('Error in getAllModules:', error);
+      throw new Error('Failed to fetch modules');
     }
   },
 
