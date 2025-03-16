@@ -1,5 +1,5 @@
+
 import { useState, useEffect, useCallback } from "react";
-import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import moduleService, { getDefaultSpecs, ModuleTemplateWithSpecs } from "@/services/module";
+import moduleService, { getDefaultSpecs, ModuleTemplateWithSpecs, TechnicalSpecs } from "@/services/module";
 import { ModuleCategory, moduleTemplates } from "@/types/module";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateModuleDialog } from "@/components/settings/CreateModuleDialog";
