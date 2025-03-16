@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -21,6 +20,7 @@ export function ModuleManager() {
   const [searchTerm, setSearchTerm] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const { toast } = useToast();
+  const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
 
   useEffect(() => {
     loadModules();
@@ -87,6 +87,10 @@ export function ModuleManager() {
   const handleToggleVisibility = async (module: ModuleTemplateWithSpecs) => {
     const newVisibility = !module.visibleInEditor;
     await handleUpdateModule(module.id, { visibleInEditor: newVisibility });
+  };
+
+  const handleToggleExpand = (moduleId: string) => {
+    setExpandedModuleId(moduleId === expandedModuleId ? null : moduleId);
   };
 
   if (loading) {
@@ -281,8 +285,8 @@ export function ModuleManager() {
                         variant="outline"
                         onClick={() => {
                           const newPoints = [...(module.connectionPoints || []), {
-                            position: [0, 0, 0],
-                            type: "power"
+                            position: [0, 0, 0] as [number, number, number],
+                            type: 'power' as ConnectionType
                           }];
                           handleUpdateModule(module.id, { connectionPoints: newPoints });
                         }}
