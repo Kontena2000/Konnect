@@ -1,19 +1,22 @@
+
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
-import authService from "@/services/auth";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function Home() {
   const router = useRouter();
+  const { user, loading } = useAuth();
 
   useEffect(() => {
-    const user = authService.getCurrentUser();
-    if (user) {
-      router.push('/dashboard/projects');
-    } else {
-      router.push('/auth/login');
+    if (!loading) {
+      if (user) {
+        router.push('/dashboard/projects');
+      } else {
+        router.push('/auth/login');
+      }
     }
-  }, [router]);
+  }, [user, loading, router]);
 
   return (
     <>
