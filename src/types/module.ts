@@ -29,6 +29,7 @@ export interface ModuleTemplate {
     position: [number, number, number];
     type: ConnectionType;
   }>;
+  visibleInEditor?: boolean;
 }
 
 export interface ModuleTemplateWithSpecs extends ModuleTemplate {
