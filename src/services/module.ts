@@ -277,6 +277,7 @@ export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
 const moduleService = {
   async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
     try {
+      console.log('Fetching modules...');
       const modulesRef = ref(realTimeDb, 'modules');
       const snapshot = await get(modulesRef);
       const dbModules = snapshot.exists() ? snapshot.val() : {};
@@ -286,8 +287,7 @@ const moduleService = {
       
       // If database is empty, initialize with defaults
       if (!snapshot.exists() || Object.keys(dbModules).length === 0) {
-        console.log('Initializing default modules...');
-        
+        console.log('No modules found, initializing defaults...');
         const defaultModules = defaultTemplates.map(template => ({
           ...template,
           technicalSpecs: getDefaultSpecs(template.category),
@@ -297,15 +297,18 @@ const moduleService = {
         }));
         
         // Create all modules in one batch
-        await set(modulesRef, defaultModules.reduce((acc, module) => ({
+        const modulesData = defaultModules.reduce((acc, module) => ({
           ...acc,
           [module.id]: module
-        }), {}));
+        }), {});
         
+        await set(modulesRef, modulesData);
+        console.log('Default modules initialized');
         return defaultModules;
       }
       
-      // Return existing modules with fallback to defaults
+      // Map existing modules with defaults as fallback
+      console.log('Mapping existing modules with defaults');
       return defaultTemplates.map(template => ({
         ...template,
         ...dbModules[template.id],

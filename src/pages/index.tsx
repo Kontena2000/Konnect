@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { useRouter } from "next/router";
 import Head from "next/head";
@@ -10,9 +9,9 @@ export default function Home() {
   useEffect(() => {
     const user = authService.getCurrentUser();
     if (user) {
-      router.push("/dashboard/projects");
+      router.push('/dashboard/projects');
     } else {
-      router.push("/auth/login");
+      router.push('/auth/login');
     }
   }, [router]);
 
@@ -20,13 +19,13 @@ export default function Home() {
     <>
       <Head>
         <title>Kontena | Layout Maker</title>
-        <meta name="description" content="Design and visualize modular data center solutions" />
-        <link rel="icon" href="/favicon.ico" />
+        <meta name='description' content='Design and visualize modular data center solutions' />
+        <link rel='icon' href='/favicon.ico' />
       </Head>
       
-      <main className="flex items-center justify-center min-h-screen">
-        <div className="animate-pulse">
-          <h1 className="text-4xl font-bold">Loading...</h1>
+      <main className='flex items-center justify-center min-h-screen'>
+        <div className='animate-pulse'>
+          <h1 className='text-4xl font-bold'>Loading...</h1>
         </div>
       </main>
     </>
