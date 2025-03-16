@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Eye, EyeOff, Loader2 } from "lucide-react";
+import { Plus, Search, Eye, EyeOff, Loader2, ChevronDown, ChevronUp } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { ModuleCategory } from "@/types/module";
@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { CreateModuleDialog } from "@/components/settings/CreateModuleDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
+import { ConnectionType } from '@/types/connection';
 
 export function ModuleManager() {
   const [modules, setModules] = useState<ModuleTemplateWithSpecs[]>([]);
@@ -24,7 +25,7 @@ export function ModuleManager() {
 
   useEffect(() => {
     loadModules();
-  }, []);
+  }, [loadModules]); // Add loadModules to dependency array
 
   const loadModules = async () => {
     try {
@@ -91,6 +92,14 @@ export function ModuleManager() {
 
   const handleToggleExpand = (moduleId: string) => {
     setExpandedModuleId(moduleId === expandedModuleId ? null : moduleId);
+  };
+
+  const handleAddConnectionPoint = (moduleId: string) => {
+    const newPoints = [...(module.connectionPoints || []), {
+      position: [0, 0, 0] as [number, number, number],
+      type: 'power' as ConnectionType
+    }];
+    handleUpdateModule(moduleId, { connectionPoints: newPoints });
   };
 
   if (loading) {
@@ -283,13 +292,7 @@ export function ModuleManager() {
                       ))}
                       <Button
                         variant="outline"
-                        onClick={() => {
-                          const newPoints = [...(module.connectionPoints || []), {
-                            position: [0, 0, 0] as [number, number, number],
-                            type: 'power' as ConnectionType
-                          }];
-                          handleUpdateModule(module.id, { connectionPoints: newPoints });
-                        }}
+                        onClick={() => handleAddConnectionPoint(module.id)}
                       >
                         <Plus className="h-4 w-4 mr-2" />
                         Add Connection Point

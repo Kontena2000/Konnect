@@ -1,10 +1,9 @@
-
 import { useState } from "react";
 import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, X, Loader2, Cube } from "lucide-react";
+import { Plus, X, Loader2, Box } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { ModuleCategory } from "@/types/module";
@@ -291,7 +290,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
 
               <div className="border rounded-lg p-4 h-[200px] flex items-center justify-center bg-muted">
                 <div className="text-center text-muted-foreground">
-                  <Cube className="h-16 w-16 mx-auto mb-2" />
+                  <Box className="h-16 w-16 mx-auto mb-2" />
                   <p>Module Preview</p>
                   <p className="text-xs">(Coming soon)</p>
                 </div>
