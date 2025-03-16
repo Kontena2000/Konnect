@@ -1,12 +1,12 @@
 
-import { useState, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Loader2, ChevronDown, ChevronUp } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, AlertTriangle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { ModuleCategory } from "@/types/module";
@@ -15,6 +15,7 @@ import { CreateModuleDialog } from "@/components/settings/CreateModuleDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { ConnectionType } from '@/types/connection';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 export function ModuleManager() {
   const [modules, setModules] = useState<ModuleTemplateWithSpecs[]>([]);
@@ -23,6 +24,9 @@ export function ModuleManager() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const { toast } = useToast();
   const [expandedModuleId, setExpandedModuleId] = useState<string | null>(null);
+  const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isSaving, setIsSaving] = useState<string | null>(null);
 
   const loadModules = useCallback(async () => {
     try {
@@ -39,12 +43,13 @@ export function ModuleManager() {
     }
   }, [toast]);
 
-  // Run loadModules on component mount
-  useState(() => {
+  // Correctly use useEffect for component mount
+  useEffect(() => {
     loadModules();
-  });
+  }, [loadModules]);
 
   const handleUpdateModule = async (id: string, data: Partial<ModuleTemplateWithSpecs>) => {
+    setIsSaving(id);
     try {
       await moduleService.updateModule(id, data);
       setModules(prev => prev.map(module => 
@@ -60,6 +65,8 @@ export function ModuleManager() {
         title: "Error",
         description: "Failed to update module"
       });
+    } finally {
+      setIsSaving(null);
     }
   };
 
@@ -80,6 +87,27 @@ export function ModuleManager() {
     }
   };
 
+  const handleDeleteModule = async (id: string) => {
+    setIsDeleting(true);
+    try {
+      await moduleService.deleteModule(id);
+      setModules(prev => prev.filter(module => module.id !== id));
+      toast({
+        title: "Success",
+        description: "Module deleted successfully"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to delete module"
+      });
+    } finally {
+      setIsDeleting(false);
+      setModuleToDelete(null);
+    }
+  };
+
   const filteredModules = modules.filter(module => {
     const matchesSearch = module.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          module.description.toLowerCase().includes(searchTerm.toLowerCase());
@@ -97,11 +125,28 @@ export function ModuleManager() {
   };
 
   const handleAddConnectionPoint = (moduleId: string, currentModule: ModuleTemplateWithSpecs) => {
+    // Enforce connection points to be on the bottom of the module (Z=0)
     const newPoints = [...(currentModule.connectionPoints || []), {
       position: [0, 0, 0] as [number, number, number],
       type: 'power' as ConnectionType
     }];
     handleUpdateModule(moduleId, { connectionPoints: newPoints });
+  };
+
+  const validateConnectionPoint = (position: [number, number, number], dimensions: {length: number, width: number, height: number}): boolean => {
+    // Check if the connection point is on the bottom of the module
+    // Z position should be 0 (bottom of the module)
+    // X position should be within the module's length
+    // Y position should be within the module's width
+    const [x, y, z] = position;
+    const halfLength = dimensions.length / 2;
+    const halfWidth = dimensions.width / 2;
+    
+    return z === 0 && 
+           x >= -halfLength && 
+           x <= halfLength && 
+           y >= -halfWidth && 
+           y <= halfWidth;
   };
 
   if (loading) {
@@ -145,7 +190,7 @@ export function ModuleManager() {
       <ScrollArea className="h-[700px]">
         <div className="space-y-4">
           {filteredModules.map(module => (
-            <Card key={module.id}>
+            <Card key={module.id} className="relative">
               <CardHeader>
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
@@ -165,6 +210,41 @@ export function ModuleManager() {
                         onCheckedChange={() => handleToggleVisibility(module)}
                       />
                     </div>
+                    <AlertDialog open={moduleToDelete === module.id} onOpenChange={(open) => !open && setModuleToDelete(null)}>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          variant="destructive" 
+                          size="icon"
+                          onClick={() => setModuleToDelete(module.id)}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Module</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this module? This action cannot be undone.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction 
+                            onClick={() => handleDeleteModule(module.id)}
+                            disabled={isDeleting}
+                          >
+                            {isDeleting ? (
+                              <>
+                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                Deleting...
+                              </>
+                            ) : (
+                              "Delete"
+                            )}
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardHeader>
@@ -183,6 +263,7 @@ export function ModuleManager() {
                         <Input
                           value={module.name}
                           onChange={(e) => handleUpdateModule(module.id, { name: e.target.value })}
+                          required
                         />
                       </div>
                       <div>
@@ -224,6 +305,7 @@ export function ModuleManager() {
                                 })}
                                 step={0.1}
                                 min={0.1}
+                                required
                               />
                             </div>
                           ))}
@@ -266,32 +348,171 @@ export function ModuleManager() {
                           })}
                         />
                       </div>
+                      <div>
+                        <Label>Power Consumption (watts)</Label>
+                        <Input
+                          type="number"
+                          value={module.technicalSpecs.powerConsumption.typical}
+                          onChange={(e) => handleUpdateModule(module.id, {
+                            technicalSpecs: {
+                              ...module.technicalSpecs,
+                              powerConsumption: {
+                                ...module.technicalSpecs.powerConsumption,
+                                typical: parseFloat(e.target.value) || 0
+                              }
+                            }
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Maximum Power (watts)</Label>
+                        <Input
+                          type="number"
+                          value={module.technicalSpecs.powerConsumption.maximum}
+                          onChange={(e) => handleUpdateModule(module.id, {
+                            technicalSpecs: {
+                              ...module.technicalSpecs,
+                              powerConsumption: {
+                                ...module.technicalSpecs.powerConsumption,
+                                maximum: parseFloat(e.target.value) || 0
+                              }
+                            }
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Heat Output (BTU/hr)</Label>
+                        <Input
+                          type="number"
+                          value={module.technicalSpecs.cooling.heatOutput.btu}
+                          onChange={(e) => handleUpdateModule(module.id, {
+                            technicalSpecs: {
+                              ...module.technicalSpecs,
+                              cooling: {
+                                ...module.technicalSpecs.cooling,
+                                heatOutput: {
+                                  ...module.technicalSpecs.cooling.heatOutput,
+                                  btu: parseFloat(e.target.value) || 0
+                                }
+                              }
+                            }
+                          })}
+                        />
+                      </div>
+                      <div>
+                        <Label>Heat Output (kW)</Label>
+                        <Input
+                          type="number"
+                          value={module.technicalSpecs.cooling.heatOutput.kW}
+                          onChange={(e) => handleUpdateModule(module.id, {
+                            technicalSpecs: {
+                              ...module.technicalSpecs,
+                              cooling: {
+                                ...module.technicalSpecs.cooling,
+                                heatOutput: {
+                                  ...module.technicalSpecs.cooling.heatOutput,
+                                  kW: parseFloat(e.target.value) || 0
+                                }
+                              }
+                            }
+                          })}
+                        />
+                      </div>
                     </div>
                   </TabsContent>
 
                   <TabsContent value="connections" className="space-y-4">
                     <div className="space-y-4">
-                      {module.connectionPoints?.map((point, index) => (
-                        <div key={index} className="p-4 border rounded-lg">
-                          <div className="grid grid-cols-3 gap-4">
-                            {point.position.map((value, i) => (
-                              <div key={i}>
-                                <Label>{["X", "Y", "Z"][i]} Position</Label>
-                                <Input
-                                  type="number"
-                                  value={value}
-                                  onChange={(e) => {
-                                    const newPoints = [...(module.connectionPoints || [])];
-                                    newPoints[index].position[i] = parseFloat(e.target.value) || 0;
-                                    handleUpdateModule(module.id, { connectionPoints: newPoints });
-                                  }}
-                                  step={0.1}
-                                />
-                              </div>
-                            ))}
-                          </div>
+                      <div className="bg-muted p-4 rounded-lg">
+                        <div className="flex items-center gap-2 mb-2">
+                          <AlertTriangle className="h-4 w-4 text-yellow-500" />
+                          <p className="text-sm font-medium">Connection Point Guidelines</p>
                         </div>
-                      ))}
+                        <p className="text-sm text-muted-foreground">
+                          Connection points must be placed on the bottom of the module (Z=0). 
+                          X and Y coordinates should be within the module's dimensions.
+                        </p>
+                      </div>
+                      
+                      {module.connectionPoints?.map((point, index) => {
+                        const isValid = validateConnectionPoint(point.position, module.dimensions);
+                        
+                        return (
+                          <div key={index} className={`p-4 border rounded-lg ${!isValid ? 'border-red-500' : ''}`}>
+                            {!isValid && (
+                              <div className="mb-2 p-2 bg-red-100 text-red-800 rounded text-sm flex items-center gap-2">
+                                <AlertTriangle className="h-4 w-4" />
+                                <span>Connection point must be on the bottom of the module (Z=0) and within module dimensions</span>
+                              </div>
+                            )}
+                            <div className="grid grid-cols-3 gap-4">
+                              {point.position.map((value, i) => (
+                                <div key={i}>
+                                  <Label>{["X", "Y", "Z"][i]} Position</Label>
+                                  <Input
+                                    type="number"
+                                    value={value}
+                                    onChange={(e) => {
+                                      const newPoints = [...(module.connectionPoints || [])];
+                                      // For Z position, enforce 0 (bottom of module)
+                                      if (i === 2) {
+                                        newPoints[index].position[i] = 0;
+                                      } else {
+                                        newPoints[index].position[i] = parseFloat(e.target.value) || 0;
+                                      }
+                                      handleUpdateModule(module.id, { connectionPoints: newPoints });
+                                    }}
+                                    step={0.1}
+                                    disabled={i === 2} // Disable Z input to enforce bottom placement
+                                    className={i === 2 ? "bg-muted" : ""}
+                                  />
+                                  {i === 2 && (
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                      Fixed at 0 (bottom of module)
+                                    </p>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                            <div className="mt-2">
+                              <Label>Connection Type</Label>
+                              <Select
+                                value={point.type}
+                                onValueChange={(value: ConnectionType) => {
+                                  const newPoints = [...(module.connectionPoints || [])];
+                                  newPoints[index].type = value;
+                                  handleUpdateModule(module.id, { connectionPoints: newPoints });
+                                }}
+                              >
+                                <SelectTrigger>
+                                  <SelectValue />
+                                </SelectTrigger>
+                                <SelectContent>
+                                  <SelectItem value="power">Power</SelectItem>
+                                  <SelectItem value="network">Network</SelectItem>
+                                  <SelectItem value="cooling">Cooling</SelectItem>
+                                  <SelectItem value="security">Security</SelectItem>
+                                  <SelectItem value="cat6a">CAT6A</SelectItem>
+                                </SelectContent>
+                              </Select>
+                            </div>
+                            <div className="mt-4 flex justify-end">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => {
+                                  const newPoints = [...(module.connectionPoints || [])];
+                                  newPoints.splice(index, 1);
+                                  handleUpdateModule(module.id, { connectionPoints: newPoints });
+                                }}
+                              >
+                                Remove Connection Point
+                              </Button>
+                            </div>
+                          </div>
+                        );
+                      })}
+                      
                       <Button
                         variant="outline"
                         onClick={() => handleAddConnectionPoint(module.id, module)}
@@ -302,6 +523,15 @@ export function ModuleManager() {
                     </div>
                   </TabsContent>
                 </Tabs>
+                
+                {isSaving === module.id && (
+                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
+                    <div className="flex flex-col items-center gap-2">
+                      <Loader2 className="h-8 w-8 animate-spin" />
+                      <p>Saving changes...</p>
+                    </div>
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
