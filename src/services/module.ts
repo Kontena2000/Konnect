@@ -309,12 +309,15 @@ const moduleService = {
       
       // Map existing modules with defaults as fallback
       console.log('Mapping existing modules with defaults');
-      return defaultTemplates.map(template => ({
+      const mappedModules = defaultTemplates.map(template => ({
         ...template,
         ...dbModules[template.id],
         technicalSpecs: dbModules[template.id]?.technicalSpecs || getDefaultSpecs(template.category),
         visibleInEditor: dbModules[template.id]?.visibleInEditor ?? true
       }));
+
+      console.log('Modules loaded:', mappedModules.length);
+      return mappedModules;
     } catch (error) {
       console.error('Error in getAllModules:', error);
       throw new Error('Failed to fetch modules');
