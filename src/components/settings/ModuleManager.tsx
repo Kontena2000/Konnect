@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -16,6 +15,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { ConnectionType } from '@/types/connection';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { auth } from '@/lib/firebase';
 
 export function ModuleManager() {
   const [modules, setModules] = useState<ModuleTemplateWithSpecs[]>([]);
@@ -30,13 +30,53 @@ export function ModuleManager() {
 
   const loadModules = useCallback(async () => {
     try {
-      const loadedModules = await moduleService.getAllModules();
-      setModules(loadedModules);
+      // Check if user is authenticated
+      if (!auth.currentUser) {
+        toast({
+          variant: 'destructive',
+          title: 'Authentication Required',
+          description: 'You must be logged in to view modules'
+        });
+        setLoading(false);
+        return;
+      }
+
+      // Get existing modules from database
+      const existingModules = await moduleService.getAllModules();
+      console.log('Loaded modules:', existingModules);
+      
+      // If no modules exist, initialize with default templates
+      if (existingModules.length === 0) {
+        console.log('No modules found, initializing defaults');
+        const modulesToAdd = Object.values(moduleTemplates).flat().map(template => ({
+          ...template,
+          technicalSpecs: getDefaultSpecs(template.category),
+          visibleInEditor: true
+        }));
+
+        // Create each default module in the database
+        for (const moduleData of modulesToAdd) {
+          await moduleService.createModule(moduleData);
+        }
+
+        toast({
+          title: 'Success',
+          description: 'Module database initialized with default modules'
+        });
+        
+        // Reload modules after initialization
+        const updatedModules = await moduleService.getAllModules();
+        setModules(updatedModules);
+      } else {
+        // Use existing modules
+        setModules(existingModules);
+      }
     } catch (error) {
+      console.error('Error loading modules:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to load modules"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load modules'
       });
     } finally {
       setLoading(false);
