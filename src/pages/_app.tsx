@@ -4,25 +4,35 @@ import { ThemeProvider } from 'next-themes';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import "@/styles/globals.css";
 import type { AppProps } from "next/app";
-import { AppLayout } from '@/components/layout/AppLayout';
+import Head from "next/head";
 
 export default function App({ Component, pageProps }: AppProps) {
   const isAuthPage = Component.name === 'LoginPage' || Component.name === 'RegisterPage';
   
-  return isAuthPage ? (
-    <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
-      <TooltipProvider>
-        <Component {...pageProps} />
-      </TooltipProvider>
-    </ThemeProvider>
-  ) : (
-    <AuthProvider>
-      <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
-        <TooltipProvider>
-          <Component {...pageProps} />
-          <Toaster />
-        </TooltipProvider>
-      </ThemeProvider>
-    </AuthProvider>
+  return (
+    <>
+      <Head>
+        <title>Konnect | Subtitle Layout Planner</title>
+        <meta name="description" content="Design and visualize subtitle layouts with Konnect by Kontena" />
+        <meta name="application-name" content="Konnect" />
+        <meta name="author" content="Kontena" />
+      </Head>
+      {isAuthPage ? (
+        <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
+          <TooltipProvider>
+            <Component {...pageProps} />
+          </TooltipProvider>
+        </ThemeProvider>
+      ) : (
+        <AuthProvider>
+          <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
+            <TooltipProvider>
+              <Component {...pageProps} />
+              <Toaster />
+            </TooltipProvider>
+          </ThemeProvider>
+        </AuthProvider>
+      )}
+    </>
   );
 }

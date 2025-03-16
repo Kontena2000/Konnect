@@ -21,14 +21,18 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Kontena | Layout Maker</title>
-        <meta name='description' content='Design and visualize modular data center solutions' />
-        <link rel='icon' href='/favicon.ico' />
+        <title>Konnect | Subtitle Layout Planner</title>
+        <meta name="description" content="Design and visualize subtitle layouts with Konnect by Kontena" />
+        <link rel="icon" href="/favicon.ico" />
       </Head>
       
-      <main className='flex items-center justify-center min-h-screen'>
-        <div className='animate-pulse'>
-          <h1 className='text-4xl font-bold'>Loading...</h1>
+      <main className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <h1 className="text-4xl font-bold">Konnect</h1>
+          <p className="text-xl text-muted-foreground">Subtitle Layout Planner</p>
+          <div className="animate-pulse">
+            <p className="text-sm">Loading...</p>
+          </div>
         </div>
       </main>
     </>
