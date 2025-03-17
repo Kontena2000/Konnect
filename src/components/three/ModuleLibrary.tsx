@@ -1,5 +1,5 @@
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -15,16 +15,8 @@ export interface ModuleLibraryProps {
 }
 
 export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
-  const [expanded, setExpanded] = useState<Record<string, boolean>>({
-    basic: true
-  });
-  const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>({
-    basic: true,
-    konnect: true,
-    network: true,
-    piping: true,
-    environment: true
-  });
+  const [expanded, setExpanded] = useState<Record<string, boolean>>({});
+  const [visibleCategories, setVisibleCategories] = useState<Record<string, boolean>>({});
   const [allModules, setAllModules] = useState<Module[]>([]);
   const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
   const [loading, setLoading] = useState(true);
@@ -33,7 +25,7 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
   const { toast } = useToast();
   const { user } = useAuth();
 
-  const loadLibraryData = async () => {
+  const loadLibraryData = useCallback(async () => {
     if (!user) {
       setLoading(false);
       return;
@@ -44,45 +36,55 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
       setError(null);
       console.log('Starting module library initialization...');
 
-      let [fetchedModules, fetchedCategories] = await Promise.all([
+      const [fetchedModules, fetchedCategories] = await Promise.all([
         moduleService.getAllModules(),
         moduleService.getCategories()
       ]);
 
       console.log('Initial fetch:', { modules: fetchedModules, categories: fetchedCategories });
 
-      if (fetchedModules.length === 0) {
-        console.log('No modules found, initializing defaults...');
+      if (!fetchedCategories.length || !fetchedModules.length) {
+        console.log('Initializing library data...');
         await Promise.all([
           moduleService.initializeBasicCategory(),
           moduleService.initializeDefaultModules()
         ]);
 
-        [fetchedModules, fetchedCategories] = await Promise.all([
+        const [updatedModules, updatedCategories] = await Promise.all([
           moduleService.getAllModules(),
           moduleService.getCategories()
         ]);
         
-        console.log('After initialization:', { modules: fetchedModules, categories: fetchedCategories });
-      }
-
-      setAllModules(fetchedModules);
-      setCategories(fetchedCategories);
-      
-      const initialExpanded = fetchedCategories.reduce((acc, category) => ({
-        ...acc,
-        [category.id]: true
-      }), {});
-      setExpanded(initialExpanded);
-      
-      setVisibleCategories(prev => ({
-        ...prev,
-        ...fetchedCategories.reduce((acc, cat) => ({
+        setAllModules(updatedModules);
+        setCategories(updatedCategories);
+        
+        const initialExpanded = updatedCategories.reduce((acc, category) => ({
+          ...acc,
+          [category.id]: true
+        }), {});
+        setExpanded(initialExpanded);
+        
+        const initialVisibility = updatedCategories.reduce((acc, cat) => ({
           ...acc,
           [cat.id]: true
-        }), {})
-      }));
-      
+        }), {});
+        setVisibleCategories(initialVisibility);
+      } else {
+        setAllModules(fetchedModules);
+        setCategories(fetchedCategories);
+        
+        const initialExpanded = fetchedCategories.reduce((acc, category) => ({
+          ...acc,
+          [category.id]: true
+        }), {});
+        setExpanded(initialExpanded);
+        
+        const initialVisibility = fetchedCategories.reduce((acc, cat) => ({
+          ...acc,
+          [cat.id]: true
+        }), {});
+        setVisibleCategories(initialVisibility);
+      }
     } catch (error) {
       console.error('Error loading module library:', error);
       setError('Failed to load module library');
@@ -102,19 +104,11 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, retryCount, toast]);
 
   useEffect(() => {
-    let mounted = true;
-
-    if (mounted) {
-      loadLibraryData();
-    }
-
-    return () => {
-      mounted = false;
-    };
-  }, [user, retryCount]);
+    loadLibraryData();
+  }, [loadLibraryData]);
 
   const handleRetry = () => {
     setRetryCount(0);
