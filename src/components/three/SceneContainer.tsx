@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -18,7 +17,7 @@ export interface SceneContainerProps {
   onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
-  onDropPoint?: (point: [number, number, number]) => void;
+  onDropPoint: (point: [number, number, number]) => void; // Made required
   connections?: Connection[];
   activeConnection?: {
     sourceModuleId: string;
@@ -175,7 +174,15 @@ export function SceneContainer({
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
-      <Canvas camera={{ position: [10, 10, 10], zoom: cameraZoom }}>
+      <Canvas 
+        camera={{ 
+          position: [10, 10, 10], 
+          zoom: cameraZoom,
+          near: 0.1,
+          far: 1000
+        }}
+        shadows
+      >
         <SceneElements 
           modules={modules}
           selectedModuleId={selectedModuleId}

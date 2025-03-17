@@ -5,8 +5,10 @@ import { TerrainEditor } from "@/components/environment/TerrainEditor";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { SceneContainer } from "@/components/three/SceneContainer";
 import type { TerrainData } from "@/services/environment";
+import { useToast } from "@/hooks/use-toast";
 
 export default function TerrainEditorPreview() {
+  const { toast } = useToast();
   const [terrain, setTerrain] = useState<TerrainData>({
     id: "preview",
     projectId: "preview",
@@ -27,6 +29,13 @@ export default function TerrainEditorPreview() {
     }));
   };
 
+  const handleDropPoint = (point: [number, number, number]) => {
+    toast({
+      title: "Module dropped",
+      description: `Module dropped at position: (${point.join(", ")})`
+    });
+  };
+
   return (
     <div className="min-h-screen bg-background p-6">
       <div className="container mx-auto">
@@ -43,6 +52,10 @@ export default function TerrainEditorPreview() {
               modules={[]}
               terrain={terrain}
               readOnly={false}
+              onDropPoint={handleDropPoint}
+              gridSnap={true}
+              connections={[]}
+              environmentalElements={[]}
             />
           </Card>
         </div>

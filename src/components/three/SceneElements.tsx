@@ -1,5 +1,5 @@
 
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -61,9 +61,8 @@ export function SceneElements({
 }: SceneElementsProps) {
   const { camera, scene } = useThree();
 
-  useEffect(() => {
-    // Update camera position based on selected angle
-    switch (cameraAngle) {
+  const updateCameraPosition = useCallback((angle: "top" | "isometric" | "front" | "side") => {
+    switch (angle) {
       case "top":
         camera.position.set(0, 20, 0);
         camera.lookAt(0, 0, 0);
@@ -81,7 +80,11 @@ export function SceneElements({
         camera.lookAt(0, 5, 0);
         break;
     }
-  }, [camera, cameraAngle]);
+  }, [camera]);
+
+  useEffect(() => {
+    updateCameraPosition(cameraAngle);
+  }, [cameraAngle, updateCameraPosition]);
 
   useEffect(() => {
     if (isDraggingOver && mousePosition && previewMesh) {
@@ -97,7 +100,6 @@ export function SceneElements({
       raycaster.ray.intersectPlane(groundPlane, intersection);
 
       if (gridSnap) {
-        // Find nearest snap point if close enough
         const snapThreshold = 1.5;
         const nearestPoint = snapPoints.reduce((nearest, point) => {
           const distance = intersection.distanceTo(point);
