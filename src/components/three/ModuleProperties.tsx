@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -5,49 +6,25 @@ import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Trash2, Move, RotateCw, Maximize } from "lucide-react";
-import moduleService from '@/services/module';
-import { TechnicalSpecs } from '@/services/module';
+import { Module } from "@/types/module";
 
 interface ModulePropertiesProps {
-  module: {
-    id: string;
-    position: [number, number, number];
-    rotation: [number, number, number];
-    scale: [number, number, number];
-    color: string;
-    type: string;
-  };
-  onUpdate: (id: string, updates: any) => void;
+  module: Module;
+  onUpdate: (id: string, updates: Partial<Module>) => void;
   onDelete: (id: string) => void;
   onTransformModeChange: (mode: "translate" | "rotate" | "scale") => void;
 }
 
 export function ModuleProperties({ module, onUpdate, onDelete, onTransformModeChange }: ModulePropertiesProps) {
-  const [position, setPosition] = useState(module.position);
-  const [rotation, setRotation] = useState(module.rotation);
-  const [scale, setScale] = useState(module.scale);
-  const [specs, setSpecs] = useState<TechnicalSpecs | null>(null);
+  const [position, setPosition] = useState(module.position || [0, 0, 0]);
+  const [rotation, setRotation] = useState(module.rotation || [0, 0, 0]);
+  const [scale, setScale] = useState(module.scale || [1, 1, 1]);
 
   useEffect(() => {
-    setPosition(module.position);
-    setRotation(module.rotation);
-    setScale(module.scale);
+    setPosition(module.position || [0, 0, 0]);
+    setRotation(module.rotation || [0, 0, 0]);
+    setScale(module.scale || [1, 1, 1]);
   }, [module]);
-
-  useEffect(() => {
-    const loadSpecs = async () => {
-      try {
-        const modules = await moduleService.getAllModules();
-        const moduleWithSpecs = modules.find(m => m.type === module.type);
-        if (moduleWithSpecs) {
-          setSpecs(moduleWithSpecs.technicalSpecs);
-        }
-      } catch (error) {
-        console.error('Error loading specs:', error);
-      }
-    };
-    loadSpecs();
-  }, [module.type]);
 
   const handlePositionChange = (index: number, value: string) => {
     const newPosition = [...position];
@@ -76,26 +53,13 @@ export function ModuleProperties({ module, onUpdate, onDelete, onTransformModeCh
         <CardTitle className="text-lg">Module Properties</CardTitle>
       </CardHeader>
       <CardContent>
-        <div className='p-4'>
-          <div className='flex items-center justify-between mb-4'>
-            <h3 className='text-lg font-semibold'>{module.type}</h3>
-            <Button variant='destructive' size='sm' onClick={() => onDelete(module.id)}>
-              <Trash2 className='h-4 w-4' />
+        <div className="p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">{module.name}</h3>
+            <Button variant="destructive" size="sm" onClick={() => onDelete(module.id)}>
+              <Trash2 className="h-4 w-4" />
             </Button>
           </div>
-
-          {specs && (
-            <div className='mb-4 space-y-2 text-sm'>
-              <div className='flex justify-between'>
-                <span>Weight:</span>
-                <span>{specs.weight.empty} kg</span>
-              </div>
-              <div className='flex justify-between'>
-                <span>Power:</span>
-                <span>{specs.powerConsumption.typical}W</span>
-              </div>
-            </div>
-          )}
 
           <div className="space-y-4">
             <div className="flex gap-2">
@@ -177,6 +141,45 @@ export function ModuleProperties({ module, onUpdate, onDelete, onTransformModeCh
             </div>
 
             <Separator />
+
+            <div className="space-y-2">
+              <Label>Color</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="color"
+                  value={module.color}
+                  onChange={(e) => onUpdate(module.id, { color: e.target.value })}
+                  className="w-12 h-12 p-1"
+                />
+                <Input
+                  value={module.color}
+                  onChange={(e) => onUpdate(module.id, { color: e.target.value })}
+                />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <Label>Dimensions</Label>
+              <div className="grid grid-cols-3 gap-2">
+                {Object.entries(module.dimensions).map(([key, value]) => (
+                  <div key={key}>
+                    <Label className="text-xs">{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
+                    <Input
+                      type="number"
+                      value={value}
+                      onChange={(e) => onUpdate(module.id, {
+                        dimensions: {
+                          ...module.dimensions,
+                          [key]: parseFloat(e.target.value) || 0
+                        }
+                      })}
+                      step={0.1}
+                      min={0.1}
+                    />
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <Button
               variant="destructive"

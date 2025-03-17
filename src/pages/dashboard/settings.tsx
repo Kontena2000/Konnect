@@ -25,7 +25,7 @@ import { ModuleManager } from '@/components/settings/ModuleManager';
 import { moduleTemplates, ModuleTemplate, ModuleCategory, moduleTemplatesByCategory } from '@/types/module';
 
 interface ModuleInputProps {
-  module: ModuleTemplate;
+  module: Module;
 }
 
 function ModuleInput({ module }: ModuleInputProps) {

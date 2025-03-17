@@ -24,6 +24,7 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { ModuleTemplate } from "@/types/module";
 import { ConnectionType } from "@/types/connection";
 import { useEditorSensors } from "@/hooks/use-editor-sensors";
+import { Module } from '@/types/module';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -35,7 +36,7 @@ export default function LayoutEditorPage() {
   const [cameraZoom, setCameraZoom] = useState(1);
   const [gridSnap, setGridSnap] = useState(true);
   const [connectionMode, setConnectionMode] = useState<"cable" | "pipe">("cable");
-  const [draggingTemplate, setDraggingTemplate] = useState<ModuleTemplate | null>(null);
+  const [draggingTemplate, setDraggingTemplate] = useState<Module | null>(null);
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
 
   const [activeConnection, setActiveConnection] = useState<{
