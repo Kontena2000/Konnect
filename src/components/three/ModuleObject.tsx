@@ -7,7 +7,7 @@ import type { Mesh, Object3D } from "three";
 import { Box3 } from 'three';
 import { useThree } from '@react-three/fiber';
 
-interface ModuleObjectProps {
+export interface ModuleObjectProps {
   module: Module;
   selected?: boolean;
   onSelect?: () => void;

@@ -139,23 +139,22 @@ export default function LayoutEditorPage() {
     setPreviewMesh(null);
     
     // Only handle drops over the scene
-    if (event.over?.id !== "scene") return;
+    if (event.over?.id !== 'scene') return;
 
-    // Create a new module from the template
     if (draggingTemplate) {
       const newModuleId = `${draggingTemplate.id}-${Date.now()}`;
       const newModule: Module = {
         ...draggingTemplate,
         id: newModuleId,
-        position: [0, 0, 0], // Default position, will be updated by SceneContainer
-        rotation: [0, 0, 0], // Apply current rotation
+        position: [0, 0, 0], // Will be updated by SceneContainer
+        rotation: [0, 0, 0],
         scale: [1, 1, 1],
         visibleInEditor: true
       };
       addModule(newModule);
       
       toast({
-        title: "Module Added",
+        title: 'Module Added',
         description: `${draggingTemplate.name} has been added to the scene`
       });
     }
