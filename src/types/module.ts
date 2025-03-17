@@ -1,5 +1,5 @@
 
-import { ConnectionPoint } from "./connection";
+import { ConnectionType } from "./connection";
 
 export enum ModuleCategory {
   Basic = "basic"
@@ -16,13 +16,17 @@ export interface Module {
   name: string;
   description: string;
   category: ModuleCategory;
+  type: string;
   color: string;
   dimensions: ModuleDimensions;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
   visibleInEditor?: boolean;
-  position?: [number, number, number];
-  rotation?: [number, number, number];
-  scale?: [number, number, number];
-  connectionPoints?: ConnectionPoint[];
+  connectionPoints?: {
+    position: [number, number, number];
+    type: ConnectionType;
+  }[];
   createdAt?: string;
   updatedAt?: string;
 }
@@ -33,6 +37,7 @@ export const defaultModules: Module[] = [
     name: "Basic Module",
     description: "A simple module with basic dimensions",
     category: ModuleCategory.Basic,
+    type: "basic",
     color: "#64748b",
     dimensions: {
       length: 1.0,

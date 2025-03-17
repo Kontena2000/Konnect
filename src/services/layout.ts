@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -15,24 +14,7 @@ import {
 import { ConnectionType } from '@/types/connection';
 import { debounce } from "lodash";
 import { AuthUser } from '@/services/auth';
-
-export interface Module {
-  id: string;
-  type: string;
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-  dimensions: {
-    length: number;
-    width: number;
-    height: number;
-  };
-  color?: string;
-  connectionPoints?: {
-    position: [number, number, number];
-    type: ConnectionType;
-  }[];
-}
+import { Module } from '@/types/module';
 
 export interface Connection {
   id: string;
