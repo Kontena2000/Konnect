@@ -13,6 +13,7 @@ import { useThree } from '@react-three/fiber';
 import { useCallback, useState } from 'react';
 import * as THREE from 'three';
 import { Vector2, Vector3, Plane, Mesh, MeshStandardMaterial, BoxGeometry } from 'three';
+import { cn } from '@/lib/utils';
 
 export interface SceneContainerProps {
   modules: Module[];

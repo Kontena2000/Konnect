@@ -25,6 +25,8 @@ import { ConnectionType } from '@/types/connection';
 import { useEditorSensors } from '@/hooks/use-editor-sensors';
 import layoutService, { Layout, Connection } from '@/services/layout';
 import { motion } from "framer-motion";
+import * as THREE from 'three';
+import { cn } from '@/lib/utils';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -99,17 +101,17 @@ export default function LayoutEditorPage() {
     
     if (draggedModule) {
       // Create preview mesh
-      const geometry = new BoxGeometry(
+      const geometry = new THREE.BoxGeometry(
         draggedModule.dimensions.length,
         draggedModule.dimensions.height,
         draggedModule.dimensions.width
       );
-      const material = new MeshStandardMaterial({
+      const material = new THREE.MeshStandardMaterial({
         color: draggedModule.color,
         transparent: true,
         opacity: 0.5
       });
-      const mesh = new Mesh(geometry, material);
+      const mesh = new THREE.Mesh(geometry, material);
       setPreviewMesh(mesh);
     }
   };
