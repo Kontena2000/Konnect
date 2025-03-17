@@ -12,7 +12,8 @@ import {
   serverTimestamp,
   arrayUnion,
   arrayRemove,
-  writeBatch
+  writeBatch,
+  Timestamp
 } from "firebase/firestore";
 
 export class ProjectError extends Error {
@@ -42,8 +43,8 @@ export interface Project {
   plotWidth?: number;
   plotLength?: number;
   sharedWith?: string[];
-  createdAt: Date;
-  updatedAt: Date;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
 
 export interface CreateProjectData {
@@ -153,21 +154,9 @@ const projectService = {
 
   async getUserProjects(userId: string): Promise<Project[]> {
     try {
-      // Query for owned projects
-      const ownedProjectsQuery = query(
-        collection(db, 'projects'),
-        where('ownerId', '==', userId)
-      );
-      
-      // Query for shared projects
-      const sharedProjectsQuery = query(
-        collection(db, 'projects'),
-        where('sharedWith', 'array-contains', userId)
-      );
-      
       const [ownedSnapshot, sharedSnapshot] = await Promise.all([
-        getDocs(ownedProjectsQuery),
-        getDocs(sharedProjectsQuery)
+        getDocs(query(collection(db, 'projects'), where('ownerId', '==', userId))),
+        getDocs(query(collection(db, 'projects'), where('sharedWith', 'array-contains', userId)))
       ]);
       
       const projects = [...ownedSnapshot.docs, ...sharedSnapshot.docs].map(doc => {
@@ -175,8 +164,8 @@ const projectService = {
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
-          updatedAt: data.updatedAt?.toDate() || new Date()
+          createdAt: data.createdAt || Timestamp.now(),
+          updatedAt: data.updatedAt || Timestamp.now()
         } as Project;
       });
 

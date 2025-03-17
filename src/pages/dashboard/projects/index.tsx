@@ -12,6 +12,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { Timestamp } from 'firebase/firestore';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -29,9 +30,9 @@ export default function ProjectsPage() {
     .sort((a, b) => {
       switch (sortBy) {
         case 'newest':
-          return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+          return b.createdAt.seconds - a.createdAt.seconds;
         case 'oldest':
-          return (a.createdAt?.seconds || 0) - (b.createdAt?.seconds || 0);
+          return a.createdAt.seconds - b.createdAt.seconds;
         case 'name':
           return a.name.localeCompare(b.name);
         default:
@@ -167,7 +168,7 @@ export default function ProjectsPage() {
                       <CardTitle className='text-xl'>{project.name}</CardTitle>
                       <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                         <Calendar className='h-4 w-4' />
-                        {format(new Date((project.createdAt?.seconds || 0) * 1000), 'MMM d, yyyy')}
+                        {format(project.createdAt.toDate(), 'MMM d, yyyy')}
                       </div>
                     </div>
                     <AlertDialog>
@@ -203,7 +204,7 @@ export default function ProjectsPage() {
                     </p>
                     <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                       <Clock className='h-4 w-4' />
-                      Last modified: {format(new Date((project.updatedAt?.seconds || 0) * 1000), 'MMM d, yyyy')}
+                      Last modified: {format(project.updatedAt.toDate(), 'MMM d, yyyy')}
                     </div>
                     <div className='flex gap-2'>
                       <Badge variant='outline'>{project.layouts?.length || 0} Layouts</Badge>
