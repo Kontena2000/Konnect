@@ -1,19 +1,18 @@
+
 import { useState } from "react";
-import { ModuleTemplateWithSpecs } from "@/services/module";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Plus, X, Loader2, Box } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { ModuleCategory } from "@/types/module";
+import { Module, ModuleCategory } from "@/types/module";
 import { ConnectionType } from "@/types/connection";
 import { useToast } from "@/hooks/use-toast";
-import moduleService, { getDefaultSpecs } from "@/services/module";
 import { nanoid } from "nanoid";
 
 interface CreateModuleDialogProps {
-  onModuleCreate: (module: ModuleTemplateWithSpecs) => Promise<void>;
+  onModuleCreate: (module: Module) => Promise<void>;
 }
 
 interface FormData {
@@ -38,7 +37,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
   const [formData, setFormData] = useState<FormData>({
     name: "",
     description: "",
-    category: ModuleCategory.Konnect,
+    category: ModuleCategory.Basic,
     color: "#808080",
     dimensions: {
       length: 1,
@@ -57,11 +56,12 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
 
     try {
       const moduleId = nanoid();
-      const newModule: ModuleTemplateWithSpecs = {
+      const newModule: Module = {
         id: moduleId,
-        type: moduleId,
         ...formData,
-        technicalSpecs: getDefaultSpecs(formData.category)
+        position: [0, 0, 0],
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1]
       };
 
       await onModuleCreate(newModule);
@@ -69,7 +69,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
       setFormData({
         name: "",
         description: "",
-        category: ModuleCategory.Konnect,
+        category: ModuleCategory.Basic,
         color: "#808080",
         dimensions: {
           length: 1,

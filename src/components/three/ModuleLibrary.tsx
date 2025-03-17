@@ -1,34 +1,28 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ModuleTemplate, ModuleCategory, moduleTemplates } from "@/types/module";
+import { Module, ModuleCategory, defaultModules } from "@/types/module";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { ChevronDown, ChevronRight } from "lucide-react";
 
 export interface ModuleLibraryProps {
-  onDragStart?: (template: ModuleTemplate | null) => void;
+  onDragStart?: (module: Module | null) => void;
 }
 
 export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
   const [expanded, setExpanded] = useState<Record<ModuleCategory, boolean>>({
-    [ModuleCategory.Container]: true,
-    [ModuleCategory.Power]: false,
-    [ModuleCategory.Cooling]: false,
-    [ModuleCategory.Network]: false,
-    [ModuleCategory.Security]: false,
-    [ModuleCategory.Storage]: false,
-    [ModuleCategory.Konnect]: false,
-    [ModuleCategory.Environment]: false
+    [ModuleCategory.Basic]: true
   });
 
-  const modulesByCategory = moduleTemplates.reduce((acc, template) => {
-    if (!acc[template.category]) {
-      acc[template.category] = [];
+  const modulesByCategory = defaultModules.reduce((acc, module) => {
+    if (!acc[module.category]) {
+      acc[module.category] = [];
     }
-    acc[template.category].push(template);
+    acc[module.category].push(module);
     return acc;
-  }, {} as Record<ModuleCategory, ModuleTemplate[]>);
+  }, {} as Record<ModuleCategory, Module[]>);
 
   const toggleCategory = (category: ModuleCategory) => {
     setExpanded(prev => ({
@@ -37,8 +31,8 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
     }));
   };
 
-  const handleDragStart = (template: ModuleTemplate) => {
-    onDragStart?.(template);
+  const handleDragStart = (module: Module) => {
+    onDragStart?.(module);
   };
 
   return (
@@ -49,7 +43,7 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
       <CardContent className="p-0">
         <ScrollArea className="h-[calc(100vh-5rem)]">
           <div className="p-4 space-y-4">
-            {Object.entries(modulesByCategory).map(([category, templates]) => (
+            {Object.entries(modulesByCategory).map(([category, modules]) => (
               <Collapsible
                 key={category}
                 open={expanded[category as ModuleCategory]}
@@ -70,22 +64,22 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
                 </CollapsibleTrigger>
                 <CollapsibleContent>
                   <div className="space-y-2 mt-2">
-                    {templates.map((template) => (
+                    {modules.map((module) => (
                       <div
-                        key={template.id}
+                        key={module.id}
                         className="p-2 rounded-lg hover:bg-accent cursor-move"
                         draggable
-                        onDragStart={() => handleDragStart(template)}
+                        onDragStart={() => handleDragStart(module)}
                       >
                         <div className="flex items-center gap-3">
                           <div
                             className="w-8 h-8 rounded"
-                            style={{ backgroundColor: template.color }}
+                            style={{ backgroundColor: module.color }}
                           />
                           <div>
-                            <h3 className="font-medium text-sm">{template.name}</h3>
+                            <h3 className="font-medium text-sm">{module.name}</h3>
                             <p className="text-xs text-muted-foreground">
-                              {template.description}
+                              {module.description}
                             </p>
                           </div>
                         </div>
