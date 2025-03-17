@@ -27,6 +27,8 @@ import layoutService, { Layout, Connection } from '@/services/layout';
 import { motion } from "framer-motion";
 import * as THREE from 'three';
 import { cn } from '@/lib/utils';
+import { Mesh } from 'three';
+import { useHotkeys } from 'react-hotkeys-hook';
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -41,7 +43,7 @@ export default function LayoutEditorPage() {
   const [draggingTemplate, setDraggingTemplate] = useState<Module | null>(null);
   const [draggingModule, setDraggingModule] = useState<Module | null>(null);
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
-  const [previewMesh, setPreviewMesh] = useState(null);
+  const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
 
   const [activeConnection, setActiveConnection] = useState<{
     sourceModuleId: string;
@@ -95,12 +97,26 @@ export default function LayoutEditorPage() {
     onDelete: () => selectedModuleId && deleteModule(selectedModuleId)
   });
 
+  // Add rotation hotkey
+  useHotkeys('r', () => {
+    if (selectedModuleId) {
+      const module = modules.find(m => m.id === selectedModuleId);
+      if (module) {
+        const newRotation: [number, number, number] = [
+          module.rotation[0],
+          (module.rotation[1] + Math.PI / 2) % (Math.PI * 2),
+          module.rotation[2]
+        ];
+        updateModule(selectedModuleId, { rotation: newRotation });
+      }
+    }
+  });
+
   const handleDragStart = (event: DragStartEvent) => {
     const draggedModule = modules.find(m => m.id === event.active.id);
     setDraggingModule(draggedModule || null);
     
     if (draggedModule) {
-      // Create preview mesh
       const geometry = new THREE.BoxGeometry(
         draggedModule.dimensions.length,
         draggedModule.dimensions.height,
@@ -112,6 +128,7 @@ export default function LayoutEditorPage() {
         opacity: 0.5
       });
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.position.set(0, 0, 0);
       setPreviewMesh(mesh);
     }
   };
@@ -131,7 +148,7 @@ export default function LayoutEditorPage() {
         ...draggingTemplate,
         id: newModuleId,
         position: [0, 0, 0], // Default position, will be updated by SceneContainer
-        rotation: [0, 0, 0],
+        rotation: [0, 0, 0], // Apply current rotation
         scale: [1, 1, 1],
         visibleInEditor: true
       };

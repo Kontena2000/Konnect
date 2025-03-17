@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Grid, Environment } from "@react-three/drei";
+import { OrbitControls, Grid, Environment, TransformControls } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
 import { useDroppable } from "@dnd-kit/core";
 import { ConnectionLine } from "./ConnectionLine";
@@ -10,7 +10,7 @@ import type { EnvironmentalElement as ElementType, TerrainData } from "@/service
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { useThree } from '@react-three/fiber';
-import { useCallback, useState } from 'react';
+import { useCallback, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { Vector2, Vector3, Plane, Mesh, MeshStandardMaterial, BoxGeometry } from 'three';
 import { cn } from '@/lib/utils';
@@ -63,6 +63,8 @@ export function SceneContainer({
   const { camera, raycaster, scene } = useThree();
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
+  const [rotationAngle, setRotationAngle] = useState(0);
+  const [showGuides, setShowGuides] = useState(false);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -113,6 +115,15 @@ export function SceneContainer({
     
     if (previewMesh) {
       previewMesh.position.set(intersection.x, 0, intersection.z);
+      // Add visual feedback for grid snapping
+      if (gridSnap) {
+        const gridPosition = new Vector3(
+          Math.round(intersection.x),
+          0,
+          Math.round(intersection.z)
+        );
+        previewMesh.position.copy(gridPosition);
+      }
     }
   }, [camera, raycaster, gridSnap, previewMesh]);
 
@@ -120,11 +131,35 @@ export function SceneContainer({
     setIsDraggingOver(false);
   };
 
+  const handleKeyDown = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'r') {
+      setRotationAngle(prev => (prev + Math.PI / 2) % (Math.PI * 2));
+    }
+    if (event.shiftKey) {
+      setShowGuides(true);
+    }
+  }, []);
+
+  const handleKeyUp = useCallback((event: KeyboardEvent) => {
+    if (event.key === 'Shift') {
+      setShowGuides(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, [handleKeyDown, handleKeyUp]);
+
   return (
     <div 
       ref={setNodeRef} 
       className={cn(
-        'w-full h-full',
+        'w-full h-full relative',
         isDraggingOver && 'cursor-crosshair'
       )}
       onDragOver={handleDragOver}
@@ -132,7 +167,7 @@ export function SceneContainer({
       onDrop={handleDrop}
     >
       <Canvas camera={{ position: [10, 10, 10], zoom: cameraZoom }}>
-        <OrbitControls makeDefault />
+        <OrbitControls makeDefault enabled={!isDraggingOver} />
         <Grid 
           infiniteGrid 
           fadeDistance={50} 
@@ -142,9 +177,34 @@ export function SceneContainer({
           cellColor={isDraggingOver ? '#2563eb' : '#94a3b8'}
           sectionSize={gridSnap ? 10 : 5}
         />
-        <Environment preset="city" />
+        <Environment preset='city' />
         <ambientLight intensity={0.5} />
-        <directionalLight position={[10, 10, 5]} intensity={1} />
+        <directionalLight 
+          position={[10, 10, 5]} 
+          intensity={1}
+          castShadow
+        />
+
+        {/* Preview mesh for dragging */}
+        {previewMesh && (
+          <primitive 
+            object={previewMesh} 
+            rotation={[0, rotationAngle, 0]}
+            castShadow
+            receiveShadow
+          />
+        )}
+
+        {/* Alignment guides */}
+        {showGuides && isDraggingOver && (
+          <group>
+            <gridHelper 
+              args={[100, 100, '#2563eb', '#2563eb']}
+              position={[0, 0.01, 0]}
+            />
+            <axesHelper args={[5]} />
+          </group>
+        )}
 
         {modules.map((module) => (
           <ModuleObject
@@ -157,6 +217,8 @@ export function SceneContainer({
             transformMode={transformMode}
             readOnly={readOnly}
             gridSnap={gridSnap}
+            castShadow
+            receiveShadow
           />
         ))}
 
@@ -178,6 +240,14 @@ export function SceneContainer({
 
         {terrain && <TerrainView data={terrain} />}
       </Canvas>
+
+      {/* Rotation indicator */}
+      {isDraggingOver && (
+        <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
+          <p className='text-sm'>Press R to rotate</p>
+          <p className='text-xs text-muted-foreground'>Hold Shift for guides</p>
+        </div>
+      )}
     </div>
   );
 }
