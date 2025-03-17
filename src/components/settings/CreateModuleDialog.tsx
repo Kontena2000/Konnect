@@ -1,4 +1,5 @@
-import { useState } from "react";
+
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -9,6 +10,7 @@ import { Module, ModuleCategory } from "@/types/module";
 import { ConnectionType } from "@/types/connection";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
+import moduleService from "@/services/module";
 
 interface CreateModuleDialogProps {
   onModuleCreate: (module: Module) => Promise<void>;
@@ -17,7 +19,7 @@ interface CreateModuleDialogProps {
 interface FormData {
   name: string;
   description: string;
-  category: ModuleCategory;
+  category: string;
   color: string;
   dimensions: {
     length: number;
@@ -33,11 +35,12 @@ interface FormData {
 
 export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
   const [formData, setFormData] = useState<FormData>({
-    name: '',
-    description: '',
-    category: ModuleCategory.Basic,
-    color: '#808080',
+    name: "",
+    description: "",
+    category: "basic",
+    color: "#808080",
     dimensions: {
       length: 1,
       width: 1,
@@ -49,6 +52,22 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const fetchedCategories = await moduleService.getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load categories"
+        });
+      }
+    };
+    loadCategories();
+  }, [toast]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsCreating(true);
@@ -57,7 +76,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
       const moduleId = nanoid();
       const newModule: Module = {
         id: moduleId,
-        type: 'basic', // Add type field
+        type: "basic",
         ...formData,
         position: [0, 0, 0],
         rotation: [0, 0, 0],
@@ -67,10 +86,10 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
       await onModuleCreate(newModule);
       setIsOpen(false);
       setFormData({
-        name: '',
-        description: '',
-        category: ModuleCategory.Basic,
-        color: '#808080',
+        name: "",
+        description: "",
+        category: "basic",
+        color: "#808080",
         dimensions: {
           length: 1,
           width: 1,
@@ -80,14 +99,14 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
         visibleInEditor: true
       });
       toast({
-        title: 'Success',
-        description: 'Module created successfully'
+        title: "Success",
+        description: "Module created successfully"
       });
     } catch (error) {
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to create module'
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to create module"
       });
     } finally {
       setIsCreating(false);
@@ -168,15 +187,15 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
                 <Label>Category</Label>
                 <Select
                   value={formData.category}
-                  onValueChange={(value: ModuleCategory) => setFormData(prev => ({ ...prev, category: value }))}
+                  onValueChange={(value: string) => setFormData(prev => ({ ...prev, category: value }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {Object.values(ModuleCategory).map(category => (
-                      <SelectItem key={category} value={category}>
-                        {category.charAt(0).toUpperCase() + category.slice(1)}
+                    {categories.map(category => (
+                      <SelectItem key={category.id} value={category.id}>
+                        {category.name}
                       </SelectItem>
                     ))}
                   </SelectContent>
