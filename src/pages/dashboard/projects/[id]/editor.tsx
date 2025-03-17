@@ -118,35 +118,23 @@ export default function LayoutEditorPage() {
     setDraggingModule(draggedItem || null);
     
     if (draggedItem) {
-      const geometry = new THREE.BoxGeometry(
-        draggedItem.dimensions.length,
-        draggedItem.dimensions.height,
-        draggedItem.dimensions.width
-      );
-      const material = new THREE.MeshStandardMaterial({
-        color: draggedItem.color,
-        transparent: true,
-        opacity: 0.5,
-        depthWrite: false,
-        side: THREE.DoubleSide
-      });
-      const mesh = new THREE.Mesh(geometry, material);
-      mesh.castShadow = true;
-      mesh.receiveShadow = true;
-      mesh.position.set(0, 0, 0);
-      setPreviewMesh(mesh);
+      createPreviewMesh(draggedItem);
     }
   };
 
-  const handleModuleDragStart = (template: Module) => {
-    setDraggingTemplate(template);
+  const handleModuleDragStart = (templateItem: Module) => {
+    setDraggingTemplate(templateItem);
+    createPreviewMesh(templateItem);
+  };
+
+  const createPreviewMesh = (item: Module) => {
     const geometry = new THREE.BoxGeometry(
-      template.dimensions.length,
-      template.dimensions.height,
-      template.dimensions.width
+      item.dimensions.length,
+      item.dimensions.height,
+      item.dimensions.width
     );
     const material = new THREE.MeshStandardMaterial({
-      color: template.color,
+      color: item.color,
       transparent: true,
       opacity: 0.5,
       depthWrite: false,
@@ -169,7 +157,7 @@ export default function LayoutEditorPage() {
 
     if (draggingTemplate) {
       const newModuleId = `${draggingTemplate.id}-${Date.now()}`;
-      const newModule: Module = {
+      const newItem: Module = {
         ...draggingTemplate,
         id: newModuleId,
         position: [0, 0, 0], // Will be updated by SceneContainer
@@ -177,7 +165,7 @@ export default function LayoutEditorPage() {
         scale: [1, 1, 1],
         visibleInEditor: true
       };
-      addModule(newModule);
+      addModule(newItem);
       
       toast({
         title: 'Module Added',
