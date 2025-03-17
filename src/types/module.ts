@@ -1,9 +1,7 @@
 
 import { ConnectionType } from "./connection";
 
-export enum ModuleCategory {
-  Basic = "basic"
-}
+export type ModuleCategory = string;
 
 export interface ModuleDimensions {
   length: number;
@@ -36,7 +34,7 @@ export const defaultModules: Module[] = [
     id: "basic-module",
     name: "Basic Module",
     description: "A simple module with basic dimensions",
-    category: ModuleCategory.Basic,
+    category: "basic",
     type: "basic",
     color: "#64748b",
     dimensions: {

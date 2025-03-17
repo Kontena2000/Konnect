@@ -1,11 +1,10 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService from "@/services/module";
 import { Module, ModuleCategory } from "@/types/module";
@@ -14,6 +13,7 @@ import { CreateModuleDialog } from "@/components/settings/CreateModuleDialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { auth } from '@/lib/firebase';
 
 export function ModuleManager() {
@@ -25,6 +25,11 @@ export function ModuleManager() {
   const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isSaving, setIsSaving] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   const loadModules = useCallback(async () => {
     try {
@@ -52,9 +57,66 @@ export function ModuleManager() {
     }
   }, [toast]);
 
+  const loadCategories = useCallback(async () => {
+    try {
+      const fetchedCategories = await moduleService.getCategories();
+      setCategories(fetchedCategories);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load categories'
+      });
+    }
+  }, [toast]);
+
   useEffect(() => {
     loadModules();
-  }, [loadModules]);
+    loadCategories();
+  }, [loadModules, loadCategories]);
+
+  const handleCreateCategory = async () => {
+    if (!newCategoryName.trim()) return;
+    setIsAddingCategory(true);
+    try {
+      await moduleService.createCategory(newCategoryName);
+      await loadCategories();
+      setNewCategoryName('');
+      toast({
+        title: 'Success',
+        description: 'Category created successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create category'
+      });
+    } finally {
+      setIsAddingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (categoryId: string) => {
+    setIsDeletingCategory(true);
+    try {
+      await moduleService.deleteCategory(categoryId);
+      await loadCategories();
+      toast({
+        title: 'Success',
+        description: 'Category deleted successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete category'
+      });
+    } finally {
+      setIsDeletingCategory(false);
+      setCategoryToDelete(null);
+    }
+  };
 
   const handleUpdateModule = async (id: string, data: Partial<Module>) => {
     setIsSaving(id);
@@ -150,16 +212,107 @@ export function ModuleManager() {
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-            <SelectTrigger className="w-[200px]">
-              <SelectValue placeholder="Filter by category" />
+            <SelectTrigger className='w-[200px]'>
+              <SelectValue placeholder='Filter by category' />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
-              {Object.values(ModuleCategory).map(category => (
-                <SelectItem key={category} value={category}>
-                  {category.charAt(0).toUpperCase() + category.slice(1)}
+              <SelectItem value='all'>All Categories</SelectItem>
+              {categories.map(category => (
+                <SelectItem key={category.id} value={category.id}>
+                  <div className='flex items-center justify-between w-full'>
+                    <span>{category.name}</span>
+                    {category.id !== 'basic' && (
+                      <AlertDialog
+                        open={categoryToDelete === category.id}
+                        onOpenChange={(open) => !open && setCategoryToDelete(null)}
+                      >
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            className='h-6 w-6'
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setCategoryToDelete(category.id);
+                            }}
+                          >
+                            <Trash2 className='h-4 w-4' />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this category? This will not delete the modules in this category.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteCategory(category.id)}
+                              disabled={isDeletingCategory}
+                            >
+                              {isDeletingCategory ? (
+                                <>
+                                  <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                                  Deleting...
+                                </>
+                              ) : (
+                                'Delete'
+                              )}
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    )}
+                  </div>
                 </SelectItem>
               ))}
+              <Dialog>
+                <DialogTrigger asChild>
+                  <Button
+                    variant='ghost'
+                    className='w-full justify-start'
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <FolderPlus className='h-4 w-4 mr-2' />
+                    Add Category
+                  </Button>
+                </DialogTrigger>
+                <DialogContent>
+                  <DialogHeader>
+                    <DialogTitle>Add Category</DialogTitle>
+                    <DialogDescription>
+                      Create a new category for organizing modules.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <div className='space-y-4 py-4'>
+                    <div className='space-y-2'>
+                      <Label>Category Name</Label>
+                      <Input
+                        value={newCategoryName}
+                        onChange={(e) => setNewCategoryName(e.target.value)}
+                        placeholder='Enter category name'
+                      />
+                    </div>
+                  </div>
+                  <DialogFooter>
+                    <Button
+                      onClick={handleCreateCategory}
+                      disabled={isAddingCategory || !newCategoryName.trim()}
+                    >
+                      {isAddingCategory ? (
+                        <>
+                          <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                          Creating...
+                        </>
+                      ) : (
+                        'Create Category'
+                      )}
+                    </Button>
+                  </DialogFooter>
+                </DialogContent>
+              </Dialog>
             </SelectContent>
           </Select>
         </div>

@@ -23,6 +23,7 @@ import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
 import { Module } from '@/types/module';
 import { ConnectionType } from '@/types/connection';
 import { useEditorSensors } from '@/hooks/use-editor-sensors';
+import layoutService, { Layout, Connection } from '@/services/layout';
 
 export default function LayoutEditorPage() {
   const router = useRouter();

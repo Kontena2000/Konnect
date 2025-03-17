@@ -35,5 +35,11 @@ service cloud.firestore {
       allow update, delete: if isAuthenticated() && 
         isOwner(get(/databases/$(database)/documents/projects/$(resource.data.projectId)));
     }
+
+    // Modules collection
+    match /modules/{moduleId} {
+      allow read: if isAuthenticated();
+      allow write: if isAuthenticated() && hasRole('admin');
+    }
   }
 }

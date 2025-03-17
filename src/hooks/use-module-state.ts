@@ -1,11 +1,11 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
-import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import debounce from "lodash/debounce";
 import layoutService from "@/services/layout";
-import { Module } from '@/types/module';
-import { Connection } from '@/services/layout';
+import { Module } from "@/types/module";
+import type { Connection, Layout } from "@/services/layout";
 
 interface ModuleState {
   modules: Module[];
@@ -51,11 +51,11 @@ export function useModuleState({
       lastSavedStateRef.current = JSON.stringify({ modules, connections });
       setHasChanges(false);
     } catch (error) {
-      console.error('Save error:', error);
+      console.error("Save error:", error);
       toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to save layout'
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to save layout"
       });
     } finally {
       setSaving(false);
