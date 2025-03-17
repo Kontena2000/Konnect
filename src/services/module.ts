@@ -1,4 +1,3 @@
-
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
 import { ModuleTemplate, ModuleCategory, moduleTemplates, moduleTemplatesByCategory } from '@/types/module';
@@ -15,46 +14,18 @@ export interface TechnicalSpecs {
     empty: number;
     loaded: number;
   };
-  formFactor: {
-    rackUnits: number;
-    containmentType: string;
-  };
-  powerConsumption: {
-    typical: number;
-    maximum: number;
-  };
-  cooling: {
-    heatOutput: {
-      btu: number;
-      kW: number;
-    };
-  };
+  dimensions: ModuleDimensions;
 }
 
 export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
   weight: {
-    empty: category === ModuleCategory.Konnect ? 2500 : 
-           category === ModuleCategory.Power ? 5 :
-           category === ModuleCategory.Network ? 0.5 :
-           category === ModuleCategory.Cooling ? 2 : 10,
-    loaded: category === ModuleCategory.Konnect ? 3000 : 
-            category === ModuleCategory.Power ? 5 :
-            category === ModuleCategory.Network ? 0.5 :
-            category === ModuleCategory.Cooling ? 2 : 10
+    empty: 10,
+    loaded: 15
   },
-  formFactor: {
-    rackUnits: category === ModuleCategory.Konnect ? 42 : 1,
-    containmentType: category === ModuleCategory.Konnect ? 'standard-rack' : 'component'
-  },
-  powerConsumption: {
-    typical: category === ModuleCategory.Konnect ? 15000 : 100,
-    maximum: category === ModuleCategory.Konnect ? 18000 : 150
-  },
-  cooling: {
-    heatOutput: {
-      btu: category === ModuleCategory.Konnect ? 51180 : 1000,
-      kW: category === ModuleCategory.Konnect ? 15 : 0.3
-    }
+  dimensions: {
+    length: 1.0,
+    width: 1.0,
+    height: 1.0
   }
 });
 
@@ -66,7 +37,8 @@ const moduleService = {
       const snapshot = await get(modulesRef);
       const dbModules = snapshot.exists() ? snapshot.val() : {};
       
-      const defaultTemplates = Object.values(moduleTemplatesByCategory).flat();
+      // Start with basic module template
+      const defaultTemplates = moduleTemplates;
       const now = new Date().toISOString();
       
       const updates: Record<string, ModuleTemplateWithSpecs> = {};

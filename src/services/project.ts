@@ -39,10 +39,16 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  ownerId: string;  // Changed from userId to ownerId for consistency
+  ownerId: string;
+  companyName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   plotWidth?: number;
   plotLength?: number;
   sharedWith?: string[];
+  layouts?: { id: string }[];
+  status?: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
@@ -51,6 +57,10 @@ export interface CreateProjectData {
   name: string;
   description?: string;
   ownerId: string;
+  companyName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
 }
 
 const validateProject = (data: Partial<ProjectValidation>): boolean => {
@@ -75,6 +85,10 @@ const projectService = {
         name: data.name.trim(),
         description: data.description?.trim() || '',
         ownerId: data.ownerId,
+        companyName: data.companyName?.trim() || '',
+        clientEmail: data.clientEmail?.trim() || '',
+        clientPhone: data.clientPhone?.trim() || '',
+        clientAddress: data.clientAddress?.trim() || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         collaborators: []

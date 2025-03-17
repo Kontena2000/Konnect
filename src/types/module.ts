@@ -1,10 +1,11 @@
 import { ConnectionType } from "./connection";
 
 export enum ModuleCategory {
-  Container = "container",
-  Power = "power",
-  Cooling = "cooling",
-  Network = "network",
+  Basic = 'basic',
+  Container = 'container',
+  Power = 'power',
+  Cooling = 'cooling',
+  Network = 'network',
   Security = "security",
   Storage = "storage",
   Konnect = "konnect",
@@ -25,10 +26,6 @@ export interface ModuleTemplate {
   category: ModuleCategory;
   color: string;
   dimensions: ModuleDimensions;
-  connectionPoints?: Array<{
-    position: [number, number, number];
-    type: ConnectionType;
-  }>;
   visibleInEditor?: boolean;
 }
 
@@ -56,6 +53,21 @@ export interface ModuleTemplateWithSpecs extends ModuleTemplate {
 }
 
 export const moduleTemplatesByCategory: Record<string, ModuleTemplate[]> = {
+  basic: [
+    {
+      id: 'basic-module',
+      name: 'Basic Module',
+      description: 'A simple module with basic dimensions',
+      type: 'basic',
+      category: ModuleCategory.Basic,
+      color: '#64748b',
+      dimensions: {
+        length: 1.0,
+        width: 1.0,
+        height: 1.0
+      }
+    }
+  ],
   container: [
     {
       id: "edge-container",

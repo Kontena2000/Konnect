@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project, ProjectError } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Loader2, Trash2, Clock, Calendar } from 'lucide-react';
+import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin } from 'lucide-react';
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
@@ -202,12 +202,41 @@ export default function ProjectsPage() {
                     <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                       {project.description || 'No description'}
                     </p>
+                    
+                    {/* Client Details Section */}
+                    <div className='space-y-2 border-t pt-4'>
+                      {project.companyName && (
+                        <div className='flex items-center gap-2 text-sm'>
+                          <Building2 className='h-4 w-4 text-muted-foreground' />
+                          <span>{project.companyName}</span>
+                        </div>
+                      )}
+                      {project.clientEmail && (
+                        <div className='flex items-center gap-2 text-sm'>
+                          <Mail className='h-4 w-4 text-muted-foreground' />
+                          <span>{project.clientEmail}</span>
+                        </div>
+                      )}
+                      {project.clientPhone && (
+                        <div className='flex items-center gap-2 text-sm'>
+                          <Phone className='h-4 w-4 text-muted-foreground' />
+                          <span>{project.clientPhone}</span>
+                        </div>
+                      )}
+                      {project.clientAddress && (
+                        <div className='flex items-center gap-2 text-sm'>
+                          <MapPin className='h-4 w-4 text-muted-foreground' />
+                          <span>{project.clientAddress}</span>
+                        </div>
+                      )}
+                    </div>
+
                     <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                       <Clock className='h-4 w-4' />
                       Last modified: {format(project.updatedAt.toDate(), 'MMM d, yyyy')}
                     </div>
                     <div className='flex gap-2'>
-                      <Badge variant='outline'>{project.layouts?.length || 0} Layouts</Badge>
+                      <Badge variant='outline'>{(project.layouts || []).length} Layouts</Badge>
                       {project.status && (
                         <Badge variant='secondary'>{project.status}</Badge>
                       )}
