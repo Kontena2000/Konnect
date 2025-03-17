@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -14,6 +13,7 @@ import { useCallback, useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
 import { Vector2, Vector3, Plane, Line3, Box3 } from 'three';
 import { cn } from '@/lib/utils';
+import { SceneElements } from './SceneElements';
 
 interface SceneProps {
   modules: Module[];
@@ -365,7 +365,7 @@ export function SceneContainer({
       onDrop={handleDrop}
     >
       <Canvas camera={{ position: [10, 10, 10], zoom: cameraZoom }}>
-        <Scene 
+        <SceneElements 
           modules={modules}
           selectedModuleId={selectedModuleId}
           transformMode={transformMode}
