@@ -69,22 +69,17 @@ export function SceneContainer({
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     
-    // Get mouse position
     const rect = event.currentTarget.getBoundingClientRect();
     const mousePos = new Vector2(
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     );
     
-    // Set up raycaster
     raycaster.setFromCamera(mousePos, camera);
-    
-    // Raycast to ground plane
     const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
     const intersection = new Vector3();
     raycaster.ray.intersectPlane(groundPlane, intersection);
     
-    // Round to grid if snap is enabled
     if (gridSnap) {
       intersection.x = Math.round(intersection.x);
       intersection.z = Math.round(intersection.z);
@@ -115,7 +110,8 @@ export function SceneContainer({
     
     if (previewMesh) {
       previewMesh.position.set(intersection.x, 0, intersection.z);
-      // Add visual feedback for grid snapping
+      
+      // Enhanced visual feedback for grid snapping
       if (gridSnap) {
         const gridPosition = new Vector3(
           Math.round(intersection.x),
@@ -123,6 +119,14 @@ export function SceneContainer({
           Math.round(intersection.z)
         );
         previewMesh.position.copy(gridPosition);
+        
+        // Add a subtle animation to show snapping
+        previewMesh.scale.setScalar(0.98);
+        setTimeout(() => {
+          if (previewMesh) {
+            previewMesh.scale.setScalar(1);
+          }
+        }, 150);
       }
     }
   }, [camera, raycaster, gridSnap, previewMesh]);

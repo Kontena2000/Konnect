@@ -114,17 +114,17 @@ export default function LayoutEditorPage() {
   });
 
   const handleDragStart = (event: DragStartEvent) => {
-    const draggedModule = modules.find(m => m.id === event.active.id);
-    setDraggingModule(draggedModule || null);
+    const draggedItem = modules.find(m => m.id === event.active.id);
+    setDraggingModule(draggedItem || null);
     
-    if (draggedModule) {
+    if (draggedItem) {
       const geometry = new THREE.BoxGeometry(
-        draggedModule.dimensions.length,
-        draggedModule.dimensions.height,
-        draggedModule.dimensions.width
+        draggedItem.dimensions.length,
+        draggedItem.dimensions.height,
+        draggedItem.dimensions.width
       );
       const material = new THREE.MeshStandardMaterial({
-        color: draggedModule.color,
+        color: draggedItem.color,
         transparent: true,
         opacity: 0.5,
         depthWrite: false,
@@ -138,15 +138,15 @@ export default function LayoutEditorPage() {
     }
   };
 
-  const handleModuleDragStart = (draggedModule: Module) => {
-    setDraggingTemplate(draggedModule);
+  const handleModuleDragStart = (template: Module) => {
+    setDraggingTemplate(template);
     const geometry = new THREE.BoxGeometry(
-      draggedModule.dimensions.length,
-      draggedModule.dimensions.height,
-      draggedModule.dimensions.width
+      template.dimensions.length,
+      template.dimensions.height,
+      template.dimensions.width
     );
     const material = new THREE.MeshStandardMaterial({
-      color: draggedModule.color,
+      color: template.color,
       transparent: true,
       opacity: 0.5,
       depthWrite: false,
