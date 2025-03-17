@@ -1,46 +1,23 @@
+
 import { realTimeDb } from "@/lib/firebase";
 import { ref, get, set, remove, update } from "firebase/database";
-import { ModuleTemplate, ModuleCategory, moduleTemplates, moduleTemplatesByCategory } from '@/types/module';
-
-export interface ModuleTemplateWithSpecs extends ModuleTemplate {
-  technicalSpecs: TechnicalSpecs;
-  visibleInEditor?: boolean;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-export interface TechnicalSpecs {
-  weight: {
-    empty: number;
-    loaded: number;
-  };
-}
-
-export const getDefaultSpecs = (): TechnicalSpecs => ({
-  weight: {
-    empty: 10,
-    loaded: 15
-  }
-});
+import { Module, ModuleCategory, defaultModules } from "@/types/module";
 
 const moduleService = {
-  async getAllModules(): Promise<ModuleTemplateWithSpecs[]> {
+  async getAllModules(): Promise<Module[]> {
     try {
-      console.log('Fetching modules...');
-      const modulesRef = ref(realTimeDb, 'modules');
+      console.log("Fetching modules...");
+      const modulesRef = ref(realTimeDb, "modules");
       const snapshot = await get(modulesRef);
       const dbModules = snapshot.exists() ? snapshot.val() : {};
       
-      const defaultTemplates = moduleTemplates;
       const now = new Date().toISOString();
+      const updates: Record<string, Module> = {};
       
-      const updates: Record<string, ModuleTemplateWithSpecs> = {};
-      
-      const mappedModules = defaultTemplates.map(template => {
+      const mappedModules = defaultModules.map(template => {
         const existingModule = dbModules[template.id];
-        const moduleData: ModuleTemplateWithSpecs = {
+        const moduleData: Module = {
           ...template,
-          technicalSpecs: existingModule?.technicalSpecs || getDefaultSpecs(),
           visibleInEditor: existingModule?.visibleInEditor ?? true,
           createdAt: existingModule?.createdAt || now,
           updatedAt: existingModule?.updatedAt || now
@@ -59,12 +36,12 @@ const moduleService = {
 
       return mappedModules;
     } catch (error) {
-      console.error('Error in getAllModules:', error);
-      throw new Error('Failed to fetch modules');
+      console.error("Error in getAllModules:", error);
+      throw new Error("Failed to fetch modules");
     }
   },
 
-  async updateModule(id: string, data: Partial<ModuleTemplateWithSpecs>): Promise<void> {
+  async updateModule(id: string, data: Partial<Module>): Promise<void> {
     try {
       const moduleRef = ref(realTimeDb, `modules/${id}`);
       const updateData = {
@@ -78,7 +55,7 @@ const moduleService = {
     }
   },
 
-  async createModule(data: ModuleTemplateWithSpecs): Promise<string> {
+  async createModule(data: Module): Promise<string> {
     try {
       if (!data.id) {
         throw new Error("Module ID is required");
