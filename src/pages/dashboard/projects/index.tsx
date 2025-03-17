@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
-import projectService, { Project } from "@/services/project";
+import projectService, { Project, ProjectError } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Plus, Loader2, Trash2 } from "lucide-react";
@@ -16,7 +16,14 @@ export default function ProjectsPage() {
   const { toast } = useToast();
 
   const handleDeleteProject = async (projectId: string) => {
-    if (!user) return;
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to delete projects'
+      });
+      return;
+    }
     
     try {
       await projectService.deleteProject(projectId, user.uid);

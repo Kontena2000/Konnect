@@ -14,14 +14,14 @@ import {
   arrayRemove
 } from "firebase/firestore";
 
-class ProjectError extends Error {
+export class ProjectError extends Error {
   constructor(
     message: string,
     public code: string,
     public details?: unknown
   ) {
     super(message);
-    this.name = "ProjectError";
+    this.name = 'ProjectError';
     Object.setPrototypeOf(this, ProjectError.prototype);
   }
 }
