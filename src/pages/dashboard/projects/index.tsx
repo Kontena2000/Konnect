@@ -16,8 +16,10 @@ export default function ProjectsPage() {
   const { toast } = useToast();
 
   const handleDeleteProject = async (projectId: string) => {
+    if (!user) return;
+    
     try {
-      await projectService.deleteProject(projectId);
+      await projectService.deleteProject(projectId, user.uid);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
       toast({
         title: 'Success',
@@ -28,7 +30,7 @@ export default function ProjectsPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to delete project'
+        description: error instanceof ProjectError ? error.message : 'Failed to delete project'
       });
     }
   };
