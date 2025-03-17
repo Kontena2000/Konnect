@@ -1,14 +1,15 @@
+
 import { Canvas } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useCallback, useState, useEffect, useMemo } from 'react';
-import * as THREE from 'three';
-import { Vector2, Vector3, Box3, Line3 } from 'three';
-import { cn } from '@/lib/utils';
-import { SceneElements } from './SceneElements';
+import { useCallback, useState, useEffect, useMemo } from "react";
+import * as THREE from "three";
+import { Vector2, Vector3, Box3, Line3 } from "three";
+import { cn } from "@/lib/utils";
+import { SceneElements } from "./SceneElements";
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -17,7 +18,7 @@ export interface SceneContainerProps {
   onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
-  onDropPoint: (point: [number, number, number]) => void; // Made required
+  onDropPoint?: (point: [number, number, number]) => void;
   connections?: Connection[];
   activeConnection?: {
     sourceModuleId: string;
@@ -59,7 +60,6 @@ export function SceneContainer({
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
 
-  // Calculate snap points and lines from existing modules
   const { snapPoints, snapLines } = useMemo(() => {
     const points: Vector3[] = [];
     const lines: Line3[] = [];
@@ -74,7 +74,6 @@ export function SceneContainer({
       const position = new Vector3(...module.position);
       box.setFromCenterAndSize(position, size);
 
-      // Add bottom corners as snap points
       const corners = [
         new Vector3(box.min.x, 0, box.min.z),
         new Vector3(box.max.x, 0, box.min.z),
@@ -83,7 +82,6 @@ export function SceneContainer({
       ];
       points.push(...corners);
 
-      // Add edges as snap lines
       corners.forEach((start, i) => {
         const end = corners[(i + 1) % 4];
         lines.push(new Line3(start, end));
@@ -94,19 +92,22 @@ export function SceneContainer({
   }, [modules]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
+    if (readOnly) return;
     event.preventDefault();
     setIsDraggingOver(true);
     setMousePosition(new Vector2(event.clientX, event.clientY));
-  }, []);
+  }, [readOnly]);
 
   const handleDragLeave = () => {
+    if (readOnly) return;
     setIsDraggingOver(false);
     setMousePosition(null);
   };
 
   const handleDrop = (event: React.DragEvent) => {
+    if (readOnly || !onDropPoint) return;
     event.preventDefault();
-    if (!mousePosition || !onDropPoint) return;
+    if (!mousePosition) return;
 
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
@@ -140,35 +141,38 @@ export function SceneContainer({
   };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'r') {
+    if (readOnly) return;
+    if (event.key === "r") {
       setRotationAngle(prev => (prev + Math.PI / 2) % (Math.PI * 2));
     }
     if (event.shiftKey) {
       setShowGuides(true);
     }
-  }, []);
+  }, [readOnly]);
 
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
-    if (event.key === 'Shift') {
+    if (readOnly) return;
+    if (event.key === "Shift") {
       setShowGuides(false);
     }
-  }, []);
+  }, [readOnly]);
 
   useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    window.addEventListener('keyup', handleKeyUp);
+    if (readOnly) return;
+    window.addEventListener("keydown", handleKeyDown);
+    window.addEventListener("keyup", handleKeyUp);
     return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-      window.removeEventListener('keyup', handleKeyUp);
+      window.removeEventListener("keydown", handleKeyDown);
+      window.removeEventListener("keyup", handleKeyUp);
     };
-  }, [handleKeyDown, handleKeyUp]);
+  }, [handleKeyDown, handleKeyUp, readOnly]);
 
   return (
     <div 
       ref={setNodeRef} 
       className={cn(
-        'w-full h-full relative',
-        isDraggingOver && 'cursor-crosshair'
+        "w-full h-full relative",
+        !readOnly && isDraggingOver && "cursor-crosshair"
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -204,13 +208,14 @@ export function SceneContainer({
           previewHeight={previewHeight}
           mousePosition={mousePosition}
           onDropPoint={onDropPoint}
+          readOnly={readOnly}
         />
       </Canvas>
 
-      {isDraggingOver && (
-        <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
-          <p className='text-sm'>Press R to rotate</p>
-          <p className='text-xs text-muted-foreground'>Hold Shift for guides</p>
+      {!readOnly && isDraggingOver && (
+        <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg">
+          <p className="text-sm">Press R to rotate</p>
+          <p className="text-xs text-muted-foreground">Hold Shift for guides</p>
         </div>
       )}
     </div>
