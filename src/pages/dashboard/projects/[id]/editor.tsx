@@ -37,6 +37,7 @@ export default function LayoutEditorPage() {
   const [gridSnap, setGridSnap] = useState(true);
   const [connectionMode, setConnectionMode] = useState<"cable" | "pipe">("cable");
   const [draggingTemplate, setDraggingTemplate] = useState<Module | null>(null);
+  const [draggingModule, setDraggingModule] = useState<Module | null>(null);
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
 
   const [activeConnection, setActiveConnection] = useState<{

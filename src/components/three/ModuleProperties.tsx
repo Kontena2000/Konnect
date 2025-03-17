@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -27,23 +26,23 @@ export function ModuleProperties({ module, onUpdate, onDelete, onTransformModeCh
   }, [module]);
 
   const handlePositionChange = (index: number, value: string) => {
-    const newPosition = [...position];
+    const newPosition = [...position] as [number, number, number];
     newPosition[index] = parseFloat(value) || 0;
-    setPosition(newPosition as [number, number, number]);
+    setPosition(newPosition);
     onUpdate(module.id, { position: newPosition });
   };
 
   const handleRotationChange = (index: number, value: string) => {
-    const newRotation = [...rotation];
+    const newRotation = [...rotation] as [number, number, number];
     newRotation[index] = parseFloat(value) || 0;
-    setRotation(newRotation as [number, number, number]);
+    setRotation(newRotation);
     onUpdate(module.id, { rotation: newRotation });
   };
 
   const handleScaleChange = (index: number, value: string) => {
-    const newScale = [...scale];
+    const newScale = [...scale] as [number, number, number];
     newScale[index] = parseFloat(value) || 1;
-    setScale(newScale as [number, number, number]);
+    setScale(newScale);
     onUpdate(module.id, { scale: newScale });
   };
 
