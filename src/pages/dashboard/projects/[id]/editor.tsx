@@ -44,6 +44,7 @@ export default function LayoutEditorPage() {
   const [draggingModule, setDraggingModule] = useState<Module | null>(null);
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
+  const [rotationAngle, setRotationAngle] = useState(0);
 
   const [activeConnection, setActiveConnection] = useState<{
     sourceModuleId: string;
@@ -137,6 +138,27 @@ export default function LayoutEditorPage() {
     }
   };
 
+  const handleModuleDragStart = (module: Module) => {
+    setDraggingTemplate(module);
+    const geometry = new THREE.BoxGeometry(
+      module.dimensions.length,
+      module.dimensions.height,
+      module.dimensions.width
+    );
+    const material = new THREE.MeshStandardMaterial({
+      color: module.color,
+      transparent: true,
+      opacity: 0.5,
+      depthWrite: false,
+      side: THREE.DoubleSide
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
+    mesh.position.set(0, 0, 0);
+    setPreviewMesh(mesh);
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingTemplate(null);
     setDraggingModule(null);
@@ -211,7 +233,7 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className="flex h-screen">
+      <div className='flex h-screen'>
         <DndContext 
           sensors={sensors}
           onDragEnd={handleDragEnd}
@@ -231,7 +253,7 @@ export default function LayoutEditorPage() {
                     ...draggingTemplate,
                     id: `${draggingTemplate.id}-${Date.now()}`,
                     position: point,
-                    rotation: [0, 0, 0],
+                    rotation: [0, rotationAngle, 0],
                     scale: [1, 1, 1],
                     visibleInEditor: true
                   };
@@ -245,7 +267,7 @@ export default function LayoutEditorPage() {
           </div>
 
           <div className='w-80 border-l bg-background'>
-            <ModuleLibrary onDragStart={setDraggingTemplate} />
+            <ModuleLibrary onDragStart={handleModuleDragStart} />
           </div>
 
           {draggingTemplate && (
