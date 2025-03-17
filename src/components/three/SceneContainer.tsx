@@ -11,6 +11,8 @@ import { EnvironmentalElement } from "@/components/environment/EnvironmentalElem
 import { TerrainView } from "@/components/environment/TerrainView";
 import { useThree } from '@react-three/fiber';
 import { useCallback } from 'react';
+import * as THREE from 'three';
+import { Vector2, Vector3, Plane } from 'three';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -64,15 +66,17 @@ export function SceneContainer({
     
     // Get mouse position
     const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    const mousePos = new Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
     
     // Set up raycaster
-    raycaster.setFromCamera({ x, y }, camera);
+    raycaster.setFromCamera(mousePos, camera);
     
     // Raycast to ground plane
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
+    const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+    const intersection = new Vector3();
     raycaster.ray.intersectPlane(groundPlane, intersection);
     
     // Round to grid if snap is enabled
