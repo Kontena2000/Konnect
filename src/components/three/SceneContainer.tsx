@@ -10,10 +10,31 @@ import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
-import { useCallback, useState, useEffect } from 'react';
+import { useCallback, useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
-import { Vector2, Vector3, Plane } from 'three';
+import { Vector2, Vector3, Plane, Line3, Box3 } from 'three';
 import { cn } from '@/lib/utils';
+
+interface SceneProps {
+  modules: Module[];
+  selectedModuleId?: string;
+  transformMode?: "translate" | "rotate" | "scale";
+  onModuleSelect?: (moduleId: string) => void;
+  onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
+  onModuleDelete?: (moduleId: string) => void;
+  connections: Connection[];
+  environmentalElements: ElementType[];
+  terrain?: TerrainData;
+  onEnvironmentalElementSelect?: (elementId: string) => void;
+  gridSnap: boolean;
+  isDraggingOver: boolean;
+  previewMesh: THREE.Mesh | null;
+  rotationAngle: number;
+  showGuides: boolean;
+  snapPoints: Vector3[];
+  snapLines: Line3[];
+  previewHeight: number;
+}
 
 function Scene({
   modules,
@@ -30,8 +51,11 @@ function Scene({
   isDraggingOver,
   previewMesh,
   rotationAngle,
-  showGuides
-}) {
+  showGuides,
+  snapPoints,
+  snapLines,
+  previewHeight
+}: SceneProps) {
   return (
     <>
       <OrbitControls makeDefault enabled={!isDraggingOver} />
@@ -55,6 +79,7 @@ function Scene({
       {previewMesh && (
         <primitive 
           object={previewMesh} 
+          position={[0, previewHeight / 2, 0]}
           rotation={[0, rotationAngle, 0]}
           castShadow
           receiveShadow
@@ -68,6 +93,30 @@ function Scene({
             position={[0, 0.01, 0]}
           />
           <axesHelper args={[5]} />
+          
+          {snapPoints.map((point, index) => (
+            <mesh key={`snap-point-${index}`} position={point}>
+              <sphereGeometry args={[0.1]} />
+              <meshBasicMaterial color="#2563eb" transparent opacity={0.5} />
+            </mesh>
+          ))}
+
+          {snapLines.map((line, index) => (
+            <line key={`snap-line-${index}`}>
+              <bufferGeometry>
+                <bufferAttribute
+                  attach="attributes-position"
+                  count={2}
+                  array={new Float32Array([
+                    line.start.x, line.start.y, line.start.z,
+                    line.end.x, line.end.y, line.end.z
+                  ])}
+                  itemSize={3}
+                />
+              </bufferGeometry>
+              <lineBasicMaterial color="#2563eb" linewidth={1} />
+            </line>
+          ))}
         </group>
       )}
 
@@ -153,6 +202,42 @@ export function SceneContainer({
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [showGuides, setShowGuides] = useState(false);
+  const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
+  const [previewHeight, setPreviewHeight] = useState(0);
+
+  // Calculate snap points and lines from existing modules
+  const { snapPoints, snapLines } = useMemo(() => {
+    const points: Vector3[] = [];
+    const lines: Line3[] = [];
+
+    modules.forEach(module => {
+      const box = new Box3();
+      const size = new Vector3(
+        module.dimensions.length,
+        module.dimensions.height,
+        module.dimensions.width
+      );
+      const position = new Vector3(...module.position);
+      box.setFromCenterAndSize(position, size);
+
+      // Add bottom corners as snap points
+      const corners = [
+        new Vector3(box.min.x, 0, box.min.z),
+        new Vector3(box.max.x, 0, box.min.z),
+        new Vector3(box.min.x, 0, box.max.z),
+        new Vector3(box.max.x, 0, box.max.z),
+      ];
+      points.push(...corners);
+
+      // Add edges as snap lines
+      corners.forEach((start, i) => {
+        const end = corners[(i + 1) % 4];
+        lines.push(new Line3(start, end));
+      });
+    });
+
+    return { snapPoints: points, snapLines: lines };
+  }, [modules]);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -175,20 +260,35 @@ export function SceneContainer({
     raycaster.ray.intersectPlane(groundPlane, intersection);
     
     if (gridSnap) {
-      intersection.x = Math.round(intersection.x);
-      intersection.z = Math.round(intersection.z);
+      // Find nearest snap point if close enough
+      const snapThreshold = 1;
+      const nearestPoint = snapPoints.reduce((nearest, point) => {
+        const distance = intersection.distanceTo(point);
+        return distance < snapThreshold && distance < nearest.distance
+          ? { point, distance }
+          : nearest;
+      }, { point: intersection, distance: Infinity });
+
+      intersection.copy(nearestPoint.point);
+    } else {
+      intersection.x = Math.round(intersection.x * 2) / 2;
+      intersection.z = Math.round(intersection.z * 2) / 2;
     }
     
-    onDropPoint?.([intersection.x, 0, intersection.z]);
-  }, [gridSnap, onDropPoint]);
+    // Position is at the center, so adjust Y to place bottom on ground
+    const y = previewHeight / 2;
+    onDropPoint?.([intersection.x, y, intersection.z]);
+  }, [gridSnap, onDropPoint, snapPoints, previewHeight]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
     setIsDraggingOver(true);
+    setMousePosition(new Vector2(event.clientX, event.clientY));
   }, []);
 
   const handleDragLeave = () => {
     setIsDraggingOver(false);
+    setMousePosition(null);
   };
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
@@ -243,6 +343,9 @@ export function SceneContainer({
           previewMesh={previewMesh}
           rotationAngle={rotationAngle}
           showGuides={showGuides}
+          snapPoints={snapPoints}
+          snapLines={snapLines}
+          previewHeight={previewHeight}
         />
       </Canvas>
 

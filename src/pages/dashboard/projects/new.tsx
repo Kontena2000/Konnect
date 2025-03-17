@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -10,6 +9,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import projectService from "@/services/project";
+import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 
 export default function NewProjectPage() {
   const router = useRouter();
@@ -18,6 +18,15 @@ export default function NewProjectPage() {
   const [loading, setLoading] = useState(false);
   const [name, setName] = useState("");
   const [description, setDescription] = useState("");
+
+  const defaultValues = {
+    name: '',
+    description: '',
+    companyName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientAddress: '',
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,29 +87,78 @@ export default function NewProjectPage() {
               <CardTitle>Project Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="space-y-2">
-                <Label htmlFor="name">Project Name</Label>
-                <Input
-                  id="name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Enter project name"
-                  required
-                  className="w-full"
-                  maxLength={100}
-                />
-              </div>
-              <div className="space-y-2">
-                <Label htmlFor="description">Description</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="Enter project description"
-                  rows={4}
-                  className="w-full"
-                  maxLength={500}
-                />
+              <div className='space-y-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='name'>Project Name</Label>
+                    <Input
+                      id='name'
+                      placeholder='Enter project name'
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full"
+                      maxLength={100}
+                    />
+                    {errors.name && (
+                      <p className='text-sm text-destructive'>Project name is required</p>
+                    )}
+                  </div>
+
+                  <div className='space-y-2'>
+                    <Label htmlFor='companyName'>Company Name</Label>
+                    <Input
+                      id='companyName'
+                      placeholder='Enter company name'
+                      {...register('companyName')}
+                    />
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='description'>Description</Label>
+                  <Textarea
+                    id='description'
+                    placeholder='Enter project description'
+                    className='min-h-[100px]'
+                    value={description}
+                    onChange={(e) => setDescription(e.target.value)}
+                    rows={4}
+                    className="w-full"
+                    maxLength={500}
+                  />
+                </div>
+
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div className='space-y-2'>
+                    <Label htmlFor='clientEmail'>Client Email</Label>
+                    <Input
+                      id='clientEmail'
+                      type='email'
+                      placeholder='Enter client email'
+                      {...register('clientEmail')}
+                    />
+                  </div>
+
+                  <div className='space-y-2'>
+                    <Label htmlFor='clientPhone'>Client Phone</Label>
+                    <Input
+                      id='clientPhone'
+                      type='tel'
+                      placeholder='Enter client phone'
+                      {...register('clientPhone')}
+                    />
+                  </div>
+                </div>
+
+                <div className='space-y-2'>
+                  <Label htmlFor='clientAddress'>Client Address</Label>
+                  <Textarea
+                    id='clientAddress'
+                    placeholder='Enter client address'
+                    {...register('clientAddress')}
+                  />
+                </div>
               </div>
             </CardContent>
             <CardFooter className="flex justify-end space-x-2">

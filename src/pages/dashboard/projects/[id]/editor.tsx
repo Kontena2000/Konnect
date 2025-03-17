@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -135,7 +134,8 @@ export default function LayoutEditorPage() {
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
-    mesh.position.set(0, 0, 0);
+    // Position the mesh so its bottom is at y=0
+    mesh.position.set(0, item.dimensions.height / 2, 0);
     setPreviewMesh(mesh);
   };
 
