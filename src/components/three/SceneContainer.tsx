@@ -2,14 +2,11 @@
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
-import { ModuleControls } from "./ModuleControls";
-import { useRef, useState } from "react";
-import { ThreeEvent } from "@react-three/fiber";
+import { useDroppable } from "@dnd-kit/core";
 import { ConnectionLine } from "./ConnectionLine";
 import { Connection, Module } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useDroppable } from "@dnd-kit/core";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 
@@ -33,8 +30,6 @@ export interface SceneContainerProps {
   terrain?: TerrainData;
   onEnvironmentalElementSelect?: (elementId: string) => void;
   cameraZoom?: number;
-  connectionMode?: "cable" | "pipe";
-  onAddIntermediatePoint?: (point: [number, number, number]) => void;
   gridSnap?: boolean;
 }
 

@@ -66,12 +66,10 @@ const moduleService = {
       const snapshot = await get(modulesRef);
       const dbModules = snapshot.exists() ? snapshot.val() : {};
       
-      // Get default templates and ensure they exist in the database
       const defaultTemplates = Object.values(moduleTemplatesByCategory).flat();
       const now = new Date().toISOString();
       
-      // Create a batch update for all modules
-      const updates: Record<string, any> = {};
+      const updates: Record<string, ModuleTemplateWithSpecs> = {};
       
       const mappedModules = defaultTemplates.map(template => {
         const existingModule = dbModules[template.id];
@@ -83,7 +81,6 @@ const moduleService = {
           updatedAt: existingModule?.updatedAt || now
         };
         
-        // Add to batch update if module doesn't exist or needs updating
         if (!existingModule) {
           updates[`modules/${template.id}`] = moduleData;
         }
@@ -91,12 +88,10 @@ const moduleService = {
         return moduleData;
       });
 
-      // Perform batch update if needed
       if (Object.keys(updates).length > 0) {
         await update(ref(realTimeDb), updates);
       }
 
-      console.log('Modules loaded:', mappedModules.length);
       return mappedModules;
     } catch (error) {
       console.error('Error in getAllModules:', error);
@@ -107,26 +102,31 @@ const moduleService = {
   async updateModule(id: string, data: Partial<ModuleTemplateWithSpecs>): Promise<void> {
     try {
       const moduleRef = ref(realTimeDb, `modules/${id}`);
-      await update(moduleRef, {
+      const updateData = {
         ...data,
         updatedAt: new Date().toISOString()
-      });
+      };
+      await update(moduleRef, updateData);
     } catch (error) {
       console.error("Error updating module:", error);
       throw new Error("Failed to update module");
     }
   },
 
-  async createModule(data: Omit<ModuleTemplateWithSpecs, "id">): Promise<string> {
+  async createModule(data: ModuleTemplateWithSpecs): Promise<string> {
     try {
-      const moduleRef = ref(realTimeDb, `modules/${data.type}`);
+      if (!data.id) {
+        throw new Error("Module ID is required");
+      }
+      const moduleRef = ref(realTimeDb, `modules/${data.id}`);
       const now = new Date().toISOString();
-      await set(moduleRef, {
+      const moduleData = {
         ...data,
         createdAt: now,
         updatedAt: now
-      });
-      return data.type;
+      };
+      await set(moduleRef, moduleData);
+      return data.id;
     } catch (error) {
       console.error("Error creating module:", error);
       throw new Error("Failed to create module");

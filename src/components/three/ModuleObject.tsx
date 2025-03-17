@@ -98,7 +98,7 @@ export function ModuleObject({
 
       {module.connectionPoints?.map((point, index) => (
         <ConnectionPoint
-          key={index}
+          key={`${module.id}-connection-${index}`}
           position={point.position}
           type={point.type}
           moduleId={module.id}
