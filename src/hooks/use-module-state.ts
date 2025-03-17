@@ -1,10 +1,11 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import debounce from "lodash/debounce";
 import layoutService from "@/services/layout";
+import { Module } from '@/types/module';
+import { Connection } from '@/services/layout';
 
 interface ModuleState {
   modules: Module[];

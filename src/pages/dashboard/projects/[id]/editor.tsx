@@ -10,7 +10,6 @@ import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
 import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
-import layoutService, { Layout } from "@/services/layout";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
@@ -21,10 +20,9 @@ import { LayoutSelector } from "@/components/layout/LayoutSelector";
 import { Select, SelectTrigger, SelectValue, SelectContent, SelectItem } from "@/components/ui/select";
 import { useModuleState } from "@/hooks/use-module-state";
 import { useKeyboardShortcuts } from "@/hooks/use-keyboard-shortcuts";
-import { ModuleTemplate } from "@/types/module";
-import { ConnectionType } from "@/types/connection";
-import { useEditorSensors } from "@/hooks/use-editor-sensors";
 import { Module } from '@/types/module';
+import { ConnectionType } from '@/types/connection';
+import { useEditorSensors } from '@/hooks/use-editor-sensors';
 
 export default function LayoutEditorPage() {
   const router = useRouter();

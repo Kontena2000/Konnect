@@ -22,8 +22,7 @@ import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, 
 import { useToast } from '@/hooks/use-toast';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
 import { ModuleManager } from '@/components/settings/ModuleManager';
-import { moduleTemplates, ModuleTemplate, ModuleCategory, moduleTemplatesByCategory } from '@/types/module';
-import { Module } from '@/types/module';
+import { Module, ModuleCategory } from '@/types/module';
 
 interface ModuleInputProps {
   module: Module;

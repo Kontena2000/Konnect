@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -35,10 +34,10 @@ interface FormData {
 export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     category: ModuleCategory.Basic,
-    color: "#808080",
+    color: '#808080',
     dimensions: {
       length: 1,
       width: 1,
@@ -58,6 +57,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
       const moduleId = nanoid();
       const newModule: Module = {
         id: moduleId,
+        type: 'basic', // Add type field
         ...formData,
         position: [0, 0, 0],
         rotation: [0, 0, 0],
@@ -67,10 +67,10 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
       await onModuleCreate(newModule);
       setIsOpen(false);
       setFormData({
-        name: "",
-        description: "",
+        name: '',
+        description: '',
         category: ModuleCategory.Basic,
-        color: "#808080",
+        color: '#808080',
         dimensions: {
           length: 1,
           width: 1,
@@ -80,14 +80,14 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
         visibleInEditor: true
       });
       toast({
-        title: "Success",
-        description: "Module created successfully"
+        title: 'Success',
+        description: 'Module created successfully'
       });
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create module"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create module'
       });
     } finally {
       setIsCreating(false);
