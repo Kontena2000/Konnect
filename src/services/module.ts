@@ -76,10 +76,10 @@ const moduleService = {
       const batch = writeBatch(db);
       const now = new Date().toISOString();
 
-      for (const module of defaultModules) {
-        const moduleRef = doc(modulesRef, module.id);
+      for (const defaultMod of defaultModules) {
+        const moduleRef = doc(modulesRef, defaultMod.id);
         batch.set(moduleRef, {
-          ...module,
+          ...defaultMod,
           visibleInEditor: true,
           createdAt: now,
           updatedAt: now
@@ -104,16 +104,20 @@ const moduleService = {
         console.log("No modules found, initializing...");
         await this.initializeDefaultModules();
         const retrySnapshot = await getDocs(modulesRef);
-        return retrySnapshot.docs.map(doc => ({
+        const modules = retrySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as Module[];
+        console.log("Modules after initialization:", modules);
+        return modules;
       }
 
-      return snapshot.docs.map(doc => ({
+      const modules = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as Module[];
+      console.log("Fetched modules:", modules);
+      return modules;
     } catch (error) {
       console.error("Error fetching modules:", error);
       return defaultModules;
@@ -130,16 +134,20 @@ const moduleService = {
         console.log("No categories found, initializing...");
         await this.initializeBasicCategory();
         const retrySnapshot = await getDocs(categoriesRef);
-        return retrySnapshot.docs.map(doc => ({
+        const categories = retrySnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
         })) as CategoryData[];
+        console.log("Categories after initialization:", categories);
+        return categories;
       }
 
-      return snapshot.docs.map(doc => ({
+      const categories = snapshot.docs.map(doc => ({
         id: doc.id,
         ...doc.data()
       })) as CategoryData[];
+      console.log("Fetched categories:", categories);
+      return categories;
     } catch (error) {
       console.error("Error fetching categories:", error);
       return [
@@ -149,6 +157,31 @@ const moduleService = {
         { id: "piping", name: "Piping" },
         { id: "environment", name: "Environment" }
       ];
+    }
+  },
+
+  async createCategory(data: { id: string; name: string }): Promise<void> {
+    try {
+      const categoryRef = doc(db, "categories", data.id);
+      const now = new Date().toISOString();
+      await setDoc(categoryRef, {
+        ...data,
+        createdAt: now,
+        updatedAt: now
+      });
+    } catch (error) {
+      console.error("Error creating category:", error);
+      throw error;
+    }
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    try {
+      const categoryRef = doc(db, "categories", id);
+      await deleteDoc(categoryRef);
+    } catch (error) {
+      console.error("Error deleting category:", error);
+      throw error;
     }
   },
 
