@@ -138,15 +138,15 @@ export default function LayoutEditorPage() {
     }
   };
 
-  const handleModuleDragStart = (module: Module) => {
-    setDraggingTemplate(module);
+  const handleModuleDragStart = (draggedModule: Module) => {
+    setDraggingTemplate(draggedModule);
     const geometry = new THREE.BoxGeometry(
-      module.dimensions.length,
-      module.dimensions.height,
-      module.dimensions.width
+      draggedModule.dimensions.length,
+      draggedModule.dimensions.height,
+      draggedModule.dimensions.width
     );
     const material = new THREE.MeshStandardMaterial({
-      color: module.color,
+      color: draggedModule.color,
       transparent: true,
       opacity: 0.5,
       depthWrite: false,

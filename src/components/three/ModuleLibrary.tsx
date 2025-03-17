@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +10,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 
 export interface ModuleLibraryProps {
-  onDragStart?: (module: Module | null) => void;
+  onDragStart: (module: Module) => void;
 }
 
 export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
@@ -141,7 +140,7 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
 
   const handleDragStart = (module: Module) => {
     console.log("Starting drag for module:", module.id);
-    onDragStart?.(module);
+    onDragStart(module);
   };
 
   if (!user) {
