@@ -163,21 +163,21 @@ export default function ProjectDetailsPage() {
   };
 
   const handleDeleteProject = async () => {
-    if (!id) return;
+    if (!id || !user) return;
     
     try {
-      await projectService.deleteProject(id as string);
+      await projectService.deleteProject(id as string, user.uid);
       toast({
-        title: "Success",
-        description: "Project deleted successfully"
+        title: 'Success',
+        description: 'Project deleted successfully'
       });
-      router.push("/dashboard/projects");
+      router.push('/dashboard/projects');
     } catch (error) {
-      console.error("Error deleting project:", error);
+      console.error('Error deleting project:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete project"
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete project'
       });
     }
   };
