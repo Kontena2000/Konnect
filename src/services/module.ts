@@ -14,18 +14,12 @@ export interface TechnicalSpecs {
     empty: number;
     loaded: number;
   };
-  dimensions: ModuleDimensions;
 }
 
-export const getDefaultSpecs = (category: ModuleCategory): TechnicalSpecs => ({
+export const getDefaultSpecs = (): TechnicalSpecs => ({
   weight: {
     empty: 10,
     loaded: 15
-  },
-  dimensions: {
-    length: 1.0,
-    width: 1.0,
-    height: 1.0
   }
 });
 
@@ -37,7 +31,6 @@ const moduleService = {
       const snapshot = await get(modulesRef);
       const dbModules = snapshot.exists() ? snapshot.val() : {};
       
-      // Start with basic module template
       const defaultTemplates = moduleTemplates;
       const now = new Date().toISOString();
       
@@ -47,7 +40,7 @@ const moduleService = {
         const existingModule = dbModules[template.id];
         const moduleData: ModuleTemplateWithSpecs = {
           ...template,
-          technicalSpecs: existingModule?.technicalSpecs || getDefaultSpecs(template.category),
+          technicalSpecs: existingModule?.technicalSpecs || getDefaultSpecs(),
           visibleInEditor: existingModule?.visibleInEditor ?? true,
           createdAt: existingModule?.createdAt || now,
           updatedAt: existingModule?.updatedAt || now
