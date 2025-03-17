@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -8,6 +9,7 @@ import {
   updateDoc,
   deleteDoc,
   serverTimestamp,
+  writeBatch,
   query,
   where
 } from "firebase/firestore";
@@ -21,76 +23,161 @@ interface CategoryData {
 }
 
 const moduleService = {
-  async getAllModules(): Promise<Module[]> {
+  async initializeBasicCategory(): Promise<void> {
     try {
-      console.log("Fetching modules...");
-      const modulesRef = collection(db, "modules");
-      const snapshot = await getDocs(modulesRef);
-      const dbModules = new Map(snapshot.docs.map(doc => [doc.id, doc.data() as Module]));
+      const categoriesRef = collection(db, "categories");
+      const snapshot = await getDocs(categoriesRef);
       
-      const now = new Date().toISOString();
-      const updates: Promise<void>[] = [];
-      
-      const mappedModules = defaultModules.map(template => {
-        const existingModule = dbModules.get(template.id);
-        const moduleData: Module = {
-          ...template,
-          visibleInEditor: existingModule?.visibleInEditor ?? true,
-          createdAt: existingModule?.createdAt || now,
-          updatedAt: existingModule?.updatedAt || now
-        };
-        
-        if (!existingModule) {
-          updates.push(
-            setDoc(doc(db, "modules", template.id), moduleData)
-          );
-        }
-        
-        return moduleData;
-      });
-
-      if (updates.length > 0) {
-        await Promise.all(updates);
+      if (!snapshot.empty) {
+        console.log("Categories already exist");
+        return;
       }
 
-      return mappedModules;
+      console.log("No categories found, initializing...");
+      const categories = [
+        { id: "basic", name: "Basic" },
+        { id: "konnect", name: "Konnect Modules" },
+        { id: "network", name: "Network" },
+        { id: "piping", name: "Piping" },
+        { id: "environment", name: "Environment" }
+      ];
+
+      const batch = writeBatch(db);
+      const now = new Date().toISOString();
+
+      for (const category of categories) {
+        const categoryRef = doc(categoriesRef, category.id);
+        batch.set(categoryRef, {
+          ...category,
+          createdAt: now,
+          updatedAt: now
+        });
+      }
+
+      await batch.commit();
+      console.log("Categories initialized successfully");
     } catch (error) {
-      console.error("Error in getAllModules:", error);
-      throw new Error("Failed to fetch modules");
+      console.error("Error initializing categories:", error);
+      throw error;
+    }
+  },
+
+  async initializeDefaultModules(): Promise<void> {
+    try {
+      const modulesRef = collection(db, "modules");
+      const snapshot = await getDocs(modulesRef);
+      
+      if (!snapshot.empty) {
+        console.log("Modules already exist");
+        return;
+      }
+
+      console.log("No modules found, initializing defaults...");
+      const batch = writeBatch(db);
+      const now = new Date().toISOString();
+
+      for (const module of defaultModules) {
+        const moduleRef = doc(modulesRef, module.id);
+        batch.set(moduleRef, {
+          ...module,
+          visibleInEditor: true,
+          createdAt: now,
+          updatedAt: now
+        });
+      }
+
+      await batch.commit();
+      console.log("Default modules initialized successfully");
+    } catch (error) {
+      console.error("Error initializing default modules:", error);
+      throw error;
+    }
+  },
+
+  async getAllModules(): Promise<Module[]> {
+    try {
+      console.log("Fetching all modules...");
+      const modulesRef = collection(db, "modules");
+      const snapshot = await getDocs(modulesRef);
+
+      if (snapshot.empty) {
+        console.log("No modules found, initializing...");
+        await this.initializeDefaultModules();
+        const retrySnapshot = await getDocs(modulesRef);
+        return retrySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as Module[];
+      }
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Module[];
+    } catch (error) {
+      console.error("Error fetching modules:", error);
+      return defaultModules;
+    }
+  },
+
+  async getCategories(): Promise<CategoryData[]> {
+    try {
+      console.log("Fetching categories...");
+      const categoriesRef = collection(db, "categories");
+      const snapshot = await getDocs(categoriesRef);
+
+      if (snapshot.empty) {
+        console.log("No categories found, initializing...");
+        await this.initializeBasicCategory();
+        const retrySnapshot = await getDocs(categoriesRef);
+        return retrySnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        })) as CategoryData[];
+      }
+
+      return snapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as CategoryData[];
+    } catch (error) {
+      console.error("Error fetching categories:", error);
+      return [
+        { id: "basic", name: "Basic" },
+        { id: "konnect", name: "Konnect Modules" },
+        { id: "network", name: "Network" },
+        { id: "piping", name: "Piping" },
+        { id: "environment", name: "Environment" }
+      ];
+    }
+  },
+
+  async createModule(data: Module): Promise<string> {
+    try {
+      const moduleRef = doc(db, "modules", data.id);
+      const now = new Date().toISOString();
+      await setDoc(moduleRef, {
+        ...data,
+        createdAt: now,
+        updatedAt: now
+      });
+      return data.id;
+    } catch (error) {
+      console.error("Error creating module:", error);
+      throw error;
     }
   },
 
   async updateModule(id: string, data: Partial<Module>): Promise<void> {
     try {
       const moduleRef = doc(db, "modules", id);
-      const updateData = {
+      await updateDoc(moduleRef, {
         ...data,
         updatedAt: serverTimestamp()
-      };
-      await updateDoc(moduleRef, updateData);
+      });
     } catch (error) {
       console.error("Error updating module:", error);
-      throw new Error("Failed to update module");
-    }
-  },
-
-  async createModule(data: Module): Promise<string> {
-    try {
-      if (!data.id) {
-        throw new Error("Module ID is required");
-      }
-      const moduleRef = doc(db, "modules", data.id);
-      const now = new Date().toISOString();
-      const moduleData = {
-        ...data,
-        createdAt: now,
-        updatedAt: now
-      };
-      await setDoc(moduleRef, moduleData);
-      return data.id;
-    } catch (error) {
-      console.error("Error creating module:", error);
-      throw new Error("Failed to create module");
+      throw error;
     }
   },
 
@@ -100,46 +187,7 @@ const moduleService = {
       await deleteDoc(moduleRef);
     } catch (error) {
       console.error("Error deleting module:", error);
-      throw new Error("Failed to delete module");
-    }
-  },
-
-  async getCategories(): Promise<CategoryData[]> {
-    try {
-      const categoriesRef = collection(db, 'categories');
-      const snapshot = await getDocs(categoriesRef);
-      return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as CategoryData));
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      throw new Error('Failed to fetch categories');
-    }
-  },
-
-  async createCategory(name: string): Promise<string> {
-    try {
-      const categoriesRef = collection(db, 'categories');
-      const id = name.toLowerCase().replace(/\s+/g, '-');
-      const categoryRef = doc(categoriesRef, id);
-      const now = new Date().toISOString();
-      await setDoc(categoryRef, {
-        name,
-        createdAt: now,
-        updatedAt: now
-      });
-      return id;
-    } catch (error) {
-      console.error('Error creating category:', error);
-      throw new Error('Failed to create category');
-    }
-  },
-
-  async deleteCategory(id: string): Promise<void> {
-    try {
-      const categoryRef = doc(db, 'categories', id);
-      await deleteDoc(categoryRef);
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      throw new Error('Failed to delete category');
+      throw error;
     }
   }
 };

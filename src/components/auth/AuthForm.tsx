@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
+import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
@@ -47,32 +48,33 @@ export function AuthForm({ mode }: AuthFormProps) {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
-      if (mode === 'login') {
+      if (mode === "login") {
         await authService.login(values.email, values.password);
         toast({
-          title: 'Welcome back!',
-          description: 'You have successfully logged in.',
+          title: "Welcome back!",
+          description: "You have successfully logged in.",
         });
       } else {
         await authService.register(values.email, values.password);
         toast({
-          title: 'Account created!',
-          description: 'Your account has been created successfully.',
+          title: "Account created!",
+          description: "Your account has been created successfully.",
         });
       }
-      router.push('/dashboard/projects');
+      router.push("/dashboard/projects");
     } catch (error: any) {
-      const errorMessage = error.code === 'auth/wrong-password' 
-        ? 'Invalid email or password'
-        : error.code === 'auth/user-not-found'
-        ? 'No account found with this email'
-        : error.code === 'auth/email-already-in-use'
-        ? 'An account with this email already exists'
-        : error.message || 'An error occurred. Please try again.';
-      
+      const errorMessage =
+        error.code === "auth/wrong-password"
+          ? "Invalid email or password"
+          : error.code === "auth/user-not-found"
+          ? "No account found with this email"
+          : error.code === "auth/email-already-in-use"
+          ? "An account with this email already exists"
+          : error.message || "An error occurred. Please try again.";
+
       toast({
-        variant: 'destructive',
-        title: 'Error',
+        variant: "destructive",
+        title: "Error",
         description: errorMessage,
       });
     } finally {
@@ -82,9 +84,18 @@ export function AuthForm({ mode }: AuthFormProps) {
 
   return (
     <Card className="w-full max-w-md">
-      <CardHeader className="space-y-1">
+      <CardHeader className="space-y-4">
+        <div className="flex justify-center">
+          <Image
+            src="/logo-m8cuqi6n.svg"
+            alt="Kontena Logo"
+            width={180}
+            height={48}
+            priority
+          />
+        </div>
         <CardTitle className="text-2xl font-bold text-center">
-          {mode === "login" ? "Welcome Back" : "Create Account"}
+          {mode === "login" ? "KONNECT" : "Create Account"}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -145,20 +156,14 @@ export function AuthForm({ mode }: AuthFormProps) {
           {mode === "login" ? (
             <p>
               Don't have an account?{" "}
-              <Link
-                href="/auth/register"
-                className="text-primary hover:underline"
-              >
+              <Link href="/auth/register" className="text-primary hover:underline">
                 Sign up
               </Link>
             </p>
           ) : (
             <p>
               Already have an account?{" "}
-              <Link
-                href="/auth/login"
-                className="text-primary hover:underline"
-              >
+              <Link href="/auth/login" className="text-primary hover:underline">
                 Sign in
               </Link>
             </p>

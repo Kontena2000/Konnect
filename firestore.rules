@@ -2,44 +2,47 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
-    // Helper functions
+    // Check if user is authenticated
     function isAuthenticated() {
       return request.auth != null;
     }
     
-    function isOwner(resource) {
-      return isAuthenticated() && resource.data.ownerId == request.auth.uid;
+    // Check if user is an admin using custom claims
+    function isAdmin() {
+      return isAuthenticated() && request.auth.token.role == 'admin';
     }
     
-    function hasRole(role) {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == role;
+    // Check if user is an editor or admin using custom claims
+    function canEdit() {
+      return isAuthenticated() && 
+        (request.auth.token.role == 'editor' || request.auth.token.role == 'admin');
     }
 
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && (hasRole('admin') || request.auth.uid == userId);
-    }
-
-    // Projects collection
-    match /projects/{projectId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isOwner(resource);
-    }
-
-    // Layouts collection
-    match /layouts/{layoutId} {
-      allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
-      allow update, delete: if isAuthenticated() && 
-        isOwner(get(/databases/$(database)/documents/projects/$(resource.data.projectId)));
+      allow write: if isAdmin();
     }
 
     // Modules collection
     match /modules/{moduleId} {
       allow read: if isAuthenticated();
-      allow write: if isAuthenticated() && hasRole('admin');
+      allow create, update: if canEdit();
+      allow delete: if isAdmin();
+    }
+
+    // Categories collection
+    match /categories/{categoryId} {
+      allow read: if isAuthenticated();
+      allow write: if canEdit();
+    }
+
+    // Projects collection
+    match /projects/{projectId} {
+      allow read: if isAuthenticated();
+      allow create: if canEdit();
+      allow update, delete: if canEdit() && 
+        (resource.data.userId == request.auth.uid || isAdmin());
     }
   }
 }
