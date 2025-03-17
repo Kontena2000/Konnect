@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
-import { DndContext, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
@@ -91,6 +91,26 @@ export default function LayoutEditorPage() {
     onDelete: () => selectedModuleId && deleteModule(selectedModuleId)
   });
 
+  const handleDragEnd = (event: DragEndEvent) => {
+    setDraggingTemplate(null);
+    
+    // Only handle drops over the scene
+    if (event.over?.id !== 'scene') return;
+
+    // Create a new module from the template
+    if (draggingTemplate) {
+      const newModule: Module = {
+        ...draggingTemplate,
+        id: `${draggingTemplate.id}-${Date.now()}`,
+        position: [0, 0, 0], // Default position, will be updated by SceneContainer
+        rotation: [0, 0, 0],
+        scale: [1, 1, 1],
+        visibleInEditor: true
+      };
+      addModule(newModule);
+    }
+  };
+
   useEffect(() => {
     const loadLayoutData = async () => {
       if (!id) return;
@@ -138,9 +158,16 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className="flex h-screen">
-        <DndContext sensors={sensors}>
-          <div className="flex-1 relative">
+      <div className='flex h-screen'>
+        <DndContext 
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          onDragStart={(event) => {
+            const module = modules.find(m => m.id === event.active.id);
+            setDraggingModule(module || null);
+          }}
+        >
+          <div className='flex-1 relative'>
             <SceneContainer
               modules={modules}
               connections={connections}
@@ -148,12 +175,26 @@ export default function LayoutEditorPage() {
               onModuleSelect={selectModule}
               onModuleUpdate={updateModule}
               onModuleDelete={deleteModule}
+              onDropPoint={(point) => {
+                if (draggingTemplate) {
+                  const newModule: Module = {
+                    ...draggingTemplate,
+                    id: `${draggingTemplate.id}-${Date.now()}`,
+                    position: point,
+                    rotation: [0, 0, 0],
+                    scale: [1, 1, 1],
+                    visibleInEditor: true
+                  };
+                  addModule(newModule);
+                  setDraggingTemplate(null);
+                }
+              }}
               cameraZoom={cameraZoom}
               gridSnap={gridSnap}
             />
           </div>
 
-          <div className="w-80 border-l bg-background">
+          <div className='w-80 border-l bg-background'>
             <ModuleLibrary onDragStart={setDraggingTemplate} />
           </div>
 

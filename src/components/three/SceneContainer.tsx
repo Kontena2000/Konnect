@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Grid, Environment } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -10,6 +9,8 @@ import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
+import { useThree } from '@react-three/fiber';
+import { useCallback } from 'react';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -41,6 +42,7 @@ export function SceneContainer({
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
+  onDropPoint,
   connections = [],
   activeConnection,
   onConnectPoint,
@@ -55,8 +57,40 @@ export function SceneContainer({
     id: "scene"
   });
 
+  const { camera, raycaster, scene } = useThree();
+
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    
+    // Get mouse position
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    // Set up raycaster
+    raycaster.setFromCamera({ x, y }, camera);
+    
+    // Raycast to ground plane
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+    
+    // Round to grid if snap is enabled
+    if (gridSnap) {
+      intersection.x = Math.round(intersection.x);
+      intersection.z = Math.round(intersection.z);
+    }
+    
+    onDropPoint?.([intersection.x, 0, intersection.z]);
+  }, [camera, raycaster, gridSnap, onDropPoint]);
+
   return (
-    <div ref={setNodeRef} className="w-full h-full">
+    <div 
+      ref={setNodeRef} 
+      className="w-full h-full"
+      onDragOver={(e) => e.preventDefault()}
+      onDrop={handleDrop}
+    >
       <Canvas camera={{ position: [10, 10, 10], zoom: cameraZoom }}>
         <OrbitControls makeDefault />
         <Grid infiniteGrid fadeDistance={50} fadeStrength={5} />

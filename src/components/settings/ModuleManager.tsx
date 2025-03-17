@@ -15,6 +15,7 @@ import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { auth } from '@/lib/firebase';
+import { CategoryDialog } from '@/components/settings/CategoryDialog';
 
 export function ModuleManager() {
   const [modules, setModules] = useState<Module[]>([]);
@@ -75,13 +76,11 @@ export function ModuleManager() {
     loadCategories();
   }, [loadModules, loadCategories]);
 
-  const handleCreateCategory = async () => {
-    if (!newCategoryName.trim()) return;
+  const handleCreateCategory = async (data: { id: string; name: string }) => {
     setIsAddingCategory(true);
     try {
-      await moduleService.createCategory(newCategoryName);
+      await moduleService.createCategory(data);
       await loadCategories();
-      setNewCategoryName('');
       toast({
         title: 'Success',
         description: 'Category created successfully'
@@ -268,51 +267,10 @@ export function ModuleManager() {
                   </div>
                 </SelectItem>
               ))}
-              <Dialog>
-                <DialogTrigger asChild>
-                  <Button
-                    variant='ghost'
-                    className='w-full justify-start'
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <FolderPlus className='h-4 w-4 mr-2' />
-                    Add Category
-                  </Button>
-                </DialogTrigger>
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Add Category</DialogTitle>
-                    <DialogDescription>
-                      Create a new category for organizing modules.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className='space-y-4 py-4'>
-                    <div className='space-y-2'>
-                      <Label>Category Name</Label>
-                      <Input
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        placeholder='Enter category name'
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      onClick={handleCreateCategory}
-                      disabled={isAddingCategory || !newCategoryName.trim()}
-                    >
-                      {isAddingCategory ? (
-                        <>
-                          <Loader2 className='h-4 w-4 mr-2 animate-spin' />
-                          Creating...
-                        </>
-                      ) : (
-                        'Create Category'
-                      )}
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
+              <CategoryDialog 
+                onCreateCategory={handleCreateCategory}
+                isLoading={isAddingCategory}
+              />
             </SelectContent>
           </Select>
         </div>
