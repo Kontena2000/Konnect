@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -41,16 +42,10 @@ export default function LayoutEditorPage() {
   const [gridSnap, setGridSnap] = useState(true);
   const [connectionMode, setConnectionMode] = useState<"cable" | "pipe">("cable");
   const [draggingTemplate, setDraggingTemplate] = useState<Module | null>(null);
-  const [draggingModule, setDraggingModule] = useState<Module | null>(null);
+  const [draggingItem, setDraggingItem] = useState<Module | null>(null);
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
   const [rotationAngle, setRotationAngle] = useState(0);
-
-  const [activeConnection, setActiveConnection] = useState<{
-    sourceModuleId: string;
-    sourcePoint: [number, number, number];
-    type: ConnectionType;
-  } | null>(null);
 
   const {
     modules,
@@ -90,23 +85,20 @@ export default function LayoutEditorPage() {
   });
   
   const sensors = useSensors(mouseSensor, touchSensor);
-  // Alternative: use the custom hook
-  // const sensors = useEditorSensors();
 
   useKeyboardShortcuts({
     onSave: saveChanges,
     onDelete: () => selectedModuleId && deleteModule(selectedModuleId)
   });
 
-  // Add rotation hotkey
   useHotkeys('r', () => {
     if (selectedModuleId) {
-      const module = modules.find(m => m.id === selectedModuleId);
-      if (module) {
+      const selectedItem = modules.find(m => m.id === selectedModuleId);
+      if (selectedItem) {
         const newRotation: [number, number, number] = [
-          module.rotation[0],
-          (module.rotation[1] + Math.PI / 2) % (Math.PI * 2),
-          module.rotation[2]
+          selectedItem.rotation[0],
+          (selectedItem.rotation[1] + Math.PI / 2) % (Math.PI * 2),
+          selectedItem.rotation[2]
         ];
         updateModule(selectedModuleId, { rotation: newRotation });
       }
@@ -115,7 +107,7 @@ export default function LayoutEditorPage() {
 
   const handleDragStart = (event: DragStartEvent) => {
     const draggedItem = modules.find(item => item.id === event.active.id);
-    setDraggingModule(draggedItem || null);
+    setDraggingItem(draggedItem || null);
     
     if (draggedItem) {
       createPreviewMesh(draggedItem);
@@ -149,7 +141,7 @@ export default function LayoutEditorPage() {
 
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingTemplate(null);
-    setDraggingModule(null);
+    setDraggingItem(null);
     setPreviewMesh(null);
     
     if (event.over?.id !== 'scene') return;
@@ -236,7 +228,7 @@ export default function LayoutEditorPage() {
               onModuleDelete={deleteModule}
               onDropPoint={(point) => {
                 if (draggingTemplate) {
-                  const newModule: Module = {
+                  const newItem: Module = {
                     ...draggingTemplate,
                     id: `${draggingTemplate.id}-${Date.now()}`,
                     position: point,
@@ -244,7 +236,7 @@ export default function LayoutEditorPage() {
                     scale: [1, 1, 1],
                     visibleInEditor: true
                   };
-                  addModule(newModule);
+                  addModule(newItem);
                   setDraggingTemplate(null);
                 }
               }}
