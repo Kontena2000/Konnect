@@ -13,46 +13,37 @@ import {
 } from "firebase/firestore";
 import { ConnectionType } from '@/types/connection';
 import { debounce } from "lodash"; // Assuming lodash is used for debounce
+import { AuthUser } from '@/services/auth';
 
-export interface Module {
-  id: string;
-  type: string;
-  position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-  color: string;
-  dimensions: {
-    length: number;
-    height: number;
-    width: number;
-  };
-  connectionPoints?: Array<{
-    position: [number, number, number];
-    type: ConnectionType;
-  }>;
+class LayoutError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'LayoutError';
+    Object.setPrototypeOf(this, LayoutError.prototype);
+  }
 }
 
-export interface Connection {
-  id: string;
-  sourceModuleId: string;
-  targetModuleId: string;
-  sourcePoint: [number, number, number];
-  targetPoint: [number, number, number];
-  intermediatePoints?: [number, number, number][];
-  type: ConnectionType;
-  capacity?: number;
-}
+const validateLayout = (data: Partial<Layout>): boolean => {
+  if (!data.projectId) return false;
+  if (!data.name || data.name.trim().length === 0) return false;
+  return true;
+};
 
-export interface Layout {
-  id: string;
-  projectId: string;
-  name: string;
-  description?: string;
-  modules: Module[];
-  connections: Connection[];
-  createdAt: Date;
-  updatedAt: Date;
-}
+const validateModuleData = (module: Partial<Module>): boolean => {
+  if (!module.type || !module.position || !module.rotation || !module.scale) return false;
+  if (!module.dimensions || !module.dimensions.length || !module.dimensions.width || !module.dimensions.height) return false;
+  return true;
+};
+
+const validateConnectionData = (connection: Partial<Connection>): boolean => {
+  if (!connection.sourceModuleId || !connection.targetModuleId) return false;
+  if (!connection.sourcePoint || !connection.targetPoint || !connection.type) return false;
+  return true;
+};
 
 export const debouncedSave = debounce(async (layoutId: string, data: Partial<Layout>): Promise<void> => {
   try {
@@ -69,42 +60,68 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
 
 const layoutService = {
   async createLayout(data: Omit<Layout, "id" | "createdAt" | "updatedAt">): Promise<string> {
-    if (!data.projectId) {
-      throw new Error('Project ID is required');
+    if (!validateLayout(data)) {
+      throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
     }
 
-    const layoutRef = await addDoc(collection(db, "layouts"), {
-      ...data,
-      modules: data.modules || [],
-      connections: data.connections || [],
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    return layoutRef.id;
+    try {
+      const layoutRef = await addDoc(collection(db, 'layouts'), {
+        ...data,
+        modules: data.modules || [],
+        connections: data.connections || [],
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      return layoutRef.id;
+    } catch (error) {
+      throw new LayoutError('Failed to create layout', 'CREATE_FAILED', error);
+    }
   },
 
-  async updateLayout(id: string, data: Partial<Layout>): Promise<void> {
+  async updateLayout(id: string, data: Partial<Layout>, user: AuthUser): Promise<void> {
     try {
       const layoutRef = doc(db, 'layouts', id);
       const currentLayout = await getDoc(layoutRef);
       
       if (!currentLayout.exists()) {
-        throw new Error('Layout not found');
+        throw new LayoutError('Layout not found', 'NOT_FOUND');
+      }
+
+      // Verify user has access to this layout's project
+      const layout = currentLayout.data();
+      const projectRef = doc(db, 'projects', layout.projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
+      }
+
+      const project = projectSnap.data();
+      if (project.ownerId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+        throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
+      }
+
+      // Validate module and connection data if present
+      if (data.modules?.some(m => !validateModuleData(m))) {
+        throw new LayoutError('Invalid module data', 'VALIDATION_FAILED');
+      }
+      if (data.connections?.some(c => !validateConnectionData(c))) {
+        throw new LayoutError('Invalid connection data', 'VALIDATION_FAILED');
       }
 
       await updateDoc(layoutRef, {
         ...data,
-        updatedAt: new Date()
+        updatedAt: serverTimestamp()
       });
     } catch (error) {
-      console.error('Error updating layout:', error);
-      throw new Error('Failed to save layout changes. Please try again.');
+      if (error instanceof LayoutError) throw error;
+      throw new LayoutError('Failed to update layout', 'UPDATE_FAILED', error);
     }
   },
 
-  async getLayout(id: string): Promise<Layout | null> {
+  async getLayout(id: string, user: AuthUser): Promise<Layout | null> {
     try {
-      const layoutRef = doc(db, "layouts", id);
+      const layoutRef = doc(db, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
       
       if (!snapshot.exists()) {
@@ -112,15 +129,31 @@ const layoutService = {
       }
 
       const data = snapshot.data();
+      
+      // Verify user has access
+      const projectRef = doc(db, 'projects', data.projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
+      }
+
+      const project = projectSnap.data();
+      if (project.ownerId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+        throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
+      }
+
       return {
         id: snapshot.id,
+        ...data,
         modules: data.modules || [],
         connections: data.connections || [],
-        ...data
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date()
       } as Layout;
     } catch (error) {
-      console.error('Error fetching layout:', error);
-      return null;
+      if (error instanceof LayoutError) throw error;
+      throw new LayoutError('Failed to fetch layout', 'FETCH_FAILED', error);
     }
   },
 
@@ -132,12 +165,17 @@ const layoutService = {
       );
       
       const snapshot = await getDocs(layoutsQuery);
-      const layouts = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        modules: doc.data().modules || [],
-        connections: doc.data().connections || []
-      } as Layout));
+      const layouts = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          modules: data.modules || [],
+          connections: data.connections || [],
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date()
+        } as Layout;
+      });
 
       return layouts;
     } catch (error) {

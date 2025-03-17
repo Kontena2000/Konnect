@@ -37,7 +37,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  userId: string;
+  ownerId: string;  // Changed from userId to ownerId for consistency
   plotWidth?: number;
   plotLength?: number;
   sharedWith?: string[];
@@ -117,34 +117,75 @@ const projectService = {
     }
   },
 
-  async deleteProject(id: string): Promise<void> {
+  async deleteProject(id: string, userId: string): Promise<void> {
     try {
-      const projectRef = doc(db, "projects", id);
-      await deleteDoc(projectRef);
+      // Verify ownership
+      const projectRef = doc(db, 'projects', id);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new ProjectError('Project not found', 'NOT_FOUND');
+      }
+
+      const project = projectSnap.data();
+      if (project.ownerId !== userId) {
+        throw new ProjectError('Unauthorized to delete project', 'UNAUTHORIZED');
+      }
+
+      // Start a batch write for atomic operation
+      const batch = db.batch();
+
+      // Delete all layouts
+      const layoutsQuery = query(
+        collection(db, 'layouts'),
+        where('projectId', '==', id)
+      );
+      const layoutsSnapshot = await getDocs(layoutsQuery);
+      layoutsSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      // Delete the project
+      batch.delete(projectRef);
+
+      // Execute the batch
+      await batch.commit();
     } catch (error) {
-      throw new ProjectError("Failed to delete project", "DELETE_FAILED", error);
+      if (error instanceof ProjectError) throw error;
+      throw new ProjectError('Failed to delete project', 'DELETE_FAILED', error);
     }
   },
 
   async getUserProjects(userId: string): Promise<Project[]> {
     try {
-      const projectsQuery = query(
+      // Query for owned projects
+      const ownedProjectsQuery = query(
         collection(db, 'projects'),
         where('ownerId', '==', userId)
       );
       
-      const snapshot = await getDocs(projectsQuery);
+      // Query for shared projects
+      const sharedProjectsQuery = query(
+        collection(db, 'projects'),
+        where('sharedWith', 'array-contains', userId)
+      );
       
-      if (snapshot.empty) {
-        return [];
-      }
+      const [ownedSnapshot, sharedSnapshot] = await Promise.all([
+        getDocs(ownedProjectsQuery),
+        getDocs(sharedProjectsQuery)
+      ]);
+      
+      const projects = [...ownedSnapshot.docs, ...sharedSnapshot.docs].map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate() || new Date(),
+          updatedAt: data.updatedAt?.toDate() || new Date()
+        } as Project;
+      });
 
-      return snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data(),
-        createdAt: doc.data().createdAt?.toDate(),
-        updatedAt: doc.data().updatedAt?.toDate()
-      } as Project));
+      return projects;
     } catch (error) {
       throw new ProjectError('Failed to fetch projects', 'FETCH_FAILED', error);
     }

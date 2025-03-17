@@ -47,25 +47,33 @@ export function AuthForm({ mode }: AuthFormProps) {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
-      if (mode === "login") {
+      if (mode === 'login') {
         await authService.login(values.email, values.password);
         toast({
-          title: "Welcome back!",
-          description: "You have successfully logged in.",
+          title: 'Welcome back!',
+          description: 'You have successfully logged in.',
         });
       } else {
         await authService.register(values.email, values.password);
         toast({
-          title: "Account created!",
-          description: "Your account has been created successfully.",
+          title: 'Account created!',
+          description: 'Your account has been created successfully.',
         });
       }
-      router.push("/dashboard");
+      router.push('/dashboard/projects');
     } catch (error: any) {
+      const errorMessage = error.code === 'auth/wrong-password' 
+        ? 'Invalid email or password'
+        : error.code === 'auth/user-not-found'
+        ? 'No account found with this email'
+        : error.code === 'auth/email-already-in-use'
+        ? 'An account with this email already exists'
+        : error.message || 'An error occurred. Please try again.';
+      
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: error.message || "An error occurred. Please try again.",
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage,
       });
     } finally {
       setLoading(false);

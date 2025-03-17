@@ -25,30 +25,29 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      if (user) {
-        try {
+      try {
+        if (user) {
           const userDoc = await userService.getUserByEmail(user.email!);
           setUser(user as AuthUser);
           setRole(userDoc?.role || 'editor');
           
-          // If on login page, redirect to projects
-          if (router.pathname === '/auth/login') {
-            router.push('/dashboard/projects');
+          if (router.pathname === '/auth/login' || router.pathname === '/' || router.pathname === '/auth/register') {
+            router.replace('/dashboard/projects');
           }
-        } catch (error) {
-          console.error('Error fetching user role:', error);
-          setRole('editor');
+        } else {
+          setUser(null);
+          setRole(null);
+          
+          if (router.pathname.startsWith('/dashboard')) {
+            router.replace('/auth/login');
+          }
         }
-      } else {
-        setUser(null);
-        setRole(null);
-        
-        // If on protected route, redirect to login
-        if (router.pathname.startsWith('/dashboard')) {
-          router.push('/auth/login');
-        }
+      } catch (error) {
+        console.error('Error in auth state change:', error);
+        setRole('editor');
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     });
 
     return () => unsubscribe();
