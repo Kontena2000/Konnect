@@ -2,7 +2,7 @@
 import { useRef, useState } from "react";
 import { ThreeEvent } from "@react-three/fiber";
 import { TransformControls } from "@react-three/drei";
-import { Module } from "@/services/layout";
+import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
 import type { Mesh, Object3D } from "three";
 
