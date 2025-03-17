@@ -114,7 +114,7 @@ export default function LayoutEditorPage() {
   });
 
   const handleDragStart = (event: DragStartEvent) => {
-    const draggedItem = modules.find(m => m.id === event.active.id);
+    const draggedItem = modules.find(item => item.id === event.active.id);
     setDraggingModule(draggedItem || null);
     
     if (draggedItem) {
@@ -152,16 +152,15 @@ export default function LayoutEditorPage() {
     setDraggingModule(null);
     setPreviewMesh(null);
     
-    // Only handle drops over the scene
     if (event.over?.id !== 'scene') return;
 
     if (draggingTemplate) {
-      const newModuleId = `${draggingTemplate.id}-${Date.now()}`;
+      const newItemId = `${draggingTemplate.id}-${Date.now()}`;
       const newItem: Module = {
         ...draggingTemplate,
-        id: newModuleId,
-        position: [0, 0, 0], // Will be updated by SceneContainer
-        rotation: [0, rotationAngle, 0], // Apply current rotation
+        id: newItemId,
+        position: [0, 0, 0],
+        rotation: [0, rotationAngle, 0],
         scale: [1, 1, 1],
         visibleInEditor: true
       };
