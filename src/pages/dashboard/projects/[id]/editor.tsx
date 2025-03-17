@@ -125,9 +125,13 @@ export default function LayoutEditorPage() {
       const material = new THREE.MeshStandardMaterial({
         color: draggedModule.color,
         transparent: true,
-        opacity: 0.5
+        opacity: 0.5,
+        depthWrite: false,
+        side: THREE.DoubleSide
       });
       const mesh = new THREE.Mesh(geometry, material);
+      mesh.castShadow = true;
+      mesh.receiveShadow = true;
       mesh.position.set(0, 0, 0);
       setPreviewMesh(mesh);
     }
@@ -147,7 +151,7 @@ export default function LayoutEditorPage() {
         ...draggingTemplate,
         id: newModuleId,
         position: [0, 0, 0], // Will be updated by SceneContainer
-        rotation: [0, 0, 0],
+        rotation: [0, rotationAngle, 0], // Apply current rotation
         scale: [1, 1, 1],
         visibleInEditor: true
       };

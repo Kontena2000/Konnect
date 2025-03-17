@@ -16,6 +16,8 @@ export interface ModuleObjectProps {
   transformMode?: "translate" | "rotate" | "scale";
   readOnly?: boolean;
   gridSnap?: boolean;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
 }
 
 export function ModuleObject({
@@ -26,7 +28,9 @@ export function ModuleObject({
   onDelete,
   transformMode = "translate",
   readOnly = false,
-  gridSnap = true
+  gridSnap = true,
+  castShadow = false,
+  receiveShadow = false
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const { scene } = useThree();
@@ -88,6 +92,8 @@ export function ModuleObject({
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
         onClick={handleClick}
+        castShadow={castShadow}
+        receiveShadow={receiveShadow}
       >
         <boxGeometry
           args={[
