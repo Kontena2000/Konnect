@@ -30,6 +30,25 @@ import { cn } from '@/lib/utils';
 import { Mesh } from 'three';
 import { useHotkeys } from 'react-hotkeys-hook';
 
+const createPreviewMesh = (item: Module) => {
+  const geometry = new THREE.BoxGeometry(
+    item.dimensions.length,
+    item.dimensions.height,
+    item.dimensions.width
+  );
+  const material = new THREE.MeshStandardMaterial({
+    color: item.color,
+    transparent: true,
+    opacity: 0.5,
+    depthWrite: false,
+    side: THREE.DoubleSide
+  });
+  const mesh = new THREE.Mesh(geometry, material);
+  mesh.castShadow = true;
+  mesh.receiveShadow = true;
+  return mesh;
+};
+
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
@@ -109,34 +128,13 @@ export default function LayoutEditorPage() {
     setDraggingItem(draggedItem || null);
     
     if (draggedItem) {
-      createPreviewMesh(draggedItem);
+      setPreviewMesh(createPreviewMesh(draggedItem));
     }
   };
 
   const handleModuleDragStart = (templateItem: Module) => {
     setDraggingTemplate(templateItem);
-    createPreviewMesh(templateItem);
-  };
-
-  const createPreviewMesh = (item: Module) => {
-    const geometry = new THREE.BoxGeometry(
-      item.dimensions.length,
-      item.dimensions.height,
-      item.dimensions.width
-    );
-    const material = new THREE.MeshStandardMaterial({
-      color: item.color,
-      transparent: true,
-      opacity: 0.5,
-      depthWrite: false,
-      side: THREE.DoubleSide
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
-    // Position the mesh so its bottom is at y=0
-    mesh.position.set(0, item.dimensions.height / 2, 0);
-    setPreviewMesh(mesh);
+    setPreviewMesh(createPreviewMesh(templateItem));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
@@ -151,7 +149,7 @@ export default function LayoutEditorPage() {
       const newItem: Module = {
         ...draggingTemplate,
         id: newItemId,
-        position: [0, 0, 0],
+        position: [0, draggingTemplate.dimensions.height / 2, 0],
         rotation: [0, rotationAngle, 0],
         scale: [1, 1, 1],
         visibleInEditor: true

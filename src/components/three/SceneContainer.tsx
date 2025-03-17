@@ -34,6 +34,8 @@ interface SceneProps {
   snapPoints: Vector3[];
   snapLines: Line3[];
   previewHeight: number;
+  mousePosition: Vector2 | null;
+  onDropPoint: (point: [number, number, number]) => void;
 }
 
 function Scene({
@@ -54,8 +56,50 @@ function Scene({
   showGuides,
   snapPoints,
   snapLines,
-  previewHeight
+  previewHeight,
+  mousePosition,
+  onDropPoint
 }: SceneProps) {
+  const { scene, camera } = useThree();
+
+  useEffect(() => {
+    if (isDraggingOver && mousePosition && previewMesh) {
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2(
+        (mousePosition.x / window.innerWidth) * 2 - 1,
+        -(mousePosition.y / window.innerHeight) * 2 + 1
+      );
+      
+      raycaster.setFromCamera(mouse, camera);
+      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+      const intersection = new THREE.Vector3();
+      raycaster.ray.intersectPlane(groundPlane, intersection);
+
+      if (gridSnap) {
+        // Find nearest snap point if close enough
+        const snapThreshold = 1.5;
+        const nearestPoint = snapPoints.reduce((nearest, point) => {
+          const distance = intersection.distanceTo(point);
+          return distance < snapThreshold && distance < nearest.distance
+            ? { point, distance }
+            : nearest;
+        }, { point: intersection, distance: Infinity });
+
+        intersection.copy(nearestPoint.point);
+      } else {
+        intersection.x = Math.round(intersection.x * 2) / 2;
+        intersection.z = Math.round(intersection.z * 2) / 2;
+      }
+
+      previewMesh.position.set(
+        intersection.x,
+        previewHeight / 2,
+        intersection.z
+      );
+      previewMesh.rotation.set(0, rotationAngle, 0);
+    }
+  }, [isDraggingOver, mousePosition, previewMesh, camera, gridSnap, snapPoints, previewHeight, rotationAngle]);
+
   return (
     <>
       <OrbitControls makeDefault enabled={!isDraggingOver} />
@@ -76,7 +120,40 @@ function Scene({
         castShadow
       />
 
-      {previewMesh && (
+      {modules.map((module) => (
+        <ModuleObject
+          key={module.id}
+          module={module}
+          selected={module.id === selectedModuleId}
+          onSelect={() => onModuleSelect?.(module.id)}
+          onUpdate={(updates) => onModuleUpdate?.(module.id, updates)}
+          onDelete={() => onModuleDelete?.(module.id)}
+          transformMode={transformMode}
+          gridSnap={gridSnap}
+          castShadow
+          receiveShadow
+        />
+      ))}
+
+      {connections.map((connection) => (
+        <ConnectionLine
+          key={connection.id}
+          connection={connection}
+          selected={false}
+        />
+      ))}
+
+      {environmentalElements.map((element) => (
+        <EnvironmentalElement
+          key={element.id}
+          element={element}
+          onSelect={() => onEnvironmentalElementSelect?.(element.id)}
+        />
+      ))}
+
+      {terrain && <TerrainView data={terrain} />}
+
+      {previewMesh && isDraggingOver && (
         <primitive 
           object={previewMesh} 
           position={[0, previewHeight / 2, 0]}
@@ -119,39 +196,6 @@ function Scene({
           ))}
         </group>
       )}
-
-      {modules.map((module) => (
-        <ModuleObject
-          key={module.id}
-          module={module}
-          selected={module.id === selectedModuleId}
-          onSelect={() => onModuleSelect?.(module.id)}
-          onUpdate={(updates) => onModuleUpdate?.(module.id, updates)}
-          onDelete={() => onModuleDelete?.(module.id)}
-          transformMode={transformMode}
-          gridSnap={gridSnap}
-          castShadow
-          receiveShadow
-        />
-      ))}
-
-      {connections.map((connection) => (
-        <ConnectionLine
-          key={connection.id}
-          connection={connection}
-          selected={false}
-        />
-      ))}
-
-      {environmentalElements.map((element) => (
-        <EnvironmentalElement
-          key={element.id}
-          element={element}
-          onSelect={() => onEnvironmentalElementSelect?.(element.id)}
-        />
-      ))}
-
-      {terrain && <TerrainView data={terrain} />}
     </>
   );
 }
@@ -239,29 +283,34 @@ export function SceneContainer({
     return { snapPoints: points, snapLines: lines };
   }, [modules]);
 
-  const handleDrop = useCallback((event: React.DragEvent) => {
+  const handleDragOver = useCallback((event: React.DragEvent) => {
     event.preventDefault();
-    
+    setIsDraggingOver(true);
+    setMousePosition(new Vector2(event.clientX, event.clientY));
+  }, []);
+
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+    setMousePosition(null);
+  };
+
+  const handleDrop = (event: React.DragEvent) => {
+    event.preventDefault();
+    if (!mousePosition) return;
+
     const rect = event.currentTarget.getBoundingClientRect();
-    const mousePos = new Vector2(
-      ((event.clientX - rect.left) / rect.width) * 2 - 1,
-      -((event.clientY - rect.top) / rect.height) * 2 + 1
-    );
-    
-    const camera = new THREE.PerspectiveCamera();
-    camera.position.set(10, 10, 10);
-    camera.lookAt(0, 0, 0);
-    
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+
     const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mousePos, camera);
-    
-    const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
-    const intersection = new Vector3();
+    raycaster.setFromCamera(new Vector2(x, y), new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000));
+
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
     raycaster.ray.intersectPlane(groundPlane, intersection);
-    
+
     if (gridSnap) {
-      // Find nearest snap point if close enough
-      const snapThreshold = 1;
+      const snapThreshold = 1.5;
       const nearestPoint = snapPoints.reduce((nearest, point) => {
         const distance = intersection.distanceTo(point);
         return distance < snapThreshold && distance < nearest.distance
@@ -274,19 +323,8 @@ export function SceneContainer({
       intersection.x = Math.round(intersection.x * 2) / 2;
       intersection.z = Math.round(intersection.z * 2) / 2;
     }
-    
-    // Position is at the center, so adjust Y to place bottom on ground
-    const y = previewHeight / 2;
-    onDropPoint?.([intersection.x, y, intersection.z]);
-  }, [gridSnap, onDropPoint, snapPoints, previewHeight]);
 
-  const handleDragOver = useCallback((event: React.DragEvent) => {
-    event.preventDefault();
-    setIsDraggingOver(true);
-    setMousePosition(new Vector2(event.clientX, event.clientY));
-  }, []);
-
-  const handleDragLeave = () => {
+    onDropPoint?.([intersection.x, previewHeight / 2, intersection.z]);
     setIsDraggingOver(false);
     setMousePosition(null);
   };
@@ -346,6 +384,8 @@ export function SceneContainer({
           snapPoints={snapPoints}
           snapLines={snapLines}
           previewHeight={previewHeight}
+          mousePosition={mousePosition}
+          onDropPoint={onDropPoint}
         />
       </Canvas>
 

@@ -1,5 +1,9 @@
+
 import { useState } from "react";
 import { useRouter } from "next/router";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import * as z from "zod";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,26 +15,38 @@ import { useAuth } from "@/contexts/AuthContext";
 import projectService from "@/services/project";
 import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 
+const projectSchema = z.object({
+  name: z.string().min(1, "Project name is required").max(100),
+  description: z.string().max(500).optional(),
+  companyName: z.string().max(100).optional(),
+  clientEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
+  clientPhone: z.string().max(20).optional(),
+  clientAddress: z.string().max(200).optional(),
+});
+
+type ProjectFormData = z.infer<typeof projectSchema>;
+
 export default function NewProjectPage() {
   const router = useRouter();
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
 
-  const defaultValues = {
-    name: '',
-    description: '',
-    companyName: '',
-    clientEmail: '',
-    clientPhone: '',
-    clientAddress: '',
-  };
+  const form = useForm<ProjectFormData>({
+    resolver: zodResolver(projectSchema),
+    defaultValues: {
+      name: "",
+      description: "",
+      companyName: "",
+      clientEmail: "",
+      clientPhone: "",
+      clientAddress: "",
+    },
+  });
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const { register, handleSubmit, formState: { errors } } = form;
+
+  const onSubmit = async (data: ProjectFormData) => {
     if (!user) {
       toast({
         variant: "destructive",
@@ -40,20 +56,10 @@ export default function NewProjectPage() {
       return;
     }
 
-    if (!name.trim()) {
-      toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Project name is required",
-      });
-      return;
-    }
-
     try {
       setLoading(true);
       const projectData = {
-        name: name.trim(),
-        description: description.trim(),
+        ...data,
         ownerId: user.uid,
       };
 
@@ -82,82 +88,104 @@ export default function NewProjectPage() {
       <div className="max-w-2xl mx-auto p-4">
         <h1 className="text-3xl font-bold mb-6">Create New Project</h1>
         <Card className="shadow-lg">
-          <form onSubmit={handleSubmit}>
+          <form onSubmit={handleSubmit(onSubmit)}>
             <CardHeader>
               <CardTitle>Project Details</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className='space-y-4'>
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='name'>Project Name</Label>
+              <div className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Project Name</Label>
                     <Input
-                      id='name'
-                      placeholder='Enter project name'
-                      value={name}
-                      onChange={(e) => setName(e.target.value)}
-                      required
-                      className="w-full"
-                      maxLength={100}
+                      id="name"
+                      placeholder="Enter project name"
+                      {...register("name")}
                     />
                     {errors.name && (
-                      <p className='text-sm text-destructive'>Project name is required</p>
+                      <p className="text-sm text-destructive">{errors.name.message}</p>
                     )}
                   </div>
 
-                  <div className='space-y-2'>
-                    <Label htmlFor='companyName'>Company Name</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="companyName">Company Name</Label>
                     <Input
-                      id='companyName'
-                      placeholder='Enter company name'
-                      {...register('companyName')}
+                      id="companyName"
+                      placeholder="Enter company name"
+                      {...register("companyName")}
                     />
+                    {errors.companyName && (
+                      <p className="text-sm text-destructive">{errors.companyName.message}</p>
+                    )}
                   </div>
                 </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='description'>Description</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
                   <Textarea
-                    id='description'
-                    placeholder='Enter project description'
-                    className='min-h-[100px]'
-                    value={description}
-                    onChange={(e) => setDescription(e.target.value)}
-                    rows={4}
-                    className="w-full"
-                    maxLength={500}
+                    id="description"
+                    placeholder="Enter project description"
+                    className="min-h-[100px]"
+                    {...register("description")}
                   />
+                  {errors.description && (
+                    <p className="text-sm text-destructive">{errors.description.message}</p>
+                  )}
                 </div>
 
-                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                  <div className='space-y-2'>
-                    <Label htmlFor='clientEmail'>Client Email</Label>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="clientEmail">
+                      <span className="flex items-center gap-2">
+                        <Mail className="h-4 w-4" />
+                        Client Email
+                      </span>
+                    </Label>
                     <Input
-                      id='clientEmail'
-                      type='email'
-                      placeholder='Enter client email'
-                      {...register('clientEmail')}
+                      id="clientEmail"
+                      type="email"
+                      placeholder="Enter client email"
+                      {...register("clientEmail")}
                     />
+                    {errors.clientEmail && (
+                      <p className="text-sm text-destructive">{errors.clientEmail.message}</p>
+                    )}
                   </div>
 
-                  <div className='space-y-2'>
-                    <Label htmlFor='clientPhone'>Client Phone</Label>
+                  <div className="space-y-2">
+                    <Label htmlFor="clientPhone">
+                      <span className="flex items-center gap-2">
+                        <Phone className="h-4 w-4" />
+                        Client Phone
+                      </span>
+                    </Label>
                     <Input
-                      id='clientPhone'
-                      type='tel'
-                      placeholder='Enter client phone'
-                      {...register('clientPhone')}
+                      id="clientPhone"
+                      type="tel"
+                      placeholder="Enter client phone"
+                      {...register("clientPhone")}
                     />
+                    {errors.clientPhone && (
+                      <p className="text-sm text-destructive">{errors.clientPhone.message}</p>
+                    )}
                   </div>
                 </div>
 
-                <div className='space-y-2'>
-                  <Label htmlFor='clientAddress'>Client Address</Label>
+                <div className="space-y-2">
+                  <Label htmlFor="clientAddress">
+                    <span className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Client Address
+                    </span>
+                  </Label>
                   <Textarea
-                    id='clientAddress'
-                    placeholder='Enter client address'
-                    {...register('clientAddress')}
+                    id="clientAddress"
+                    placeholder="Enter client address"
+                    {...register("clientAddress")}
                   />
+                  {errors.clientAddress && (
+                    <p className="text-sm text-destructive">{errors.clientAddress.message}</p>
+                  )}
                 </div>
               </div>
             </CardContent>

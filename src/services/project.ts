@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -31,6 +32,10 @@ export class ProjectError extends Error {
 export interface ProjectValidation {
   name: string;
   description?: string;
+  companyName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   plotWidth?: number;
   plotLength?: number;
 }
@@ -65,13 +70,10 @@ export interface CreateProjectData {
 
 const validateProject = (data: Partial<ProjectValidation>): boolean => {
   if (!data.name || data.name.trim().length === 0) return false;
+  if (data.clientEmail && !data.clientEmail.includes('@')) return false;
   if (data.plotWidth && (data.plotWidth <= 0 || data.plotWidth > 1000)) return false;
   if (data.plotLength && (data.plotLength <= 0 || data.plotLength > 1000)) return false;
   return true;
-};
-
-const handleError = (error: unknown, code: string, message: string): never => {
-  throw new ProjectError(message, code, error);
 };
 
 const projectService = {
@@ -81,6 +83,7 @@ const projectService = {
     }
 
     try {
+      console.log('Creating project with data:', data);
       const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
@@ -91,10 +94,12 @@ const projectService = {
         clientAddress: data.clientAddress?.trim() || '',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
-        collaborators: []
+        layouts: []
       });
+      console.log('Project created with ID:', projectRef.id);
       return projectRef.id;
     } catch (error) {
+      console.error('Error in createProject:', error);
       throw new ProjectError('Failed to create project', 'CREATE_FAILED', error);
     }
   },
@@ -114,6 +119,33 @@ const projectService = {
       } as Project;
     } catch (error) {
       throw new ProjectError("Failed to fetch project details", "FETCH_FAILED", error);
+    }
+  },
+
+  async getUserProjects(userId: string): Promise<Project[]> {
+    try {
+      console.log('Fetching projects for user:', userId);
+      const [ownedSnapshot, sharedSnapshot] = await Promise.all([
+        getDocs(query(collection(db, 'projects'), where('ownerId', '==', userId))),
+        getDocs(query(collection(db, 'projects'), where('sharedWith', 'array-contains', userId)))
+      ]);
+      
+      const projects = [...ownedSnapshot.docs, ...sharedSnapshot.docs].map(doc => {
+        const data = doc.data();
+        console.log('Project data:', data);
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt || Timestamp.now(),
+          updatedAt: data.updatedAt || Timestamp.now()
+        } as Project;
+      });
+
+      console.log('Fetched projects:', projects);
+      return projects;
+    } catch (error) {
+      console.error('Error in getUserProjects:', error);
+      throw new ProjectError('Failed to fetch projects', 'FETCH_FAILED', error);
     }
   },
 
@@ -163,29 +195,6 @@ const projectService = {
     } catch (error) {
       if (error instanceof ProjectError) throw error;
       throw new ProjectError('Failed to delete project', 'DELETE_FAILED', error);
-    }
-  },
-
-  async getUserProjects(userId: string): Promise<Project[]> {
-    try {
-      const [ownedSnapshot, sharedSnapshot] = await Promise.all([
-        getDocs(query(collection(db, 'projects'), where('ownerId', '==', userId))),
-        getDocs(query(collection(db, 'projects'), where('sharedWith', 'array-contains', userId)))
-      ]);
-      
-      const projects = [...ownedSnapshot.docs, ...sharedSnapshot.docs].map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt || Timestamp.now(),
-          updatedAt: data.updatedAt || Timestamp.now()
-        } as Project;
-      });
-
-      return projects;
-    } catch (error) {
-      throw new ProjectError('Failed to fetch projects', 'FETCH_FAILED', error);
     }
   },
 
