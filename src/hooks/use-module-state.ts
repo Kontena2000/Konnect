@@ -1,6 +1,8 @@
+
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { Module, Connection } from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/contexts/AuthContext";
 import debounce from "lodash/debounce";
 import layoutService from "@/services/layout";
 
@@ -30,20 +32,21 @@ export function useModuleState({
   const [hasChanges, setHasChanges] = useState(false);
   const [saving, setSaving] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
   const lastSavedStateRef = useRef<string>(JSON.stringify({ 
     modules: initialModules, 
     connections: initialConnections 
   }));
 
   const saveToLayout = useCallback(async (modules: Module[], connections: Connection[]) => {
-    if (!layoutId) return;
+    if (!layoutId || !user) return;
     
     try {
       await layoutService.updateLayout(layoutId, {
         modules,
         connections,
         updatedAt: new Date()
-      });
+      }, user);
       lastSavedStateRef.current = JSON.stringify({ modules, connections });
       setHasChanges(false);
     } catch (error) {
@@ -56,7 +59,7 @@ export function useModuleState({
     } finally {
       setSaving(false);
     }
-  }, [layoutId, toast]);
+  }, [layoutId, user, toast]);
 
   const debouncedSave = useMemo(
     () => debounce(saveToLayout, 2000),
@@ -68,11 +71,11 @@ export function useModuleState({
     const hasChanges = currentState !== lastSavedStateRef.current;
     setHasChanges(hasChanges);
 
-    if (autoSave && hasChanges && !saving && layoutId) {
+    if (autoSave && hasChanges && !saving && layoutId && user) {
       setSaving(true);
       debouncedSave(modules, connections);
     }
-  }, [modules, connections, autoSave, saving, layoutId, debouncedSave]);
+  }, [modules, connections, autoSave, saving, layoutId, user, debouncedSave]);
 
   const updateModule = useCallback((moduleId: string, updates: Partial<Module>) => {
     setModules(prev => prev.map(module =>
@@ -111,7 +114,7 @@ export function useModuleState({
   }, []);
 
   const saveChanges = useCallback(async () => {
-    if (!layoutId || !hasChanges) return;
+    if (!layoutId || !hasChanges || !user) return;
     
     setSaving(true);
     try {
@@ -119,7 +122,7 @@ export function useModuleState({
         modules,
         connections,
         updatedAt: new Date()
-      });
+      }, user);
       lastSavedStateRef.current = JSON.stringify({ 
         modules, 
         connections 
@@ -139,7 +142,7 @@ export function useModuleState({
     } finally {
       setSaving(false);
     }
-  }, [layoutId, modules, connections, hasChanges, toast]);
+  }, [layoutId, modules, connections, hasChanges, user, toast]);
 
   return {
     modules,
