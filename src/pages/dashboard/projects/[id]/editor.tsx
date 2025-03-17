@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
-import { DndContext, DragEndEvent, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
+import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
 import { useToast } from "@/hooks/use-toast";
@@ -24,6 +24,7 @@ import { Module } from '@/types/module';
 import { ConnectionType } from '@/types/connection';
 import { useEditorSensors } from '@/hooks/use-editor-sensors';
 import layoutService, { Layout, Connection } from '@/services/layout';
+import { motion } from "framer-motion";
 
 export default function LayoutEditorPage() {
   const router = useRouter();
@@ -38,6 +39,7 @@ export default function LayoutEditorPage() {
   const [draggingTemplate, setDraggingTemplate] = useState<Module | null>(null);
   const [draggingModule, setDraggingModule] = useState<Module | null>(null);
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
+  const [previewMesh, setPreviewMesh] = useState(null);
 
   const [activeConnection, setActiveConnection] = useState<{
     sourceModuleId: string;
@@ -91,23 +93,52 @@ export default function LayoutEditorPage() {
     onDelete: () => selectedModuleId && deleteModule(selectedModuleId)
   });
 
+  const handleDragStart = (event: DragStartEvent) => {
+    const draggedModule = modules.find(m => m.id === event.active.id);
+    setDraggingModule(draggedModule || null);
+    
+    if (draggedModule) {
+      // Create preview mesh
+      const geometry = new BoxGeometry(
+        draggedModule.dimensions.length,
+        draggedModule.dimensions.height,
+        draggedModule.dimensions.width
+      );
+      const material = new MeshStandardMaterial({
+        color: draggedModule.color,
+        transparent: true,
+        opacity: 0.5
+      });
+      const mesh = new Mesh(geometry, material);
+      setPreviewMesh(mesh);
+    }
+  };
+
   const handleDragEnd = (event: DragEndEvent) => {
     setDraggingTemplate(null);
+    setDraggingModule(null);
+    setPreviewMesh(null);
     
     // Only handle drops over the scene
-    if (event.over?.id !== 'scene') return;
+    if (event.over?.id !== "scene") return;
 
     // Create a new module from the template
     if (draggingTemplate) {
+      const newModuleId = `${draggingTemplate.id}-${Date.now()}`;
       const newModule: Module = {
         ...draggingTemplate,
-        id: `${draggingTemplate.id}-${Date.now()}`,
+        id: newModuleId,
         position: [0, 0, 0], // Default position, will be updated by SceneContainer
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
         visibleInEditor: true
       };
       addModule(newModule);
+      
+      toast({
+        title: "Module Added",
+        description: `${draggingTemplate.name} has been added to the scene`
+      });
     }
   };
 
@@ -158,14 +189,11 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='flex h-screen'>
+      <div className="flex h-screen">
         <DndContext 
           sensors={sensors}
           onDragEnd={handleDragEnd}
-          onDragStart={(event) => {
-            const module = modules.find(m => m.id === event.active.id);
-            setDraggingModule(module || null);
-          }}
+          onDragStart={handleDragStart}
         >
           <div className='flex-1 relative'>
             <SceneContainer

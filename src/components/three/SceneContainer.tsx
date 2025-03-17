@@ -10,9 +10,9 @@ import type { EnvironmentalElement as ElementType, TerrainData } from "@/service
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { useThree } from '@react-three/fiber';
-import { useCallback } from 'react';
+import { useCallback, useState } from 'react';
 import * as THREE from 'three';
-import { Vector2, Vector3, Plane } from 'three';
+import { Vector2, Vector3, Plane, Mesh, MeshStandardMaterial, BoxGeometry } from 'three';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -60,6 +60,8 @@ export function SceneContainer({
   });
 
   const { camera, raycaster, scene } = useThree();
+  const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
+  const [isDraggingOver, setIsDraggingOver] = useState(false);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     event.preventDefault();
@@ -88,16 +90,57 @@ export function SceneContainer({
     onDropPoint?.([intersection.x, 0, intersection.z]);
   }, [camera, raycaster, gridSnap, onDropPoint]);
 
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDraggingOver(true);
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    const mousePos = new Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    );
+    
+    raycaster.setFromCamera(mousePos, camera);
+    const groundPlane = new Plane(new Vector3(0, 1, 0), 0);
+    const intersection = new Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+    
+    if (gridSnap) {
+      intersection.x = Math.round(intersection.x);
+      intersection.z = Math.round(intersection.z);
+    }
+    
+    if (previewMesh) {
+      previewMesh.position.set(intersection.x, 0, intersection.z);
+    }
+  }, [camera, raycaster, gridSnap, previewMesh]);
+
+  const handleDragLeave = () => {
+    setIsDraggingOver(false);
+  };
+
   return (
     <div 
       ref={setNodeRef} 
-      className="w-full h-full"
-      onDragOver={(e) => e.preventDefault()}
+      className={cn(
+        'w-full h-full',
+        isDraggingOver && 'cursor-crosshair'
+      )}
+      onDragOver={handleDragOver}
+      onDragLeave={handleDragLeave}
       onDrop={handleDrop}
     >
       <Canvas camera={{ position: [10, 10, 10], zoom: cameraZoom }}>
         <OrbitControls makeDefault />
-        <Grid infiniteGrid fadeDistance={50} fadeStrength={5} />
+        <Grid 
+          infiniteGrid 
+          fadeDistance={50} 
+          fadeStrength={5}
+          cellSize={gridSnap ? 1 : 0.5}
+          cellThickness={gridSnap ? 1 : 0.5}
+          cellColor={isDraggingOver ? '#2563eb' : '#94a3b8'}
+          sectionSize={gridSnap ? 10 : 5}
+        />
         <Environment preset="city" />
         <ambientLight intensity={0.5} />
         <directionalLight position={[10, 10, 5]} intensity={1} />
