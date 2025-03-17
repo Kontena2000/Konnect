@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -12,8 +13,46 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { ConnectionType } from '@/types/connection';
-import { debounce } from "lodash"; // Assuming lodash is used for debounce
+import { debounce } from "lodash";
 import { AuthUser } from '@/services/auth';
+
+export interface Module {
+  id: string;
+  type: string;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  color?: string;
+  connectionPoints?: {
+    position: [number, number, number];
+    type: ConnectionType;
+  }[];
+}
+
+export interface Connection {
+  id: string;
+  sourceModuleId: string;
+  targetModuleId: string;
+  sourcePoint: [number, number, number];
+  targetPoint: [number, number, number];
+  type: ConnectionType;
+}
+
+export interface Layout {
+  id: string;
+  projectId: string;
+  name: string;
+  description?: string;
+  modules: Module[];
+  connections: Connection[];
+  createdAt: Date;
+  updatedAt: Date;
+}
 
 class LayoutError extends Error {
   constructor(
@@ -87,7 +126,6 @@ const layoutService = {
         throw new LayoutError('Layout not found', 'NOT_FOUND');
       }
 
-      // Verify user has access to this layout's project
       const layout = currentLayout.data();
       const projectRef = doc(db, 'projects', layout.projectId);
       const projectSnap = await getDoc(projectRef);
@@ -101,7 +139,6 @@ const layoutService = {
         throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
       }
 
-      // Validate module and connection data if present
       if (data.modules?.some(m => !validateModuleData(m))) {
         throw new LayoutError('Invalid module data', 'VALIDATION_FAILED');
       }
@@ -119,7 +156,7 @@ const layoutService = {
     }
   },
 
-  async getLayout(id: string, user: AuthUser): Promise<Layout | null> {
+  async getLayout(id: string, user?: AuthUser): Promise<Layout | null> {
     try {
       const layoutRef = doc(db, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
@@ -130,17 +167,18 @@ const layoutService = {
 
       const data = snapshot.data();
       
-      // Verify user has access
-      const projectRef = doc(db, 'projects', data.projectId);
-      const projectSnap = await getDoc(projectRef);
-      
-      if (!projectSnap.exists()) {
-        throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
-      }
+      if (user) {
+        const projectRef = doc(db, 'projects', data.projectId);
+        const projectSnap = await getDoc(projectRef);
+        
+        if (!projectSnap.exists()) {
+          throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
+        }
 
-      const project = projectSnap.data();
-      if (project.ownerId !== user.uid && !project.sharedWith?.includes(user.email!)) {
-        throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
+        const project = projectSnap.data();
+        if (project.ownerId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+          throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
+        }
       }
 
       return {
