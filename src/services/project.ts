@@ -11,7 +11,8 @@ import {
   where,
   serverTimestamp,
   arrayUnion,
-  arrayRemove
+  arrayRemove,
+  writeBatch
 } from "firebase/firestore";
 
 export class ProjectError extends Error {
@@ -119,7 +120,6 @@ const projectService = {
 
   async deleteProject(id: string, userId: string): Promise<void> {
     try {
-      // Verify ownership
       const projectRef = doc(db, 'projects', id);
       const projectSnap = await getDoc(projectRef);
       
@@ -132,10 +132,8 @@ const projectService = {
         throw new ProjectError('Unauthorized to delete project', 'UNAUTHORIZED');
       }
 
-      // Start a batch write for atomic operation
-      const batch = db.batch();
+      const batch = writeBatch(db);
 
-      // Delete all layouts
       const layoutsQuery = query(
         collection(db, 'layouts'),
         where('projectId', '==', id)
@@ -145,10 +143,7 @@ const projectService = {
         batch.delete(doc.ref);
       });
 
-      // Delete the project
       batch.delete(projectRef);
-
-      // Execute the batch
       await batch.commit();
     } catch (error) {
       if (error instanceof ProjectError) throw error;
