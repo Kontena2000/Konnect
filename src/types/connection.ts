@@ -7,15 +7,18 @@ export interface ConnectionPoint {
   moduleId?: string;
 }
 
+export interface Connection {
+  id: string;
+  sourceModuleId: string;
+  targetModuleId: string;
+  sourcePoint: [number, number, number];
+  targetPoint: [number, number, number];
+  type: ConnectionType;
+  capacity?: number;
+  intermediatePoints?: [number, number, number][];
+}
+
 export interface ConnectionLineProps {
-  connection: {
-    id: string;
-    sourceModuleId: string;
-    targetModuleId: string;
-    sourcePoint: [number, number, number];
-    targetPoint: [number, number, number];
-    type: ConnectionType;
-    intermediatePoints?: [number, number, number][];
-  };
+  connection: Connection;
   selected?: boolean;
 }
