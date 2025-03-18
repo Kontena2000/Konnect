@@ -7,10 +7,11 @@ import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
+import * as THREE from "three";
 
 interface SceneElementsProps {
   modules: Module[];
@@ -62,6 +63,7 @@ export function SceneElements({
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
   const selectedRef = useRef<Object3D | null>(null);
+  const [showRotationControls, setShowRotationControls] = useState(false);
 
   // Reset camera position on mount
   useEffect(() => {
@@ -72,7 +74,6 @@ export function SceneElements({
 
   // Calculate preview position based on mouse position
   const previewPosition = useRef<[number, number, number]>([0, 0, 0]);
-  const [showRotationControls, setShowRotationControls] = useState(false);
 
   // Enhanced drag over handler
   useEffect(() => {

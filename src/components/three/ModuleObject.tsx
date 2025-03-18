@@ -35,8 +35,14 @@ export function ModuleObject({
   const castShadow = module.castShadow !== false;
   const receiveShadow = module.receiveShadow !== false;
 
-  // Load 3D model if available
-  const model = module.modelUrl ? useLoader(GLTFLoader, module.modelUrl).scene.clone() : null;
+  // Always call useLoader unconditionally, but only use the result if modelUrl exists
+  // This is a placeholder URL to use when no model is specified
+  const fallbackUrl = "/models/fallback.glb";
+  const modelUrl = module.modelUrl || fallbackUrl;
+  const modelResult = useLoader(GLTFLoader, modelUrl);
+  
+  // Only use the model if the URL was actually provided
+  const model = module.modelUrl ? modelResult.scene.clone() : null;
 
   // Handle transform changes
   const handleTransformChange = () => {
