@@ -33,7 +33,7 @@ interface SceneElementsProps {
   previewPosition: [number, number, number];
   readOnly?: boolean;
   setRotationAngle: (angle: number | ((prev: number) => number)) => void;
-  controlsRef: React.RefObject<CameraControlsHandle>;
+  controlsRef?: React.RefObject<CameraControlsHandle>;
 }
 
 export function SceneElements({
@@ -57,7 +57,7 @@ export function SceneElements({
   previewPosition,
   readOnly = false,
   setRotationAngle,
-  controlsRef
+  controlsRef,
 }: SceneElementsProps) {
   const { camera } = useThree();
 
@@ -79,7 +79,7 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls controlsRef={controlsRef} />
+      <CameraControls ref={controlsRef} />
       <GridHelper />
 
       {terrain && <TerrainView terrain={terrain} />}

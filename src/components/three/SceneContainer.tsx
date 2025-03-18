@@ -62,7 +62,7 @@ function SceneContent({
   showGuides: boolean;
   previewPosition: [number, number, number];
   setRotationAngle: (angle: number | ((prev: number) => number)) => void;
-  controlsRef: React.RefObject<any>;
+  controlsRef?: React.RefObject<CameraControlsHandle>;
 }) {
   const { camera, raycaster } = useThree();
 
@@ -117,6 +117,7 @@ function SceneContent({
       previewPosition={previewPosition}
       readOnly={readOnly}
       setRotationAngle={setRotationAngle}
+      controlsRef={controlsRef}
     />
   );
 }
