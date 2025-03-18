@@ -39,10 +39,33 @@ export function ModuleObject({
   let model = null;
   if (module.modelUrl) {
     try {
-      const { scene } = useLoader(GLTFLoader, module.modelUrl);
-      model = scene.clone();
+      // Wrap in useEffect to avoid React Hook rules violation
+      useEffect(() => {
+        const loadModel = async () => {
+          try {
+            const loader = new GLTFLoader();
+            loader.load(
+              module.modelUrl as string,
+              (gltf) => {
+                model = gltf.scene.clone();
+                setModelLoadError(false);
+              },
+              undefined,
+              (error) => {
+                console.error(`Error loading model from ${module.modelUrl}:`, error);
+                setModelLoadError(true);
+              }
+            );
+          } catch (error) {
+            console.error(`Error setting up model loader for ${module.modelUrl}:`, error);
+            setModelLoadError(true);
+          }
+        };
+        
+        loadModel();
+      }, [module.modelUrl]);
     } catch (error) {
-      console.error(`Error loading model from ${module.modelUrl}:`, error);
+      console.error(`Error in model loading setup for ${module.modelUrl}:`, error);
       setModelLoadError(true);
     }
   }

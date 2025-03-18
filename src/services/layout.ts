@@ -23,6 +23,9 @@ export interface Connection {
   sourcePoint: [number, number, number];
   targetPoint: [number, number, number];
   type: ConnectionType;
+  capacity?: number;
+  currentLoad?: number;
+  intermediatePoints?: [number, number, number][];
 }
 
 export interface Layout {
