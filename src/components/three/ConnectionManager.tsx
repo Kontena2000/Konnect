@@ -1,14 +1,14 @@
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Trash2, Power, Network, Snowflake } from "lucide-react";
+import { Trash2, Power, Network, Snowflake, Droplets, Flame } from "lucide-react";
 import { Connection } from "@/types/connection";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Water, Flame } from 'lucide-react';
 
 interface ConnectionManagerProps {
   connections: Connection[];
@@ -52,7 +52,7 @@ export function ConnectionManager({
       case 'power': return <Power className='h-4 w-4 text-green-500' />;
       case 'network': return <Network className='h-4 w-4 text-blue-500' />;
       case 'cooling': return <Snowflake className='h-4 w-4 text-cyan-500' />;
-      case 'water': return <Water className='h-4 w-4 text-sky-500' />;
+      case 'water': return <Droplets className='h-4 w-4 text-sky-500' />;
       case 'gas': return <Flame className='h-4 w-4 text-amber-500' />;
       default: return null;
     }
