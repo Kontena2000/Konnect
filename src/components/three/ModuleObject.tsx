@@ -1,5 +1,6 @@
+
 import { useRef, useState, useEffect, Suspense } from "react";
-import { Object3D, MeshStandardMaterial, Vector3, Mesh, Material, BufferGeometry } from "three";
+import { Object3D, MeshStandardMaterial, Vector3, Mesh } from "three";
 import { useLoader, ThreeEvent } from "@react-three/fiber";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { TransformControls, Html } from "@react-three/drei";
@@ -17,17 +18,18 @@ interface ModuleObjectProps {
   readOnly?: boolean;
 }
 
-// Fallback component when model loading fails
+function ModelLoader({ url }: { url: string }) {
+  const model = useLoader(GLTFLoader, url);
+  const clonedScene = model.scene.clone();
+  clonedScene.scale.set(1, 1, 1);
+  clonedScene.position.set(0, 0, 0);
+  return <primitive object={clonedScene} />;
+}
+
 function ModelFallback({ module, ...props }: { module: Module } & any) {
   return (
     <mesh {...props}>
-      <boxGeometry
-        args={[
-          module.dimensions.length,
-          module.dimensions.height,
-          module.dimensions.width
-        ]}
-      />
+      <boxGeometry args={[module.dimensions.length, module.dimensions.height, module.dimensions.width]} />
       <meshStandardMaterial
         color={module.color || "#888888"}
         transparent={props.transparent}
@@ -53,21 +55,7 @@ export function ModuleObject({
   const [showControls, setShowControls] = useState(false);
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<[number, number, number]>([0, 0, 0]);
-  
-  // Try to load 3D model if URL is provided
-  let model = null;
-  try {
-    if (module.modelUrl) {
-      model = useLoader(GLTFLoader, module.modelUrl).scene.clone();
-      // Adjust model scale and position if needed
-      model.scale.set(1, 1, 1);
-      model.position.set(0, 0, 0);
-    }
-  } catch (error) {
-    console.error('Error loading model:', error);
-  }
-  
-  // Handle transform changes
+
   const handleTransformChange = () => {
     if (!meshRef.current || readOnly) return;
     
@@ -82,7 +70,6 @@ export function ModuleObject({
     });
   };
 
-  // Mouse event handlers
   const handleMouseEnter = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setHovered(true);
@@ -91,7 +78,6 @@ export function ModuleObject({
 
   const handleMouseLeave = () => {
     setHovered(false);
-    // Keep controls visible if selected
     if (!selected) {
       setShowControls(false);
     }
@@ -102,7 +88,6 @@ export function ModuleObject({
     onClick?.();
   };
 
-  // Handle right click for context menu
   const handleContextMenu = (event: ThreeEvent<MouseEvent>) => {
     if (readOnly) return;
     event.stopPropagation();
@@ -111,7 +96,6 @@ export function ModuleObject({
     setContextMenuPosition([0, module.dimensions.height, 0]);
   };
 
-  // Handle keyboard shortcuts
   useEffect(() => {
     if (!selected || readOnly) return;
     
@@ -132,9 +116,8 @@ export function ModuleObject({
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
     };
-  }, [selected, readOnly, onDelete]);
+  }, [selected, readOnly, onDelete, handleTransformChange]);
 
-  // Keep controls visible when selected
   useEffect(() => {
     if (selected) {
       setShowControls(true);
@@ -143,7 +126,6 @@ export function ModuleObject({
     }
   }, [selected]);
 
-  // Reset position if module position changes from outside
   useEffect(() => {
     if (meshRef.current) {
       const newPosition = new Vector3(...module.position);
@@ -167,7 +149,7 @@ export function ModuleObject({
 
   return (
     <group onContextMenu={handleContextMenu}>
-      {model ? (
+      {module.modelUrl ? (
         <Suspense fallback={
           <ModelFallback 
             module={module} 
@@ -176,18 +158,7 @@ export function ModuleObject({
             opacity={0.5} 
           />
         }>
-          <primitive 
-            ref={meshRef}
-            object={model}
-            position={module.position}
-            rotation={module.rotation}
-            scale={module.scale}
-            onPointerOver={handleMouseEnter}
-            onPointerOut={handleMouseLeave}
-            onClick={handleClick}
-            castShadow
-            receiveShadow
-          />
+          <ModelLoader url={module.modelUrl} />
         </Suspense>
       ) : (
         <ModelFallback 
@@ -198,12 +169,11 @@ export function ModuleObject({
         />
       )}
       
-      {/* Rotation controls */}
       {showControls && !readOnly && (
         <Html position={[0, module.dimensions.height + 0.5, 0]}>
-          <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
+          <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
             <button 
-              className='p-1 hover:bg-accent rounded' 
+              className="p-1 hover:bg-accent rounded"
               onClick={(e) => {
                 e.stopPropagation();
                 if (meshRef.current) {
@@ -215,7 +185,7 @@ export function ModuleObject({
               ⟲
             </button>
             <button 
-              className='p-1 hover:bg-accent rounded' 
+              className="p-1 hover:bg-accent rounded"
               onClick={(e) => {
                 e.stopPropagation();
                 if (meshRef.current) {
@@ -228,7 +198,7 @@ export function ModuleObject({
             </button>
             {onDelete && (
               <button 
-                className='p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2' 
+                className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
@@ -241,13 +211,12 @@ export function ModuleObject({
         </Html>
       )}
       
-      {/* Context menu */}
       {showContextMenu && !readOnly && (
         <Html position={contextMenuPosition}>
-          <div className='bg-background/90 backdrop-blur-sm p-2 rounded shadow-lg'>
-            <div className='space-y-1'>
+          <div className="bg-background/90 backdrop-blur-sm p-2 rounded shadow-lg">
+            <div className="space-y-1">
               <button 
-                className='w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2'
+                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (meshRef.current) {
@@ -258,10 +227,10 @@ export function ModuleObject({
                 }}
               >
                 <span>Rotate Left</span>
-                <kbd className='ml-auto text-xs bg-muted px-1.5 rounded'>⟲</kbd>
+                <kbd className="ml-auto text-xs bg-muted px-1.5 rounded">⟲</kbd>
               </button>
               <button 
-                className='w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2'
+                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2"
                 onClick={(e) => {
                   e.stopPropagation();
                   if (meshRef.current) {
@@ -272,11 +241,11 @@ export function ModuleObject({
                 }}
               >
                 <span>Rotate Right</span>
-                <kbd className='ml-auto text-xs bg-muted px-1.5 rounded'>⟳</kbd>
+                <kbd className="ml-auto text-xs bg-muted px-1.5 rounded">⟳</kbd>
               </button>
               {onDelete && (
                 <button 
-                  className='w-full text-left px-2 py-1 text-sm rounded hover:bg-destructive hover:text-destructive-foreground flex items-center gap-2'
+                  className="w-full text-left px-2 py-1 text-sm rounded hover:bg-destructive hover:text-destructive-foreground flex items-center gap-2"
                   onClick={(e) => {
                     e.stopPropagation();
                     onDelete();
@@ -284,7 +253,7 @@ export function ModuleObject({
                   }}
                 >
                   <span>Delete</span>
-                  <kbd className='ml-auto text-xs bg-muted px-1.5 rounded'>Del</kbd>
+                  <kbd className="ml-auto text-xs bg-muted px-1.5 rounded">Del</kbd>
                 </button>
               )}
             </div>
