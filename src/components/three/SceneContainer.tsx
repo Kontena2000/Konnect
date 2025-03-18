@@ -12,6 +12,8 @@ import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { CameraControlsHandle } from './CameraControls';
+import { useGridSnapping } from '@/hooks/use-grid-snapping';
+import { useDragPreview } from '@/hooks/use-drag-preview';
 
 function SceneContent({
   modules,
@@ -164,13 +166,18 @@ export function SceneContainer({
   gridSnap = true
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: "scene" });
-  const [previewMesh, setPreviewMesh] = useState<THREE.Mesh | null>(null);
+  const {
+    previewMesh,
+    previewPosition,
+    setPreviewPosition,
+    handleDragStart,
+    handleDragEnd
+  } = useDragPreview();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [showGuides, setShowGuides] = useState(false);
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
-  const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
   const controlsRef = useRef<CameraControlsHandle>(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
@@ -213,8 +220,29 @@ export function SceneContainer({
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    setMousePosition(new Vector2(x, y));
-  }, [readOnly]);
+    const mousePosition = new Vector2(x, y);
+
+    // Use raycaster to find intersection with ground plane
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(mousePosition, camera);
+    
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+
+    // Apply grid snapping
+    if (gridSnap) {
+      const snappedPosition = useGridSnapping(intersection, 1, 0.5);
+      setPreviewPosition([snappedPosition.x, previewHeight / 2, snappedPosition.z]);
+    } else {
+      setPreviewPosition([intersection.x, previewHeight / 2, intersection.z]);
+    }
+  }, [readOnly, gridSnap, camera, previewHeight]);
+
+  const handleModuleDragStart = useCallback((module: Module) => {
+    handleDragStart(module);
+    setPreviewHeight(module.dimensions.height);
+  }, [handleDragStart]);
 
   const handleDragLeave = useCallback(() => {
     if (readOnly) return;
@@ -284,11 +312,6 @@ export function SceneContainer({
       setPreviewMesh(null);
     };
   }, [isDraggingOver]);
-
-  const handleModuleDragStart = useCallback((draggedModule: Module) => {
-    draggedModuleRef.current = draggedModule;
-    setPreviewHeight(draggedModule.dimensions.height);
-  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

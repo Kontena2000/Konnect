@@ -5,12 +5,13 @@ import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { useRef, useEffect } from "react";
-import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
+import { Vector2, Vector3, Line3, Mesh, Object3D, BufferGeometry, Float32BufferAttribute } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
 import { CameraControls, CameraControlsHandle } from './CameraControls';
 import { Html } from "@react-three/drei";
+import { useGridSnapping } from '@/hooks/use-grid-snapping';
 
 interface SceneElementsProps {
   modules: Module[];
@@ -115,49 +116,53 @@ export function SceneElements({
       ))}
 
       {isDraggingOver && previewMesh && (
-        <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
-          <primitive object={previewMesh.clone()} />
-          <Html position={[0, 2, 0]}>
-            <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
-              <button 
-                className="p-1 hover:bg-accent rounded"
-                onClick={() => setRotationAngle(prev => prev - Math.PI/2)}
-              >
-                ⟲
-              </button>
-              <button 
-                className="p-1 hover:bg-accent rounded"
-                onClick={() => setRotationAngle(prev => prev + Math.PI/2)}
-              >
-                ⟳
-              </button>
-            </div>
-          </Html>
+        <group>
+          {/* Show grid snapping guides */}
+          {gridSnap && showGuides && snapPoints.map((point, i) => (
+            <mesh key={`snap-point-${i}`} position={[point.x, 0.01, point.z]}>
+              <sphereGeometry args={[0.1, 8, 8]} />
+              <meshBasicMaterial color='#F1B73A' transparent opacity={0.5} />
+            </mesh>
+          ))}
+          
+          {/* Show preview mesh */}
+          <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
+            <primitive object={previewMesh.clone()} />
+            <Html position={[0, 2, 0]}>
+              <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
+                <button 
+                  className='p-1 hover:bg-accent rounded'
+                  onClick={() => setRotationAngle(prev => prev - Math.PI/2)}
+                >
+                  ⟲
+                </button>
+                <button 
+                  className='p-1 hover:bg-accent rounded'
+                  onClick={() => setRotationAngle(prev => prev + Math.PI/2)}
+                >
+                  ⟳
+                </button>
+              </div>
+            </Html>
+          </group>
         </group>
       )}
 
-      {showGuides && snapPoints.map((point, i) => (
-        <mesh key={`point-${i}`} position={[point.x, 0.01, point.z]}>
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshBasicMaterial color="#ffcc00" transparent opacity={0.5} />
-        </mesh>
-      ))}
-      
-      {showGuides && snapLines.map((line, i) => (
-        <line key={`line-${i}`}>
-          <bufferGeometry 
-            attach="geometry" 
-            args={[
-              new Float32Array([
-                line.start.x, 0.01, line.start.z,
-                line.end.x, 0.01, line.end.z
-              ]), 
-              3
-            ]} 
-          />
-          <lineBasicMaterial attach="material" color="#ffcc00" opacity={0.5} transparent />
-        </line>
-      ))}
+      {showGuides && snapLines.map((line, i) => {
+        const geometry = new BufferGeometry();
+        const vertices = new Float32Array([
+          line.start.x, 0.01, line.start.z,
+          line.end.x, 0.01, line.end.z
+        ]);
+        geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
+        
+        return (
+          <line key={`line-${i}`}>
+            <primitive object={geometry} />
+            <lineBasicMaterial color="#ffcc00" opacity={0.5} transparent />
+          </line>
+        );
+      })}
     </>
   );
 }
