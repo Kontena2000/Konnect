@@ -6,8 +6,8 @@ import { Grid } from "@react-three/drei";
 import { Html } from "@/components/environment/Html";
 import { MeshTransmissionMaterial } from '@react-three/drei';
 
-interface TerrainViewProps {
-  data: TerrainData;
+export interface TerrainViewProps {
+  terrain: TerrainData;
   showGrid?: boolean;
   showMeasurements?: boolean;
   materialType?: "soil" | "concrete" | "grass";
@@ -15,7 +15,7 @@ interface TerrainViewProps {
 }
 
 export function TerrainView({ 
-  data, 
+  terrain, 
   showGrid = true, 
   showMeasurements = false,
   materialType = "soil",
@@ -26,14 +26,14 @@ export function TerrainView({
 
   const geometry = useMemo(() => {
     const geo = new THREE.PlaneGeometry(
-      data.dimensions[0],
-      data.dimensions[1],
-      data.resolution,
-      data.resolution
+      terrain.dimensions[0],
+      terrain.dimensions[1],
+      terrain.resolution,
+      terrain.resolution
     );
 
     const vertices = geo.attributes.position.array;
-    data.points.forEach((point, i) => {
+    terrain.points.forEach((point, i) => {
       vertices[i * 3] = point.x;
       vertices[i * 3 + 1] = point.y;
       vertices[i * 3 + 2] = point.z;
@@ -41,7 +41,7 @@ export function TerrainView({
 
     geo.computeVertexNormals();
     return geo;
-  }, [data]);
+  }, [terrain]);
 
   const material = useMemo(() => {
     const materialConfigs = {
@@ -79,14 +79,14 @@ export function TerrainView({
     if (!wireframe) {
       textureLoader.load(config.roughnessUrl, (texture) => {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(data.dimensions[0] / 5, data.dimensions[1] / 5);
+        texture.repeat.set(terrain.dimensions[0] / 5, terrain.dimensions[1] / 5);
         mat.roughnessMap = texture;
         mat.needsUpdate = true;
       });
 
       textureLoader.load(config.normalUrl, (texture) => {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(data.dimensions[0] / 5, data.dimensions[1] / 5);
+        texture.repeat.set(terrain.dimensions[0] / 5, terrain.dimensions[1] / 5);
         mat.normalMap = texture;
         mat.normalScale.set(0.5, 0.5);
         mat.needsUpdate = true;
@@ -94,7 +94,7 @@ export function TerrainView({
 
       textureLoader.load(config.displacementUrl, (texture) => {
         texture.wrapS = texture.wrapT = THREE.RepeatWrapping;
-        texture.repeat.set(data.dimensions[0] / 5, data.dimensions[1] / 5);
+        texture.repeat.set(terrain.dimensions[0] / 5, terrain.dimensions[1] / 5);
         mat.displacementMap = texture;
         mat.displacementScale = 0.2;
         mat.needsUpdate = true;
@@ -102,7 +102,7 @@ export function TerrainView({
     }
 
     return mat;
-  }, [materialType, wireframe, data.dimensions]);
+  }, [materialType, wireframe, terrain.dimensions]);
 
   return (
     <group>
@@ -117,20 +117,20 @@ export function TerrainView({
       {showGrid && (
         <>
           <Grid
-            args={[data.dimensions[0], data.dimensions[1], 20, 20]}
+            args={[terrain.dimensions[0], terrain.dimensions[1], 20, 20]}
             position={[0, 0.01, 0]}
             cellColor="#666666"
             sectionColor="#444444"
           />
           {showMeasurements && Array.from({ length: 5 }).map((_, i) => (
-            <group key={i} position={[i * data.dimensions[0] / 4, 0.02, 0]}>
+            <group key={i} position={[i * terrain.dimensions[0] / 4, 0.02, 0]}>
               <mesh>
                 <sphereGeometry args={[0.1]} />
                 <meshBasicMaterial color="red" />
               </mesh>
               <Html position={[0, 0.2, 0]}>
                 <div className="bg-background/80 px-2 py-1 rounded text-sm">
-                  {(i * data.dimensions[0] / 4).toFixed(1)}m
+                  {(i * terrain.dimensions[0] / 4).toFixed(1)}m
                 </div>
               </Html>
             </group>

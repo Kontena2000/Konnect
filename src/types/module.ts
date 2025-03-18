@@ -1,4 +1,3 @@
-
 import { ConnectionType } from "./connection";
 
 export type ModuleCategory = string;
@@ -27,6 +26,10 @@ export interface Module {
   }[];
   createdAt?: string;
   updatedAt?: string;
+  modelUrl?: string;
+  castShadow?: boolean;
+  receiveShadow?: boolean;
+  wireframe?: boolean;
 }
 
 export const defaultModules: Module[] = [

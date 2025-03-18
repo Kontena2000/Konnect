@@ -34,6 +34,7 @@ interface SceneElementsProps {
   mousePosition: Vector2 | null;
   onDropPoint?: (point: [number, number, number]) => void;
   readOnly?: boolean;
+  setRotationAngle: (angle: number) => void;
 }
 
 export function SceneElements({
@@ -57,7 +58,8 @@ export function SceneElements({
   previewHeight,
   mousePosition,
   onDropPoint,
-  readOnly = false
+  readOnly = false,
+  setRotationAngle
 }: SceneElementsProps) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -217,7 +219,8 @@ export function SceneElements({
                 <button 
                   className='p-1 hover:bg-accent rounded' 
                   onClick={() => {
-                    setRotationAngle(prev => prev - Math.PI/2);
+                    const newAngle = rotationAngle - Math.PI/2;
+                    setRotationAngle(newAngle);
                   }}
                 >
                   ⟲
@@ -225,7 +228,8 @@ export function SceneElements({
                 <button 
                   className='p-1 hover:bg-accent rounded' 
                   onClick={() => {
-                    setRotationAngle(prev => prev + Math.PI/2);
+                    const newAngle = rotationAngle + Math.PI/2;
+                    setRotationAngle(newAngle);
                   }}
                 >
                   ⟳

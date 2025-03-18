@@ -1,12 +1,9 @@
-
 import { useRef, useState, useEffect, Suspense } from "react";
-import { Object3D, MeshStandardMaterial, Vector3 } from "three";
-import { ThreeEvent, useLoader } from "@react-three/fiber";
+import { Object3D, MeshStandardMaterial, Vector3, Mesh, Material, BufferGeometry } from "three";
+import { ThreeEvent, useThree } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
-import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
-import { ErrorBoundary } from "react-error-boundary";
 
 interface ModuleObjectProps {
   module: Module;
@@ -17,17 +14,6 @@ interface ModuleObjectProps {
   transformMode?: "translate" | "rotate" | "scale";
   gridSnap?: boolean;
   readOnly?: boolean;
-}
-
-// Separate component for model loading to handle errors properly
-function ModelLoader({ url, ...props }: { url: string } & any) {
-  try {
-    const gltf = useLoader(GLTFLoader, url);
-    return <primitive object={gltf.scene} {...props} />;
-  } catch (error) {
-    console.error(`Error loading model from ${url}:`, error);
-    return null;
-  }
 }
 
 // Fallback component when model loading fails
@@ -64,7 +50,6 @@ export function ModuleObject({
   const meshRef = useRef<Object3D>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const [modelLoadFailed, setModelLoadFailed] = useState(false);
   
   // Handle transform changes
   const handleTransformChange = () => {
@@ -120,10 +105,6 @@ export function ModuleObject({
     }
   }, [module.position]);
 
-  const handleModelError = () => {
-    setModelLoadFailed(true);
-  };
-
   const commonProps = {
     ref: meshRef,
     position: module.position,
@@ -138,20 +119,12 @@ export function ModuleObject({
 
   return (
     <group>
-      {module.modelUrl && !modelLoadFailed ? (
-        <ErrorBoundary fallback={<ModelFallback module={module} {...commonProps} transparent={hovered || selected} opacity={hovered || selected ? 0.8 : 1} />} onError={handleModelError}>
-          <Suspense fallback={<ModelFallback module={module} {...commonProps} transparent={true} opacity={0.5} />}>
-            <ModelLoader url={module.modelUrl} {...commonProps} />
-          </Suspense>
-        </ErrorBoundary>
-      ) : (
-        <ModelFallback 
-          module={module} 
-          {...commonProps} 
-          transparent={hovered || selected} 
-          opacity={hovered || selected ? 0.8 : 1} 
-        />
-      )}
+      <ModelFallback 
+        module={module} 
+        {...commonProps} 
+        transparent={hovered || selected} 
+        opacity={hovered || selected ? 0.8 : 1} 
+      />
       
       {/* Rotation controls */}
       {showControls && !readOnly && (
@@ -185,7 +158,7 @@ export function ModuleObject({
         </Html>
       )}
       
-      {selected && !readOnly && (
+      {selected && !readOnly && meshRef.current && (
         <TransformControls
           object={meshRef.current}
           mode={transformMode}

@@ -1,18 +1,17 @@
-
 import { useRef } from "react";
 import { Mesh } from "three";
 import { EnvironmentalElement as ElementType } from "@/services/environment";
 
 export interface EnvironmentalElementProps {
   element: ElementType;
-  onSelect?: () => void;
+  onClick?: () => void;
 }
 
-export function EnvironmentalElement({ element, onSelect }: EnvironmentalElementProps) {
+export function EnvironmentalElement({ element, onClick }: EnvironmentalElementProps) {
   const meshRef = useRef<Mesh>(null);
 
   const handleClick = () => {
-    onSelect?.();
+    onClick?.();
   };
 
   // Default dimensions if not specified in properties
