@@ -1,4 +1,5 @@
-import { Canvas } from "@react-three/fiber";
+
+import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
@@ -11,6 +12,56 @@ import { cn } from "@/lib/utils";
 import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
+
+// Separate the raycasting logic into a component within Canvas context
+function DragPreview({
+  isDraggingOver,
+  mousePosition,
+  gridSnap,
+  snapPoints,
+  draggedDimensions,
+  onPositionUpdate
+}: {
+  isDraggingOver: boolean;
+  mousePosition: Vector2 | null;
+  gridSnap: boolean;
+  snapPoints: Vector3[];
+  draggedDimensions: { height: number } | null;
+  onPositionUpdate: (position: [number, number, number]) => void;
+}) {
+  const { camera, raycaster } = useThree();
+
+  useEffect(() => {
+    if (!isDraggingOver || !mousePosition || !draggedDimensions) return;
+
+    raycaster.setFromCamera(mousePosition, camera);
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+
+    if (gridSnap) {
+      const snapThreshold = 1.5;
+      const nearestPoint = snapPoints.reduce((nearest, point) => {
+        const distance = intersection.distanceTo(point);
+        return distance < snapThreshold && distance < nearest.distance
+          ? { point, distance }
+          : nearest;
+      }, { point: intersection, distance: Infinity });
+
+      if (nearestPoint.distance < snapThreshold) {
+        intersection.copy(nearestPoint.point);
+      } else {
+        intersection.x = Math.round(intersection.x);
+        intersection.z = Math.round(intersection.z);
+      }
+    }
+
+    intersection.y = draggedDimensions.height / 2;
+    onPositionUpdate([intersection.x, intersection.y, intersection.z]);
+  }, [isDraggingOver, mousePosition, gridSnap, snapPoints, draggedDimensions, camera, raycaster, onPositionUpdate]);
+
+  return null;
+}
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -61,24 +112,21 @@ export function SceneContainer({
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
-  const [showPreviewControls, setShowPreviewControls] = useState(false);
   const controlsRef = useRef(null);
-  
-  // Add a ref to store the dragged module data
   const draggedModuleRef = useRef<Module | null>(null);
-  
+
   const { snapPoints, snapLines } = useMemo(() => {
     const points: Vector3[] = [];
     const lines: Line3[] = [];
 
-    modules.forEach(module => {
+    modules.forEach(currentModule => {
       const box = new Box3();
       const size = new Vector3(
-        module.dimensions.length,
-        module.dimensions.height,
-        module.dimensions.width
+        currentModule.dimensions.length,
+        currentModule.dimensions.height,
+        currentModule.dimensions.width
       );
-      const position = new Vector3(...module.position);
+      const position = new Vector3(...currentModule.position);
       box.setFromCenterAndSize(position, size);
 
       const corners = [
@@ -98,7 +146,6 @@ export function SceneContainer({
     return { snapPoints: points, snapLines: lines };
   }, [modules]);
 
-  // Enhanced drag over handler for better visual feedback
   const handleDragOver = useCallback((event: React.DragEvent) => {
     if (readOnly) return;
     event.preventDefault();
@@ -107,54 +154,23 @@ export function SceneContainer({
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
-    
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(groundPlane, intersection);
-    
-    if (gridSnap) {
-      const snapThreshold = 1.5;
-      const nearestPoint = snapPoints.reduce((nearest, point) => {
-        const distance = intersection.distanceTo(point);
-        return distance < snapThreshold && distance < nearest.distance
-          ? { point, distance }
-          : nearest;
-      }, { point: intersection, distance: Infinity });
-      
-      if (nearestPoint.distance < snapThreshold) {
-        intersection.copy(nearestPoint.point);
-      } else {
-        intersection.x = Math.round(intersection.x);
-        intersection.z = Math.round(intersection.z);
-      }
-    }
-    
-    const height = draggedModuleRef.current?.dimensions.height || 0;
-    intersection.y = height / 2;
-    
-    setMousePosition(new Vector2(event.clientX, event.clientY));
-    setPreviewPosition([intersection.x, intersection.y, intersection.z]);
-    setShowPreviewControls(true);
-  }, [gridSnap, camera, snapPoints, readOnly]);
+    setMousePosition(new Vector2(x, y));
+  }, [readOnly]);
 
-  const handleDragLeave = () => {
+  const handleDragLeave = useCallback(() => {
     if (readOnly) return;
     setIsDraggingOver(false);
     setMousePosition(null);
-  };
+  }, [readOnly]);
 
-  const handleDrop = (event: React.DragEvent) => {
+  const handleDrop = useCallback((event: React.DragEvent) => {
     if (readOnly || !onDropPoint) return;
     event.preventDefault();
-    if (!mousePosition) return;
-
+    
     onDropPoint(previewPosition);
     setIsDraggingOver(false);
     setMousePosition(null);
-  };
+  }, [readOnly, onDropPoint, previewPosition]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -183,25 +199,24 @@ export function SceneContainer({
     };
   }, [handleKeyDown, handleKeyUp, readOnly]);
 
-  // Set up an effect to create a preview mesh when a module is dragged
   useEffect(() => {
     if (!isDraggingOver || !draggedModuleRef.current) return;
     
-    const module = draggedModuleRef.current;
+    const currentModule = draggedModuleRef.current;
     const geometry = new THREE.BoxGeometry(
-      module.dimensions.length,
-      module.dimensions.height,
-      module.dimensions.width
+      currentModule.dimensions.length,
+      currentModule.dimensions.height,
+      currentModule.dimensions.width
     );
     const material = new THREE.MeshStandardMaterial({
-      color: module.color,
+      color: currentModule.color,
       transparent: true,
       opacity: 0.6,
-      wireframe: module.wireframe
+      wireframe: currentModule.wireframe
     });
     const mesh = new THREE.Mesh(geometry, material);
     
-    setPreviewHeight(module.dimensions.height);
+    setPreviewHeight(currentModule.dimensions.height);
     setPreviewMesh(mesh);
     
     return () => {
@@ -210,27 +225,23 @@ export function SceneContainer({
       setPreviewMesh(null);
     };
   }, [isDraggingOver]);
-  
-  // Function to handle module drag start from ModuleLibrary
-  const handleModuleDragStart = (module: Module) => {
-    draggedModuleRef.current = module;
-    setPreviewHeight(module.dimensions.height);
-  };
-  
-  // Register the drag start handler with the parent component
+
+  const handleModuleDragStart = useCallback((draggedModule: Module) => {
+    draggedModuleRef.current = draggedModule;
+    setPreviewHeight(draggedModule.dimensions.height);
+  }, []);
+
   useEffect(() => {
-    // This would be called by the parent to register the handler
     if (typeof window !== 'undefined') {
       (window as any).handleModuleDragStart = handleModuleDragStart;
     }
-    
     return () => {
       if (typeof window !== 'undefined') {
         delete (window as any).handleModuleDragStart;
       }
     };
-  }, []);
-  
+  }, [handleModuleDragStart]);
+
   return (
     <div 
       ref={setNodeRef} 
@@ -251,6 +262,14 @@ export function SceneContainer({
         }}
         shadows
       >
+        <DragPreview
+          isDraggingOver={isDraggingOver}
+          mousePosition={mousePosition}
+          gridSnap={gridSnap}
+          snapPoints={snapPoints}
+          draggedDimensions={draggedModuleRef.current?.dimensions || null}
+          onPositionUpdate={setPreviewPosition}
+        />
         <SceneElements 
           modules={modules}
           selectedModuleId={selectedModuleId}
@@ -269,16 +288,12 @@ export function SceneContainer({
           showGuides={showGuides}
           snapPoints={snapPoints}
           snapLines={snapLines}
-          previewHeight={previewHeight}
-          mousePosition={mousePosition}
-          onDropPoint={onDropPoint}
+          previewPosition={previewPosition}
           readOnly={readOnly}
           setRotationAngle={setRotationAngle}
-          previewPosition={previewPosition}
         />
       </Canvas>
 
-      {/* Enhanced UI for drag and drop operations */}
       {!readOnly && isDraggingOver && (
         <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-lg space-y-2'>
           <div className='flex items-center gap-2'>
@@ -295,14 +310,12 @@ export function SceneContainer({
         </div>
       )}
 
-      {/* Camera preset controls */}
       <div className='absolute top-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
         <div className='flex gap-1'>
           <Button 
             variant='outline' 
             size='sm'
             onClick={() => {
-              // Reset camera to top view
               if (controlsRef?.current) {
                 controlsRef.current.reset();
               }
@@ -314,7 +327,6 @@ export function SceneContainer({
             variant='outline' 
             size='sm'
             onClick={() => {
-              // Set camera to isometric view
               if (controlsRef?.current) {
                 controlsRef.current.setAzimuthalAngle(Math.PI / 4);
                 controlsRef.current.setPolarAngle(Math.PI / 4);
