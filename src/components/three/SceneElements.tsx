@@ -1,4 +1,3 @@
-
 import { useThree } from "@react-three/fiber";
 import { OrbitControls, Grid, TransformControls, Line, Html } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
@@ -84,7 +83,7 @@ export function SceneElements({
     
     // Cast ray to find intersection with ground plane
     const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera({ x, y }, camera);
+    raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
     
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const intersection = new THREE.Vector3();
@@ -214,11 +213,21 @@ export function SceneElements({
           <primitive object={previewMesh} />
           {showRotationControls && (
             <Html position={[0, previewHeight + 0.5, 0]}>
-              <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
-                <button className="p-1 hover:bg-accent rounded" onClick={() => setRotationAngle(prev => prev - Math.PI/2)}>
+              <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
+                <button 
+                  className='p-1 hover:bg-accent rounded' 
+                  onClick={() => {
+                    setRotationAngle(prev => prev - Math.PI/2);
+                  }}
+                >
                   ⟲
                 </button>
-                <button className="p-1 hover:bg-accent rounded" onClick={() => setRotationAngle(prev => prev + Math.PI/2)}>
+                <button 
+                  className='p-1 hover:bg-accent rounded' 
+                  onClick={() => {
+                    setRotationAngle(prev => prev + Math.PI/2);
+                  }}
+                >
                   ⟳
                 </button>
               </div>

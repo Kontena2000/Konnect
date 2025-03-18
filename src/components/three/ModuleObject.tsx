@@ -1,11 +1,12 @@
-import { useRef, useState, useEffect } from "react";
+
+import { useRef, useState, useEffect, Suspense } from "react";
 import { Object3D, MeshStandardMaterial, Vector3 } from "three";
-import { ThreeEvent } from "@react-three/fiber";
+import { ThreeEvent, useLoader } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
-import { useLoader } from "@react-three/fiber";
 import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
+import { ErrorBoundary } from "react-error-boundary";
 
 interface ModuleObjectProps {
   module: Module;
@@ -16,6 +17,38 @@ interface ModuleObjectProps {
   transformMode?: "translate" | "rotate" | "scale";
   gridSnap?: boolean;
   readOnly?: boolean;
+}
+
+// Separate component for model loading to handle errors properly
+function ModelLoader({ url, ...props }: { url: string } & any) {
+  try {
+    const gltf = useLoader(GLTFLoader, url);
+    return <primitive object={gltf.scene} {...props} />;
+  } catch (error) {
+    console.error(`Error loading model from ${url}:`, error);
+    return null;
+  }
+}
+
+// Fallback component when model loading fails
+function ModelFallback({ module, ...props }: { module: Module } & any) {
+  return (
+    <mesh {...props}>
+      <boxGeometry
+        args={[
+          module.dimensions.length,
+          module.dimensions.height,
+          module.dimensions.width
+        ]}
+      />
+      <meshStandardMaterial
+        color={module.color || "#888888"}
+        transparent={props.transparent}
+        opacity={props.opacity}
+        wireframe={module.wireframe}
+      />
+    </mesh>
+  );
 }
 
 export function ModuleObject({
@@ -31,45 +64,8 @@ export function ModuleObject({
   const meshRef = useRef<Object3D>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(false);
-  const castShadow = module.castShadow !== false;
-  const receiveShadow = module.receiveShadow !== false;
-  const [modelLoadError, setModelLoadError] = useState(false);
-
-  // Try to load the model if a URL is provided
-  let model = null;
-  if (module.modelUrl) {
-    try {
-      // Wrap in useEffect to avoid React Hook rules violation
-      useEffect(() => {
-        const loadModel = async () => {
-          try {
-            const loader = new GLTFLoader();
-            loader.load(
-              module.modelUrl as string,
-              (gltf) => {
-                model = gltf.scene.clone();
-                setModelLoadError(false);
-              },
-              undefined,
-              (error) => {
-                console.error(`Error loading model from ${module.modelUrl}:`, error);
-                setModelLoadError(true);
-              }
-            );
-          } catch (error) {
-            console.error(`Error setting up model loader for ${module.modelUrl}:`, error);
-            setModelLoadError(true);
-          }
-        };
-        
-        loadModel();
-      }, [module.modelUrl]);
-    } catch (error) {
-      console.error(`Error in model loading setup for ${module.modelUrl}:`, error);
-      setModelLoadError(true);
-    }
-  }
-
+  const [modelLoadFailed, setModelLoadFailed] = useState(false);
+  
   // Handle transform changes
   const handleTransformChange = () => {
     if (!meshRef.current || readOnly) return;
@@ -124,47 +120,37 @@ export function ModuleObject({
     }
   }, [module.position]);
 
+  const handleModelError = () => {
+    setModelLoadFailed(true);
+  };
+
+  const commonProps = {
+    ref: meshRef,
+    position: module.position,
+    rotation: module.rotation,
+    scale: module.scale,
+    onPointerOver: handleMouseEnter,
+    onPointerOut: handleMouseLeave,
+    onClick: handleClick,
+    castShadow: module.castShadow !== false,
+    receiveShadow: module.receiveShadow !== false
+  };
+
   return (
     <group>
-      {model && !modelLoadError ? (
-        <primitive 
-          object={model}
-          ref={meshRef}
-          position={module.position}
-          rotation={module.rotation}
-          scale={module.scale}
-          onPointerOver={handleMouseEnter}
-          onPointerOut={handleMouseLeave}
-          onClick={handleClick}
-          castShadow={castShadow}
-          receiveShadow={receiveShadow}
-        />
+      {module.modelUrl && !modelLoadFailed ? (
+        <ErrorBoundary fallback={<ModelFallback module={module} {...commonProps} transparent={hovered || selected} opacity={hovered || selected ? 0.8 : 1} />} onError={handleModelError}>
+          <Suspense fallback={<ModelFallback module={module} {...commonProps} transparent={true} opacity={0.5} />}>
+            <ModelLoader url={module.modelUrl} {...commonProps} />
+          </Suspense>
+        </ErrorBoundary>
       ) : (
-        <mesh
-          ref={meshRef}
-          position={module.position}
-          rotation={module.rotation}
-          scale={module.scale}
-          onPointerOver={handleMouseEnter}
-          onPointerOut={handleMouseLeave}
-          onClick={handleClick}
-          castShadow={castShadow}
-          receiveShadow={receiveShadow}
-        >
-          <boxGeometry
-            args={[
-              module.dimensions.length,
-              module.dimensions.height,
-              module.dimensions.width
-            ]}
-          />
-          <meshStandardMaterial
-            color={module.color}
-            transparent={hovered || selected}
-            opacity={hovered || selected ? 0.8 : 1}
-            wireframe={module.wireframe}
-          />
-        </mesh>
+        <ModelFallback 
+          module={module} 
+          {...commonProps} 
+          transparent={hovered || selected} 
+          opacity={hovered || selected ? 0.8 : 1} 
+        />
       )}
       
       {/* Rotation controls */}
@@ -201,7 +187,7 @@ export function ModuleObject({
       
       {selected && !readOnly && (
         <TransformControls
-          object={meshRef.current as Object3D}
+          object={meshRef.current}
           mode={transformMode}
           onObjectChange={handleTransformChange}
           size={0.75}
