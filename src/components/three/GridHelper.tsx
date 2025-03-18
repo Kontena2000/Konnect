@@ -1,6 +1,6 @@
 
 import { Grid } from "@react-three/drei";
-import { BufferGeometry } from "three";
+import { Float32BufferAttribute } from "three";
 
 interface GridHelperProps {
   size?: number;
@@ -17,6 +17,9 @@ export function GridHelper({
   showAxes = true,
   gridColor = "#444444"
 }: GridHelperProps) {
+  const xAxisPoints = new Float32Array([-size / 2, 0.01, 0, size / 2, 0.01, 0]);
+  const zAxisPoints = new Float32Array([0, 0.01, -size / 2, 0, 0.01, size / 2]);
+
   return (
     <>
       <Grid
@@ -33,9 +36,11 @@ export function GridHelper({
         <>
           <line>
             <bufferGeometry>
-              <float32BufferAttribute
+              <bufferAttribute
                 attach="attributes-position"
-                args={[new Float32Array([-size / 2, 0.01, 0, size / 2, 0.01, 0]), 3]}
+                array={xAxisPoints}
+                count={2}
+                itemSize={3}
               />
             </bufferGeometry>
             <lineBasicMaterial attach="material" color="#ff0000" linewidth={2} />
@@ -43,9 +48,11 @@ export function GridHelper({
           
           <line>
             <bufferGeometry>
-              <float32BufferAttribute
+              <bufferAttribute
                 attach="attributes-position"
-                args={[new Float32Array([0, 0.01, -size / 2, 0, 0.01, size / 2]), 3]}
+                array={zAxisPoints}
+                count={2}
+                itemSize={3}
               />
             </bufferGeometry>
             <lineBasicMaterial attach="material" color="#0000ff" linewidth={2} />
