@@ -9,6 +9,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Separator } from "@/components/ui/separator";
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 
 interface ConnectionManagerProps {
   connections: Connection[];
@@ -21,7 +22,6 @@ export function ConnectionManager({
   onUpdateConnection, 
   onDeleteConnection 
 }: ConnectionManagerProps) {
-  // Group connections by type
   const connectionsByType = connections.reduce((acc, connection) => {
     const type = connection.type || 'other';
     if (!acc[type]) {
@@ -33,20 +33,17 @@ export function ConnectionManager({
   
   const connectionTypes = Object.keys(connectionsByType);
   
-  // Calculate utilization
   const getUtilizationPercentage = (connection: Connection) => {
     if (!connection.capacity || !connection.currentLoad) return 0;
     return Math.min(100, (connection.currentLoad / connection.capacity) * 100);
   };
   
-  // Get color based on utilization
   const getUtilizationColor = (percentage: number) => {
     if (percentage > 80) return 'bg-destructive';
     if (percentage > 60) return 'bg-warning';
     return 'bg-success';
   };
   
-  // Enhanced icon function with more connection types
   const getConnectionIcon = (type: string) => {
     switch (type) {
       case 'power': return <Power className='h-4 w-4 text-green-500' />;
@@ -58,7 +55,6 @@ export function ConnectionManager({
     }
   };
 
-  // Get unit based on connection type
   const getConnectionUnit = (type: string) => {
     switch (type) {
       case 'power': return 'kW';
@@ -148,7 +144,6 @@ export function ConnectionManager({
   );
 }
 
-// Extracted connection item component for better organization
 interface ConnectionItemProps {
   connection: Connection;
   onUpdate: (id: string, updates: Partial<Connection>) => void;
@@ -232,34 +227,40 @@ function ConnectionItem({
       {connection.type === 'power' && (
         <div className='space-y-2'>
           <Label>Voltage</Label>
-          <select
-            value={connection.voltage || '400'}
-            onChange={(e) => onUpdate(connection.id, {
-              voltage: e.target.value
-            })}
-            className='w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm'
+          <Select
+            value={connection.voltage || "400"}
+            onValueChange={(value) => onUpdate(connection.id, { voltage: value })}
           >
-            <option value='230'>230V</option>
-            <option value='400'>400V</option>
-            <option value='480'>480V</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select voltage" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="230">230V</SelectItem>
+              <SelectItem value="400">400V</SelectItem>
+              <SelectItem value="480">480V</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
       
       {connection.type === 'network' && (
         <div className='space-y-2'>
           <Label>Network Type</Label>
-          <select
-            value={connection.networkType || 'ethernet'}
-            onChange={(e) => onUpdate(connection.id, {
-              networkType: e.target.value
-            })}
-            className='w-full h-10 rounded-md border border-input bg-background px-3 py-2 text-sm'
+          <Select
+            value={connection.networkType || "ethernet"}
+            onValueChange={(value: "ethernet" | "fiber" | "wifi") => 
+              onUpdate(connection.id, { networkType: value })
+            }
           >
-            <option value='ethernet'>Ethernet</option>
-            <option value='fiber'>Fiber</option>
-            <option value='wifi'>WiFi</option>
-          </select>
+            <SelectTrigger>
+              <SelectValue placeholder="Select network type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="ethernet">Ethernet</SelectItem>
+              <SelectItem value="fiber">Fiber</SelectItem>
+              <SelectItem value="wifi">WiFi</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       )}
     </div>

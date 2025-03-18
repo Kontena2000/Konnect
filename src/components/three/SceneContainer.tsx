@@ -13,21 +13,56 @@ import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 
-// Separate the raycasting logic into a component within Canvas context
-function DragPreview({
+function SceneContent({
+  modules,
+  selectedModuleId,
+  transformMode,
+  onModuleSelect,
+  onModuleUpdate,
+  onModuleDelete,
+  connections,
+  environmentalElements,
+  terrain,
+  onEnvironmentalElementSelect,
+  gridSnap,
   isDraggingOver,
   mousePosition,
-  gridSnap,
-  snapPoints,
   draggedDimensions,
-  onPositionUpdate
+  readOnly,
+  snapPoints,
+  snapLines,
+  onPreviewPositionUpdate,
+  previewMesh,
+  rotationAngle,
+  showGuides,
+  previewPosition,
+  setRotationAngle,
+  controlsRef
 }: {
+  modules: Module[];
+  selectedModuleId?: string;
+  transformMode?: "translate" | "rotate" | "scale";
+  onModuleSelect?: (moduleId: string) => void;
+  onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
+  onModuleDelete?: (moduleId: string) => void;
+  connections: Connection[];
+  environmentalElements?: ElementType[];
+  terrain?: TerrainData;
+  onEnvironmentalElementSelect?: (elementId: string) => void;
+  gridSnap: boolean;
   isDraggingOver: boolean;
   mousePosition: Vector2 | null;
-  gridSnap: boolean;
-  snapPoints: Vector3[];
   draggedDimensions: { height: number } | null;
-  onPositionUpdate: (position: [number, number, number]) => void;
+  readOnly: boolean;
+  snapPoints: Vector3[];
+  snapLines: Line3[];
+  onPreviewPositionUpdate: (position: [number, number, number]) => void;
+  previewMesh: THREE.Mesh | null;
+  rotationAngle: number;
+  showGuides: boolean;
+  previewPosition: [number, number, number];
+  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
+  controlsRef: React.RefObject<any>;
 }) {
   const { camera, raycaster } = useThree();
 
@@ -57,10 +92,33 @@ function DragPreview({
     }
 
     intersection.y = draggedDimensions.height / 2;
-    onPositionUpdate([intersection.x, intersection.y, intersection.z]);
-  }, [isDraggingOver, mousePosition, gridSnap, snapPoints, draggedDimensions, camera, raycaster, onPositionUpdate]);
+    onPreviewPositionUpdate([intersection.x, intersection.y, intersection.z]);
+  }, [isDraggingOver, mousePosition, gridSnap, snapPoints, draggedDimensions, camera, raycaster, onPreviewPositionUpdate]);
 
-  return null;
+  return (
+    <SceneElements 
+      modules={modules}
+      selectedModuleId={selectedModuleId}
+      transformMode={transformMode}
+      onModuleSelect={onModuleSelect}
+      onModuleUpdate={onModuleUpdate}
+      onModuleDelete={onModuleDelete}
+      connections={connections}
+      environmentalElements={environmentalElements}
+      terrain={terrain}
+      onEnvironmentalElementSelect={onEnvironmentalElementSelect}
+      gridSnap={gridSnap}
+      isDraggingOver={isDraggingOver}
+      previewMesh={previewMesh}
+      rotationAngle={rotationAngle}
+      showGuides={showGuides}
+      snapPoints={snapPoints}
+      snapLines={snapLines}
+      previewPosition={previewPosition}
+      readOnly={readOnly}
+      setRotationAngle={setRotationAngle}
+    />
+  );
 }
 
 export interface SceneContainerProps {
@@ -262,15 +320,7 @@ export function SceneContainer({
         }}
         shadows
       >
-        <DragPreview
-          isDraggingOver={isDraggingOver}
-          mousePosition={mousePosition}
-          gridSnap={gridSnap}
-          snapPoints={snapPoints}
-          draggedDimensions={draggedModuleRef.current?.dimensions || null}
-          onPositionUpdate={setPreviewPosition}
-        />
-        <SceneElements 
+        <SceneContent
           modules={modules}
           selectedModuleId={selectedModuleId}
           transformMode={transformMode}
@@ -283,14 +333,18 @@ export function SceneContainer({
           onEnvironmentalElementSelect={onEnvironmentalElementSelect}
           gridSnap={gridSnap}
           isDraggingOver={isDraggingOver}
+          mousePosition={mousePosition}
+          draggedDimensions={draggedModuleRef.current?.dimensions || null}
+          readOnly={readOnly}
+          snapPoints={snapPoints}
+          snapLines={snapLines}
+          onPreviewPositionUpdate={setPreviewPosition}
           previewMesh={previewMesh}
           rotationAngle={rotationAngle}
           showGuides={showGuides}
-          snapPoints={snapPoints}
-          snapLines={snapLines}
           previewPosition={previewPosition}
-          readOnly={readOnly}
           setRotationAngle={setRotationAngle}
+          controlsRef={controlsRef}
         />
       </Canvas>
 
