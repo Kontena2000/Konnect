@@ -2,7 +2,6 @@
 import { useRef, useState, useEffect, Suspense, useCallback } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh } from "three";
 import { useLoader, ThreeEvent } from "@react-three/fiber";
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
@@ -17,11 +16,6 @@ interface ModuleObjectProps {
   gridSnap?: boolean;
   readOnly?: boolean;
 }
-
-const ModelLoader = ({ url }: { url: string }) => {
-  const gltf = useLoader(GLTFLoader, url);
-  return <primitive object={gltf.scene.clone()} />;
-};
 
 const ModelFallback = ({ module, ...props }: { module: Module } & any) => (
   <mesh {...props}>
@@ -136,18 +130,12 @@ export function ModuleObject({
 
   return (
     <group onContextMenu={handleContextMenu}>
-      {module.modelUrl ? (
-        <Suspense fallback={<ModelFallback module={module} {...commonProps} transparent opacity={0.5} />}>
-          <ModelLoader url={module.modelUrl} />
-        </Suspense>
-      ) : (
-        <ModelFallback 
-          module={module} 
-          {...commonProps} 
-          transparent={hovered || selected} 
-          opacity={hovered || selected ? 0.8 : 1} 
-        />
-      )}
+      <ModelFallback 
+        module={module} 
+        {...commonProps} 
+        transparent={hovered || selected} 
+        opacity={hovered || selected ? 0.8 : 1} 
+      />
       
       {showControls && !readOnly && (
         <Html position={[0, module.dimensions.height + 0.5, 0]}>
