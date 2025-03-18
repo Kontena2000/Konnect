@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect } from "react";
 import { Object3D, MeshStandardMaterial, Vector3 } from "three";
 import { ThreeEvent } from "@react-three/fiber";
@@ -25,7 +24,7 @@ export function ModuleObject({
   onClick,
   onUpdate,
   onDelete,
-  transformMode = "translate",
+  transformMode = 'translate',
   gridSnap = true,
   readOnly = false
 }: ModuleObjectProps) {
@@ -34,15 +33,19 @@ export function ModuleObject({
   const [showControls, setShowControls] = useState(false);
   const castShadow = module.castShadow !== false;
   const receiveShadow = module.receiveShadow !== false;
+  const [modelLoadError, setModelLoadError] = useState(false);
 
-  // Always call useLoader unconditionally, but only use the result if modelUrl exists
-  // This is a placeholder URL to use when no model is specified
-  const fallbackUrl = "/models/fallback.glb";
-  const modelUrl = module.modelUrl || fallbackUrl;
-  const modelResult = useLoader(GLTFLoader, modelUrl);
-  
-  // Only use the model if the URL was actually provided
-  const model = module.modelUrl ? modelResult.scene.clone() : null;
+  // Try to load the model if a URL is provided
+  let model = null;
+  if (module.modelUrl) {
+    try {
+      const { scene } = useLoader(GLTFLoader, module.modelUrl);
+      model = scene.clone();
+    } catch (error) {
+      console.error(`Error loading model from ${module.modelUrl}:`, error);
+      setModelLoadError(true);
+    }
+  }
 
   // Handle transform changes
   const handleTransformChange = () => {
@@ -100,7 +103,7 @@ export function ModuleObject({
 
   return (
     <group>
-      {model ? (
+      {model && !modelLoadError ? (
         <primitive 
           object={model}
           ref={meshRef}
