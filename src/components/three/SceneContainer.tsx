@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
+import { CameraControlsHandle } from './CameraControls';
 
 function SceneContent({
   modules,
@@ -169,7 +170,7 @@ export function SceneContainer({
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
-  const controlsRef = useRef(null);
+  const controlsRef = useRef<CameraControlsHandle>(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
   const { snapPoints, snapLines } = useMemo(() => {

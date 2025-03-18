@@ -1,10 +1,9 @@
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, forwardRef, useImperativeHandle } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
 
 interface CameraControlsProps {
-  controlsRef?: React.RefObject<any>;
   enableZoom?: boolean;
   enablePan?: boolean;
   minDistance?: number;
@@ -13,34 +12,60 @@ interface CameraControlsProps {
   maxPolarAngle?: number;
 }
 
-export function CameraControls({
-  controlsRef,
+export interface CameraControlsHandle {
+  setAzimuthalAngle: (angle: number) => void;
+  setPolarAngle: (angle: number) => void;
+  saveState: () => void;
+  reset: () => void;
+}
+
+export const CameraControls = forwardRef<CameraControlsHandle, CameraControlsProps>(({
   enableZoom = true,
   enablePan = true,
   minDistance = 5,
   maxDistance = 50,
   minPolarAngle = 0,
   maxPolarAngle = Math.PI / 2.1
-}: CameraControlsProps) {
-  const localRef = useRef<any>(null);
-  const ref = controlsRef || localRef;
+}, ref) => {
+  const controlsRef = useRef<any>(null);
   const { camera, gl } = useThree();
-  
-  // Initialize camera position and controls
+
+  useImperativeHandle(ref, () => ({
+    setAzimuthalAngle: (angle: number) => {
+      if (controlsRef.current) {
+        controlsRef.current.setAzimuthalAngle(angle);
+      }
+    },
+    setPolarAngle: (angle: number) => {
+      if (controlsRef.current) {
+        controlsRef.current.setPolarAngle(angle);
+      }
+    },
+    saveState: () => {
+      if (controlsRef.current) {
+        controlsRef.current.saveState();
+      }
+    },
+    reset: () => {
+      if (controlsRef.current) {
+        controlsRef.current.reset();
+      }
+    }
+  }));
+
   useEffect(() => {
-    if (camera && ref.current) {
+    if (camera && controlsRef.current) {
       camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
-      // Reset camera controls to initial position
-      ref.current.setAzimuthalAngle(Math.PI / 4);
-      ref.current.setPolarAngle(Math.PI / 4);
-      ref.current.saveState();
+      controlsRef.current.setAzimuthalAngle(Math.PI / 4);
+      controlsRef.current.setPolarAngle(Math.PI / 4);
+      controlsRef.current.saveState();
     }
-  }, [camera, ref]);
+  }, [camera]);
 
   return (
     <OrbitControls
-      ref={ref}
+      ref={controlsRef}
       args={[camera, gl.domElement]}
       enableZoom={enableZoom}
       enablePan={enablePan}
@@ -54,4 +79,6 @@ export function CameraControls({
       dampingFactor={0.05}
     />
   );
-}
+});
+
+CameraControls.displayName = "CameraControls";

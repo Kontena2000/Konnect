@@ -1,4 +1,3 @@
-
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -10,7 +9,7 @@ import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
-import { CameraControls } from "./CameraControls";
+import { CameraControls, CameraControlsHandle } from './CameraControls';
 import { Html } from "@react-three/drei";
 
 interface SceneElementsProps {
@@ -34,6 +33,7 @@ interface SceneElementsProps {
   previewPosition: [number, number, number];
   readOnly?: boolean;
   setRotationAngle: (angle: number | ((prev: number) => number)) => void;
+  controlsRef: React.RefObject<CameraControlsHandle>;
 }
 
 export function SceneElements({
@@ -56,10 +56,10 @@ export function SceneElements({
   snapLines,
   previewPosition,
   readOnly = false,
-  setRotationAngle
+  setRotationAngle,
+  controlsRef
 }: SceneElementsProps) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
 
   useEffect(() => {
     if (camera) {
