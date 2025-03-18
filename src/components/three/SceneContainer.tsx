@@ -108,17 +108,14 @@ export function SceneContainer({
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     
-    // Cast ray to find intersection with ground plane
     const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new THREE.Vector2(x, y), new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000));
+    raycaster.setFromCamera(new THREE.Vector2(x, y), camera);
     
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const intersection = new THREE.Vector3();
     raycaster.ray.intersectPlane(groundPlane, intersection);
     
-    // Snap to grid or nearby points
     if (gridSnap) {
-      // First check if we should snap to existing points
       const snapThreshold = 1.5;
       const nearestPoint = snapPoints.reduce((nearest, point) => {
         const distance = intersection.distanceTo(point);
@@ -130,20 +127,18 @@ export function SceneContainer({
       if (nearestPoint.distance < snapThreshold) {
         intersection.copy(nearestPoint.point);
       } else {
-        // Otherwise snap to grid
         intersection.x = Math.round(intersection.x);
         intersection.z = Math.round(intersection.z);
       }
-    } else {
-      // Snap to half-grid
-      intersection.x = Math.round(intersection.x * 2) / 2;
-      intersection.z = Math.round(intersection.z * 2) / 2;
     }
     
+    const height = draggedModuleRef.current?.dimensions.height || 0;
+    intersection.y = height / 2;
+    
     setMousePosition(new Vector2(event.clientX, event.clientY));
-    setPreviewPosition([intersection.x, previewHeight / 2, intersection.z]);
+    setPreviewPosition([intersection.x, intersection.y, intersection.z]);
     setShowPreviewControls(true);
-  }, [gridSnap, previewHeight, readOnly, snapPoints]);
+  }, [gridSnap, camera, snapPoints, readOnly]);
 
   const handleDragLeave = () => {
     if (readOnly) return;
@@ -192,7 +187,6 @@ export function SceneContainer({
   useEffect(() => {
     if (!isDraggingOver || !draggedModuleRef.current) return;
     
-    // Create a simple box mesh for preview
     const module = draggedModuleRef.current;
     const geometry = new THREE.BoxGeometry(
       module.dimensions.length,
@@ -207,14 +201,10 @@ export function SceneContainer({
     });
     const mesh = new THREE.Mesh(geometry, material);
     
-    // Set the preview height for positioning
     setPreviewHeight(module.dimensions.height);
-    
-    // Update the preview mesh
     setPreviewMesh(mesh);
     
     return () => {
-      // Clean up
       geometry.dispose();
       material.dispose();
       setPreviewMesh(null);

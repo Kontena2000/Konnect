@@ -22,18 +22,17 @@ export function CameraControls({
   minPolarAngle = 0,
   maxPolarAngle = Math.PI / 2.1
 }: CameraControlsProps) {
-  const localRef = useRef(null);
+  const localRef = useRef<any>(null);
   const ref = controlsRef || localRef;
   const { camera, gl } = useThree();
   
-  // Set initial camera position
   useEffect(() => {
-    if (camera) {
-      // Set to isometric-like view
+    if (camera && ref.current) {
       camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
+      ref.current.reset();
     }
-  }, [camera]);
+  }, [camera, ref]);
 
   return (
     <OrbitControls
@@ -45,10 +44,8 @@ export function CameraControls({
       maxDistance={maxDistance}
       minPolarAngle={minPolarAngle}
       maxPolarAngle={maxPolarAngle}
-      // Prevent camera from going below ground
       maxAzimuthAngle={Infinity}
       minAzimuthAngle={-Infinity}
-      // Make camera movement smoother
       enableDamping={true}
       dampingFactor={0.05}
     />
