@@ -1,3 +1,4 @@
+
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -15,113 +16,15 @@ import { CameraControlsHandle } from './CameraControls';
 import { useGridSnapping } from '@/hooks/use-grid-snapping';
 import { useDragPreview } from '@/hooks/use-drag-preview';
 
-function SceneContent({
-  modules,
-  selectedModuleId,
-  transformMode,
-  onModuleSelect,
-  onModuleUpdate,
-  onModuleDelete,
-  connections,
-  environmentalElements,
-  terrain,
-  onEnvironmentalElementSelect,
-  gridSnap,
-  isDraggingOver,
-  mousePosition,
-  draggedDimensions,
-  readOnly,
-  snapPoints,
-  snapLines,
-  onPreviewPositionUpdate,
-  previewMesh,
-  rotationAngle,
-  showGuides,
-  previewPosition,
-  setRotationAngle,
-  controlsRef
-}: {
-  modules: Module[];
-  selectedModuleId?: string;
-  transformMode?: "translate" | "rotate" | "scale";
-  onModuleSelect?: (moduleId: string) => void;
-  onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
-  onModuleDelete?: (moduleId: string) => void;
-  connections: Connection[];
-  environmentalElements?: ElementType[];
-  terrain?: TerrainData;
-  onEnvironmentalElementSelect?: (elementId: string) => void;
-  gridSnap: boolean;
-  isDraggingOver: boolean;
-  mousePosition: Vector2 | null;
-  draggedDimensions: { height: number } | null;
-  readOnly: boolean;
-  snapPoints: Vector3[];
-  snapLines: Line3[];
-  onPreviewPositionUpdate: (position: [number, number, number]) => void;
-  previewMesh: THREE.Mesh | null;
-  rotationAngle: number;
-  showGuides: boolean;
-  previewPosition: [number, number, number];
-  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
-  controlsRef?: React.RefObject<CameraControlsHandle>;
-}) {
-  const { camera, raycaster } = useThree();
-
-  useEffect(() => {
-    if (!isDraggingOver || !mousePosition || !draggedDimensions) return;
-
-    raycaster.setFromCamera(mousePosition, camera);
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(groundPlane, intersection);
-
-    if (gridSnap) {
-      const snapThreshold = 1.5;
-      const nearestPoint = snapPoints.reduce((nearest, point) => {
-        const distance = intersection.distanceTo(point);
-        return distance < snapThreshold && distance < nearest.distance
-          ? { point, distance }
-          : nearest;
-      }, { point: intersection, distance: Infinity });
-
-      if (nearestPoint.distance < snapThreshold) {
-        intersection.copy(nearestPoint.point);
-      } else {
-        intersection.x = Math.round(intersection.x);
-        intersection.z = Math.round(intersection.z);
-      }
-    }
-
-    intersection.y = draggedDimensions.height / 2;
-    onPreviewPositionUpdate([intersection.x, intersection.y, intersection.z]);
-  }, [isDraggingOver, mousePosition, gridSnap, snapPoints, draggedDimensions, camera, raycaster, onPreviewPositionUpdate]);
-
-  return (
-    <SceneElements 
-      modules={modules}
-      selectedModuleId={selectedModuleId}
-      transformMode={transformMode}
-      onModuleSelect={onModuleSelect}
-      onModuleUpdate={onModuleUpdate}
-      onModuleDelete={onModuleDelete}
-      connections={connections}
-      environmentalElements={environmentalElements}
-      terrain={terrain}
-      onEnvironmentalElementSelect={onEnvironmentalElementSelect}
-      gridSnap={gridSnap}
-      isDraggingOver={isDraggingOver}
-      previewMesh={previewMesh}
-      rotationAngle={rotationAngle}
-      showGuides={showGuides}
-      snapPoints={snapPoints}
-      snapLines={snapLines}
-      previewPosition={previewPosition}
-      readOnly={readOnly}
-      setRotationAngle={setRotationAngle}
-      controlsRef={controlsRef}
-    />
-  );
+function getSnappedPosition(position: Vector3, gridSize: number = 1, snapThreshold: number = 0.5): Vector3 {
+  const snappedPosition = position.clone();
+  if (Math.abs(position.x % gridSize) < snapThreshold) {
+    snappedPosition.x = Math.round(position.x / gridSize) * gridSize;
+  }
+  if (Math.abs(position.z % gridSize) < snapThreshold) {
+    snappedPosition.z = Math.round(position.z / gridSize) * gridSize;
+  }
+  return snappedPosition;
 }
 
 export interface SceneContainerProps {
@@ -220,11 +123,12 @@ export function SceneContainer({
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    const mousePosition = new Vector2(x, y);
+    const mousePos = new Vector2(x, y);
+    setMousePosition(mousePos);
 
-    // Use raycaster to find intersection with ground plane
+    // Calculate intersection with ground plane
     const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mousePosition, camera);
+    raycaster.setFromCamera(mousePos, camera);
     
     const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
     const intersection = new THREE.Vector3();
@@ -232,16 +136,17 @@ export function SceneContainer({
 
     // Apply grid snapping
     if (gridSnap) {
-      const snappedPosition = useGridSnapping(intersection, 1, 0.5);
-      setPreviewPosition([snappedPosition.x, previewHeight / 2, snappedPosition.z]);
+      const snappedPos = getSnappedPosition(intersection);
+      setPreviewPosition([snappedPos.x, previewHeight / 2, snappedPos.z]);
     } else {
       setPreviewPosition([intersection.x, previewHeight / 2, intersection.z]);
     }
-  }, [readOnly, gridSnap, camera, previewHeight]);
+  }, [readOnly, gridSnap, previewHeight, setPreviewPosition]);
 
   const handleModuleDragStart = useCallback((module: Module) => {
     handleDragStart(module);
     setPreviewHeight(module.dimensions.height);
+    draggedModuleRef.current = module;
   }, [handleDragStart]);
 
   const handleDragLeave = useCallback(() => {
@@ -257,7 +162,8 @@ export function SceneContainer({
     onDropPoint(previewPosition);
     setIsDraggingOver(false);
     setMousePosition(null);
-  }, [readOnly, onDropPoint, previewPosition]);
+    handleDragEnd();
+  }, [readOnly, onDropPoint, previewPosition, handleDragEnd]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -344,7 +250,7 @@ export function SceneContainer({
         }}
         shadows
       >
-        <SceneContent
+        <SceneElements
           modules={modules}
           selectedModuleId={selectedModuleId}
           transformMode={transformMode}
