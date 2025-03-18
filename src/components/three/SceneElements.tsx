@@ -1,16 +1,16 @@
 
-import { useEffect, useCallback } from "react";
 import { useThree } from "@react-three/fiber";
-import { OrbitControls, Grid, Environment } from "@react-three/drei";
+import { OrbitControls, Grid, TransformControls, Line, Html } from "@react-three/drei";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
-import { Connection } from "@/services/layout";
 import { Module } from "@/types/module";
+import { Connection } from "@/services/layout";
+import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
+import { useRef, useEffect } from "react";
+import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
-import * as THREE from 'three';
-import { Vector2, Vector3, Line3 } from 'three';
 
 interface SceneElementsProps {
   modules: Module[];
@@ -20,157 +20,145 @@ interface SceneElementsProps {
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
   connections: Connection[];
-  environmentalElements: ElementType[];
+  environmentalElements?: ElementType[];
   terrain?: TerrainData;
   onEnvironmentalElementSelect?: (elementId: string) => void;
-  gridSnap: boolean;
-  isDraggingOver: boolean;
-  previewMesh: THREE.Mesh | null;
+  gridSnap?: boolean;
+  isDraggingOver?: boolean;
+  previewMesh: Mesh | null;
   rotationAngle: number;
-  showGuides: boolean;
+  showGuides?: boolean;
   snapPoints: Vector3[];
   snapLines: Line3[];
   previewHeight: number;
   mousePosition: Vector2 | null;
-  onDropPoint: (point: [number, number, number]) => void;
-  cameraAngle?: "top" | "isometric" | "front" | "side";
+  onDropPoint?: (point: [number, number, number]) => void;
+  readOnly?: boolean;
 }
 
 export function SceneElements({
   modules,
   selectedModuleId,
-  transformMode,
+  transformMode = "translate",
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
   connections,
-  environmentalElements,
+  environmentalElements = [],
   terrain,
   onEnvironmentalElementSelect,
-  gridSnap,
-  isDraggingOver,
+  gridSnap = true,
+  isDraggingOver = false,
   previewMesh,
   rotationAngle,
-  showGuides,
+  showGuides = false,
   snapPoints,
   snapLines,
   previewHeight,
   mousePosition,
   onDropPoint,
-  cameraAngle = "isometric"
+  readOnly = false
 }: SceneElementsProps) {
-  const { camera, scene } = useThree();
+  const { camera } = useThree();
+  const controlsRef = useRef<any>(null);
+  const selectedRef = useRef<Object3D | null>(null);
 
-  const updateCameraPosition = useCallback((angle: "top" | "isometric" | "front" | "side") => {
-    switch (angle) {
-      case "top":
-        camera.position.set(0, 20, 0);
-        camera.lookAt(0, 0, 0);
-        break;
-      case "isometric":
-        camera.position.set(10, 10, 10);
-        camera.lookAt(0, 0, 0);
-        break;
-      case "front":
-        camera.position.set(0, 5, 20);
-        camera.lookAt(0, 5, 0);
-        break;
-      case "side":
-        camera.position.set(20, 5, 0);
-        camera.lookAt(0, 5, 0);
-        break;
-    }
-  }, [camera]);
-
+  // Reset camera position on mount
   useEffect(() => {
-    updateCameraPosition(cameraAngle);
-  }, [cameraAngle, updateCameraPosition]);
-
-  useEffect(() => {
-    if (isDraggingOver && mousePosition && previewMesh) {
-      const raycaster = new THREE.Raycaster();
-      const mouse = new THREE.Vector2(
-        (mousePosition.x / window.innerWidth) * 2 - 1,
-        -(mousePosition.y / window.innerHeight) * 2 + 1
-      );
-      
-      raycaster.setFromCamera(mouse, camera);
-      const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-      const intersection = new THREE.Vector3();
-      raycaster.ray.intersectPlane(groundPlane, intersection);
-
-      if (gridSnap) {
-        const snapThreshold = 1.5;
-        const nearestPoint = snapPoints.reduce((nearest, point) => {
-          const distance = intersection.distanceTo(point);
-          return distance < snapThreshold && distance < nearest.distance
-            ? { point, distance }
-            : nearest;
-        }, { point: intersection, distance: Infinity });
-
-        intersection.copy(nearestPoint.point);
-      } else {
-        intersection.x = Math.round(intersection.x * 2) / 2;
-        intersection.z = Math.round(intersection.z * 2) / 2;
-      }
-
-      previewMesh.position.set(
-        intersection.x,
-        previewHeight / 2,
-        intersection.z
-      );
-      previewMesh.rotation.set(0, rotationAngle, 0);
+    if (controlsRef.current) {
+      controlsRef.current.reset();
     }
-  }, [isDraggingOver, mousePosition, previewMesh, camera, gridSnap, snapPoints, previewHeight, rotationAngle]);
+  }, []);
+
+  // Calculate preview position based on mouse position
+  const previewPosition = useRef<[number, number, number]>([0, 0, 0]);
+  const [showRotationControls, setShowRotationControls] = useState(false);
+
+  // Enhanced drag over handler
+  useEffect(() => {
+    if (!isDraggingOver || !mousePosition || !camera || readOnly) return;
+    
+    const x = ((mousePosition.x) / window.innerWidth) * 2 - 1;
+    const y = -((mousePosition.y) / window.innerHeight) * 2 + 1;
+    
+    // Cast ray to find intersection with ground plane
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera({ x, y }, camera);
+    
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+    
+    // Snap to grid
+    if (gridSnap) {
+      intersection.x = Math.round(intersection.x);
+      intersection.z = Math.round(intersection.z);
+    } else {
+      intersection.x = Math.round(intersection.x * 2) / 2;
+      intersection.z = Math.round(intersection.z * 2) / 2;
+    }
+    
+    previewPosition.current = [intersection.x, previewHeight / 2, intersection.z];
+    setShowRotationControls(true);
+  }, [isDraggingOver, mousePosition, camera, gridSnap, previewHeight, readOnly]);
 
   return (
     <>
-      <OrbitControls 
-        makeDefault 
-        enabled={!isDraggingOver}
-        minPolarAngle={Math.PI / 6}
-        maxPolarAngle={Math.PI / 2}
-        minDistance={5}
-        maxDistance={50}
-      />
-      
-      <Grid 
-        infiniteGrid 
-        fadeDistance={50} 
-        fadeStrength={5}
-        cellSize={gridSnap ? 1 : 0.5}
-        cellThickness={gridSnap ? 1 : 0.5}
-        cellColor={isDraggingOver ? '#2563eb' : '#94a3b8'}
-        sectionSize={gridSnap ? 10 : 5}
-        sectionColor={isDraggingOver ? '#1d4ed8' : '#64748b'}
-        sectionThickness={1.5}
-        followCamera
-      />
-
-      <Environment preset='city' />
+      {/* Scene lighting */}
       <ambientLight intensity={0.5} />
       <directionalLight 
-        position={[10, 10, 5]} 
-        intensity={1}
-        castShadow
+        position={[10, 10, 10]} 
+        intensity={0.8} 
+        castShadow 
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-far={50}
+        shadow-camera-left={-10}
+        shadow-camera-right={10}
+        shadow-camera-top={10}
+        shadow-camera-bottom={-10}
+      />
+      <directionalLight position={[-10, 10, -10]} intensity={0.4} />
+
+      {/* Grid and controls */}
+      <Grid 
+        infiniteGrid 
+        cellSize={1} 
+        cellThickness={0.5} 
+        cellColor="#666" 
+        sectionSize={10}
+        sectionThickness={1}
+        sectionColor="#888"
+        fadeDistance={50}
+        fadeStrength={1.5}
+      />
+      <OrbitControls 
+        ref={controlsRef}
+        enableDamping={true}
+        dampingFactor={0.1}
+        rotateSpeed={0.5}
+        minDistance={1}
+        maxDistance={100}
+        maxPolarAngle={Math.PI / 2 - 0.1}
       />
 
-      {modules.map((module) => (
+      {/* Render modules */}
+      {modules.map(module => (
         <ModuleObject
           key={module.id}
           module={module}
           selected={module.id === selectedModuleId}
-          onSelect={() => onModuleSelect?.(module.id)}
+          onClick={() => onModuleSelect?.(module.id)}
           onUpdate={(updates) => onModuleUpdate?.(module.id, updates)}
           onDelete={() => onModuleDelete?.(module.id)}
           transformMode={transformMode}
           gridSnap={gridSnap}
-          castShadow
-          receiveShadow
+          readOnly={readOnly}
         />
       ))}
 
-      {connections.map((connection) => (
+      {/* Render connections */}
+      {connections.map(connection => (
         <ConnectionLine
           key={connection.id}
           connection={connection}
@@ -178,57 +166,63 @@ export function SceneElements({
         />
       ))}
 
-      {environmentalElements.map((element) => (
+      {/* Environmental elements */}
+      {environmentalElements.map(element => (
         <EnvironmentalElement
           key={element.id}
           element={element}
-          onSelect={() => onEnvironmentalElementSelect?.(element.id)}
+          onClick={() => onEnvironmentalElementSelect?.(element.id)}
         />
       ))}
 
-      {terrain && <TerrainView data={terrain} />}
-
-      {previewMesh && isDraggingOver && (
-        <primitive 
-          object={previewMesh} 
-          position={[0, previewHeight / 2, 0]}
-          rotation={[0, rotationAngle, 0]}
-          castShadow
-          receiveShadow
-        />
+      {/* Terrain if available */}
+      {terrain && (
+        <TerrainView terrain={terrain} />
       )}
 
-      {showGuides && isDraggingOver && (
-        <group>
-          <gridHelper 
-            args={[100, 100, '#2563eb', '#2563eb']}
-            position={[0, 0.01, 0]}
-          />
-          <axesHelper args={[5]} />
-          
-          {snapPoints.map((point, index) => (
-            <mesh key={`snap-point-${index}`} position={point}>
-              <sphereGeometry args={[0.1]} />
-              <meshBasicMaterial color="#2563eb" transparent opacity={0.5} />
-            </mesh>
-          ))}
+      {/* Guide lines when holding shift */}
+      {showGuides && snapLines.map((line, index) => (
+        <Line
+          key={`guide-line-${index}`}
+          points={[
+            [line.start.x, 0.05, line.start.z],
+            [line.end.x, 0.05, line.end.z]
+          ]}
+          color="yellow"
+          lineWidth={1}
+          dashed
+          dashSize={0.2}
+          gapSize={0.1}
+        />
+      ))}
 
-          {snapLines.map((line, index) => (
-            <line key={`snap-line-${index}`}>
-              <bufferGeometry>
-                <bufferAttribute
-                  attach="attributes-position"
-                  count={2}
-                  array={new Float32Array([
-                    line.start.x, line.start.y, line.start.z,
-                    line.end.x, line.end.y, line.end.z
-                  ])}
-                  itemSize={3}
-                />
-              </bufferGeometry>
-              <lineBasicMaterial color="#2563eb" linewidth={1} />
-            </line>
-          ))}
+      {/* Snap points */}
+      {showGuides && snapPoints.map((point, index) => (
+        <mesh
+          key={`guide-point-${index}`}
+          position={[point.x, 0.05, point.z]}
+        >
+          <sphereGeometry args={[0.1, 8, 8]} />
+          <meshBasicMaterial color="yellow" />
+        </mesh>
+      ))}
+
+      {/* Preview mesh during drag */}
+      {previewMesh && isDraggingOver && (
+        <group position={previewPosition.current} rotation={[0, rotationAngle, 0]}>
+          <primitive object={previewMesh} />
+          {showRotationControls && (
+            <Html position={[0, previewHeight + 0.5, 0]}>
+              <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
+                <button className="p-1 hover:bg-accent rounded" onClick={() => setRotationAngle(prev => prev - Math.PI/2)}>
+                  ⟲
+                </button>
+                <button className="p-1 hover:bg-accent rounded" onClick={() => setRotationAngle(prev => prev + Math.PI/2)}>
+                  ⟳
+                </button>
+              </div>
+            </Html>
+          )}
         </group>
       )}
     </>

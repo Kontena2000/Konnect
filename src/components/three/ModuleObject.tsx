@@ -1,72 +1,66 @@
 
-import { useEffect, useRef, useState } from "react";
-import { ThreeEvent, useThree } from "@react-three/fiber";
+import { useRef, useState, useEffect } from "react";
+import { Object3D, MeshStandardMaterial, Vector3 } from "three";
+import { ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
-import type { Mesh, Object3D } from "three";
-import { Box3 } from 'three';
-import { Button } from "@/components/ui/button";
-import { RotateCcw, RotateCw, Trash2 } from "lucide-react";
+import { useLoader } from "@react-three/fiber";
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader";
 
-export interface ModuleObjectProps {
+interface ModuleObjectProps {
   module: Module;
   selected?: boolean;
-  onSelect?: () => void;
+  onClick?: () => void;
   onUpdate?: (updates: Partial<Module>) => void;
   onDelete?: () => void;
   transformMode?: "translate" | "rotate" | "scale";
-  readOnly?: boolean;
   gridSnap?: boolean;
-  castShadow?: boolean;
-  receiveShadow?: boolean;
+  readOnly?: boolean;
 }
 
 export function ModuleObject({
   module,
   selected = false,
-  onSelect,
+  onClick,
   onUpdate,
   onDelete,
   transformMode = "translate",
-  readOnly = false,
   gridSnap = true,
-  castShadow = false,
-  receiveShadow = false
+  readOnly = false
 }: ModuleObjectProps) {
-  const meshRef = useRef<Mesh>(null);
-  const { camera } = useThree();
+  const meshRef = useRef<Object3D>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const castShadow = module.castShadow !== false;
+  const receiveShadow = module.receiveShadow !== false;
 
-  useEffect(() => {
-    if (meshRef.current) {
-      const box = new Box3().setFromObject(meshRef.current);
-      const size = box.getSize(box.max);
-      
-      if (onUpdate && (
-        size.x !== module.dimensions.length ||
-        size.y !== module.dimensions.height ||
-        size.z !== module.dimensions.width
-      )) {
-        onUpdate({
-          dimensions: {
-            length: size.x,
-            height: size.y,
-            width: size.z
-          }
-        });
-      }
-    }
-  }, [module, onUpdate]);
+  // Load 3D model if available
+  const model = module.modelUrl ? useLoader(GLTFLoader, module.modelUrl).scene.clone() : null;
 
-  const handlePointerOver = (event: ThreeEvent<PointerEvent>) => {
+  // Handle transform changes
+  const handleTransformChange = () => {
+    if (!meshRef.current || readOnly) return;
+    
+    const position = meshRef.current.position.toArray() as [number, number, number];
+    const rotation = meshRef.current.rotation.toArray() as [number, number, number];
+    const scale = meshRef.current.scale.toArray() as [number, number, number];
+    
+    onUpdate?.({
+      position,
+      rotation,
+      scale
+    });
+  };
+
+  // Mouse event handlers
+  const handleMouseEnter = (event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setHovered(true);
     setShowControls(true);
   };
 
-  const handlePointerOut = () => {
+  const handleMouseLeave = () => {
     setHovered(false);
     // Keep controls visible if selected
     if (!selected) {
@@ -76,103 +70,103 @@ export function ModuleObject({
 
   const handleClick = (event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    onSelect?.();
-    setShowControls(true);
+    onClick?.();
   };
 
-  const handleTransformChange = () => {
-    if (meshRef.current && onUpdate) {
-      const position = meshRef.current.position.toArray() as [number, number, number];
-      const rotation = meshRef.current.rotation.toArray().slice(0, 3) as [number, number, number];
-      const scale = meshRef.current.scale.toArray() as [number, number, number];
-      
-      onUpdate({ position, rotation, scale });
+  // Keep controls visible when selected
+  useEffect(() => {
+    if (selected) {
+      setShowControls(true);
+    } else {
+      setShowControls(false);
     }
-  };
+  }, [selected]);
 
-  const handleRotate = (direction: 'left' | 'right') => {
-    if (meshRef.current && onUpdate) {
-      const currentRotation = meshRef.current.rotation.y;
-      const newRotation = direction === 'left' 
-        ? currentRotation - Math.PI / 2 
-        : currentRotation + Math.PI / 2;
-      
-      onUpdate({ 
-        rotation: [
-          meshRef.current.rotation.x,
-          newRotation,
-          meshRef.current.rotation.z
-        ] 
-      });
+  // Reset position if module position changes from outside
+  useEffect(() => {
+    if (meshRef.current) {
+      const newPosition = new Vector3(...module.position);
+      if (!meshRef.current.position.equals(newPosition)) {
+        meshRef.current.position.copy(newPosition);
+      }
     }
-  };
+  }, [module.position]);
 
   return (
     <group>
-      <mesh
-        ref={meshRef}
-        position={module.position}
-        rotation={module.rotation}
-        scale={module.scale}
-        onPointerOver={handlePointerOver}
-        onPointerOut={handlePointerOut}
-        onClick={handleClick}
-        castShadow={castShadow}
-        receiveShadow={receiveShadow}
-      >
-        <boxGeometry
-          args={[
-            module.dimensions.length,
-            module.dimensions.height,
-            module.dimensions.width
-          ]}
+      {model ? (
+        <primitive 
+          object={model}
+          ref={meshRef}
+          position={module.position}
+          rotation={module.rotation}
+          scale={module.scale}
+          onPointerOver={handleMouseEnter}
+          onPointerOut={handleMouseLeave}
+          onClick={handleClick}
+          castShadow={castShadow}
+          receiveShadow={receiveShadow}
         />
-        <meshStandardMaterial
-          color={module.color}
-          transparent={selected || hovered}
-          opacity={selected ? 0.8 : hovered ? 0.9 : 1}
-        />
-      </mesh>
-
-      {(selected || showControls) && !readOnly && (
-        <group position={[
-          module.position[0],
-          module.position[1] + module.dimensions.height / 2 + 0.5,
-          module.position[2]
-        ]}>
-          <Html center>
-            <div className="flex items-center gap-2 bg-background/80 backdrop-blur-sm p-1.5 rounded-lg shadow-lg">
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0"
-                onClick={() => handleRotate('left')}
-              >
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-              <Button
-                size="sm"
-                variant="ghost"
-                className="h-8 w-8 p-0"
-                onClick={() => handleRotate('right')}
-              >
-                <RotateCw className="h-4 w-4" />
-              </Button>
-              {selected && (
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                  onClick={onDelete}
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
-          </Html>
-        </group>
+      ) : (
+        <mesh
+          ref={meshRef}
+          position={module.position}
+          rotation={module.rotation}
+          scale={module.scale}
+          onPointerOver={handleMouseEnter}
+          onPointerOut={handleMouseLeave}
+          onClick={handleClick}
+          castShadow={castShadow}
+          receiveShadow={receiveShadow}
+        >
+          <boxGeometry
+            args={[
+              module.dimensions.length,
+              module.dimensions.height,
+              module.dimensions.width
+            ]}
+          />
+          <meshStandardMaterial
+            color={module.color}
+            transparent={hovered || selected}
+            opacity={hovered || selected ? 0.8 : 1}
+            wireframe={module.wireframe}
+          />
+        </mesh>
       )}
-
+      
+      {/* Rotation controls */}
+      {showControls && !readOnly && (
+        <Html position={[0, module.dimensions.height + 0.5, 0]}>
+          <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
+            <button 
+              className="p-1 hover:bg-accent rounded" 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (meshRef.current) {
+                  meshRef.current.rotation.y -= Math.PI/2;
+                  handleTransformChange();
+                }
+              }}
+            >
+              ⟲
+            </button>
+            <button 
+              className="p-1 hover:bg-accent rounded" 
+              onClick={(e) => {
+                e.stopPropagation();
+                if (meshRef.current) {
+                  meshRef.current.rotation.y += Math.PI/2;
+                  handleTransformChange();
+                }
+              }}
+            >
+              ⟳
+            </button>
+          </div>
+        </Html>
+      )}
+      
       {selected && !readOnly && (
         <TransformControls
           object={meshRef.current as Object3D}
@@ -187,7 +181,7 @@ export function ModuleObject({
           rotationSnap={gridSnap ? Math.PI / 4 : null}
         />
       )}
-
+      
       {module.connectionPoints?.map((point, index) => (
         <ConnectionPoint
           key={`${module.id}-connection-${index}`}

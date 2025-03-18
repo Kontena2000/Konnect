@@ -44,6 +44,11 @@ export default function ViewerPage() {
     return <div>Layout not found</div>;
   }
 
+  // No-op handler for onDropPoint in view mode
+  const handleDropPoint = (point: [number, number, number]) => {
+    // This function is intentionally empty since we're in read-only mode
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
@@ -83,7 +88,8 @@ export default function ViewerPage() {
               <SceneContainer
                 modules={layout.modules}
                 connections={layout.connections}
-                readOnly
+                readOnly={true}
+                onDropPoint={handleDropPoint}
               />
             </Card>
 
