@@ -1,5 +1,5 @@
 
-import { useRef, useState, useEffect, Suspense } from "react";
+import { useRef, useState, useEffect, Suspense, useCallback } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh } from "three";
 import { useLoader, ThreeEvent } from "@react-three/fiber";
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
@@ -18,27 +18,22 @@ interface ModuleObjectProps {
   readOnly?: boolean;
 }
 
-function ModelLoader({ url }: { url: string }) {
-  const model = useLoader(GLTFLoader, url);
-  const clonedScene = model.scene.clone();
-  clonedScene.scale.set(1, 1, 1);
-  clonedScene.position.set(0, 0, 0);
-  return <primitive object={clonedScene} />;
-}
+const ModelLoader = ({ url }: { url: string }) => {
+  const gltf = useLoader(GLTFLoader, url);
+  return <primitive object={gltf.scene.clone()} />;
+};
 
-function ModelFallback({ module, ...props }: { module: Module } & any) {
-  return (
-    <mesh {...props}>
-      <boxGeometry args={[module.dimensions.length, module.dimensions.height, module.dimensions.width]} />
-      <meshStandardMaterial
-        color={module.color || "#888888"}
-        transparent={props.transparent}
-        opacity={props.opacity}
-        wireframe={module.wireframe}
-      />
-    </mesh>
-  );
-}
+const ModelFallback = ({ module, ...props }: { module: Module } & any) => (
+  <mesh {...props}>
+    <boxGeometry args={[module.dimensions.length, module.dimensions.height, module.dimensions.width]} />
+    <meshStandardMaterial
+      color={module.color || "#888888"}
+      transparent={props.transparent}
+      opacity={props.opacity}
+      wireframe={module.wireframe}
+    />
+  </mesh>
+);
 
 export function ModuleObject({
   module,
@@ -56,7 +51,7 @@ export function ModuleObject({
   const [showContextMenu, setShowContextMenu] = useState(false);
   const [contextMenuPosition, setContextMenuPosition] = useState<[number, number, number]>([0, 0, 0]);
 
-  const handleTransformChange = () => {
+  const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
     const position = meshRef.current.position.toArray() as [number, number, number];
@@ -68,33 +63,33 @@ export function ModuleObject({
       rotation,
       scale
     });
-  };
+  }, [readOnly, onUpdate]);
 
-  const handleMouseEnter = (event: ThreeEvent<PointerEvent>) => {
+  const handleMouseEnter = useCallback((event: ThreeEvent<PointerEvent>) => {
     event.stopPropagation();
     setHovered(true);
     setShowControls(true);
-  };
+  }, []);
 
-  const handleMouseLeave = () => {
+  const handleMouseLeave = useCallback(() => {
     setHovered(false);
     if (!selected) {
       setShowControls(false);
     }
-  };
+  }, [selected]);
 
-  const handleClick = (event: ThreeEvent<MouseEvent>) => {
+  const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     onClick?.();
-  };
+  }, [onClick]);
 
-  const handleContextMenu = (event: ThreeEvent<MouseEvent>) => {
+  const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
     if (readOnly) return;
     event.stopPropagation();
     event.preventDefault();
     setShowContextMenu(true);
     setContextMenuPosition([0, module.dimensions.height, 0]);
-  };
+  }, [readOnly, module.dimensions.height]);
 
   useEffect(() => {
     if (!selected || readOnly) return;
@@ -117,14 +112,6 @@ export function ModuleObject({
       window.removeEventListener('keydown', handleKeyDown);
     };
   }, [selected, readOnly, onDelete, handleTransformChange]);
-
-  useEffect(() => {
-    if (selected) {
-      setShowControls(true);
-    } else {
-      setShowControls(false);
-    }
-  }, [selected]);
 
   useEffect(() => {
     if (meshRef.current) {
@@ -150,14 +137,7 @@ export function ModuleObject({
   return (
     <group onContextMenu={handleContextMenu}>
       {module.modelUrl ? (
-        <Suspense fallback={
-          <ModelFallback 
-            module={module} 
-            {...commonProps} 
-            transparent={true} 
-            opacity={0.5} 
-          />
-        }>
+        <Suspense fallback={<ModelFallback module={module} {...commonProps} transparent opacity={0.5} />}>
           <ModelLoader url={module.modelUrl} />
         </Suspense>
       ) : (
