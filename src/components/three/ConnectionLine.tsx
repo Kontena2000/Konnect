@@ -1,4 +1,3 @@
-
 import { Line, Html } from "@react-three/drei";
 import { Connection } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
@@ -11,18 +10,18 @@ interface ConnectionLineProps {
 // Helper function to get color based on connection type
 const getColorByType = (type: ConnectionType) => {
   switch (type) {
-    case "power":
-      return "#22c55e"; // Green
-    case "network":
-      return "#3b82f6"; // Blue
-    case "cooling":
-      return "#06b6d4"; // Cyan
-    case "water":
-      return "#0ea5e9"; // Light blue
-    case "gas":
-      return "#f59e0b"; // Amber
+    case 'power':
+      return '#22c55e'; // Green
+    case 'network':
+      return '#3b82f6'; // Blue
+    case 'cooling':
+      return '#06b6d4'; // Cyan
+    case 'water':
+      return '#0ea5e9'; // Light blue
+    case 'gas':
+      return '#f59e0b'; // Amber
     default:
-      return "#94a3b8"; // Slate
+      return '#94a3b8'; // Slate
   }
 };
 
@@ -38,9 +37,9 @@ export function ConnectionLine({ connection, selected = false }: ConnectionLineP
     
     // If utilization is high, blend toward red
     if (utilization > 0.8) {
-      return "#ef4444"; // Red for high utilization
+      return '#ef4444'; // Red for high utilization
     } else if (utilization > 0.6) {
-      return "#f97316"; // Orange for medium-high utilization
+      return '#f97316'; // Orange for medium-high utilization
     }
     
     return baseColor;
@@ -48,13 +47,13 @@ export function ConnectionLine({ connection, selected = false }: ConnectionLineP
   
   // Determine line width based on type and selection
   const getLineWidth = () => {
-    const baseWidth = connection.type === "power" ? 2 : 1;
+    const baseWidth = connection.type === 'power' ? 2 : 1;
     return selected ? baseWidth * 1.5 : baseWidth;
   };
   
   // Get line style based on connection type
   const getDashed = () => {
-    return connection.type === "network";
+    return connection.type === 'network';
   };
   
   const points = connection.intermediatePoints
@@ -71,9 +70,36 @@ export function ConnectionLine({ connection, selected = false }: ConnectionLineP
       />
       
       {/* Add capacity indicator if this is a power connection */}
-      {connection.type === "power" && connection.capacity && (
+      {connection.type === 'power' && connection.capacity && (
         <Html position={points[Math.floor(points.length / 2)]}>
-          <div className="bg-background/80 backdrop-blur-sm px-1 rounded text-xs">
+          <div className='bg-background/80 backdrop-blur-sm px-1 rounded text-xs'>
+            {connection.currentLoad || 0}/{connection.capacity} kW
+          </div>
+        </Html>
+      )}
+      
+      {/* Add data rate indicator for network connections */}
+      {connection.type === 'network' && connection.capacity && (
+        <Html position={points[Math.floor(points.length / 2)]}>
+          <div className='bg-background/80 backdrop-blur-sm px-1 rounded text-xs'>
+            {connection.currentLoad || 0}/{connection.capacity} Gbps
+          </div>
+        </Html>
+      )}
+      
+      {/* Add flow rate for water and gas */}
+      {(connection.type === 'water' || connection.type === 'gas') && connection.capacity && (
+        <Html position={points[Math.floor(points.length / 2)]}>
+          <div className='bg-background/80 backdrop-blur-sm px-1 rounded text-xs'>
+            {connection.currentLoad || 0}/{connection.capacity} m³/h
+          </div>
+        </Html>
+      )}
+      
+      {/* Add cooling capacity for cooling connections */}
+      {connection.type === 'cooling' && connection.capacity && (
+        <Html position={points[Math.floor(points.length / 2)]}>
+          <div className='bg-background/80 backdrop-blur-sm px-1 rounded text-xs'>
             {connection.currentLoad || 0}/{connection.capacity} kW
           </div>
         </Html>

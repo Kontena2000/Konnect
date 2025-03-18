@@ -11,6 +11,8 @@ import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import * as THREE from "three";
+import { GridHelper } from './GridHelper';
+import { CameraControls } from './CameraControls';
 
 interface SceneElementsProps {
   modules: Module[];
@@ -34,7 +36,8 @@ interface SceneElementsProps {
   mousePosition: Vector2 | null;
   onDropPoint?: (point: [number, number, number]) => void;
   readOnly?: boolean;
-  setRotationAngle: (angle: number) => void;
+  previewPosition?: [number, number, number];
+  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
 }
 
 export function SceneElements({
@@ -59,6 +62,7 @@ export function SceneElements({
   mousePosition,
   onDropPoint,
   readOnly = false,
+  previewPosition = [0, 0, 0],
   setRotationAngle
 }: SceneElementsProps) {
   const { camera } = useThree();
@@ -74,7 +78,7 @@ export function SceneElements({
   }, []);
 
   // Calculate preview position based on mouse position
-  const previewPosition = useRef<[number, number, number]>([0, 0, 0]);
+  const previewPositionRef = useRef<[number, number, number]>([0, 0, 0]);
 
   // Enhanced drag over handler
   useEffect(() => {
@@ -100,13 +104,12 @@ export function SceneElements({
       intersection.z = Math.round(intersection.z * 2) / 2;
     }
     
-    previewPosition.current = [intersection.x, previewHeight / 2, intersection.z];
+    previewPositionRef.current = [intersection.x, previewHeight / 2, intersection.z];
     setShowRotationControls(true);
   }, [isDraggingOver, mousePosition, camera, gridSnap, previewHeight, readOnly]);
 
   return (
     <>
-      {/* Scene lighting */}
       <ambientLight intensity={0.5} />
       <directionalLight 
         position={[10, 10, 10]} 
@@ -114,44 +117,35 @@ export function SceneElements({
         castShadow 
         shadow-mapSize-width={2048}
         shadow-mapSize-height={2048}
-        shadow-camera-far={50}
-        shadow-camera-left={-10}
-        shadow-camera-right={10}
-        shadow-camera-top={10}
-        shadow-camera-bottom={-10}
       />
-      <directionalLight position={[-10, 10, -10]} intensity={0.4} />
+      
+      {/* Camera controls */}
+      <CameraControls />
+      
+      {/* Grid */}
+      <GridHelper />
 
-      {/* Grid and controls */}
-      <Grid 
-        infiniteGrid 
-        cellSize={1} 
-        cellThickness={0.5} 
-        cellColor="#666" 
-        sectionSize={10}
-        sectionThickness={1}
-        sectionColor="#888"
-        fadeDistance={50}
-        fadeStrength={1.5}
-      />
-      <OrbitControls 
-        ref={controlsRef}
-        enableDamping={true}
-        dampingFactor={0.1}
-        rotateSpeed={0.5}
-        minDistance={1}
-        maxDistance={100}
-        maxPolarAngle={Math.PI / 2 - 0.1}
-      />
+      {/* Environment */}
+      {terrain && <TerrainView terrain={terrain} />}
+      
+      {/* Environmental elements */}
+      {environmentalElements?.map(element => (
+        <EnvironmentalElement
+          key={element.id}
+          element={element}
+          selected={false}
+          onClick={() => onEnvironmentalElementSelect?.(element.id)}
+        />
+      ))}
 
-      {/* Render modules */}
+      {/* Modules */}
       {modules.map(module => (
         <ModuleObject
           key={module.id}
           module={module}
           selected={module.id === selectedModuleId}
           onClick={() => onModuleSelect?.(module.id)}
-          onUpdate={(updates) => onModuleUpdate?.(module.id, updates)}
+          onUpdate={updates => onModuleUpdate?.(module.id, updates)}
           onDelete={() => onModuleDelete?.(module.id)}
           transformMode={transformMode}
           gridSnap={gridSnap}
@@ -159,85 +153,73 @@ export function SceneElements({
         />
       ))}
 
-      {/* Render connections */}
+      {/* Connections */}
       {connections.map(connection => (
         <ConnectionLine
           key={connection.id}
           connection={connection}
-          selected={false}
         />
-      ))}
-
-      {/* Environmental elements */}
-      {environmentalElements.map(element => (
-        <EnvironmentalElement
-          key={element.id}
-          element={element}
-          onClick={() => onEnvironmentalElementSelect?.(element.id)}
-        />
-      ))}
-
-      {/* Terrain if available */}
-      {terrain && (
-        <TerrainView terrain={terrain} />
-      )}
-
-      {/* Guide lines when holding shift */}
-      {showGuides && snapLines.map((line, index) => (
-        <Line
-          key={`guide-line-${index}`}
-          points={[
-            [line.start.x, 0.05, line.start.z],
-            [line.end.x, 0.05, line.end.z]
-          ]}
-          color="yellow"
-          lineWidth={1}
-          dashed
-          dashSize={0.2}
-          gapSize={0.1}
-        />
-      ))}
-
-      {/* Snap points */}
-      {showGuides && snapPoints.map((point, index) => (
-        <mesh
-          key={`guide-point-${index}`}
-          position={[point.x, 0.05, point.z]}
-        >
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshBasicMaterial color="yellow" />
-        </mesh>
       ))}
 
       {/* Preview mesh during drag */}
-      {previewMesh && isDraggingOver && (
-        <group position={previewPosition.current} rotation={[0, rotationAngle, 0]}>
-          <primitive object={previewMesh} />
-          {showRotationControls && (
-            <Html position={[0, previewHeight + 0.5, 0]}>
-              <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
-                <button 
-                  className='p-1 hover:bg-accent rounded' 
-                  onClick={() => {
-                    const newAngle = rotationAngle - Math.PI/2;
-                    setRotationAngle(newAngle);
-                  }}
-                >
-                  ⟲
-                </button>
-                <button 
-                  className='p-1 hover:bg-accent rounded' 
-                  onClick={() => {
-                    const newAngle = rotationAngle + Math.PI/2;
-                    setRotationAngle(newAngle);
-                  }}
-                >
-                  ⟳
-                </button>
-              </div>
-            </Html>
-          )}
+      {isDraggingOver && previewMesh && (
+        <group position={previewPositionRef.current} rotation={[0, rotationAngle, 0]}>
+          <primitive object={previewMesh.clone()} />
+          
+          {/* Rotation controls for preview */}
+          <Html position={[0, 2, 0]}>
+            <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
+              <button 
+                className='p-1 hover:bg-accent rounded' 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRotationAngle(prev => prev - Math.PI/2);
+                }}
+              >
+                ⟲
+              </button>
+              <button 
+                className='p-1 hover:bg-accent rounded' 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setRotationAngle(prev => prev + Math.PI/2);
+                }}
+              >
+                ⟳
+              </button>
+            </div>
+          </Html>
         </group>
+      )}
+
+      {/* Snap guides */}
+      {isDraggingOver && showGuides && (
+        <>
+          {/* Snap points */}
+          {snapPoints.map((point, i) => (
+            <mesh key={`point-${i}`} position={[point.x, 0.01, point.z]}>
+              <sphereGeometry args={[0.1, 8, 8]} />
+              <meshBasicMaterial color='#ffcc00' transparent opacity={0.5} />
+            </mesh>
+          ))}
+          
+          {/* Snap lines */}
+          {snapLines.map((line, i) => (
+            <line key={`line-${i}`}>
+              <bufferGeometry 
+                attach='geometry' 
+                args={[
+                  new Float32Array([
+                    line.start.x, 0.01, line.start.z,
+                    line.end.x, 0.01, line.end.z
+                  ]), 
+                  3
+                ]} 
+              />
+              <lineBasicMaterial attach='material' color='#ffcc00' opacity={0.5} transparent />
+            </line>
+          ))}
+        </>
       )}
     </>
   );

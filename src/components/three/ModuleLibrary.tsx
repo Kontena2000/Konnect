@@ -8,6 +8,9 @@ import { ChevronDown, ChevronRight, Eye, EyeOff, Loader2, RefreshCcw } from "luc
 import moduleService from "@/services/module";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Search, Filter, Box, Truck, Tree, Database, Server } from 'lucide-react';
 
 export interface ModuleLibraryProps {
   onDragStart: (module: Module) => void;
@@ -21,6 +24,8 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [retryCount, setRetryCount] = useState(0);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -114,13 +119,38 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
     loadLibraryData();
   };
 
-  const modulesByCategory = allModules.reduce((acc, module) => {
+  // Get icon for category
+  const getCategoryIcon = (categoryId: string) => {
+    switch (categoryId.toLowerCase()) {
+      case 'konnect':
+        return <Server className='h-4 w-4 mr-2' />;
+      case 'network':
+        return <Database className='h-4 w-4 mr-2' />;
+      case 'piping':
+        return <Box className='h-4 w-4 mr-2' />;
+      case 'environment':
+        return <Tree className='h-4 w-4 mr-2' />;
+      default:
+        return <Truck className='h-4 w-4 mr-2' />;
+    }
+  };
+
+  // Filter modules by search term and active filter
+  const filteredModules = allModules.filter(module => {
+    const matchesSearch = searchTerm === '' || 
+      module.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      module.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesFilter = activeFilter === null || module.category === activeFilter;
+    
+    return matchesSearch && matchesFilter && visibleCategories[module.category];
+  });
+
+  const modulesByCategory = filteredModules.reduce((acc, module) => {
     if (!acc[module.category]) {
       acc[module.category] = [];
     }
-    if (visibleCategories[module.category]) {
-      acc[module.category].push(module);
-    }
+    acc[module.category].push(module);
     return acc;
   }, {} as Record<string, Module[]>);
 
@@ -219,15 +249,51 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
   }
 
   return (
-    <Card className="h-full border-0 rounded-none">
-      <CardHeader className="px-4 py-3 border-b">
-        <CardTitle className="text-lg">Module Library</CardTitle>
+    <Card className='h-full border-0 rounded-none'>
+      <CardHeader className='px-4 py-3 border-b'>
+        <CardTitle className='text-lg'>Module Library</CardTitle>
+        
+        {/* Add search and filter UI */}
+        <div className='mt-2 space-y-2'>
+          <div className='relative'>
+            <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
+            <Input
+              placeholder='Search modules...'
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className='pl-8'
+            />
+          </div>
+          
+          <div className='flex flex-wrap gap-1'>
+            <Badge 
+              variant={activeFilter === null ? 'default' : 'outline'}
+              className='cursor-pointer'
+              onClick={() => setActiveFilter(null)}
+            >
+              All
+            </Badge>
+            {categories.map(category => (
+              <Badge
+                key={category.id}
+                variant={activeFilter === category.id ? 'default' : 'outline'}
+                className='cursor-pointer'
+                onClick={() => setActiveFilter(category.id)}
+              >
+                {category.name}
+              </Badge>
+            ))}
+          </div>
+        </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-[calc(100vh-5rem)]">
-          <div className="p-4 space-y-4">
+      <CardContent className='p-0'>
+        <ScrollArea className='h-[calc(100vh-10rem)]'>
+          <div className='p-4 space-y-4'>
             {categories.map(category => {
               const categoryModules = modulesByCategory[category.id] || [];
+              
+              // Skip empty categories
+              if (categoryModules.length === 0) return null;
 
               return (
                 <Collapsible
@@ -235,51 +301,61 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
                   open={expanded[category.id]}
                   onOpenChange={() => toggleCategory(category.id)}
                 >
-                  <div className="flex items-center justify-between">
+                  <div className='flex items-center justify-between'>
                     <CollapsibleTrigger asChild>
                       <Button
-                        variant="ghost"
-                        className="flex-1 justify-start hover:bg-accent hover:text-accent-foreground"
+                        variant='ghost'
+                        className='flex-1 justify-start hover:bg-accent hover:text-accent-foreground'
                       >
                         {expanded[category.id] ? (
-                          <ChevronDown className="h-4 w-4 mr-2" />
+                          <ChevronDown className='h-4 w-4 mr-2' />
                         ) : (
-                          <ChevronRight className="h-4 w-4 mr-2" />
+                          <ChevronRight className='h-4 w-4 mr-2' />
                         )}
+                        {getCategoryIcon(category.id)}
                         {category.name}
+                        <Badge variant='outline' className='ml-2'>
+                          {categoryModules.length}
+                        </Badge>
                       </Button>
                     </CollapsibleTrigger>
                     <Button
-                      variant="ghost"
-                      size="icon"
-                      className="shrink-0"
+                      variant='ghost'
+                      size='icon'
+                      className='shrink-0'
                       onClick={() => toggleCategoryVisibility(category.id)}
                     >
                       {visibleCategories[category.id] ? (
-                        <Eye className="h-4 w-4" />
+                        <Eye className='h-4 w-4' />
                       ) : (
-                        <EyeOff className="h-4 w-4" />
+                        <EyeOff className='h-4 w-4' />
                       )}
                     </Button>
                   </div>
                   <CollapsibleContent>
-                    <div className="space-y-2 mt-2">
+                    <div className='space-y-2 mt-2'>
                       {categoryModules.map((module) => (
                         <div
                           key={module.id}
-                          className="p-2 rounded-lg hover:bg-accent cursor-move"
+                          className='p-2 rounded-lg hover:bg-accent cursor-move'
                           draggable
                           onDragStart={() => handleDragStart(module)}
                         >
-                          <div className="flex items-center gap-3">
+                          <div className='flex items-center gap-3'>
                             <div
-                              className="w-8 h-8 rounded"
-                              style={{ backgroundColor: module.color }}
-                            />
-                            <div>
-                              <h3 className="font-medium text-sm">{module.name}</h3>
-                              <p className="text-xs text-muted-foreground">
-                                {module.description}
+                              className='w-10 h-10 rounded flex items-center justify-center'
+                              style={{ 
+                                backgroundColor: module.color,
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                              }}
+                            >
+                              {module.type === 'container' && <Truck className='h-5 w-5 text-white' />}
+                              {module.type === 'vegetation' && <Tree className='h-5 w-5 text-white' />}
+                            </div>
+                            <div className='flex-1 min-w-0'>
+                              <h3 className='font-medium text-sm truncate'>{module.name}</h3>
+                              <p className='text-xs text-muted-foreground truncate'>
+                                {module.dimensions.length}m × {module.dimensions.width}m × {module.dimensions.height}m
                               </p>
                             </div>
                           </div>

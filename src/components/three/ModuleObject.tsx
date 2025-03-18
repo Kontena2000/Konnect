@@ -1,6 +1,7 @@
 import { useRef, useState, useEffect, Suspense } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Material, BufferGeometry } from "three";
-import { ThreeEvent, useThree } from "@react-three/fiber";
+import { useLoader, ThreeEvent } from "@react-three/fiber";
+import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
@@ -50,6 +51,21 @@ export function ModuleObject({
   const meshRef = useRef<Object3D>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(false);
+  const [showContextMenu, setShowContextMenu] = useState(false);
+  const [contextMenuPosition, setContextMenuPosition] = useState<[number, number, number]>([0, 0, 0]);
+  
+  // Try to load 3D model if URL is provided
+  let model = null;
+  try {
+    if (module.modelUrl) {
+      model = useLoader(GLTFLoader, module.modelUrl).scene.clone();
+      // Adjust model scale and position if needed
+      model.scale.set(1, 1, 1);
+      model.position.set(0, 0, 0);
+    }
+  } catch (error) {
+    console.error('Error loading model:', error);
+  }
   
   // Handle transform changes
   const handleTransformChange = () => {
@@ -86,6 +102,38 @@ export function ModuleObject({
     onClick?.();
   };
 
+  // Handle right click for context menu
+  const handleContextMenu = (event: ThreeEvent<MouseEvent>) => {
+    if (readOnly) return;
+    event.stopPropagation();
+    event.preventDefault();
+    setShowContextMenu(true);
+    setContextMenuPosition([0, module.dimensions.height, 0]);
+  };
+
+  // Handle keyboard shortcuts
+  useEffect(() => {
+    if (!selected || readOnly) return;
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT') return;
+      
+      if (event.key === 'r' || event.key === 'R') {
+        if (meshRef.current) {
+          meshRef.current.rotation.y += Math.PI/2;
+          handleTransformChange();
+        }
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        onDelete?.();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selected, readOnly, onDelete]);
+
   // Keep controls visible when selected
   useEffect(() => {
     if (selected) {
@@ -118,20 +166,44 @@ export function ModuleObject({
   };
 
   return (
-    <group>
-      <ModelFallback 
-        module={module} 
-        {...commonProps} 
-        transparent={hovered || selected} 
-        opacity={hovered || selected ? 0.8 : 1} 
-      />
+    <group onContextMenu={handleContextMenu}>
+      {model ? (
+        <Suspense fallback={
+          <ModelFallback 
+            module={module} 
+            {...commonProps} 
+            transparent={true} 
+            opacity={0.5} 
+          />
+        }>
+          <primitive 
+            ref={meshRef}
+            object={model}
+            position={module.position}
+            rotation={module.rotation}
+            scale={module.scale}
+            onPointerOver={handleMouseEnter}
+            onPointerOut={handleMouseLeave}
+            onClick={handleClick}
+            castShadow
+            receiveShadow
+          />
+        </Suspense>
+      ) : (
+        <ModelFallback 
+          module={module} 
+          {...commonProps} 
+          transparent={hovered || selected} 
+          opacity={hovered || selected ? 0.8 : 1} 
+        />
+      )}
       
       {/* Rotation controls */}
       {showControls && !readOnly && (
         <Html position={[0, module.dimensions.height + 0.5, 0]}>
-          <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
+          <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
             <button 
-              className="p-1 hover:bg-accent rounded" 
+              className='p-1 hover:bg-accent rounded' 
               onClick={(e) => {
                 e.stopPropagation();
                 if (meshRef.current) {
@@ -143,7 +215,7 @@ export function ModuleObject({
               ⟲
             </button>
             <button 
-              className="p-1 hover:bg-accent rounded" 
+              className='p-1 hover:bg-accent rounded' 
               onClick={(e) => {
                 e.stopPropagation();
                 if (meshRef.current) {
@@ -154,6 +226,68 @@ export function ModuleObject({
             >
               ⟳
             </button>
+            {onDelete && (
+              <button 
+                className='p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2' 
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete();
+                }}
+              >
+                ✕
+              </button>
+            )}
+          </div>
+        </Html>
+      )}
+      
+      {/* Context menu */}
+      {showContextMenu && !readOnly && (
+        <Html position={contextMenuPosition}>
+          <div className='bg-background/90 backdrop-blur-sm p-2 rounded shadow-lg'>
+            <div className='space-y-1'>
+              <button 
+                className='w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (meshRef.current) {
+                    meshRef.current.rotation.y -= Math.PI/2;
+                    handleTransformChange();
+                  }
+                  setShowContextMenu(false);
+                }}
+              >
+                <span>Rotate Left</span>
+                <kbd className='ml-auto text-xs bg-muted px-1.5 rounded'>⟲</kbd>
+              </button>
+              <button 
+                className='w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (meshRef.current) {
+                    meshRef.current.rotation.y += Math.PI/2;
+                    handleTransformChange();
+                  }
+                  setShowContextMenu(false);
+                }}
+              >
+                <span>Rotate Right</span>
+                <kbd className='ml-auto text-xs bg-muted px-1.5 rounded'>⟳</kbd>
+              </button>
+              {onDelete && (
+                <button 
+                  className='w-full text-left px-2 py-1 text-sm rounded hover:bg-destructive hover:text-destructive-foreground flex items-center gap-2'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                    setShowContextMenu(false);
+                  }}
+                >
+                  <span>Delete</span>
+                  <kbd className='ml-auto text-xs bg-muted px-1.5 rounded'>Del</kbd>
+                </button>
+              )}
+            </div>
           </div>
         </Html>
       )}

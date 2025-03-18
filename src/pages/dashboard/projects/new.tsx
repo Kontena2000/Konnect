@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useRouter } from "next/router";
 import { useForm } from "react-hook-form";
@@ -31,17 +30,18 @@ export default function NewProjectPage() {
   const { toast } = useToast();
   const { user } = useAuth();
   const [loading, setLoading] = useState(false);
+  const [formData, setFormData] = useState<ProjectFormData>({
+    name: "",
+    description: "",
+    companyName: "",
+    clientEmail: "",
+    clientPhone: "",
+    clientAddress: "",
+  });
 
   const form = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
-    defaultValues: {
-      name: "",
-      description: "",
-      companyName: "",
-      clientEmail: "",
-      clientPhone: "",
-      clientAddress: "",
-    },
+    defaultValues: formData,
   });
 
   const { register, handleSubmit, formState: { errors } } = form;
@@ -85,124 +85,135 @@ export default function NewProjectPage() {
 
   return (
     <AppLayout>
-      <div className="max-w-2xl mx-auto p-4">
-        <h1 className="text-3xl font-bold mb-6">Create New Project</h1>
-        <Card className="shadow-lg">
-          <form onSubmit={handleSubmit(onSubmit)}>
-            <CardHeader>
-              <CardTitle>Project Details</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Project Name</Label>
-                    <Input
-                      id="name"
-                      placeholder="Enter project name"
-                      {...register("name")}
-                    />
-                    {errors.name && (
-                      <p className="text-sm text-destructive">{errors.name.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="companyName">Company Name</Label>
-                    <Input
-                      id="companyName"
-                      placeholder="Enter company name"
-                      {...register("companyName")}
-                    />
-                    {errors.companyName && (
-                      <p className="text-sm text-destructive">{errors.companyName.message}</p>
-                    )}
-                  </div>
+      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-4xl'>
+        <div className='flex items-center justify-between mb-8'>
+          <h1 className='text-3xl font-bold'>Create New Project</h1>
+          <Button variant='outline' onClick={() => router.back()} disabled={loading}>
+            Cancel
+          </Button>
+        </div>
+        
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Details</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit(onSubmit)} className='space-y-6'>
+              <div className='space-y-4'>
+                <div>
+                  <Label htmlFor='name'>Project Name</Label>
+                  <Input
+                    id='name'
+                    placeholder='Enter project name'
+                    value={formData.name}
+                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                    required
+                  />
+                  {errors.name && (
+                    <p className="text-sm text-destructive">{errors.name.message}</p>
+                  )}
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
+                
+                <div>
+                  <Label htmlFor='description'>Description</Label>
                   <Textarea
-                    id="description"
-                    placeholder="Enter project description"
-                    className="min-h-[100px]"
-                    {...register("description")}
+                    id='description'
+                    placeholder='Enter project description'
+                    value={formData.description || ''}
+                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                    rows={4}
                   />
                   {errors.description && (
                     <p className="text-sm text-destructive">{errors.description.message}</p>
                   )}
                 </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="clientEmail">
-                      <span className="flex items-center gap-2">
-                        <Mail className="h-4 w-4" />
-                        Client Email
-                      </span>
-                    </Label>
-                    <Input
-                      id="clientEmail"
-                      type="email"
-                      placeholder="Enter client email"
-                      {...register("clientEmail")}
-                    />
-                    {errors.clientEmail && (
-                      <p className="text-sm text-destructive">{errors.clientEmail.message}</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-2">
-                    <Label htmlFor="clientPhone">
-                      <span className="flex items-center gap-2">
-                        <Phone className="h-4 w-4" />
-                        Client Phone
-                      </span>
-                    </Label>
-                    <Input
-                      id="clientPhone"
-                      type="tel"
-                      placeholder="Enter client phone"
-                      {...register("clientPhone")}
-                    />
-                    {errors.clientPhone && (
-                      <p className="text-sm text-destructive">{errors.clientPhone.message}</p>
-                    )}
-                  </div>
+                
+                <div>
+                  <Label htmlFor='status'>Status</Label>
+                  <Select
+                    value={formData.status || 'planning'}
+                    onValueChange={(value) => setFormData({ ...formData, status: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder='Select status' />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value='planning'>Planning</SelectItem>
+                      <SelectItem value='in-progress'>In Progress</SelectItem>
+                      <SelectItem value='completed'>Completed</SelectItem>
+                      <SelectItem value='on-hold'>On Hold</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="clientAddress">
-                    <span className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4" />
-                      Client Address
-                    </span>
-                  </Label>
-                  <Textarea
-                    id="clientAddress"
-                    placeholder="Enter client address"
-                    {...register("clientAddress")}
-                  />
-                  {errors.clientAddress && (
-                    <p className="text-sm text-destructive">{errors.clientAddress.message}</p>
-                  )}
+                
+                {/* Client Information Section */}
+                <div className='pt-4 border-t'>
+                  <h3 className='text-lg font-medium mb-4'>Client Information</h3>
+                  
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                    <div>
+                      <Label htmlFor='companyName' className='flex items-center gap-2'>
+                        <Building2 className='h-4 w-4' />
+                        Company Name
+                      </Label>
+                      <Input
+                        id='companyName'
+                        placeholder='Enter company name'
+                        value={formData.companyName || ''}
+                        onChange={(e) => setFormData({ ...formData, companyName: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor='clientEmail' className='flex items-center gap-2'>
+                        <Mail className='h-4 w-4' />
+                        Client Email
+                      </Label>
+                      <Input
+                        id='clientEmail'
+                        placeholder='Enter client email'
+                        type='email'
+                        value={formData.clientEmail || ''}
+                        onChange={(e) => setFormData({ ...formData, clientEmail: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor='clientPhone' className='flex items-center gap-2'>
+                        <Phone className='h-4 w-4' />
+                        Client Phone
+                      </Label>
+                      <Input
+                        id='clientPhone'
+                        placeholder='Enter client phone'
+                        value={formData.clientPhone || ''}
+                        onChange={(e) => setFormData({ ...formData, clientPhone: e.target.value })}
+                      />
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor='clientAddress' className='flex items-center gap-2'>
+                        <MapPin className='h-4 w-4' />
+                        Client Address
+                      </Label>
+                      <Input
+                        id='clientAddress'
+                        placeholder='Enter client address'
+                        value={formData.clientAddress || ''}
+                        onChange={(e) => setFormData({ ...formData, clientAddress: e.target.value })}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
-            </CardContent>
-            <CardFooter className="flex justify-end space-x-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => router.back()}
-                disabled={loading}
-              >
-                Cancel
-              </Button>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Creating..." : "Create Project"}
-              </Button>
-            </CardFooter>
-          </form>
+              
+              <div className='flex justify-end'>
+                <Button type='submit' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                  {loading ? "Creating..." : "Create Project"}
+                </Button>
+              </div>
+            </form>
+          </CardContent>
         </Card>
       </div>
     </AppLayout>

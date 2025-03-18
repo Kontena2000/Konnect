@@ -1,15 +1,16 @@
-
 import { Canvas } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useCallback, useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useEffect, useMemo, useRef } from "react";
 import * as THREE from "three";
 import { Vector2, Vector3, Box3, Line3 } from "three";
 import { cn } from "@/lib/utils";
 import { SceneElements } from "./SceneElements";
+import { Html } from '@react-three/drei';
+import { Button } from '@/components/ui/button';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -59,7 +60,13 @@ export function SceneContainer({
   const [showGuides, setShowGuides] = useState(false);
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
-
+  const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [showPreviewControls, setShowPreviewControls] = useState(false);
+  const controlsRef = useRef(null);
+  
+  // Add a ref to store the dragged module data
+  const draggedModuleRef = useRef<Module | null>(null);
+  
   const { snapPoints, snapLines } = useMemo(() => {
     const points: Vector3[] = [];
     const lines: Line3[] = [];
@@ -91,12 +98,52 @@ export function SceneContainer({
     return { snapPoints: points, snapLines: lines };
   }, [modules]);
 
+  // Enhanced drag over handler for better visual feedback
   const handleDragOver = useCallback((event: React.DragEvent) => {
     if (readOnly) return;
     event.preventDefault();
     setIsDraggingOver(true);
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    
+    // Cast ray to find intersection with ground plane
+    const raycaster = new THREE.Raycaster();
+    raycaster.setFromCamera(new THREE.Vector2(x, y), new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000));
+    
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+    
+    // Snap to grid or nearby points
+    if (gridSnap) {
+      // First check if we should snap to existing points
+      const snapThreshold = 1.5;
+      const nearestPoint = snapPoints.reduce((nearest, point) => {
+        const distance = intersection.distanceTo(point);
+        return distance < snapThreshold && distance < nearest.distance
+          ? { point, distance }
+          : nearest;
+      }, { point: intersection, distance: Infinity });
+      
+      if (nearestPoint.distance < snapThreshold) {
+        intersection.copy(nearestPoint.point);
+      } else {
+        // Otherwise snap to grid
+        intersection.x = Math.round(intersection.x);
+        intersection.z = Math.round(intersection.z);
+      }
+    } else {
+      // Snap to half-grid
+      intersection.x = Math.round(intersection.x * 2) / 2;
+      intersection.z = Math.round(intersection.z * 2) / 2;
+    }
+    
     setMousePosition(new Vector2(event.clientX, event.clientY));
-  }, [readOnly]);
+    setPreviewPosition([intersection.x, previewHeight / 2, intersection.z]);
+    setShowPreviewControls(true);
+  }, [gridSnap, previewHeight, readOnly, snapPoints]);
 
   const handleDragLeave = () => {
     if (readOnly) return;
@@ -109,33 +156,7 @@ export function SceneContainer({
     event.preventDefault();
     if (!mousePosition) return;
 
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(new Vector2(x, y), new THREE.PerspectiveCamera(75, rect.width / rect.height, 0.1, 1000));
-
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(groundPlane, intersection);
-
-    if (gridSnap) {
-      const snapThreshold = 1.5;
-      const nearestPoint = snapPoints.reduce((nearest, point) => {
-        const distance = intersection.distanceTo(point);
-        return distance < snapThreshold && distance < nearest.distance
-          ? { point, distance }
-          : nearest;
-      }, { point: intersection, distance: Infinity });
-
-      intersection.copy(nearestPoint.point);
-    } else {
-      intersection.x = Math.round(intersection.x * 2) / 2;
-      intersection.z = Math.round(intersection.z * 2) / 2;
-    }
-
-    onDropPoint([intersection.x, previewHeight / 2, intersection.z]);
+    onDropPoint(previewPosition);
     setIsDraggingOver(false);
     setMousePosition(null);
   };
@@ -167,6 +188,59 @@ export function SceneContainer({
     };
   }, [handleKeyDown, handleKeyUp, readOnly]);
 
+  // Set up an effect to create a preview mesh when a module is dragged
+  useEffect(() => {
+    if (!isDraggingOver || !draggedModuleRef.current) return;
+    
+    // Create a simple box mesh for preview
+    const module = draggedModuleRef.current;
+    const geometry = new THREE.BoxGeometry(
+      module.dimensions.length,
+      module.dimensions.height,
+      module.dimensions.width
+    );
+    const material = new THREE.MeshStandardMaterial({
+      color: module.color,
+      transparent: true,
+      opacity: 0.6,
+      wireframe: module.wireframe
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    // Set the preview height for positioning
+    setPreviewHeight(module.dimensions.height);
+    
+    // Update the preview mesh
+    setPreviewMesh(mesh);
+    
+    return () => {
+      // Clean up
+      geometry.dispose();
+      material.dispose();
+      setPreviewMesh(null);
+    };
+  }, [isDraggingOver]);
+  
+  // Function to handle module drag start from ModuleLibrary
+  const handleModuleDragStart = (module: Module) => {
+    draggedModuleRef.current = module;
+    setPreviewHeight(module.dimensions.height);
+  };
+  
+  // Register the drag start handler with the parent component
+  useEffect(() => {
+    // This would be called by the parent to register the handler
+    if (typeof window !== 'undefined') {
+      (window as any).handleModuleDragStart = handleModuleDragStart;
+    }
+    
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).handleModuleDragStart;
+      }
+    };
+  }, []);
+  
   return (
     <div 
       ref={setNodeRef} 
@@ -209,15 +283,58 @@ export function SceneContainer({
           mousePosition={mousePosition}
           onDropPoint={onDropPoint}
           readOnly={readOnly}
+          setRotationAngle={setRotationAngle}
+          previewPosition={previewPosition}
         />
       </Canvas>
 
+      {/* Enhanced UI for drag and drop operations */}
       {!readOnly && isDraggingOver && (
-        <div className="absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg">
-          <p className="text-sm">Press R to rotate</p>
-          <p className="text-xs text-muted-foreground">Hold Shift for guides</p>
+        <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-lg space-y-2'>
+          <div className='flex items-center gap-2'>
+            <kbd className='px-2 py-1 bg-muted rounded text-xs'>R</kbd>
+            <span className='text-sm'>Rotate module</span>
+          </div>
+          <div className='flex items-center gap-2'>
+            <kbd className='px-2 py-1 bg-muted rounded text-xs'>Shift</kbd>
+            <span className='text-sm'>Show alignment guides</span>
+          </div>
+          <div className='flex items-center gap-2 mt-2'>
+            <span className='text-xs text-muted-foreground'>Position: {previewPosition[0].toFixed(1)}, {previewPosition[2].toFixed(1)}</span>
+          </div>
         </div>
       )}
+
+      {/* Camera preset controls */}
+      <div className='absolute top-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
+        <div className='flex gap-1'>
+          <Button 
+            variant='outline' 
+            size='sm'
+            onClick={() => {
+              // Reset camera to top view
+              if (controlsRef?.current) {
+                controlsRef.current.reset();
+              }
+            }}
+          >
+            Top
+          </Button>
+          <Button 
+            variant='outline' 
+            size='sm'
+            onClick={() => {
+              // Set camera to isometric view
+              if (controlsRef?.current) {
+                controlsRef.current.setAzimuthalAngle(Math.PI / 4);
+                controlsRef.current.setPolarAngle(Math.PI / 4);
+              }
+            }}
+          >
+            Isometric
+          </Button>
+        </div>
+      </div>
     </div>
   );
 }
