@@ -26,11 +26,15 @@ export function CameraControls({
   const ref = controlsRef || localRef;
   const { camera, gl } = useThree();
   
+  // Initialize camera position and controls
   useEffect(() => {
     if (camera && ref.current) {
       camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
-      ref.current.reset();
+      // Reset camera controls to initial position
+      ref.current.setAzimuthalAngle(Math.PI / 4);
+      ref.current.setPolarAngle(Math.PI / 4);
+      ref.current.saveState();
     }
   }, [camera, ref]);
 

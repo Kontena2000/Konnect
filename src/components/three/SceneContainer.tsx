@@ -1,4 +1,3 @@
-
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -371,7 +370,8 @@ export function SceneContainer({
             size='sm'
             onClick={() => {
               if (controlsRef?.current) {
-                controlsRef.current.reset();
+                controlsRef.current.setAzimuthalAngle(0);
+                controlsRef.current.setPolarAngle(0);
               }
             }}
           >
