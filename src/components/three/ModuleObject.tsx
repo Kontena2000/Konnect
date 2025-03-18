@@ -1,5 +1,5 @@
 
-import { useRef, useState, useEffect, Suspense, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh } from "three";
 import { useLoader, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
@@ -80,7 +80,7 @@ export function ModuleObject({
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
     if (readOnly) return;
     event.stopPropagation();
-    event.preventDefault();
+    // Instead of preventDefault, we'll use stopPropagation
     setShowContextMenu(true);
     setContextMenuPosition([0, module.dimensions.height, 0]);
   }, [readOnly, module.dimensions.height]);
