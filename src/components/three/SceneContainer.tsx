@@ -1,5 +1,5 @@
 
-import { Canvas, useThree } from "@react-three/fiber";
+import { Canvas } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
@@ -15,17 +15,6 @@ import { Button } from '@/components/ui/button';
 import { CameraControlsHandle } from './CameraControls';
 import { useGridSnapping } from '@/hooks/use-grid-snapping';
 import { useDragPreview } from '@/hooks/use-drag-preview';
-
-function getSnappedPosition(position: Vector3, gridSize: number = 1, snapThreshold: number = 0.5): Vector3 {
-  const snappedPosition = position.clone();
-  if (Math.abs(position.x % gridSize) < snapThreshold) {
-    snappedPosition.x = Math.round(position.x / gridSize) * gridSize;
-  }
-  if (Math.abs(position.z % gridSize) < snapThreshold) {
-    snappedPosition.z = Math.round(position.z / gridSize) * gridSize;
-  }
-  return snappedPosition;
-}
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -115,6 +104,12 @@ export function SceneContainer({
     return { snapPoints: points, snapLines: lines };
   }, [modules]);
 
+  const handleModuleDragStart = useCallback((module: Module) => {
+    handleDragStart(module);
+    setPreviewHeight(module.dimensions.height);
+    draggedModuleRef.current = module;
+  }, [handleDragStart]);
+
   const handleDragOver = useCallback((event: React.DragEvent) => {
     if (readOnly) return;
     event.preventDefault();
@@ -123,31 +118,8 @@ export function SceneContainer({
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    const mousePos = new Vector2(x, y);
-    setMousePosition(mousePos);
-
-    // Calculate intersection with ground plane
-    const raycaster = new THREE.Raycaster();
-    raycaster.setFromCamera(mousePos, camera);
-    
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(groundPlane, intersection);
-
-    // Apply grid snapping
-    if (gridSnap) {
-      const snappedPos = getSnappedPosition(intersection);
-      setPreviewPosition([snappedPos.x, previewHeight / 2, snappedPos.z]);
-    } else {
-      setPreviewPosition([intersection.x, previewHeight / 2, intersection.z]);
-    }
-  }, [readOnly, gridSnap, previewHeight, setPreviewPosition]);
-
-  const handleModuleDragStart = useCallback((module: Module) => {
-    handleDragStart(module);
-    setPreviewHeight(module.dimensions.height);
-    draggedModuleRef.current = module;
-  }, [handleDragStart]);
+    setMousePosition(new Vector2(x, y));
+  }, [readOnly]);
 
   const handleDragLeave = useCallback(() => {
     if (readOnly) return;
@@ -193,33 +165,6 @@ export function SceneContainer({
   }, [handleKeyDown, handleKeyUp, readOnly]);
 
   useEffect(() => {
-    if (!isDraggingOver || !draggedModuleRef.current) return;
-    
-    const currentModule = draggedModuleRef.current;
-    const geometry = new THREE.BoxGeometry(
-      currentModule.dimensions.length,
-      currentModule.dimensions.height,
-      currentModule.dimensions.width
-    );
-    const material = new THREE.MeshStandardMaterial({
-      color: currentModule.color,
-      transparent: true,
-      opacity: 0.6,
-      wireframe: currentModule.wireframe
-    });
-    const mesh = new THREE.Mesh(geometry, material);
-    
-    setPreviewHeight(currentModule.dimensions.height);
-    setPreviewMesh(mesh);
-    
-    return () => {
-      geometry.dispose();
-      material.dispose();
-      setPreviewMesh(null);
-    };
-  }, [isDraggingOver]);
-
-  useEffect(() => {
     if (typeof window !== 'undefined') {
       (window as any).handleModuleDragStart = handleModuleDragStart;
     }
@@ -263,16 +208,13 @@ export function SceneContainer({
           onEnvironmentalElementSelect={onEnvironmentalElementSelect}
           gridSnap={gridSnap}
           isDraggingOver={isDraggingOver}
-          mousePosition={mousePosition}
-          draggedDimensions={draggedModuleRef.current?.dimensions || null}
-          readOnly={readOnly}
-          snapPoints={snapPoints}
-          snapLines={snapLines}
-          onPreviewPositionUpdate={setPreviewPosition}
           previewMesh={previewMesh}
           rotationAngle={rotationAngle}
           showGuides={showGuides}
+          snapPoints={snapPoints}
+          snapLines={snapLines}
           previewPosition={previewPosition}
+          readOnly={readOnly}
           setRotationAngle={setRotationAngle}
           controlsRef={controlsRef}
         />
