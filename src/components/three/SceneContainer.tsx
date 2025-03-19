@@ -18,9 +18,9 @@ import { useDragPreview } from '@/hooks/use-drag-preview';
 
 export interface SceneContainerProps {
   modules: Module[];
-  selectedModuleId?: string;
+  selectedModuleId?: string | null;
   transformMode?: "translate" | "rotate" | "scale";
-  onModuleSelect?: (moduleId: string) => void;
+  onModuleSelect?: (moduleId: string | null) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
   onDropPoint?: (point: [number, number, number]) => void;
@@ -153,6 +153,23 @@ export function SceneContainer({
     }
   }, [readOnly]);
 
+  // Handle right-click to deselect
+  const handleContextMenu = useCallback((event: React.MouseEvent) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (onModuleSelect) {
+      onModuleSelect(null);
+    }
+  }, [onModuleSelect]);
+
+  // Handle background click to deselect
+  const handleBackgroundClick = useCallback((event: { stopPropagation: () => void }) => {
+    event.stopPropagation();
+    if (onModuleSelect) {
+      onModuleSelect(null);
+    }
+  }, [onModuleSelect]);
+
   useEffect(() => {
     if (readOnly) return;
     window.addEventListener("keydown", handleKeyDown);
@@ -184,6 +201,7 @@ export function SceneContainer({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      onContextMenu={handleContextMenu}
     >
       <Canvas 
         camera={{ 
@@ -196,6 +214,7 @@ export function SceneContainer({
         onCreated={({ camera }) => {
           cameraRef.current = camera;
         }}
+        onClick={handleBackgroundClick}
       >
         <SceneElements
           modules={modules}

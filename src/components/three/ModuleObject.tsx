@@ -1,5 +1,4 @@
-
-import { useRef, useState, useEffect, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, BoxGeometry } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
@@ -9,7 +8,7 @@ import { ConnectionPoint } from "./ConnectionPoint";
 interface ModuleObjectProps {
   module: Module;
   selected?: boolean;
-  onClick?: () => void;
+  onClick?: (moduleId?: string) => void;
   onUpdate?: (updates: Partial<Module>) => void;
   onDelete?: () => void;
   transformMode?: "translate" | "rotate" | "scale";
@@ -31,6 +30,24 @@ export function ModuleObject({
   const [hovered, setHovered] = useState(false);
   const { camera } = useThree();
 
+  // Update geometry creation to position bottom at ground level
+  const geometry = useMemo(() => {
+    const geo = new BoxGeometry(
+      module.dimensions.length,
+      module.dimensions.height,
+      module.dimensions.width
+    );
+    // Translate up by half height to keep bottom at ground level
+    geo.translate(0, module.dimensions.height / 2, 0);
+    return geo;
+  }, [module.dimensions]);
+
+  // Calculate control position to be centered above object
+  const controlsPosition = useMemo(() => {
+    const height = module.dimensions.height;
+    return new Vector3(0, height + 0.5, 0);
+  }, [module.dimensions.height]);
+
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -39,7 +56,7 @@ export function ModuleObject({
     const scale = meshRef.current.scale.toArray() as [number, number, number];
     
     onUpdate?.({
-      position,
+      position: [position[0], 0, position[2]], // Keep Y at 0
       rotation,
       scale
     });
@@ -56,60 +73,28 @@ export function ModuleObject({
 
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    onClick?.();
+    onClick?.(module.id);
+  }, [onClick, module.id]);
+
+  // Add right-click handler to deselect
+  const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+    if (event.nativeEvent) {
+      event.nativeEvent.preventDefault();
+    }
+    onClick?.(undefined);
   }, [onClick]);
 
-  const rotateLeft = useCallback(() => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y -= Math.PI/2;
-      handleTransformChange();
-    }
-  }, [handleTransformChange]);
-
-  const rotateRight = useCallback(() => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y += Math.PI/2;
-      handleTransformChange();
-    }
-  }, [handleTransformChange]);
-
-  useEffect(() => {
-    if (!selected || readOnly) return;
-    
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (document.activeElement?.tagName === 'INPUT') return;
-      
-      if (event.key === 'r' || event.key === 'R') {
-        rotateRight();
-      } else if (event.key === 'Delete' || event.key === 'Backspace') {
-        onDelete?.();
-      }
-    };
-    
-    window.addEventListener('keydown', handleKeyDown);
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [selected, readOnly, onDelete, rotateRight]);
-
-  // Create geometry with bottom at origin
-  const geometry = new BoxGeometry(
-    module.dimensions.length,
-    module.dimensions.height,
-    module.dimensions.width
-  );
-  geometry.translate(0, module.dimensions.height / 2, 0);
-
   return (
-    <group>
+    <group position={[module.position[0], 0, module.position[2]]}>
       <mesh
         ref={meshRef}
-        position={[module.position[0], 0, module.position[2]]}
         rotation={module.rotation}
         scale={module.scale}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
         onClick={handleClick}
+        onContextMenu={handleContextMenu}
         castShadow
         receiveShadow
       >
@@ -123,43 +108,53 @@ export function ModuleObject({
       </mesh>
       
       {(selected || hovered) && !readOnly && (
-        <Html
-          position={[0, module.dimensions.height, 0]}
-          center
-          style={{ pointerEvents: 'auto' }}
-        >
-          <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
-            <button 
-              className='p-1 hover:bg-accent rounded'
-              onClick={(e) => {
-                e.stopPropagation();
-                rotateLeft();
-              }}
-            >
-              ⟲
-            </button>
-            <button 
-              className='p-1 hover:bg-accent rounded'
-              onClick={(e) => {
-                e.stopPropagation();
-                rotateRight();
-              }}
-            >
-              ⟳
-            </button>
-            {onDelete && selected && (
+        <group position={controlsPosition}>
+          <Html
+            center
+            style={{ 
+              pointerEvents: 'auto',
+              transform: 'translateY(-100%)'
+            }}
+          >
+            <div className='bg-background/80 backdrop-blur-sm p-2 rounded shadow flex gap-2'>
               <button 
-                className='p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2'
+                className='p-2 hover:bg-accent rounded'
                 onClick={(e) => {
                   e.stopPropagation();
-                  onDelete();
+                  if (meshRef.current) {
+                    meshRef.current.rotation.y -= Math.PI/2;
+                    handleTransformChange();
+                  }
                 }}
               >
-                ✕
+                ⟲
               </button>
-            )}
-          </div>
-        </Html>
+              <button 
+                className='p-2 hover:bg-accent rounded'
+                onClick={(e) => {
+                  e.stopPropagation();
+                  if (meshRef.current) {
+                    meshRef.current.rotation.y += Math.PI/2;
+                    handleTransformChange();
+                  }
+                }}
+              >
+                ⟳
+              </button>
+              {onDelete && selected && (
+                <button 
+                  className='p-2 hover:bg-destructive hover:text-destructive-foreground rounded ml-2'
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </Html>
+        </group>
       )}
       
       {selected && !readOnly && meshRef.current && (
@@ -169,7 +164,7 @@ export function ModuleObject({
           onObjectChange={handleTransformChange}
           size={0.75}
           showX={true}
-          showY={true}
+          showY={false} // Disable Y axis movement
           showZ={true}
           enabled={true}
           translationSnap={gridSnap ? 1 : null}

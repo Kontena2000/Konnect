@@ -1,4 +1,3 @@
-
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -41,7 +40,7 @@ interface SceneElementsProps {
 export function SceneElements({
   modules,
   selectedModuleId,
-  transformMode = "translate",
+  transformMode = 'translate',
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -63,12 +62,24 @@ export function SceneElements({
 }: SceneElementsProps) {
   const { camera } = useThree();
 
+  // Initialize camera position
   useEffect(() => {
     if (camera) {
       camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
     }
   }, [camera]);
+
+  // Lock camera when module is selected
+  useEffect(() => {
+    if (controlsRef?.current) {
+      if (selectedModuleId) {
+        controlsRef.current.saveState();
+      } else {
+        controlsRef.current.reset();
+      }
+    }
+  }, [selectedModuleId, controlsRef]);
 
   return (
     <>
@@ -81,7 +92,7 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls ref={controlsRef} />
+      <CameraControls ref={controlsRef} locked={!!selectedModuleId} />
       <GridHelper />
 
       {terrain && <TerrainView terrain={terrain} />}
@@ -129,7 +140,7 @@ export function SceneElements({
           <group 
             position={[
               previewPosition[0], 
-              previewPosition[1], // Keep at ground level
+              0, // Keep at ground level
               previewPosition[2]
             ]} 
             rotation={[0, rotationAngle, 0]}
@@ -176,7 +187,7 @@ export function SceneElements({
         return (
           <line key={`line-${i}`}>
             <primitive object={geometry} />
-            <lineBasicMaterial color="#ffcc00" opacity={0.5} transparent />
+            <lineBasicMaterial color='#ffcc00' opacity={0.5} transparent />
           </line>
         );
       })}
