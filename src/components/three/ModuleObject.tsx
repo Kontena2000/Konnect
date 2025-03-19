@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, BoxGeometry } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -8,7 +9,7 @@ import { ConnectionPoint } from "./ConnectionPoint";
 interface ModuleObjectProps {
   module: Module;
   selected?: boolean;
-  onClick?: (moduleId?: string) => void;
+  onClick?: (moduleId: string | null) => void;
   onUpdate?: (updates: Partial<Module>) => void;
   onDelete?: () => void;
   transformMode?: "translate" | "rotate" | "scale";
@@ -44,8 +45,7 @@ export function ModuleObject({
 
   // Calculate control position to be centered above object
   const controlsPosition = useMemo(() => {
-    const height = module.dimensions.height;
-    return new Vector3(0, height + 0.5, 0);
+    return new Vector3(0, module.dimensions.height + 0.5, 0);
   }, [module.dimensions.height]);
 
   const handleTransformChange = useCallback(() => {
@@ -82,7 +82,7 @@ export function ModuleObject({
     if (event.nativeEvent) {
       event.nativeEvent.preventDefault();
     }
-    onClick?.(undefined);
+    onClick?.(null);
   }, [onClick]);
 
   return (
@@ -113,7 +113,8 @@ export function ModuleObject({
             center
             style={{ 
               pointerEvents: 'auto',
-              transform: 'translateY(-100%)'
+              transform: 'translateY(-100%)',
+              zIndex: 1000
             }}
           >
             <div className='bg-background/80 backdrop-blur-sm p-2 rounded shadow flex gap-2'>
