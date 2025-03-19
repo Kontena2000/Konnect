@@ -23,28 +23,24 @@ export function useDragPreview(): UseDragPreviewReturn {
 
   const handleDragStart = useCallback((module: Module) => {
     setDraggedModule(module);
-    
-    // Create geometry and center it horizontally, but keep bottom at origin
     const geometry = new BoxGeometry(
       module.dimensions.length,
       module.dimensions.height,
       module.dimensions.width
     );
-    geometry.translate(0, module.dimensions.height / 2, 0);
-    
     const material = new MeshStandardMaterial({
       color: module.color,
       transparent: true,
       opacity: 0.6,
       wireframe: module.wireframe
     });
-    
     const mesh = new Mesh(geometry, material);
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
     
-    // Position at ground level
-    mesh.position.y = 0;
+    // Center the geometry and move pivot to bottom
+    geometry.center();
+    geometry.translate(0, module.dimensions.height / 2, 0);
+    
+    mesh.position.y = 0; // Place at ground level
     setPreviewMesh(mesh);
   }, []);
 
@@ -73,18 +69,14 @@ export function useDragPreview(): UseDragPreviewReturn {
     raycaster.ray.intersectPlane(groundPlane, intersection);
 
     if (intersection) {
-      // Snap to grid and keep at ground level
+      // Snap to grid
       const snappedX = Math.round(intersection.x / gridSize) * gridSize;
       const snappedZ = Math.round(intersection.z / gridSize) * gridSize;
       
+      // Keep Y at 0 for ground level placement
       setPreviewPosition([snappedX, 0, snappedZ]);
-      
-      if (previewMesh) {
-        // Update preview mesh position
-        previewMesh.position.set(snappedX, 0, snappedZ);
-      }
     }
-  }, [mouseVector, raycaster, groundPlane, previewMesh]);
+  }, [mouseVector, raycaster, groundPlane]);
 
   useEffect(() => {
     return () => {

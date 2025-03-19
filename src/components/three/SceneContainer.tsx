@@ -1,3 +1,4 @@
+
 import { Canvas } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -19,7 +20,7 @@ export interface SceneContainerProps {
   modules: Module[];
   selectedModuleId?: string;
   transformMode?: "translate" | "rotate" | "scale";
-  onModuleSelect?: (moduleId: string | undefined) => void;
+  onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
   onDropPoint?: (point: [number, number, number]) => void;
@@ -58,7 +59,6 @@ export function SceneContainer({
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: "scene" });
   const cameraRef = useRef<THREE.Camera | null>(null);
-  const controlsRef = useRef<CameraControlsHandle>(null);
   const {
     previewMesh,
     previewPosition,
@@ -70,15 +70,44 @@ export function SceneContainer({
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [showGuides, setShowGuides] = useState(false);
+  const controlsRef = useRef<CameraControlsHandle>(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
-  // Handle background click to deselect
-  const handleBackgroundClick = useCallback((event: { stopPropagation: () => void }) => {
-    event.stopPropagation();
-    if (onModuleSelect) {
-      onModuleSelect(undefined);
-    }
-  }, [onModuleSelect]);
+  const { snapPoints, snapLines } = useMemo(() => {
+    const points: Vector3[] = [];
+    const lines: Line3[] = [];
+
+    modules.forEach(currentModule => {
+      const box = new Box3();
+      const size = new Vector3(
+        currentModule.dimensions.length,
+        currentModule.dimensions.height,
+        currentModule.dimensions.width
+      );
+      const position = new Vector3(...currentModule.position);
+      box.setFromCenterAndSize(position, size);
+
+      const corners = [
+        new Vector3(box.min.x, 0, box.min.z),
+        new Vector3(box.max.x, 0, box.min.z),
+        new Vector3(box.min.x, 0, box.max.z),
+        new Vector3(box.max.x, 0, box.max.z),
+      ];
+      points.push(...corners);
+
+      corners.forEach((start, i) => {
+        const end = corners[(i + 1) % 4];
+        lines.push(new Line3(start, end));
+      });
+    });
+
+    return { snapPoints: points, snapLines: lines };
+  }, [modules]);
+
+  const handleModuleDragStart = useCallback((module: Module) => {
+    handleDragStart(module);
+    draggedModuleRef.current = module;
+  }, [handleDragStart]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     if (readOnly || !cameraRef.current) return;
@@ -93,20 +122,19 @@ export function SceneContainer({
   }, [readOnly]);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
-    if (readOnly || !onDropPoint || !previewMesh) return;
+    if (readOnly || !onDropPoint) return;
     event.preventDefault();
     
-    // Calculate drop position with bottom at ground level
-    const dropPosition: [number, number, number] = [
+    const finalPosition: [number, number, number] = [
       previewPosition[0],
-      0, // Place at ground level
+      previewPosition[1],
       previewPosition[2]
     ];
     
-    onDropPoint(dropPosition);
+    onDropPoint(finalPosition);
     setIsDraggingOver(false);
     handleDragEnd();
-  }, [readOnly, onDropPoint, previewPosition, previewMesh, handleDragEnd]);
+  }, [readOnly, onDropPoint, previewPosition, handleDragEnd]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -116,10 +144,7 @@ export function SceneContainer({
     if (event.shiftKey) {
       setShowGuides(true);
     }
-    if (event.key === "Escape" && onModuleSelect) {
-      onModuleSelect(undefined);
-    }
-  }, [readOnly, onModuleSelect]);
+  }, [readOnly]);
 
   const handleKeyUp = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -138,16 +163,16 @@ export function SceneContainer({
     };
   }, [handleKeyDown, handleKeyUp, readOnly]);
 
-  // Lock camera when module is selected
   useEffect(() => {
-    if (controlsRef.current) {
-      if (selectedModuleId) {
-        controlsRef.current.saveState();
-      } else {
-        controlsRef.current.reset();
-      }
+    if (typeof window !== 'undefined') {
+      (window as any).handleModuleDragStart = handleModuleDragStart;
     }
-  }, [selectedModuleId]);
+    return () => {
+      if (typeof window !== 'undefined') {
+        delete (window as any).handleModuleDragStart;
+      }
+    };
+  }, [handleModuleDragStart]);
 
   return (
     <div 
@@ -171,7 +196,6 @@ export function SceneContainer({
         onCreated={({ camera }) => {
           cameraRef.current = camera;
         }}
-        onClick={handleBackgroundClick}
       >
         <SceneElements
           modules={modules}
@@ -189,8 +213,8 @@ export function SceneContainer({
           previewMesh={previewMesh}
           rotationAngle={rotationAngle}
           showGuides={showGuides}
-          snapPoints={[]}
-          snapLines={[]}
+          snapPoints={snapPoints}
+          snapLines={snapLines}
           previewPosition={previewPosition}
           readOnly={readOnly}
           setRotationAngle={setRotationAngle}
@@ -207,10 +231,6 @@ export function SceneContainer({
           <div className='flex items-center gap-2'>
             <kbd className='px-2 py-1 bg-muted rounded text-xs'>Shift</kbd>
             <span className='text-sm'>Show alignment guides</span>
-          </div>
-          <div className='flex items-center gap-2'>
-            <kbd className='px-2 py-1 bg-muted rounded text-xs'>Esc</kbd>
-            <span className='text-sm'>Deselect module</span>
           </div>
           <div className='flex items-center gap-2 mt-2'>
             <span className='text-xs text-muted-foreground'>Position: {previewPosition[0].toFixed(1)}, {previewPosition[2].toFixed(1)}</span>

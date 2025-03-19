@@ -7,7 +7,7 @@ import { ModuleDragOverlay } from "@/components/three/DragOverlay";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Download, Loader2, Grid } from "lucide-react";
+import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
 import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
@@ -29,7 +29,6 @@ import * as THREE from 'three';
 import { cn } from '@/lib/utils';
 import { Mesh } from 'three';
 import { useHotkeys } from 'react-hotkeys-hook';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const createPreviewMesh = (item: Module) => {
   const geometry = new THREE.BoxGeometry(
@@ -134,15 +133,11 @@ export default function LayoutEditorPage() {
   };
 
   const handleModuleDragStart = (templateItem: Module) => {
-    console.log('Starting drag with template:', templateItem);
     setDraggingTemplate(templateItem);
-    const mesh = createPreviewMesh(templateItem);
-    console.log('Created preview mesh:', mesh);
-    setPreviewMesh(mesh);
+    setPreviewMesh(createPreviewMesh(templateItem));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    console.log('Drag ended:', event);
     setDraggingTemplate(null);
     setDraggingItem(null);
     setPreviewMesh(null);
@@ -154,12 +149,11 @@ export default function LayoutEditorPage() {
       const newItem: Module = {
         ...draggingTemplate,
         id: newItemId,
-        position: [0, 0, 0], // Start at ground level
+        position: [0, draggingTemplate.dimensions.height / 2, 0],
         rotation: [0, rotationAngle, 0],
         scale: [1, 1, 1],
         visibleInEditor: true
       };
-      console.log('Adding new module:', newItem);
       addModule(newItem);
       
       toast({
@@ -216,114 +210,47 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='flex flex-col h-screen'>
-        {/* Add toolbar */}
-        <div className='border-b bg-background p-2 flex items-center justify-between'>
-          <div className='flex items-center gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={saveChanges}
-              disabled={saving || !hasChanges}
-            >
-              {saving ? (
-                <>
-                  <Loader2 className='h-4 w-4 mr-2 animate-spin' />
-                  Saving...
-                </>
-              ) : (
-                <>
-                  <Save className='h-4 w-4 mr-2' />
-                  Save
-                </>
-              )}
-            </Button>
-
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant='outline' size='sm'>
-                  <Download className='h-4 w-4 mr-2' />
-                  Export
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent>
-                <DropdownMenuItem onClick={() => {
-                  toast({
-                    title: 'Export Started',
-                    description: 'Preparing PDF export...'
-                  });
-                  // TODO: Implement PDF export
-                }}>
-                  Export as PDF
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => {
-                  toast({
-                    title: 'Export Started',
-                    description: 'Preparing 3D model export...'
-                  });
-                  // TODO: Implement 3D file export
-                }}>
-                  Export as 3D Model
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+      <div className='flex h-screen'>
+        <DndContext 
+          sensors={sensors}
+          onDragEnd={handleDragEnd}
+          onDragStart={handleDragStart}
+        >
+          <div className='flex-1 relative'>
+            <SceneContainer
+              modules={modules}
+              connections={connections}
+              selectedModuleId={selectedModuleId}
+              onModuleSelect={selectModule}
+              onModuleUpdate={updateModule}
+              onModuleDelete={deleteModule}
+              onDropPoint={(point) => {
+                if (draggingTemplate) {
+                  const newItem: Module = {
+                    ...draggingTemplate,
+                    id: `${draggingTemplate.id}-${Date.now()}`,
+                    position: point,
+                    rotation: [0, rotationAngle, 0],
+                    scale: [1, 1, 1],
+                    visibleInEditor: true
+                  };
+                  addModule(newItem);
+                  setDraggingTemplate(null);
+                }
+              }}
+              cameraZoom={cameraZoom}
+              gridSnap={gridSnap}
+            />
           </div>
 
-          <div className='flex items-center gap-2'>
-            <Button
-              variant='outline'
-              size='sm'
-              onClick={() => setGridSnap(!gridSnap)}
-            >
-              <Grid className='h-4 w-4 mr-2' />
-              {gridSnap ? 'Grid: On' : 'Grid: Off'}
-            </Button>
+          <div className='w-80 border-l bg-background'>
+            <ModuleLibrary onDragStart={handleModuleDragStart} />
           </div>
-        </div>
 
-        {/* Existing editor content */}
-        <div className='flex flex-1 overflow-hidden'>
-          <DndContext 
-            sensors={sensors}
-            onDragEnd={handleDragEnd}
-            onDragStart={handleDragStart}
-          >
-            <div className='flex-1 relative'>
-              <SceneContainer
-                modules={modules}
-                connections={connections}
-                selectedModuleId={selectedModuleId}
-                onModuleSelect={selectModule}
-                onModuleUpdate={updateModule}
-                onModuleDelete={deleteModule}
-                onDropPoint={(point) => {
-                  if (draggingTemplate) {
-                    const newItem: Module = {
-                      ...draggingTemplate,
-                      id: `${draggingTemplate.id}-${Date.now()}`,
-                      position: point,
-                      rotation: [0, rotationAngle, 0],
-                      scale: [1, 1, 1],
-                      visibleInEditor: true
-                    };
-                    addModule(newItem);
-                    setDraggingTemplate(null);
-                  }
-                }}
-                cameraZoom={cameraZoom}
-                gridSnap={gridSnap}
-              />
-            </div>
-
-            <div className='w-80 border-l bg-background'>
-              <ModuleLibrary onDragStart={handleModuleDragStart} />
-            </div>
-
-            {draggingTemplate && (
-              <ModuleDragOverlay template={draggingTemplate} />
-            )}
-          </DndContext>
-        </div>
+          {draggingTemplate && (
+            <ModuleDragOverlay template={draggingTemplate} />
+          )}
+        </DndContext>
       </div>
     </AppLayout>
   );

@@ -1,5 +1,5 @@
 
-import { useRef, useState, useEffect, useCallback, useMemo } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, BoxGeometry } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
@@ -9,7 +9,7 @@ import { ConnectionPoint } from "./ConnectionPoint";
 interface ModuleObjectProps {
   module: Module;
   selected?: boolean;
-  onClick?: (moduleId?: string) => void;
+  onClick?: () => void;
   onUpdate?: (updates: Partial<Module>) => void;
   onDelete?: () => void;
   transformMode?: "translate" | "rotate" | "scale";
@@ -23,34 +23,13 @@ export function ModuleObject({
   onClick,
   onUpdate,
   onDelete,
-  transformMode = "translate",
+  transformMode = 'translate',
   gridSnap = true,
   readOnly = false
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const { camera } = useThree();
-
-  // Create geometry with bottom at origin
-  const geometry = useMemo(() => {
-    const geo = new BoxGeometry(
-      module.dimensions.length,
-      module.dimensions.height,
-      module.dimensions.width
-    );
-    // Center horizontally but keep bottom at origin
-    geo.translate(0, module.dimensions.height / 2, 0);
-    return geo;
-  }, [module.dimensions]);
-
-  // Calculate control position above object
-  const controlsPosition = useMemo(() => 
-    new Vector3(
-      module.position[0],
-      module.dimensions.height + 1.5,
-      module.position[2]
-    ),
-  [module.position, module.dimensions.height]);
 
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
@@ -60,7 +39,7 @@ export function ModuleObject({
     const scale = meshRef.current.scale.toArray() as [number, number, number];
     
     onUpdate?.({
-      position: [position[0], 0, position[2]], // Keep Y at 0
+      position,
       rotation,
       scale
     });
@@ -77,48 +56,66 @@ export function ModuleObject({
 
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    onClick?.(module.id);
-  }, [onClick, module.id]);
-
-  const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    if (event.nativeEvent) {
-      event.nativeEvent.preventDefault();
-    }
-    onClick?.(undefined);
+    onClick?.();
   }, [onClick]);
 
   const rotateLeft = useCallback(() => {
-    if (!meshRef.current) return;
-    const newRotation = meshRef.current.rotation.y - Math.PI/2;
-    meshRef.current.rotation.y = newRotation;
-    handleTransformChange();
+    if (meshRef.current) {
+      meshRef.current.rotation.y -= Math.PI/2;
+      handleTransformChange();
+    }
   }, [handleTransformChange]);
 
   const rotateRight = useCallback(() => {
-    if (!meshRef.current) return;
-    const newRotation = meshRef.current.rotation.y + Math.PI/2;
-    meshRef.current.rotation.y = newRotation;
-    handleTransformChange();
+    if (meshRef.current) {
+      meshRef.current.rotation.y += Math.PI/2;
+      handleTransformChange();
+    }
   }, [handleTransformChange]);
+
+  useEffect(() => {
+    if (!selected || readOnly) return;
+    
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (document.activeElement?.tagName === 'INPUT') return;
+      
+      if (event.key === 'r' || event.key === 'R') {
+        rotateRight();
+      } else if (event.key === 'Delete' || event.key === 'Backspace') {
+        onDelete?.();
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [selected, readOnly, onDelete, rotateRight]);
+
+  // Create geometry with bottom at origin
+  const geometry = new BoxGeometry(
+    module.dimensions.length,
+    module.dimensions.height,
+    module.dimensions.width
+  );
+  geometry.translate(0, module.dimensions.height / 2, 0);
 
   return (
     <group>
       <mesh
         ref={meshRef}
-        position={[module.position[0], 0, module.position[2]]} // Keep Y at 0
+        position={[module.position[0], 0, module.position[2]]}
         rotation={module.rotation}
         scale={module.scale}
         onPointerOver={handlePointerOver}
         onPointerOut={handlePointerOut}
         onClick={handleClick}
-        onContextMenu={handleContextMenu}
         castShadow
         receiveShadow
       >
         <primitive object={geometry} />
         <meshStandardMaterial
-          color={module.color || "#888888"}
+          color={module.color || '#888888'}
           transparent={hovered || selected}
           opacity={hovered || selected ? 0.8 : 1}
           wireframe={module.wireframe}
@@ -127,17 +124,13 @@ export function ModuleObject({
       
       {(selected || hovered) && !readOnly && (
         <Html
-          position={controlsPosition}
+          position={[0, module.dimensions.height, 0]}
           center
-          style={{ 
-            pointerEvents: "auto",
-            transform: "translateY(-100%)",
-            zIndex: 1000
-          }}
+          style={{ pointerEvents: 'auto' }}
         >
-          <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
+          <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
             <button 
-              className="p-1 hover:bg-accent rounded"
+              className='p-1 hover:bg-accent rounded'
               onClick={(e) => {
                 e.stopPropagation();
                 rotateLeft();
@@ -146,7 +139,7 @@ export function ModuleObject({
               ⟲
             </button>
             <button 
-              className="p-1 hover:bg-accent rounded"
+              className='p-1 hover:bg-accent rounded'
               onClick={(e) => {
                 e.stopPropagation();
                 rotateRight();
@@ -156,7 +149,7 @@ export function ModuleObject({
             </button>
             {onDelete && selected && (
               <button 
-                className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
+                className='p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2'
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
@@ -176,7 +169,7 @@ export function ModuleObject({
           onObjectChange={handleTransformChange}
           size={0.75}
           showX={true}
-          showY={false} // Disable Y axis movement
+          showY={true}
           showZ={true}
           enabled={true}
           translationSnap={gridSnap ? 1 : null}
