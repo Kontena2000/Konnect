@@ -1,3 +1,4 @@
+
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -117,7 +118,6 @@ export function SceneElements({
 
       {isDraggingOver && previewMesh && (
         <group>
-          {/* Show grid snapping guides */}
           {gridSnap && showGuides && snapPoints.map((point, i) => (
             <mesh key={`snap-point-${i}`} position={[point.x, 0.01, point.z]}>
               <sphereGeometry args={[0.1, 8, 8]} />
@@ -125,20 +125,37 @@ export function SceneElements({
             </mesh>
           ))}
           
-          {/* Show preview mesh */}
-          <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
+          {/* Position preview mesh with bottom at ground level */}
+          <group 
+            position={[
+              previewPosition[0], 
+              previewPosition[1], // Keep at ground level
+              previewPosition[2]
+            ]} 
+            rotation={[0, rotationAngle, 0]}
+          >
             <primitive object={previewMesh.clone()} />
-            <Html position={[0, 2, 0]}>
+            <Html
+              position={[0, previewMesh.geometry.boundingBox?.max.y || 2, 0]}
+              center
+              style={{ pointerEvents: 'auto' }}
+            >
               <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
                 <button 
                   className='p-1 hover:bg-accent rounded'
-                  onClick={() => setRotationAngle(prev => prev - Math.PI/2)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRotationAngle(prev => prev - Math.PI/2);
+                  }}
                 >
                   ⟲
                 </button>
                 <button 
                   className='p-1 hover:bg-accent rounded'
-                  onClick={() => setRotationAngle(prev => prev + Math.PI/2)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setRotationAngle(prev => prev + Math.PI/2);
+                  }}
                 >
                   ⟳
                 </button>

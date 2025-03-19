@@ -58,18 +58,18 @@ export function SceneContainer({
   gridSnap = true
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: "scene" });
+  const cameraRef = useRef<THREE.Camera | null>(null);
   const {
     previewMesh,
     previewPosition,
     setPreviewPosition,
     handleDragStart,
-    handleDragEnd
+    handleDragEnd,
+    updatePreviewPosition
   } = useDragPreview();
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [showGuides, setShowGuides] = useState(false);
-  const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
-  const [previewHeight, setPreviewHeight] = useState(0);
   const controlsRef = useRef<CameraControlsHandle>(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
@@ -106,34 +106,33 @@ export function SceneContainer({
 
   const handleModuleDragStart = useCallback((module: Module) => {
     handleDragStart(module);
-    setPreviewHeight(module.dimensions.height);
     draggedModuleRef.current = module;
   }, [handleDragStart]);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
-    if (readOnly) return;
+    if (readOnly || !cameraRef.current) return;
     event.preventDefault();
     setIsDraggingOver(true);
-    
-    const rect = event.currentTarget.getBoundingClientRect();
-    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-    setMousePosition(new Vector2(x, y));
-  }, [readOnly]);
+    updatePreviewPosition(event, cameraRef.current, gridSnap ? 1 : 0.5);
+  }, [readOnly, gridSnap, updatePreviewPosition]);
 
   const handleDragLeave = useCallback(() => {
     if (readOnly) return;
     setIsDraggingOver(false);
-    setMousePosition(null);
   }, [readOnly]);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     if (readOnly || !onDropPoint) return;
     event.preventDefault();
     
-    onDropPoint(previewPosition);
+    const finalPosition: [number, number, number] = [
+      previewPosition[0],
+      previewPosition[1],
+      previewPosition[2]
+    ];
+    
+    onDropPoint(finalPosition);
     setIsDraggingOver(false);
-    setMousePosition(null);
     handleDragEnd();
   }, [readOnly, onDropPoint, previewPosition, handleDragEnd]);
 
@@ -194,6 +193,9 @@ export function SceneContainer({
           far: 1000
         }}
         shadows
+        onCreated={({ camera }) => {
+          cameraRef.current = camera;
+        }}
       >
         <SceneElements
           modules={modules}
