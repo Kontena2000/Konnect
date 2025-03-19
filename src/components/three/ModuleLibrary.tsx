@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -152,8 +151,8 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
         </div>
       </CardHeader>
       <CardContent>
-        <ScrollArea className="h-[400px] pr-4">
-          <div className="space-y-4">
+        <ScrollArea className='h-[400px] pr-4'>
+          <div className='space-y-4'>
             {categories.map((category) => (
               <Collapsible
                 key={category.id}
@@ -177,43 +176,38 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
                     </Badge>
                   </Button>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 mt-2">
+                <CollapsibleContent className='space-y-2 mt-2'>
                   {modulesByCategory[category.id]?.map((module) => (
                     <div
                       key={module.id}
-                      className="p-2 rounded-lg hover:bg-accent cursor-move relative group"
+                      className='p-2 rounded-lg hover:bg-accent cursor-move relative group'
                       draggable
-                      onDragStart={() => {
-                        if (typeof window !== 'undefined') {
-                          (window as any).handleModuleDragStart?.(module);
-                        }
-                        onDragStart(module);
-                      }}
+                      onDragStart={() => onDragStart(module)}
                     >
-                      <div className="flex items-center gap-3">
+                      <div className='flex items-center gap-3'>
                         <div
-                          className="w-12 h-12 rounded flex items-center justify-center"
+                          className='w-12 h-12 rounded flex items-center justify-center'
                           style={{ backgroundColor: module.color }}
                         >
                           {module.type === 'container' && <Truck className='h-5 w-5 text-white' />}
                           {module.type === 'vegetation' && <Leaf className='h-5 w-5 text-white' />}
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <h3 className="font-medium text-sm truncate">{module.name}</h3>
-                          <p className="text-xs text-muted-foreground truncate">
+                        <div className='flex-1 min-w-0'>
+                          <h3 className='font-medium text-sm truncate'>{module.name}</h3>
+                          <p className='text-xs text-muted-foreground truncate'>
                             {module.description}
                           </p>
                         </div>
                         <Button
-                          variant="ghost"
-                          size="icon"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity"
+                          variant='ghost'
+                          size='icon'
+                          className='opacity-0 group-hover:opacity-100 transition-opacity'
                           onClick={() => toggleModuleVisibility(module.id, module.visibleInEditor || false)}
                         >
                           {module.visibleInEditor ? (
-                            <Eye className="h-4 w-4" />
+                            <Eye className='h-4 w-4' />
                           ) : (
-                            <EyeOff className="h-4 w-4" />
+                            <EyeOff className='h-4 w-4' />
                           )}
                         </Button>
                       </div>

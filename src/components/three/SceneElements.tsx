@@ -1,4 +1,3 @@
-
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -81,7 +80,7 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls ref={controlsRef} />
+      <CameraControls ref={controlsRef} locked={!!selectedModuleId} />
       <GridHelper />
 
       {terrain && <TerrainView terrain={terrain} />}
