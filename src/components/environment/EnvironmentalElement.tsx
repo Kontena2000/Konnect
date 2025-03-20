@@ -1,15 +1,13 @@
-
 import { useRef } from "react";
 import { Mesh } from "three";
 import { EnvironmentalElement as ElementType } from "@/services/environment";
 
 export interface EnvironmentalElementProps {
   element: ElementType;
-  selected?: boolean;
   onClick?: () => void;
 }
 
-export function EnvironmentalElement({ element, selected = false, onClick }: EnvironmentalElementProps) {
+export function EnvironmentalElement({ element, onClick }: EnvironmentalElementProps) {
   const meshRef = useRef<Mesh>(null);
 
   const handleClick = () => {
@@ -32,10 +30,8 @@ export function EnvironmentalElement({ element, selected = false, onClick }: Env
       <boxGeometry args={[width, height, depth]} />
       <meshStandardMaterial
         color={element.properties?.color || "#4b5563"}
-        opacity={selected ? 0.9 : 0.8}
+        opacity={0.8}
         transparent
-        emissive={selected ? "#ffffff" : undefined}
-        emissiveIntensity={selected ? 0.2 : 0}
       />
     </mesh>
   );

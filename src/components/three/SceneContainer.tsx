@@ -1,5 +1,5 @@
 
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
@@ -12,15 +12,120 @@ import { cn } from "@/lib/utils";
 import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-import { CameraControlsHandle } from './CameraControls';
-import { useGridSnapping } from '@/hooks/use-grid-snapping';
-import { useDragPreview } from '@/hooks/use-drag-preview';
+
+function SceneContent({
+  modules,
+  selectedModuleId,
+  transformMode,
+  onModuleSelect,
+  onModuleUpdate,
+  onModuleDelete,
+  connections,
+  environmentalElements,
+  terrain,
+  onEnvironmentalElementSelect,
+  gridSnap,
+  isDraggingOver,
+  mousePosition,
+  draggedDimensions,
+  readOnly,
+  snapPoints,
+  snapLines,
+  onPreviewPositionUpdate,
+  previewMesh,
+  rotationAngle,
+  showGuides,
+  previewPosition,
+  setRotationAngle,
+  controlsRef
+}: {
+  modules: Module[];
+  selectedModuleId?: string;
+  transformMode?: "translate" | "rotate" | "scale";
+  onModuleSelect?: (moduleId: string) => void;
+  onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
+  onModuleDelete?: (moduleId: string) => void;
+  connections: Connection[];
+  environmentalElements?: ElementType[];
+  terrain?: TerrainData;
+  onEnvironmentalElementSelect?: (elementId: string) => void;
+  gridSnap: boolean;
+  isDraggingOver: boolean;
+  mousePosition: Vector2 | null;
+  draggedDimensions: { height: number } | null;
+  readOnly: boolean;
+  snapPoints: Vector3[];
+  snapLines: Line3[];
+  onPreviewPositionUpdate: (position: [number, number, number]) => void;
+  previewMesh: THREE.Mesh | null;
+  rotationAngle: number;
+  showGuides: boolean;
+  previewPosition: [number, number, number];
+  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
+  controlsRef: React.RefObject<any>;
+}) {
+  const { camera, raycaster } = useThree();
+
+  useEffect(() => {
+    if (!isDraggingOver || !mousePosition || !draggedDimensions) return;
+
+    raycaster.setFromCamera(mousePosition, camera);
+    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+    const intersection = new THREE.Vector3();
+    raycaster.ray.intersectPlane(groundPlane, intersection);
+
+    if (gridSnap) {
+      const snapThreshold = 1.5;
+      const nearestPoint = snapPoints.reduce((nearest, point) => {
+        const distance = intersection.distanceTo(point);
+        return distance < snapThreshold && distance < nearest.distance
+          ? { point, distance }
+          : nearest;
+      }, { point: intersection, distance: Infinity });
+
+      if (nearestPoint.distance < snapThreshold) {
+        intersection.copy(nearestPoint.point);
+      } else {
+        intersection.x = Math.round(intersection.x);
+        intersection.z = Math.round(intersection.z);
+      }
+    }
+
+    intersection.y = draggedDimensions.height / 2;
+    onPreviewPositionUpdate([intersection.x, intersection.y, intersection.z]);
+  }, [isDraggingOver, mousePosition, gridSnap, snapPoints, draggedDimensions, camera, raycaster, onPreviewPositionUpdate]);
+
+  return (
+    <SceneElements 
+      modules={modules}
+      selectedModuleId={selectedModuleId}
+      transformMode={transformMode}
+      onModuleSelect={onModuleSelect}
+      onModuleUpdate={onModuleUpdate}
+      onModuleDelete={onModuleDelete}
+      connections={connections}
+      environmentalElements={environmentalElements}
+      terrain={terrain}
+      onEnvironmentalElementSelect={onEnvironmentalElementSelect}
+      gridSnap={gridSnap}
+      isDraggingOver={isDraggingOver}
+      previewMesh={previewMesh}
+      rotationAngle={rotationAngle}
+      showGuides={showGuides}
+      snapPoints={snapPoints}
+      snapLines={snapLines}
+      previewPosition={previewPosition}
+      readOnly={readOnly}
+      setRotationAngle={setRotationAngle}
+    />
+  );
+}
 
 export interface SceneContainerProps {
   modules: Module[];
-  selectedModuleId?: string | null;
+  selectedModuleId?: string;
   transformMode?: "translate" | "rotate" | "scale";
-  onModuleSelect?: (moduleId: string | null) => void;
+  onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
   onDropPoint?: (point: [number, number, number]) => void;
@@ -58,19 +163,14 @@ export function SceneContainer({
   gridSnap = true
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: "scene" });
-  const cameraRef = useRef<THREE.Camera | null>(null);
-  const {
-    previewMesh,
-    previewPosition,
-    setPreviewPosition,
-    handleDragStart,
-    handleDragEnd,
-    updatePreviewPosition
-  } = useDragPreview();
+  const [previewMesh, setPreviewMesh] = useState<THREE.Mesh | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [showGuides, setShowGuides] = useState(false);
-  const controlsRef = useRef<CameraControlsHandle>(null);
+  const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
+  const [previewHeight, setPreviewHeight] = useState(0);
+  const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const controlsRef = useRef(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
   const { snapPoints, snapLines } = useMemo(() => {
@@ -104,37 +204,31 @@ export function SceneContainer({
     return { snapPoints: points, snapLines: lines };
   }, [modules]);
 
-  const handleModuleDragStart = useCallback((module: Module) => {
-    handleDragStart(module);
-    draggedModuleRef.current = module;
-  }, [handleDragStart]);
-
   const handleDragOver = useCallback((event: React.DragEvent) => {
-    if (readOnly || !cameraRef.current) return;
+    if (readOnly) return;
     event.preventDefault();
     setIsDraggingOver(true);
-    updatePreviewPosition(event, cameraRef.current, gridSnap ? 1 : 0.5);
-  }, [readOnly, gridSnap, updatePreviewPosition]);
+    
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    setMousePosition(new Vector2(x, y));
+  }, [readOnly]);
 
   const handleDragLeave = useCallback(() => {
     if (readOnly) return;
     setIsDraggingOver(false);
+    setMousePosition(null);
   }, [readOnly]);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
     if (readOnly || !onDropPoint) return;
     event.preventDefault();
     
-    const finalPosition: [number, number, number] = [
-      previewPosition[0],
-      previewPosition[1],
-      previewPosition[2]
-    ];
-    
-    onDropPoint(finalPosition);
+    onDropPoint(previewPosition);
     setIsDraggingOver(false);
-    handleDragEnd();
-  }, [readOnly, onDropPoint, previewPosition, handleDragEnd]);
+    setMousePosition(null);
+  }, [readOnly, onDropPoint, previewPosition]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -153,23 +247,6 @@ export function SceneContainer({
     }
   }, [readOnly]);
 
-  // Handle right-click to deselect
-  const handleContextMenu = useCallback((event: React.MouseEvent) => {
-    event.preventDefault();
-    event.stopPropagation();
-    if (onModuleSelect) {
-      onModuleSelect(null);
-    }
-  }, [onModuleSelect]);
-
-  // Handle background click to deselect
-  const handleBackgroundClick = useCallback((event: { stopPropagation: () => void }) => {
-    event.stopPropagation();
-    if (onModuleSelect) {
-      onModuleSelect(null);
-    }
-  }, [onModuleSelect]);
-
   useEffect(() => {
     if (readOnly) return;
     window.addEventListener("keydown", handleKeyDown);
@@ -179,6 +256,38 @@ export function SceneContainer({
       window.removeEventListener("keyup", handleKeyUp);
     };
   }, [handleKeyDown, handleKeyUp, readOnly]);
+
+  useEffect(() => {
+    if (!isDraggingOver || !draggedModuleRef.current) return;
+    
+    const currentModule = draggedModuleRef.current;
+    const geometry = new THREE.BoxGeometry(
+      currentModule.dimensions.length,
+      currentModule.dimensions.height,
+      currentModule.dimensions.width
+    );
+    const material = new THREE.MeshStandardMaterial({
+      color: currentModule.color,
+      transparent: true,
+      opacity: 0.6,
+      wireframe: currentModule.wireframe
+    });
+    const mesh = new THREE.Mesh(geometry, material);
+    
+    setPreviewHeight(currentModule.dimensions.height);
+    setPreviewMesh(mesh);
+    
+    return () => {
+      geometry.dispose();
+      material.dispose();
+      setPreviewMesh(null);
+    };
+  }, [isDraggingOver]);
+
+  const handleModuleDragStart = useCallback((draggedModule: Module) => {
+    draggedModuleRef.current = draggedModule;
+    setPreviewHeight(draggedModule.dimensions.height);
+  }, []);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -201,7 +310,6 @@ export function SceneContainer({
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
-      onContextMenu={handleContextMenu}
     >
       <Canvas 
         camera={{ 
@@ -211,12 +319,8 @@ export function SceneContainer({
           far: 1000
         }}
         shadows
-        onCreated={({ camera }) => {
-          cameraRef.current = camera;
-        }}
-        onClick={handleBackgroundClick}
       >
-        <SceneElements
+        <SceneContent
           modules={modules}
           selectedModuleId={selectedModuleId}
           transformMode={transformMode}
@@ -229,13 +333,16 @@ export function SceneContainer({
           onEnvironmentalElementSelect={onEnvironmentalElementSelect}
           gridSnap={gridSnap}
           isDraggingOver={isDraggingOver}
+          mousePosition={mousePosition}
+          draggedDimensions={draggedModuleRef.current?.dimensions || null}
+          readOnly={readOnly}
+          snapPoints={snapPoints}
+          snapLines={snapLines}
+          onPreviewPositionUpdate={setPreviewPosition}
           previewMesh={previewMesh}
           rotationAngle={rotationAngle}
           showGuides={showGuides}
-          snapPoints={snapPoints}
-          snapLines={snapLines}
           previewPosition={previewPosition}
-          readOnly={readOnly}
           setRotationAngle={setRotationAngle}
           controlsRef={controlsRef}
         />
@@ -264,8 +371,7 @@ export function SceneContainer({
             size='sm'
             onClick={() => {
               if (controlsRef?.current) {
-                controlsRef.current.setAzimuthalAngle(0);
-                controlsRef.current.setPolarAngle(0);
+                controlsRef.current.reset();
               }
             }}
           >

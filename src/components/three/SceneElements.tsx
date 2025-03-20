@@ -1,3 +1,4 @@
+
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -5,13 +6,12 @@ import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { useRef, useEffect } from "react";
-import { Vector2, Vector3, Line3, Mesh, Object3D, BufferGeometry, Float32BufferAttribute } from "three";
+import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
-import { CameraControls, CameraControlsHandle } from './CameraControls';
+import { CameraControls } from "./CameraControls";
 import { Html } from "@react-three/drei";
-import { useGridSnapping } from '@/hooks/use-grid-snapping';
 
 interface SceneElementsProps {
   modules: Module[];
@@ -34,13 +34,12 @@ interface SceneElementsProps {
   previewPosition: [number, number, number];
   readOnly?: boolean;
   setRotationAngle: (angle: number | ((prev: number) => number)) => void;
-  controlsRef?: React.RefObject<CameraControlsHandle>;
 }
 
 export function SceneElements({
   modules,
   selectedModuleId,
-  transformMode = 'translate',
+  transformMode = "translate",
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -57,29 +56,17 @@ export function SceneElements({
   snapLines,
   previewPosition,
   readOnly = false,
-  setRotationAngle,
-  controlsRef,
+  setRotationAngle
 }: SceneElementsProps) {
   const { camera } = useThree();
+  const controlsRef = useRef<any>(null);
 
-  // Initialize camera position
   useEffect(() => {
     if (camera) {
       camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
     }
   }, [camera]);
-
-  // Lock camera when module is selected
-  useEffect(() => {
-    if (controlsRef?.current) {
-      if (selectedModuleId) {
-        controlsRef.current.saveState();
-      } else {
-        controlsRef.current.reset();
-      }
-    }
-  }, [selectedModuleId, controlsRef]);
 
   return (
     <>
@@ -92,7 +79,7 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls ref={controlsRef} locked={!!selectedModuleId} />
+      <CameraControls controlsRef={controlsRef} />
       <GridHelper />
 
       {terrain && <TerrainView terrain={terrain} />}
@@ -128,69 +115,49 @@ export function SceneElements({
       ))}
 
       {isDraggingOver && previewMesh && (
-        <group>
-          {gridSnap && showGuides && snapPoints.map((point, i) => (
-            <mesh key={`snap-point-${i}`} position={[point.x, 0.01, point.z]}>
-              <sphereGeometry args={[0.1, 8, 8]} />
-              <meshBasicMaterial color='#F1B73A' transparent opacity={0.5} />
-            </mesh>
-          ))}
-          
-          {/* Position preview mesh with bottom at ground level */}
-          <group 
-            position={[
-              previewPosition[0], 
-              0, // Keep at ground level
-              previewPosition[2]
-            ]} 
-            rotation={[0, rotationAngle, 0]}
-          >
-            <primitive object={previewMesh.clone()} />
-            <Html
-              position={[0, previewMesh.geometry.boundingBox?.max.y || 2, 0]}
-              center
-              style={{ pointerEvents: 'auto' }}
-            >
-              <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
-                <button 
-                  className='p-1 hover:bg-accent rounded'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRotationAngle(prev => prev - Math.PI/2);
-                  }}
-                >
-                  ⟲
-                </button>
-                <button 
-                  className='p-1 hover:bg-accent rounded'
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setRotationAngle(prev => prev + Math.PI/2);
-                  }}
-                >
-                  ⟳
-                </button>
-              </div>
-            </Html>
-          </group>
+        <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
+          <primitive object={previewMesh.clone()} />
+          <Html position={[0, 2, 0]}>
+            <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
+              <button 
+                className="p-1 hover:bg-accent rounded"
+                onClick={() => setRotationAngle(prev => prev - Math.PI/2)}
+              >
+                ⟲
+              </button>
+              <button 
+                className="p-1 hover:bg-accent rounded"
+                onClick={() => setRotationAngle(prev => prev + Math.PI/2)}
+              >
+                ⟳
+              </button>
+            </div>
+          </Html>
         </group>
       )}
 
-      {showGuides && snapLines.map((line, i) => {
-        const geometry = new BufferGeometry();
-        const vertices = new Float32Array([
-          line.start.x, 0.01, line.start.z,
-          line.end.x, 0.01, line.end.z
-        ]);
-        geometry.setAttribute('position', new Float32BufferAttribute(vertices, 3));
-        
-        return (
-          <line key={`line-${i}`}>
-            <primitive object={geometry} />
-            <lineBasicMaterial color='#ffcc00' opacity={0.5} transparent />
-          </line>
-        );
-      })}
+      {showGuides && snapPoints.map((point, i) => (
+        <mesh key={`point-${i}`} position={[point.x, 0.01, point.z]}>
+          <sphereGeometry args={[0.1, 8, 8]} />
+          <meshBasicMaterial color="#ffcc00" transparent opacity={0.5} />
+        </mesh>
+      ))}
+      
+      {showGuides && snapLines.map((line, i) => (
+        <line key={`line-${i}`}>
+          <bufferGeometry 
+            attach="geometry" 
+            args={[
+              new Float32Array([
+                line.start.x, 0.01, line.start.z,
+                line.end.x, 0.01, line.end.z
+              ]), 
+              3
+            ]} 
+          />
+          <lineBasicMaterial attach="material" color="#ffcc00" opacity={0.5} transparent />
+        </line>
+      ))}
     </>
   );
 }
