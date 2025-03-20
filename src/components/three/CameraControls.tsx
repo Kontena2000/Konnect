@@ -1,9 +1,10 @@
-import { useRef, useEffect } from "react";
-import { OrbitControls } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
+import { useRef, useEffect } from 'react';
+import { OrbitControls } from '@react-three/drei';
+import { useThree } from '@react-three/fiber';
 
 interface CameraControlsProps {
   controlsRef?: React.RefObject<any>;
+  enabled?: boolean;
   enableZoom?: boolean;
   enablePan?: boolean;
   minDistance?: number;
@@ -14,6 +15,7 @@ interface CameraControlsProps {
 
 export function CameraControls({
   controlsRef,
+  enabled = true,
   enableZoom = true,
   enablePan = true,
   minDistance = 5,
@@ -29,22 +31,54 @@ export function CameraControls({
     if (camera && ref.current) {
       camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
-      ref.current.reset();
+      if (ref.current.reset) {
+        ref.current.reset();
+      }
     }
   }, [camera, ref]);
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.enabled = enableZoom && enablePan;
-    }
-  }, [enableZoom, enablePan, ref]);
+    const controls = ref.current;
+    if (!controls) return;
+
+    const updateControls = () => {
+      if (!enabled) {
+        controls.enabled = false;
+        controls.enableZoom = false;
+        controls.enablePan = false;
+        controls.enableRotate = false;
+      } else {
+        controls.enabled = true;
+        controls.enableZoom = enableZoom;
+        controls.enablePan = enablePan;
+        controls.enableRotate = true;
+      }
+      controls.enableDamping = enabled;
+      controls.update();
+    };
+
+    updateControls();
+
+    return () => {
+      if (controls) {
+        controls.enabled = true;
+        controls.enableZoom = true;
+        controls.enablePan = true;
+        controls.enableRotate = true;
+        controls.enableDamping = true;
+        controls.update();
+      }
+    };
+  }, [enabled, enableZoom, enablePan, ref]);
 
   return (
     <OrbitControls
       ref={ref}
       args={[camera, gl.domElement]}
-      enableZoom={enableZoom}
-      enablePan={enablePan}
+      enabled={enabled}
+      enableZoom={enableZoom && enabled}
+      enablePan={enablePan && enabled}
+      enableRotate={enabled}
       minDistance={minDistance}
       maxDistance={maxDistance}
       minPolarAngle={minPolarAngle}

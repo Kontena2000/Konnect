@@ -11,120 +11,7 @@ import { cn } from "@/lib/utils";
 import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
-
-function SceneContent({
-  modules,
-  selectedModuleId,
-  transformMode,
-  onModuleSelect,
-  onModuleUpdate,
-  onModuleDelete,
-  connections,
-  environmentalElements,
-  terrain,
-  onEnvironmentalElementSelect,
-  gridSnap,
-  isDraggingOver,
-  mousePosition,
-  draggedDimensions,
-  readOnly,
-  snapPoints,
-  snapLines,
-  onPreviewPositionUpdate,
-  previewMesh,
-  rotationAngle,
-  showGuides,
-  previewPosition,
-  setRotationAngle,
-  controlsRef,
-  isTransforming,
-  onTransformStart,
-  onTransformEnd
-}: {
-  modules: Module[];
-  selectedModuleId?: string;
-  transformMode?: "translate" | "rotate" | "scale";
-  onModuleSelect?: (moduleId: string) => void;
-  onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
-  onModuleDelete?: (moduleId: string) => void;
-  connections: Connection[];
-  environmentalElements?: ElementType[];
-  terrain?: TerrainData;
-  onEnvironmentalElementSelect?: (elementId: string) => void;
-  gridSnap: boolean;
-  isDraggingOver: boolean;
-  mousePosition: Vector2 | null;
-  draggedDimensions: { height: number } | null;
-  readOnly: boolean;
-  snapPoints: Vector3[];
-  snapLines: Line3[];
-  onPreviewPositionUpdate: (position: [number, number, number]) => void;
-  previewMesh: THREE.Mesh | null;
-  rotationAngle: number;
-  showGuides: boolean;
-  previewPosition: [number, number, number];
-  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
-  controlsRef: React.RefObject<any>;
-}) {
-  const { camera, raycaster } = useThree();
-
-  useEffect(() => {
-    if (!isDraggingOver || !mousePosition || !draggedDimensions) return;
-
-    raycaster.setFromCamera(mousePosition, camera);
-    const groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
-    const intersection = new THREE.Vector3();
-    raycaster.ray.intersectPlane(groundPlane, intersection);
-
-    if (gridSnap) {
-      const snapThreshold = 1.5;
-      const nearestPoint = snapPoints.reduce((nearest, point) => {
-        const distance = intersection.distanceTo(point);
-        return distance < snapThreshold && distance < nearest.distance
-          ? { point, distance }
-          : nearest;
-      }, { point: intersection, distance: Infinity });
-
-      if (nearestPoint.distance < snapThreshold) {
-        intersection.copy(nearestPoint.point);
-      } else {
-        intersection.x = Math.round(intersection.x);
-        intersection.z = Math.round(intersection.z);
-      }
-    }
-
-    intersection.y = draggedDimensions.height / 2;
-    onPreviewPositionUpdate([intersection.x, intersection.y, intersection.z]);
-  }, [isDraggingOver, mousePosition, gridSnap, snapPoints, draggedDimensions, camera, raycaster, onPreviewPositionUpdate]);
-
-  return (
-    <SceneElements 
-      modules={modules}
-      selectedModuleId={selectedModuleId}
-      transformMode={transformMode}
-      onModuleSelect={onModuleSelect}
-      onModuleUpdate={onModuleUpdate}
-      onModuleDelete={onModuleDelete}
-      connections={connections}
-      environmentalElements={environmentalElements}
-      terrain={terrain}
-      onEnvironmentalElementSelect={onEnvironmentalElementSelect}
-      gridSnap={gridSnap}
-      isDraggingOver={isDraggingOver}
-      previewMesh={previewMesh}
-      rotationAngle={rotationAngle}
-      showGuides={showGuides}
-      snapPoints={snapPoints}
-      snapLines={snapLines}
-      previewPosition={previewPosition}
-      readOnly={readOnly}
-      setRotationAngle={setRotationAngle}
-      isTransforming={isTransforming}
-      onTransformStart={onTransformStart}
-      onTransformEnd={onTransformEnd}
-    />
-  );
-}
+import { SceneContent } from './SceneContent';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -147,6 +34,9 @@ export interface SceneContainerProps {
   onEnvironmentalElementSelect?: (elementId: string) => void;
   cameraZoom?: number;
   gridSnap?: boolean;
+  isTransforming?: boolean;
+  onTransformStart?: () => void;
+  onTransformEnd?: () => void;
 }
 
 export function SceneContainer({
@@ -165,7 +55,10 @@ export function SceneContainer({
   terrain,
   onEnvironmentalElementSelect,
   cameraZoom = 1,
-  gridSnap = true
+  gridSnap = true,
+  isTransforming = false,
+  onTransformStart,
+  onTransformEnd
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: "scene" });
   const [previewMesh, setPreviewMesh] = useState<THREE.Mesh | null>(null);
@@ -175,9 +68,26 @@ export function SceneContainer({
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
-  const [isTransforming, setIsTransforming] = useState(false);
-  const controlsRef = useRef(null);
+  const [transforming, setTransforming] = useState(false);
+  const controlsRef = useRef<any>(null);
   const draggedModuleRef = useRef<Module | null>(null);
+
+  const handleModuleSelect = useCallback((moduleId?: string) => {
+    if (isTransforming) return;
+    if (moduleId) {
+      onModuleSelect?.(moduleId);
+    }
+  }, [isTransforming, onModuleSelect]);
+
+  const handleTransformStart = useCallback(() => {
+    setTransforming(true);
+    onTransformStart?.();
+  }, [onTransformStart]);
+
+  const handleTransformEnd = useCallback(() => {
+    setTransforming(false);
+    onTransformEnd?.();
+  }, [onTransformEnd]);
 
   const { snapPoints, snapLines } = useMemo(() => {
     const points: Vector3[] = [];
@@ -231,10 +141,17 @@ export function SceneContainer({
     if (readOnly || !onDropPoint) return;
     event.preventDefault();
     
-    onDropPoint(previewPosition);
+    // Calculate grid-aligned position
+    const gridPosition: [number, number, number] = [
+      Math.round(previewPosition[0]),
+      draggedModuleRef.current ? draggedModuleRef.current.dimensions.height/2 : 0, // Align bottom with grid
+      Math.round(previewPosition[2])
+    ];
+    
+    onDropPoint(gridPosition);
     setIsDraggingOver(false);
     setMousePosition(null);
-  }, [readOnly, onDropPoint, previewPosition]);
+  }, [readOnly, onDropPoint, previewPosition, draggedModuleRef]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -351,11 +268,34 @@ export function SceneContainer({
           previewPosition={previewPosition}
           setRotationAngle={setRotationAngle}
           controlsRef={controlsRef}
-          isTransforming={isTransforming}
-          onTransformStart={() => setIsTransforming(true)}
-          onTransformEnd={() => setIsTransforming(false)}
+          isTransforming={transforming}
+          onTransformStart={handleTransformStart}
+          onTransformEnd={handleTransformEnd}
         />
       </Canvas>
+
+      {isDraggingOver && previewMesh && (
+        <>
+          <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
+            <primitive object={previewMesh.clone()} />
+            <mesh 
+              position={[0, 0.01, 0]} 
+              rotation={[-Math.PI/2, 0, 0]}
+            >
+              <planeGeometry args={[
+                draggedModuleRef.current?.dimensions.length || 1,
+                draggedModuleRef.current?.dimensions.width || 1
+              ]} />
+              <meshBasicMaterial 
+                color='#000000'
+                transparent
+                opacity={0.2}
+                side={THREE.DoubleSide}
+              />
+            </mesh>
+          </group>
+        </>
+      )}
 
       {!readOnly && isDraggingOver && (
         <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-lg space-y-2'>

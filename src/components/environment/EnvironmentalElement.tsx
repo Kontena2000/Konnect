@@ -29,7 +29,7 @@ export function EnvironmentalElement({ element, onClick }: EnvironmentalElementP
     >
       <boxGeometry args={[width, height, depth]} />
       <meshStandardMaterial
-        color={element.properties?.color || "#4b5563"}
+        color={element.properties?.color || '#4b5563'}
         opacity={0.8}
         transparent
       />

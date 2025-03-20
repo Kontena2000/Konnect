@@ -5,7 +5,7 @@ import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { useRef, useEffect } from "react";
-import { Vector2, Vector3, Line3, Mesh, Object3D } from "three";
+import { Vector2, Vector3, Line3, Mesh, Object3D, BufferAttribute, BufferGeometry, LineBasicMaterial, Float32BufferAttribute } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
@@ -41,7 +41,7 @@ interface SceneElementsProps {
 export function SceneElements({
   modules,
   selectedModuleId,
-  transformMode = "translate",
+  transformMode = 'translate',
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -66,6 +66,17 @@ export function SceneElements({
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
 
+  // Fixed cleanup function
+  useEffect(() => {
+    const controls = controlsRef.current;
+    return () => {
+      if (controls) {
+        controls.dispose();
+      }
+    };
+  }, []);
+
+  // Improved camera initialization
   useEffect(() => {
     if (camera) {
       camera.position.set(10, 10, 10);
@@ -84,7 +95,12 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls controlsRef={controlsRef} enabled={!isTransforming} />
+      <CameraControls 
+        controlsRef={controlsRef}
+        enabled={!isTransforming}
+        enableZoom={!isTransforming}
+        enablePan={!isTransforming}
+      />
       <GridHelper />
 
       {terrain && <TerrainView terrain={terrain} />}
@@ -93,7 +109,6 @@ export function SceneElements({
         <EnvironmentalElement
           key={element.id}
           element={element}
-          selected={false}
           onClick={() => onEnvironmentalElementSelect?.(element.id)}
         />
       ))}
@@ -109,8 +124,18 @@ export function SceneElements({
           transformMode={transformMode}
           gridSnap={gridSnap}
           readOnly={readOnly}
-          onTransformStart={onTransformStart}
-          onTransformEnd={onTransformEnd}
+          onTransformStart={() => {
+            onTransformStart?.();
+            if (controlsRef.current) {
+              controlsRef.current.enabled = false;
+            }
+          }}
+          onTransformEnd={() => {
+            onTransformEnd?.();
+            if (controlsRef.current) {
+              controlsRef.current.enabled = true;
+            }
+          }}
         />
       ))}
 
@@ -150,21 +175,25 @@ export function SceneElements({
         </mesh>
       ))}
       
-      {showGuides && snapLines.map((line, i) => (
-        <line key={`line-${i}`}>
-          <bufferGeometry 
-            attach="geometry" 
-            args={[
-              new Float32Array([
-                line.start.x, 0.01, line.start.z,
-                line.end.x, 0.01, line.end.z
-              ]), 
-              3
-            ]} 
-          />
-          <lineBasicMaterial attach="material" color="#ffcc00" opacity={0.5} transparent />
-        </line>
-      ))}
+      {showGuides && snapLines.map((line, i) => {
+        const positions = new Float32Array([
+          line.start.x, 0.01, line.start.z,
+          line.end.x, 0.01, line.end.z
+        ]);
+        return (
+          <line key={`line-${i}`}>
+            <bufferGeometry>
+              <bufferAttribute
+                attach='attributes-position'
+                array={positions}
+                count={2}
+                itemSize={3}
+              />
+            </bufferGeometry>
+            <lineBasicMaterial color='#ffcc00' opacity={0.5} transparent />
+          </line>
+        );
+      })}
     </>
   );
 }

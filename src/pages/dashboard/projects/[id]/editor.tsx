@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -163,6 +163,10 @@ export default function LayoutEditorPage() {
     }
   };
 
+  const handleModuleSelect = useCallback((moduleId?: string) => {
+    setSelectedModuleId(moduleId || undefined);  // Fixed null assignment
+  }, [setSelectedModuleId]);
+
   useEffect(() => {
     const loadLayoutData = async () => {
       if (!id) return;
@@ -221,9 +225,10 @@ export default function LayoutEditorPage() {
               modules={modules}
               connections={connections}
               selectedModuleId={selectedModuleId}
-              onModuleSelect={selectModule}
+              onModuleSelect={handleModuleSelect}
               onModuleUpdate={updateModule}
               onModuleDelete={deleteModule}
+              transformMode={transformMode}
               onDropPoint={(point) => {
                 if (draggingTemplate) {
                   const newItem: Module = {
