@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -10,7 +11,8 @@ import {
   serverTimestamp,
   writeBatch,
   query,
-  where
+  where,
+  FirestoreError
 } from "firebase/firestore";
 import { Module, ModuleCategory, defaultModules } from "@/types/module";
 
@@ -19,6 +21,11 @@ interface CategoryData {
   name: string;
   createdAt?: string;
   updatedAt?: string;
+}
+
+interface FirebaseError extends Error {
+  code?: string;
+  message: string;
 }
 
 const moduleService = {
@@ -56,8 +63,9 @@ const moduleService = {
       await batch.commit();
       console.log("Categories initialized successfully");
     } catch (error) {
-      console.error("Error initializing categories:", error);
-      throw error;
+      const fbError = error as FirebaseError;
+      console.error("Error initializing categories:", fbError.message);
+      throw new Error(`Failed to initialize categories: ${fbError.message}`);
     }
   },
 
@@ -88,8 +96,9 @@ const moduleService = {
       await batch.commit();
       console.log("Default modules initialized successfully");
     } catch (error) {
-      console.error("Error initializing default modules:", error);
-      throw error;
+      const fbError = error as FirebaseError;
+      console.error("Error initializing default modules:", fbError.message);
+      throw new Error(`Failed to initialize default modules: ${fbError.message}`);
     }
   },
 
@@ -130,7 +139,8 @@ const moduleService = {
       console.log('Fetched modules:', modules);
       return modules;
     } catch (error) {
-      console.error('Error fetching modules:', error);
+      const fbError = error as FirebaseError;
+      console.error('Error fetching modules:', fbError.message);
       return defaultModules;
     }
   },
@@ -160,7 +170,8 @@ const moduleService = {
       console.log("Fetched categories:", categories);
       return categories;
     } catch (error) {
-      console.error("Error fetching categories:", error);
+      const fbError = error as FirebaseError;
+      console.error("Error fetching categories:", fbError.message);
       return [
         { id: "basic", name: "Basic" },
         { id: "konnect", name: "Konnect Modules" },
@@ -173,6 +184,7 @@ const moduleService = {
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
+      console.log("Creating category:", data);
       const categoryRef = doc(db, "categories", data.id);
       const now = new Date().toISOString();
       await setDoc(categoryRef, {
@@ -180,19 +192,24 @@ const moduleService = {
         createdAt: now,
         updatedAt: now
       });
+      console.log("Category created successfully:", data.id);
     } catch (error) {
-      console.error("Error creating category:", error);
-      throw error;
+      const fbError = error as FirebaseError;
+      console.error("Error creating category:", fbError.message);
+      throw new Error(`Failed to create category: ${fbError.message}`);
     }
   },
 
   async deleteCategory(id: string): Promise<void> {
     try {
+      console.log("Deleting category:", id);
       const categoryRef = doc(db, "categories", id);
       await deleteDoc(categoryRef);
+      console.log("Category deleted successfully:", id);
     } catch (error) {
-      console.error("Error deleting category:", error);
-      throw error;
+      const fbError = error as FirebaseError;
+      console.error("Error deleting category:", fbError.message);
+      throw new Error(`Failed to delete category: ${fbError.message}`);
     }
   },
 
@@ -205,38 +222,45 @@ const moduleService = {
         ...data,
         createdAt: now,
         updatedAt: now,
-        visibleInEditor: true // Ensure this is set
+        visibleInEditor: true
       };
       
       await setDoc(moduleRef, moduleData);
       console.log('Module created successfully:', data.id);
       return data.id;
     } catch (error) {
-      console.error('Error creating module:', error);
-      throw new Error(`Failed to create module: ${error.message}`);
+      const fbError = error as FirebaseError;
+      console.error('Error creating module:', fbError.message);
+      throw new Error(`Failed to create module: ${fbError.message}`);
     }
   },
 
   async updateModule(id: string, data: Partial<Module>): Promise<void> {
     try {
+      console.log("Updating module:", id, data);
       const moduleRef = doc(db, "modules", id);
       await updateDoc(moduleRef, {
         ...data,
         updatedAt: serverTimestamp()
       });
+      console.log("Module updated successfully:", id);
     } catch (error) {
-      console.error("Error updating module:", error);
-      throw error;
+      const fbError = error as FirebaseError;
+      console.error("Error updating module:", fbError.message);
+      throw new Error(`Failed to update module: ${fbError.message}`);
     }
   },
 
   async deleteModule(id: string): Promise<void> {
     try {
+      console.log("Deleting module:", id);
       const moduleRef = doc(db, "modules", id);
       await deleteDoc(moduleRef);
+      console.log("Module deleted successfully:", id);
     } catch (error) {
-      console.error("Error deleting module:", error);
-      throw error;
+      const fbError = error as FirebaseError;
+      console.error("Error deleting module:", fbError.message);
+      throw new Error(`Failed to delete module: ${fbError.message}`);
     }
   }
 };
