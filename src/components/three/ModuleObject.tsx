@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4 } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -37,14 +38,14 @@ export function ModuleObject({
   const [showControls, setShowControls] = useState(selected);
   const { camera } = useThree();
 
+  // Handle transform changes with grid snapping
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
-    // Get current object bounds
     const box = new Box3().setFromObject(meshRef.current);
     const size = box.getSize(new Vector3());
     
-    // Check for collisions with other objects
+    // Check for collisions
     const collisions = modules.filter(m => m.id !== module.id).some(otherModule => {
       const otherBox = new Box3(
         new Vector3(
@@ -61,7 +62,7 @@ export function ModuleObject({
       return box.intersectsBox(otherBox);
     });
 
-    // If collision detected, move object on top
+    // Move object on top if collision detected
     if (collisions) {
       const highestY = modules
         .filter(m => m.id !== module.id)
@@ -69,13 +70,17 @@ export function ModuleObject({
       meshRef.current.position.y = highestY + size.y/2;
     }
 
-    // Snap to grid if enabled
+    // Apply grid snapping
     if (gridSnap) {
       meshRef.current.position.x = Math.round(meshRef.current.position.x);
       meshRef.current.position.z = Math.round(meshRef.current.position.z);
-      meshRef.current.rotation.y = Math.round(meshRef.current.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+      
+      // Snap rotation to 90-degree increments
+      const rotationY = meshRef.current.rotation.y;
+      meshRef.current.rotation.y = Math.round(rotationY / (Math.PI / 2)) * (Math.PI / 2);
     }
     
+    // Update position, rotation, and scale
     const position: [number, number, number] = [
       meshRef.current.position.x,
       meshRef.current.position.y,
@@ -94,65 +99,62 @@ export function ModuleObject({
       meshRef.current.scale.z
     ];
     
-    onUpdate?.({
-      position,
-      rotation,
-      scale
-    });
+    onUpdate?.({ position, rotation, scale });
   }, [readOnly, onUpdate, module.id, modules, gridSnap]);
 
-  // Update shadow transform calculation
+  // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
-    const position = new Vector3(0, 0.01, 0);
-    const rotation = new Euler(-Math.PI/2, 0, 0);
+    const matrix = new Matrix4();
+    const position = new Vector3();
+    const rotation = new Euler();
     
     if (meshRef.current) {
-      position.set(meshRef.current.position.x, 0.01, meshRef.current.position.z);
-      rotation.set(-Math.PI/2, meshRef.current.rotation.y, 0);
+      // Get world matrix
+      meshRef.current.updateMatrixWorld();
+      matrix.copy(meshRef.current.matrixWorld);
+      
+      // Extract position
+      position.setFromMatrixPosition(matrix);
+      position.y = 0.01; // Keep shadow just above ground
+      
+      // Extract rotation, but only use Y component
+      rotation.setFromRotationMatrix(matrix);
+      rotation.x = -Math.PI/2; // Keep shadow flat
+      rotation.z = 0; // No Z rotation for shadow
     }
     
     return { position, rotation };
-  }, []); // Remove unnecessary dependencies
+  }, []);
 
-  // Update controls position calculation
+  // Calculate floating controls position
   const controlsPosition = useMemo(() => {
-    const position = new Vector3(0, 2, 0);
+    if (!meshRef.current) return new Vector3(0, 2, 0);
     
-    if (meshRef.current) {
-      const worldPos = meshRef.current.getWorldPosition(new Vector3());
-      const box = new Box3().setFromObject(meshRef.current);
-      const height = box.max.y - box.min.y;
-      
-      position.set(worldPos.x, worldPos.y + height + 1, worldPos.z);
-      
-      // Adjust for camera angle
-      const cameraDir = new Vector3();
-      camera.getWorldDirection(cameraDir);
-      const angle = Math.atan2(cameraDir.x, cameraDir.z);
-      position.applyAxisAngle(new Vector3(0, 1, 0), angle);
-    }
+    const worldPos = meshRef.current.getWorldPosition(new Vector3());
+    const box = new Box3().setFromObject(meshRef.current);
+    const height = box.max.y - box.min.y;
     
-    return position;
-  }, [camera]); // Only depend on camera changes
+    // Get camera direction
+    const cameraDir = new Vector3();
+    camera.getWorldDirection(cameraDir);
+    
+    // Calculate offset based on camera angle
+    const offset = new Vector3(0, height + 1, 0);
+    const cameraRotation = new Euler().setFromQuaternion(camera.quaternion);
+    offset.applyEuler(new Euler(0, cameraRotation.y, 0));
+    
+    return worldPos.add(offset);
+  }, [camera]);
 
-  // Handle right-click deselection
-  const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    onClick?.(); // Deselect on right-click
-  }, [onClick]);
-
-  // Initial position setup
-  useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.position.set(...module.position);
-      meshRef.current.rotation.set(...module.rotation);
-      meshRef.current.scale.set(...module.scale);
-    }
-  }, [module.position, module.rotation, module.scale]);
-
+  // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     onClick?.();
+  }, [onClick]);
+
+  const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
+    event.stopPropagation();
+    onClick?.(); // Deselect on right-click
   }, [onClick]);
 
   const handleMouseEnter = useCallback(() => {
@@ -167,9 +169,19 @@ export function ModuleObject({
     }
   }, [selected]);
 
+  // Update controls visibility
   useEffect(() => {
     setShowControls(selected);
   }, [selected]);
+
+  // Initial position setup
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.position.set(...module.position);
+      meshRef.current.rotation.set(...module.rotation);
+      meshRef.current.scale.set(...module.scale);
+    }
+  }, [module.position, module.rotation, module.scale]);
 
   return (
     <group>
@@ -198,7 +210,7 @@ export function ModuleObject({
         />
       </mesh>
 
-      {/* Shadow preview */}
+      {/* Shadow */}
       <mesh 
         position={shadowTransform.position}
         rotation={shadowTransform.rotation}
@@ -215,6 +227,7 @@ export function ModuleObject({
         />
       </mesh>
 
+      {/* Floating Controls */}
       {(showControls || hovered || selected) && !readOnly && (
         <Html
           position={controlsPosition}
@@ -265,6 +278,7 @@ export function ModuleObject({
         </Html>
       )}
       
+      {/* Transform Controls */}
       {selected && !readOnly && meshRef.current && (
         <TransformControls
           object={meshRef.current}
@@ -287,6 +301,7 @@ export function ModuleObject({
         />
       )}
       
+      {/* Connection Points */}
       {module.connectionPoints?.map((point, index) => (
         <ConnectionPoint
           key={`${module.id}-connection-${index}`}
