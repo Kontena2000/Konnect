@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -97,16 +96,16 @@ export function ModuleObject({
 
   // Calculate controls position to follow object
   const controlsPosition = useMemo(() => {
-    if (!meshRef.current) return [0, 0, 0];
+    if (!meshRef.current) return new Vector3(0, 0, 0);
     const worldPosition = meshRef.current.getWorldPosition(new Vector3());
     const box = new Box3().setFromObject(meshRef.current);
     const height = box.max.y - box.min.y;
-    return [
+    return new Vector3(
       worldPosition.x,
       worldPosition.y + height + 1,
       worldPosition.z
-    ];
-  }, []);
+    );
+  }, []); // Empty dependency array since we recalculate on every render anyway
 
   // Handle right-click deselection
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -144,6 +143,16 @@ export function ModuleObject({
     setShowControls(selected);
   }, [selected]);
 
+  // Update shadow position calculation
+  const shadowPosition = useMemo(() => {
+    if (!meshRef.current) return new Vector3(0, 0.01, 0);
+    return new Vector3(
+      meshRef.current.position.x,
+      0.01,
+      meshRef.current.position.z
+    );
+  }, []); // Empty dependency array since we recalculate on every render anyway
+
   return (
     <group>
       <mesh 
@@ -173,12 +182,8 @@ export function ModuleObject({
 
       {/* Shadow preview */}
       <mesh 
-        position={[
-          meshRef.current?.position.x || 0,
-          0.01,
-          meshRef.current?.position.z || 0
-        ]}
-        rotation={[-Math.PI/2, 0, meshRef.current?.rotation.y || 0]}
+        position={shadowPosition}
+        rotation={[-Math.PI/2, meshRef.current?.rotation.y || 0, 0]}
       >
         <planeGeometry args={[
           module.dimensions.length,
