@@ -109,10 +109,10 @@ export function ModuleObject({
     
     // Get world rotation
     meshRef.current.getWorldQuaternion(quaternion);
-    rotation.y = meshRef.current.rotation.y;
+    rotation.y = quaternion.y;
     
     return { position, rotation };
-  }, [module.position, module.rotation]);
+  }, []); // Remove unnecessary dependencies
 
   // Calculate floating controls position
   const controlsPosition = useMemo(() => {
@@ -135,7 +135,7 @@ export function ModuleObject({
     );
     
     return worldPos.add(offset);
-  }, [camera, module.position, module.rotation]);
+  }, [camera]); // Only depend on camera changes
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
