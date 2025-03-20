@@ -1,4 +1,3 @@
-
 import { db, auth } from "@/lib/firebase";
 import { 
   collection, 
@@ -248,6 +247,27 @@ const moduleService = {
       const fbError = error as FirebaseError;
       console.error("Error updating module:", fbError);
       throw new Error(`Failed to update module: ${fbError.message}`);
+    }
+  },
+
+  async deleteCategory(id: string): Promise<void> {
+    try {
+      if (!(await this.checkUserPermissions())) {
+        throw new Error('Insufficient permissions');
+      }
+
+      if (id === 'basic') {
+        throw new Error('Cannot delete the basic category');
+      }
+
+      console.log('Deleting category:', id);
+      const categoryRef = doc(db, 'categories', id);
+      await deleteDoc(categoryRef);
+      console.log('Category deleted successfully:', id);
+    } catch (error) {
+      const fbError = error as FirebaseError;
+      console.error('Error deleting category:', fbError);
+      throw new Error(`Failed to delete category: ${fbError.message}`);
     }
   }
 };
