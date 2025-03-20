@@ -151,7 +151,6 @@ export function ModuleObject({
     
     const matrix = new Matrix4();
     const position = new Vector3();
-    const quaternion = new Quaternion();
     const rotation = new Euler(-Math.PI/2, 0, 0);
     
     meshRef.current.updateWorldMatrix(true, false);
@@ -162,7 +161,6 @@ export function ModuleObject({
     position.y = 0.01; // Keep shadow just above ground
     
     // Get world rotation for shadow
-    meshRef.current.getWorldQuaternion(quaternion);
     rotation.y = meshRef.current.rotation.y; // Only use Y rotation for shadow
     
     return { position, rotation };
@@ -249,7 +247,7 @@ export function ModuleObject({
           lockZ={false}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
-            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 1.5, // Increased offset
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 2.5, // Increased offset to 2.5
             meshRef.current ? meshRef.current.position.z : module.position[2]
           ]}
         >
