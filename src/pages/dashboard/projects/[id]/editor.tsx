@@ -29,6 +29,7 @@ import * as THREE from 'three';
 import { cn } from '@/lib/utils';
 import { Mesh } from 'three';
 import { useHotkeys } from 'react-hotkeys-hook';
+import { Toolbox } from '@/components/layout/Toolbox';
 
 const createPreviewMesh = (item: Module) => {
   const geometry = new THREE.BoxGeometry(
@@ -248,9 +249,7 @@ export default function LayoutEditorPage() {
             />
           </div>
 
-          <div className='w-80 border-l bg-background'>
-            <ModuleLibrary onDragStart={handleModuleDragStart} />
-          </div>
+          <Toolbox onModuleDragStart={handleModuleDragStart} />
 
           {draggingTemplate && (
             <ModuleDragOverlay template={draggingTemplate} />
