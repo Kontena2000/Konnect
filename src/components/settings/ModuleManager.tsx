@@ -141,7 +141,9 @@ export function ModuleManager() {
 
   const handleCreateModule = async (moduleData: Module) => {
     try {
+      console.log('Creating module:', moduleData);
       await moduleService.createModule(moduleData);
+      console.log('Module created, reloading modules...');
       await loadModules(); // Reload the full module list
       toast({
         title: 'Success',

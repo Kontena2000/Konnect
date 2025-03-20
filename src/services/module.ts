@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -96,30 +95,42 @@ const moduleService = {
 
   async getAllModules(): Promise<Module[]> {
     try {
-      console.log("Fetching all modules...");
-      const modulesRef = collection(db, "modules");
+      console.log('Fetching all modules...');
+      const modulesRef = collection(db, 'modules');
       const snapshot = await getDocs(modulesRef);
 
       if (snapshot.empty) {
-        console.log("No modules found, initializing...");
+        console.log('No modules found, initializing...');
         await this.initializeDefaultModules();
         const retrySnapshot = await getDocs(modulesRef);
         const modules = retrySnapshot.docs.map(doc => ({
           id: doc.id,
-          ...doc.data()
+          ...doc.data(),
+          visibleInEditor: doc.data().visibleInEditor ?? true,
+          position: doc.data().position || [0, 0, 0],
+          rotation: doc.data().rotation || [0, 0, 0],
+          scale: doc.data().scale || [1, 1, 1]
         })) as Module[];
-        console.log("Modules after initialization:", modules);
+        console.log('Modules after initialization:', modules);
         return modules;
       }
 
-      const modules = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Module[];
-      console.log("Fetched modules:", modules);
+      const modules = snapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          visibleInEditor: data.visibleInEditor ?? true,
+          position: data.position || [0, 0, 0],
+          rotation: data.rotation || [0, 0, 0],
+          scale: data.scale || [1, 1, 1]
+        };
+      }) as Module[];
+      
+      console.log('Fetched modules:', modules);
       return modules;
     } catch (error) {
-      console.error("Error fetching modules:", error);
+      console.error('Error fetching modules:', error);
       return defaultModules;
     }
   },
@@ -187,17 +198,22 @@ const moduleService = {
 
   async createModule(data: Module): Promise<string> {
     try {
-      const moduleRef = doc(db, "modules", data.id);
+      console.log('Creating new module:', data);
+      const moduleRef = doc(db, 'modules', data.id);
       const now = new Date().toISOString();
-      await setDoc(moduleRef, {
+      const moduleData = {
         ...data,
         createdAt: now,
-        updatedAt: now
-      });
+        updatedAt: now,
+        visibleInEditor: true // Ensure this is set
+      };
+      
+      await setDoc(moduleRef, moduleData);
+      console.log('Module created successfully:', data.id);
       return data.id;
     } catch (error) {
-      console.error("Error creating module:", error);
-      throw error;
+      console.error('Error creating module:', error);
+      throw new Error(`Failed to create module: ${error.message}`);
     }
   },
 
