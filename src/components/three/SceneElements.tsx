@@ -117,6 +117,7 @@ export function SceneElements({
         <ModuleObject
           key={module.id}
           module={module}
+          modules={modules}
           selected={module.id === selectedModuleId}
           onClick={() => onModuleSelect?.(module.id)}
           onUpdate={updates => onModuleUpdate?.(module.id, updates)}
@@ -124,18 +125,8 @@ export function SceneElements({
           transformMode={transformMode}
           gridSnap={gridSnap}
           readOnly={readOnly}
-          onTransformStart={() => {
-            onTransformStart?.();
-            if (controlsRef.current) {
-              controlsRef.current.enabled = false;
-            }
-          }}
-          onTransformEnd={() => {
-            onTransformEnd?.();
-            if (controlsRef.current) {
-              controlsRef.current.enabled = true;
-            }
-          }}
+          onTransformStart={onTransformStart}
+          onTransformEnd={onTransformEnd}
         />
       ))}
 
