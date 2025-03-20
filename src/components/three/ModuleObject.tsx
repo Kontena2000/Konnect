@@ -1,9 +1,11 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
-import { TransformControls, Html } from "@react-three/drei";
+import { TransformControls, Html, Billboard } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
+import gsap from "gsap";
 
 interface ModuleObjectProps {
   module: Module;
@@ -35,9 +37,48 @@ export function ModuleObject({
   const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(selected);
+  const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
+  const [isShiftPressed, setIsShiftPressed] = useState(false);
 
-  // Handle transform changes with grid snapping
+  // Handle keyboard events for Y-axis movement
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftPressed(true);
+    };
+    const handleKeyUp = (e: KeyboardEvent) => {
+      if (e.key === 'Shift') setIsShiftPressed(false);
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('keyup', handleKeyUp);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('keyup', handleKeyUp);
+    };
+  }, []);
+
+  // Drop-in animation
+  useEffect(() => {
+    if (animating && meshRef.current) {
+      const startPos = new Vector3(
+        module.position[0],
+        module.position[1] + 5,
+        module.position[2]
+      );
+      meshRef.current.position.copy(startPos);
+
+      gsap.to(meshRef.current.position, {
+        y: module.position[1],
+        duration: 0.6,
+        ease: "bounce.out",
+        onComplete: () => setAnimating(false)
+      });
+    }
+  }, []);
+
+  // Handle transform changes with optional Y-axis snapping
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -46,16 +87,24 @@ export function ModuleObject({
     const box = new Box3().setFromObject(meshRef.current);
     const size = box.getSize(new Vector3());
     
-    if (gridSnap) {
+    if (gridSnap && !isShiftPressed) {
       // Snap X and Z to grid
       position.x = Math.round(position.x);
       position.z = Math.round(position.z);
       
-      // Snap Y to ground level by default
+      // Only snap Y to ground level if not holding Shift
       position.y = module.dimensions.height / 2;
       
-      // Snap rotation to 90-degree increments
-      rotation.y = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+      // Snap rotation to 90-degree increments with animation
+      const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+      if (rotation.y !== targetRotation) {
+        gsap.to(meshRef.current.rotation, {
+          y: targetRotation,
+          duration: 0.2,
+          ease: "power2.out"
+        });
+        rotation.y = targetRotation;
+      }
     }
     
     // Try to place side-by-side first
@@ -138,7 +187,7 @@ export function ModuleObject({
       rotation: [rotation.x, rotation.y, rotation.z],
       scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
     });
-  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap]);
+  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
@@ -155,35 +204,12 @@ export function ModuleObject({
     position.setFromMatrixPosition(matrix);
     position.y = 0.01;
     
-    // Get world rotation
+    // Get world rotation using quaternion
     meshRef.current.getWorldQuaternion(quaternion);
-    rotation.y = meshRef.current.rotation.y;
+    rotation.y = quaternion.toEuler(new Euler()).y;
     
     return { position, rotation };
-  }, []); // Remove unnecessary dependencies
-
-  // Calculate floating controls position
-  const controlsPosition = useMemo(() => {
-    if (!meshRef.current) return new Vector3(0, 2, 0);
-    
-    const worldPos = meshRef.current.getWorldPosition(new Vector3());
-    const box = new Box3().setFromObject(meshRef.current);
-    const height = box.max.y - box.min.y;
-    
-    // Calculate offset based on camera angle
-    const cameraDir = new Vector3();
-    camera.getWorldDirection(cameraDir);
-    const cameraAngle = Math.atan2(cameraDir.x, cameraDir.z);
-    
-    // Position controls above object and rotate with camera
-    const offset = new Vector3(
-      Math.sin(cameraAngle) * 2,
-      height + 1,
-      Math.cos(cameraAngle) * 2
-    );
-    
-    return worldPos.add(offset);
-  }, [camera]); // Only depend on camera changes
+  }, []);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -212,15 +238,6 @@ export function ModuleObject({
   useEffect(() => {
     setShowControls(selected);
   }, [selected]);
-
-  // Initial position setup
-  useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.position.set(...module.position);
-      meshRef.current.rotation.set(...module.rotation);
-      meshRef.current.scale.set(...module.scale);
-    }
-  }, [module.position, module.rotation, module.scale]);
 
   return (
     <group>
@@ -268,53 +285,58 @@ export function ModuleObject({
 
       {/* Floating Controls */}
       {(showControls || hovered || selected) && !readOnly && (
-        <Html
-          position={controlsPosition}
-          center
-          transform
-          style={{
-            transition: 'all 0.2s ease',
-            pointerEvents: 'auto'
-          }}
+        <Billboard
+          follow={true}
+          lockX={false}
+          lockY={false}
+          lockZ={false}
         >
-          <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none">
-            <button 
-              className="p-1 hover:bg-accent rounded"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                if (meshRef.current) {
-                  meshRef.current.rotation.y -= Math.PI/2;
-                  handleTransformChange();
-                }
-              }}
-            >
-              ⟲
-            </button>
-            <button 
-              className="p-1 hover:bg-accent rounded"
-              onClick={(e: React.MouseEvent) => {
-                e.stopPropagation();
-                if (meshRef.current) {
-                  meshRef.current.rotation.y += Math.PI/2;
-                  handleTransformChange();
-                }
-              }}
-            >
-              ⟳
-            </button>
-            {onDelete && (
+          <Html
+            center
+            style={{
+              transition: 'all 0.2s ease',
+              pointerEvents: 'auto'
+            }}
+          >
+            <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none">
               <button 
-                className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
+                className="p-1 hover:bg-accent rounded"
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
-                  onDelete();
+                  if (meshRef.current) {
+                    meshRef.current.rotation.y -= Math.PI/2;
+                    handleTransformChange();
+                  }
                 }}
               >
-                ✕
+                ⟲
               </button>
-            )}
-          </div>
-        </Html>
+              <button 
+                className="p-1 hover:bg-accent rounded"
+                onClick={(e: React.MouseEvent) => {
+                  e.stopPropagation();
+                  if (meshRef.current) {
+                    meshRef.current.rotation.y += Math.PI/2;
+                    handleTransformChange();
+                  }
+                }}
+              >
+                ⟳
+              </button>
+              {onDelete && (
+                <button 
+                  className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
+                  onClick={(e: React.MouseEvent) => {
+                    e.stopPropagation();
+                    onDelete();
+                  }}
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+          </Html>
+        </Billboard>
       )}
       
       {/* Transform Controls */}
@@ -333,7 +355,7 @@ export function ModuleObject({
           showY={true}
           showZ={true}
           enabled={true}
-          translationSnap={gridSnap ? 1 : null}
+          translationSnap={gridSnap && !isShiftPressed ? 1 : null}
           rotationSnap={gridSnap ? Math.PI / 4 : null}
           scaleSnap={gridSnap ? 0.25 : null}
           space="world"
