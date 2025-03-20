@@ -105,7 +105,7 @@ export function ModuleObject({
       worldPosition.y + height + 1,
       worldPosition.z
     );
-  }, []); // Empty dependency array since we recalculate on every render anyway
+  }, [meshRef.current?.position.x, meshRef.current?.position.y, meshRef.current?.position.z]); // Update when position changes
 
   // Handle right-click deselection
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -151,7 +151,7 @@ export function ModuleObject({
       0.01,
       meshRef.current.position.z
     );
-  }, []); // Empty dependency array since we recalculate on every render anyway
+  }, [meshRef.current?.position.x, meshRef.current?.position.z]); // Update when x/z position changes
 
   return (
     <group>

@@ -2,10 +2,9 @@
 import { useRef, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
-import type { OrbitControls as OrbitControlsImpl } from "three/examples/jsm/controls/OrbitControls";
 
 interface CameraControlsProps {
-  controlsRef?: React.RefObject<OrbitControlsImpl>;
+  controlsRef?: React.RefObject<any>;
   enabled?: boolean;
   enableZoom?: boolean;
   enablePan?: boolean;
@@ -25,7 +24,7 @@ export function CameraControls({
   minPolarAngle = 0,
   maxPolarAngle = Math.PI / 2.1
 }: CameraControlsProps) {
-  const localRef = useRef<OrbitControlsImpl>(null);
+  const localRef = useRef<any>(null);
   const ref = controlsRef || localRef;
   const { camera, gl } = useThree();
 

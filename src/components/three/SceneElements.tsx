@@ -100,6 +100,11 @@ export function SceneElements({
         enabled={!isTransforming}
         enableZoom={!isTransforming}
         enablePan={!isTransforming}
+        enableRotate={!isTransforming}
+        minDistance={5}
+        maxDistance={50}
+        minPolarAngle={0}
+        maxPolarAngle={Math.PI / 2.1}
       />
       <GridHelper />
 
