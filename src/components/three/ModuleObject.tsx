@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -34,11 +35,13 @@ export function ModuleObject({
   onTransformEnd
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
+  const transformRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(selected);
   const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
   const [isShiftPressed, setIsShiftPressed] = useState(false);
+  const [isTransforming, setIsTransforming] = useState(false);
 
   // Handle keyboard events for Y-axis movement
   useEffect(() => {
@@ -77,40 +80,30 @@ export function ModuleObject({
     }
   }, [animating, module.position]);
 
-  // Update transform change handler to be less restrictive
+  // Handle transform changes
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
     const position = meshRef.current.position.clone();
     const rotation = meshRef.current.rotation.clone();
     
-    if (gridSnap && !isShiftPressed) {
+    if (gridSnap && !isShiftPressed && !isTransforming) {
       // Only snap when not actively transforming
-      if (!transformMode || transformMode === 'rotate') {
-        position.x = Math.round(position.x);
-        position.z = Math.round(position.z);
-        
-        // Only snap Y to ground level on initial placement
-        if (!selected) {
-          position.y = module.dimensions.height / 2;
-        }
+      position.x = Math.round(position.x);
+      position.z = Math.round(position.z);
+      
+      // Only snap Y to ground level on initial placement
+      if (!selected) {
+        position.y = module.dimensions.height / 2;
       }
       
-      // Snap rotation to 90-degree increments with animation
+      // Snap rotation to 90-degree increments
       if (transformMode === 'rotate') {
-        const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
-        if (rotation.y !== targetRotation) {
-          gsap.to(meshRef.current.rotation, {
-            y: targetRotation,
-            duration: 0.2,
-            ease: 'power2.out'
-          });
-          rotation.y = targetRotation;
-        }
+        rotation.y = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
       }
     }
     
-    // Check for collisions but don't force side-by-side placement
+    // Check for collisions
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
     
@@ -136,16 +129,15 @@ export function ModuleObject({
       meshRef.current.position.copy(position);
       meshRef.current.rotation.copy(rotation);
       
-      // Update module state
       onUpdate?.({
         position: [position.x, position.y, position.z],
         rotation: [rotation.x, rotation.y, rotation.z],
         scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
       });
     }
-  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed, selected, transformMode]);
+  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming]);
 
-  // Calculate shadow position and rotation
+  // Calculate shadow transform
   const shadowTransform = useMemo(() => {
     if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
     
@@ -154,20 +146,17 @@ export function ModuleObject({
     const quaternion = new Quaternion();
     const rotation = new Euler(-Math.PI/2, 0, 0);
     
-    // Get world matrix and position
     meshRef.current.updateMatrixWorld();
     matrix.copy(meshRef.current.matrixWorld);
     position.setFromMatrixPosition(matrix);
-    position.y = 0.01; // Keep shadow just above ground
+    position.y = 0.01;
     
-    // Get world rotation using quaternion
     meshRef.current.getWorldQuaternion(quaternion);
-    const euler = new Euler();
-    euler.setFromQuaternion(quaternion);
+    const euler = new Euler().setFromQuaternion(quaternion);
     rotation.y = euler.y;
     
     return { position, rotation };
-  }, [module.position, module.rotation]); // Only depend on module position and rotation
+  }, [module.position, module.rotation]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -177,7 +166,7 @@ export function ModuleObject({
 
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
-    onClick?.(); // Deselect on right-click
+    onClick?.();
   }, [onClick]);
 
   const handleMouseEnter = useCallback(() => {
@@ -248,7 +237,11 @@ export function ModuleObject({
           lockX={false}
           lockY={false}
           lockZ={false}
-          position={[0, module.dimensions.height + 0.75, 0]}
+          position={[
+            meshRef.current ? meshRef.current.position.x : module.position[0],
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 0.75,
+            meshRef.current ? meshRef.current.position.z : module.position[2]
+          ]}
         >
           <Html
             center
@@ -303,19 +296,16 @@ export function ModuleObject({
       {/* Transform Controls */}
       {selected && !readOnly && meshRef.current && (
         <TransformControls
+          ref={transformRef}
           object={meshRef.current}
           mode={transformMode}
           onMouseDown={() => {
+            setIsTransforming(true);
             onTransformStart?.();
-            if (controlsRef?.current) {
-              controlsRef.current.enabled = false;
-            }
           }}
           onMouseUp={() => {
+            setIsTransforming(false);
             onTransformEnd?.();
-            if (controlsRef?.current) {
-              controlsRef.current.enabled = true;
-            }
             handleTransformChange();
           }}
           onChange={handleTransformChange}
@@ -328,21 +318,7 @@ export function ModuleObject({
           rotationSnap={gridSnap ? Math.PI / 4 : null}
           scaleSnap={gridSnap ? 0.25 : null}
           space='world'
-        >
-          <mesh>
-            <boxGeometry args={[
-              module.dimensions.length + 0.1,
-              module.dimensions.height + 0.1,
-              module.dimensions.width + 0.1
-            ]} />
-            <meshBasicMaterial
-              color='#ffcc00'
-              opacity={0.2}
-              transparent
-              wireframe
-            />
-          </mesh>
-        </TransformControls>
+        />
       )}
       
       {/* Connection Points */}
