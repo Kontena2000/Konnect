@@ -1,17 +1,18 @@
 
-import * as admin from 'firebase-admin';
-import serviceAccount from '../../public/kontena-layout-builder-firebase-adminsdk-fbsvc-7b95c34dc4-m8hhdcwm.json';
+import * as admin from "firebase-admin";
+import { join } from "path";
 
 if (!admin.apps.length) {
   try {
     admin.initializeApp({
-      credential: admin.credential.cert(serviceAccount as admin.ServiceAccount),
-      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL,
-      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      credential: admin.credential.cert(
+        join(process.cwd(), "public", "kontena-layout-builder-firebase-adminsdk-fbsvc-7b95c34dc4-m8hhdcwm.json")
+      ),
+      databaseURL: "https://kontena-layout-builder-default-rtdb.europe-west1.firebasedatabase.app"
     });
-    console.log('Firebase Admin SDK initialized successfully');
+    console.log("Firebase Admin SDK initialized successfully");
   } catch (error) {
-    console.error('Failed to initialize admin app:', error);
+    console.error("Failed to initialize admin app:", error);
   }
 }
 
