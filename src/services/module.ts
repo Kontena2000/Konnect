@@ -1,5 +1,5 @@
 
-import { db } from "@/lib/firebase";
+import { db, auth } from "@/lib/firebase";
 import { 
   collection, 
   doc,
@@ -29,8 +29,34 @@ interface FirebaseError extends Error {
 }
 
 const moduleService = {
+  async checkUserPermissions(): Promise<boolean> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        console.error("No user logged in");
+        return false;
+      }
+
+      const token = await user.getIdTokenResult();
+      console.log("User token claims:", token.claims);
+      
+      const canEdit = token.claims.role === 'admin' || token.claims.role === 'editor';
+      console.log("User can edit:", canEdit);
+      
+      return canEdit;
+    } catch (error) {
+      console.error("Error checking permissions:", error);
+      return false;
+    }
+  },
+
   async initializeBasicCategory(): Promise<void> {
     try {
+      if (!(await this.checkUserPermissions())) {
+        throw new Error("Insufficient permissions");
+      }
+
+      console.log("Checking categories collection...");
       const categoriesRef = collection(db, "categories");
       const snapshot = await getDocs(categoriesRef);
       
@@ -64,46 +90,20 @@ const moduleService = {
       console.log("Categories initialized successfully");
     } catch (error) {
       const fbError = error as FirebaseError;
-      console.error("Error initializing categories:", fbError.message);
+      console.error("Error initializing categories:", fbError);
       throw new Error(`Failed to initialize categories: ${fbError.message}`);
-    }
-  },
-
-  async initializeDefaultModules(): Promise<void> {
-    try {
-      const modulesRef = collection(db, "modules");
-      const snapshot = await getDocs(modulesRef);
-      
-      if (!snapshot.empty) {
-        console.log("Modules already exist");
-        return;
-      }
-
-      console.log("No modules found, initializing defaults...");
-      const batch = writeBatch(db);
-      const now = new Date().toISOString();
-
-      for (const defaultMod of defaultModules) {
-        const moduleRef = doc(modulesRef, defaultMod.id);
-        batch.set(moduleRef, {
-          ...defaultMod,
-          visibleInEditor: true,
-          createdAt: now,
-          updatedAt: now
-        });
-      }
-
-      await batch.commit();
-      console.log("Default modules initialized successfully");
-    } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error initializing default modules:", fbError.message);
-      throw new Error(`Failed to initialize default modules: ${fbError.message}`);
     }
   },
 
   async getAllModules(): Promise<Module[]> {
     try {
+      console.log('Checking user authentication...');
+      const user = auth.currentUser;
+      if (!user) {
+        console.error('No user logged in');
+        return [];
+      }
+
       console.log('Fetching all modules...');
       const modulesRef = collection(db, 'modules');
       const snapshot = await getDocs(modulesRef);
@@ -140,13 +140,20 @@ const moduleService = {
       return modules;
     } catch (error) {
       const fbError = error as FirebaseError;
-      console.error('Error fetching modules:', fbError.message);
-      return defaultModules;
+      console.error('Error fetching modules:', fbError);
+      return [];
     }
   },
 
   async getCategories(): Promise<CategoryData[]> {
     try {
+      console.log("Checking user authentication...");
+      const user = auth.currentUser;
+      if (!user) {
+        console.error("No user logged in");
+        return [];
+      }
+
       console.log("Fetching categories...");
       const categoriesRef = collection(db, "categories");
       const snapshot = await getDocs(categoriesRef);
@@ -171,19 +178,17 @@ const moduleService = {
       return categories;
     } catch (error) {
       const fbError = error as FirebaseError;
-      console.error("Error fetching categories:", fbError.message);
-      return [
-        { id: "basic", name: "Basic" },
-        { id: "konnect", name: "Konnect Modules" },
-        { id: "network", name: "Network" },
-        { id: "piping", name: "Piping" },
-        { id: "environment", name: "Environment" }
-      ];
+      console.error("Error fetching categories:", fbError);
+      return [];
     }
   },
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
+      if (!(await this.checkUserPermissions())) {
+        throw new Error("Insufficient permissions");
+      }
+
       console.log("Creating category:", data);
       const categoryRef = doc(db, "categories", data.id);
       const now = new Date().toISOString();
@@ -195,26 +200,17 @@ const moduleService = {
       console.log("Category created successfully:", data.id);
     } catch (error) {
       const fbError = error as FirebaseError;
-      console.error("Error creating category:", fbError.message);
+      console.error("Error creating category:", fbError);
       throw new Error(`Failed to create category: ${fbError.message}`);
-    }
-  },
-
-  async deleteCategory(id: string): Promise<void> {
-    try {
-      console.log("Deleting category:", id);
-      const categoryRef = doc(db, "categories", id);
-      await deleteDoc(categoryRef);
-      console.log("Category deleted successfully:", id);
-    } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error deleting category:", fbError.message);
-      throw new Error(`Failed to delete category: ${fbError.message}`);
     }
   },
 
   async createModule(data: Module): Promise<string> {
     try {
+      if (!(await this.checkUserPermissions())) {
+        throw new Error("Insufficient permissions");
+      }
+
       console.log('Creating new module:', data);
       const moduleRef = doc(db, 'modules', data.id);
       const now = new Date().toISOString();
@@ -230,13 +226,17 @@ const moduleService = {
       return data.id;
     } catch (error) {
       const fbError = error as FirebaseError;
-      console.error('Error creating module:', fbError.message);
+      console.error('Error creating module:', fbError);
       throw new Error(`Failed to create module: ${fbError.message}`);
     }
   },
 
   async updateModule(id: string, data: Partial<Module>): Promise<void> {
     try {
+      if (!(await this.checkUserPermissions())) {
+        throw new Error("Insufficient permissions");
+      }
+
       console.log("Updating module:", id, data);
       const moduleRef = doc(db, "modules", id);
       await updateDoc(moduleRef, {
@@ -246,21 +246,8 @@ const moduleService = {
       console.log("Module updated successfully:", id);
     } catch (error) {
       const fbError = error as FirebaseError;
-      console.error("Error updating module:", fbError.message);
+      console.error("Error updating module:", fbError);
       throw new Error(`Failed to update module: ${fbError.message}`);
-    }
-  },
-
-  async deleteModule(id: string): Promise<void> {
-    try {
-      console.log("Deleting module:", id);
-      const moduleRef = doc(db, "modules", id);
-      await deleteDoc(moduleRef);
-      console.log("Module deleted successfully:", id);
-    } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error deleting module:", fbError.message);
-      throw new Error(`Failed to delete module: ${fbError.message}`);
     }
   }
 };
