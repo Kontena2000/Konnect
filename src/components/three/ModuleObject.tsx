@@ -121,7 +121,7 @@ export function ModuleObject({
     return { position, rotation };
   }, [meshRef.current?.position.x, meshRef.current?.position.z, meshRef.current?.rotation.y]);
 
-  // Calculate controls position to follow camera rotation
+  // Update controls position to follow camera
   const controlsPosition = useMemo(() => {
     if (!meshRef.current) return new Vector3(0, 0, 0);
     

@@ -8,6 +8,7 @@ interface CameraControlsProps {
   enabled?: boolean;
   enableZoom?: boolean;
   enablePan?: boolean;
+  enableRotate?: boolean;
   minDistance?: number;
   maxDistance?: number;
   minPolarAngle?: number;
@@ -19,6 +20,7 @@ export function CameraControls({
   enabled = true,
   enableZoom = true,
   enablePan = true,
+  enableRotate = true,
   minDistance = 5,
   maxDistance = 50,
   minPolarAngle = 0,
@@ -37,7 +39,7 @@ export function CameraControls({
     controls.enabled = enabled;
     controls.enableZoom = enabled && enableZoom;
     controls.enablePan = enabled && enablePan;
-    controls.enableRotate = enabled;
+    controls.enableRotate = enabled && enableRotate;
     controls.enableDamping = enabled;
     
     // Force controls update
@@ -70,7 +72,7 @@ export function CameraControls({
         controls.update();
       }
     };
-  }, [enabled, enableZoom, enablePan, ref, camera]);
+  }, [enabled, enableZoom, enablePan, enableRotate, ref, camera]);
 
   return (
     <OrbitControls
@@ -79,7 +81,7 @@ export function CameraControls({
       enabled={enabled}
       enableZoom={enabled && enableZoom}
       enablePan={enabled && enablePan}
-      enableRotate={enabled}
+      enableRotate={enabled && enableRotate}
       minDistance={minDistance}
       maxDistance={maxDistance}
       minPolarAngle={minPolarAngle}
