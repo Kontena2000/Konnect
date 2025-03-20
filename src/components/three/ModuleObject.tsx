@@ -118,8 +118,31 @@ export function ModuleObject({
     const offset = new Vector3(0, height + 1, 0);
     offset.applyAxisAngle(new Vector3(1, 0, 0), -Math.atan2(cameraDirection.y, Math.sqrt(cameraDirection.x * cameraDirection.x + cameraDirection.z * cameraDirection.z)));
     
+    // Apply camera rotation to controls
+    const cameraRotation = new Euler().setFromQuaternion(camera.quaternion);
+    offset.applyEuler(new Euler(0, cameraRotation.y, 0));
+    
     return worldPosition.add(offset);
-  }, [camera, meshRef.current]);
+  }, [camera]);
+
+  // Calculate shadow position and rotation
+  const shadowTransform = useMemo(() => {
+    if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
+    
+    const position = new Vector3(
+      meshRef.current.position.x,
+      0.01,
+      meshRef.current.position.z
+    );
+    
+    const rotation = new Euler(
+      -Math.PI/2,
+      meshRef.current.rotation.y,
+      0
+    );
+    
+    return { position, rotation };
+  }, []);
 
   // Handle right-click deselection
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -157,12 +180,6 @@ export function ModuleObject({
     setShowControls(selected);
   }, [selected]);
 
-  // Calculate shadow rotation to match object
-  const shadowRotation = useMemo(() => {
-    if (!meshRef.current) return [-Math.PI/2, 0, 0];
-    return [-Math.PI/2, meshRef.current.rotation.y, 0];
-  }, [meshRef.current?.rotation.y]);
-
   return (
     <group>
       <mesh 
@@ -192,8 +209,8 @@ export function ModuleObject({
 
       {/* Shadow preview */}
       <mesh 
-        position={[meshRef.current?.position.x || 0, 0.01, meshRef.current?.position.z || 0]}
-        rotation={shadowRotation}
+        position={shadowTransform.position}
+        rotation={shadowTransform.rotation}
       >
         <planeGeometry args={[
           module.dimensions.length,
