@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Plus, X, Loader2, Box } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Module, ModuleCategory } from "@/types/module";
+import { Module } from "@/types/module";
 import { ConnectionType } from "@/types/connection";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
@@ -34,7 +34,7 @@ interface FormData {
 }
 
 export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+  const [open, setOpen] = useState(false);
   const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -65,8 +65,26 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
         });
       }
     };
-    loadCategories();
-  }, [toast]);
+    if (open) {
+      loadCategories();
+    }
+  }, [open, toast]);
+
+  const resetForm = () => {
+    setFormData({
+      name: "",
+      description: "",
+      category: "basic",
+      color: "#808080",
+      dimensions: {
+        length: 1,
+        width: 1,
+        height: 1
+      },
+      connectionPoints: [],
+      visibleInEditor: true
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -84,20 +102,8 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
       };
 
       await onModuleCreate(newModule);
-      setIsOpen(false);
-      setFormData({
-        name: "",
-        description: "",
-        category: "basic",
-        color: "#808080",
-        dimensions: {
-          length: 1,
-          width: 1,
-          height: 1
-        },
-        connectionPoints: [],
-        visibleInEditor: true
-      });
+      setOpen(false);
+      resetForm();
       toast({
         title: "Success",
         description: "Module created successfully"
@@ -152,7 +158,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />

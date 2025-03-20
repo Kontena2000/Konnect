@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -12,16 +11,18 @@ interface CategoryDialogProps {
 }
 
 export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogProps) {
-  const [name, setName] = useState("");
+  const [open, setOpen] = useState(false);
+  const [name, setName] = useState('');
 
   const handleSubmit = async () => {
-    const id = name.toLowerCase().replace(/\s+/g, "-");
+    const id = name.toLowerCase().replace(/\s+/g, '-');
     await onCreateCategory({ id, name: name.trim() });
-    setName("");
+    setOpen(false);
+    setName('');
   };
 
   return (
-    <Dialog>
+    <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
         <Button variant="ghost" className="w-full justify-start">
           <FolderPlus className="h-4 w-4 mr-2" />

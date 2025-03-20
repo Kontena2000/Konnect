@@ -142,16 +142,17 @@ export function ModuleManager() {
   const handleCreateModule = async (moduleData: Module) => {
     try {
       await moduleService.createModule(moduleData);
-      setModules(prev => [...prev, moduleData]);
+      await loadModules(); // Reload the full module list
       toast({
-        title: "Success",
-        description: "Module created successfully"
+        title: 'Success',
+        description: 'Module created successfully'
       });
     } catch (error) {
+      console.error('Error creating module:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create module"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create module'
       });
     }
   };
