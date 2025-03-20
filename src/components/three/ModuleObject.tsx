@@ -154,14 +154,16 @@ export function ModuleObject({
     const quaternion = new Quaternion();
     const rotation = new Euler(-Math.PI/2, 0, 0);
     
-    meshRef.current.updateMatrixWorld();
+    meshRef.current.updateWorldMatrix(true, false);
     matrix.copy(meshRef.current.matrixWorld);
-    position.setFromMatrixPosition(matrix);
-    position.y = 0.01;
     
+    // Get world position for shadow
+    position.setFromMatrixPosition(matrix);
+    position.y = 0.01; // Keep shadow just above ground
+    
+    // Get world rotation for shadow
     meshRef.current.getWorldQuaternion(quaternion);
-    const euler = new Euler().setFromQuaternion(quaternion);
-    rotation.y = euler.y;
+    rotation.y = meshRef.current.rotation.y; // Only use Y rotation for shadow
     
     return { position, rotation };
   }, []); // Empty dependency array - will update based on render cycles
@@ -247,7 +249,7 @@ export function ModuleObject({
           lockZ={false}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
-            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 0.75,
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 1.5, // Increased offset
             meshRef.current ? meshRef.current.position.z : module.position[2]
           ]}
         >
