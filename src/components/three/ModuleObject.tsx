@@ -101,47 +101,39 @@ export function ModuleObject({
     });
   }, [readOnly, onUpdate, module.id, modules, gridSnap]);
 
-  // Update shadow transform calculation to match object rotation
+  // Update shadow transform calculation
   const shadowTransform = useMemo(() => {
-    if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
+    const position = new Vector3(0, 0.01, 0);
+    const rotation = new Euler(-Math.PI/2, 0, 0);
     
-    const position = new Vector3(
-      meshRef.current.position.x,
-      0.01,
-      meshRef.current.position.z
-    );
-    
-    // Match object rotation for shadow
-    const rotation = new Euler(
-      -Math.PI/2, // Keep shadow flat on ground
-      meshRef.current.rotation.y, // Match object Y rotation
-      0
-    );
+    if (meshRef.current) {
+      position.set(meshRef.current.position.x, 0.01, meshRef.current.position.z);
+      rotation.set(-Math.PI/2, meshRef.current.rotation.y, 0);
+    }
     
     return { position, rotation };
-  }, [meshRef.current?.position.x, meshRef.current?.position.z, meshRef.current?.rotation.y]);
+  }, []); // Remove unnecessary dependencies
 
-  // Update controls position to follow camera
+  // Update controls position calculation
   const controlsPosition = useMemo(() => {
-    if (!meshRef.current) return new Vector3(0, 0, 0);
+    const position = new Vector3(0, 2, 0);
     
-    const worldPosition = meshRef.current.getWorldPosition(new Vector3());
-    const box = new Box3().setFromObject(meshRef.current);
-    const height = box.max.y - box.min.y;
+    if (meshRef.current) {
+      const worldPos = meshRef.current.getWorldPosition(new Vector3());
+      const box = new Box3().setFromObject(meshRef.current);
+      const height = box.max.y - box.min.y;
+      
+      position.set(worldPos.x, worldPos.y + height + 1, worldPos.z);
+      
+      // Adjust for camera angle
+      const cameraDir = new Vector3();
+      camera.getWorldDirection(cameraDir);
+      const angle = Math.atan2(cameraDir.x, cameraDir.z);
+      position.applyAxisAngle(new Vector3(0, 1, 0), angle);
+    }
     
-    // Get camera direction vector
-    const cameraDirection = new Vector3();
-    camera.getWorldDirection(cameraDirection);
-    
-    // Calculate offset based on camera angle
-    const offset = new Vector3(0, height + 1, 0);
-    
-    // Apply camera rotation to offset
-    const cameraRotation = new Euler().setFromQuaternion(camera.quaternion);
-    offset.applyEuler(new Euler(0, cameraRotation.y, 0));
-    
-    return worldPosition.add(offset);
-  }, [camera, meshRef.current]);
+    return position;
+  }, [camera]); // Only depend on camera changes
 
   // Handle right-click deselection
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {

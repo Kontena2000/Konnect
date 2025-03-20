@@ -82,11 +82,21 @@ export function SceneContainer({
   const handleTransformStart = useCallback(() => {
     setTransforming(true);
     onTransformStart?.();
+    
+    // Lock camera controls
+    if (controlsRef.current) {
+      controlsRef.current.enabled = false;
+    }
   }, [onTransformStart]);
 
   const handleTransformEnd = useCallback(() => {
     setTransforming(false);
     onTransformEnd?.();
+    
+    // Re-enable camera controls
+    if (controlsRef.current) {
+      controlsRef.current.enabled = true;
+    }
   }, [onTransformEnd]);
 
   const { snapPoints, snapLines } = useMemo(() => {
@@ -141,14 +151,14 @@ export function SceneContainer({
     if (readOnly || !onDropPoint) return;
     event.preventDefault();
     
-    // Calculate grid-aligned position
-    const gridPosition: [number, number, number] = [
+    // Snap to grid
+    const snappedPosition: [number, number, number] = [
       Math.round(previewPosition[0]),
-      draggedModuleRef.current ? draggedModuleRef.current.dimensions.height/2 : 0, // Align bottom with grid
+      draggedModuleRef.current ? draggedModuleRef.current.dimensions.height/2 : 0,
       Math.round(previewPosition[2])
     ];
     
-    onDropPoint(gridPosition);
+    onDropPoint(snappedPosition);
     setIsDraggingOver(false);
     setMousePosition(null);
   }, [readOnly, onDropPoint, previewPosition, draggedModuleRef]);
