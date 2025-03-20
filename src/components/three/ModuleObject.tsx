@@ -106,7 +106,7 @@ export function ModuleObject({
       }
     }
     
-    // Check for collisions
+    // Check for collisions and try to place side by side first
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
     let bestPosition = position.clone();
@@ -134,6 +134,7 @@ export function ModuleObject({
           new Vector3(0, 0, -1)
         ];
         
+        // Try side positions first
         for (const dir of directions) {
           const testPos = position.clone().add(dir.multiplyScalar(module.dimensions.length));
           const testBox = box.clone().translate(dir.multiplyScalar(module.dimensions.length));
@@ -152,7 +153,7 @@ export function ModuleObject({
           }
         }
         
-        // If no side position works, try stacking
+        // Only stack vertically if no side position works
         if (hasCollision) {
           bestPosition.y = otherBox.max.y + module.dimensions.height / 2;
         }
@@ -169,7 +170,7 @@ export function ModuleObject({
       rotation: [rotation.x, rotation.y, rotation.z],
       scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
     });
-  }, [readOnly, onUpdate, module.dimensions, modules, gridSnap, isShiftPressed]);
+  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
@@ -184,7 +185,7 @@ export function ModuleObject({
     meshRef.current.updateMatrixWorld();
     matrix.copy(meshRef.current.matrixWorld);
     position.setFromMatrixPosition(matrix);
-    position.y = 0.01;
+    position.y = 0.01; // Keep shadow just above ground
     
     // Get world rotation using quaternion
     meshRef.current.getWorldQuaternion(quaternion);
@@ -274,14 +275,15 @@ export function ModuleObject({
           lockX={false}
           lockY={false}
           lockZ={false}
-          position={[0, module.dimensions.height + 0.5, 0]}
+          position={[0, module.dimensions.height + 0.75, 0]}
         >
           <Html
             center
             style={{
               transition: 'all 0.2s ease',
               pointerEvents: 'auto',
-              transform: `scale(${camera.zoom < 1 ? 1 / camera.zoom : 1})`
+              transform: `scale(${camera.zoom < 1 ? 1 / camera.zoom : 1})`,
+              opacity: hovered ? 1 : 0.8
             }}
           >
             <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none'>
@@ -345,7 +347,21 @@ export function ModuleObject({
           rotationSnap={gridSnap ? Math.PI / 4 : null}
           scaleSnap={gridSnap ? 0.25 : null}
           space="world"
-        />
+        >
+          <mesh>
+            <boxGeometry args={[
+              module.dimensions.length + 0.1,
+              module.dimensions.height + 0.1,
+              module.dimensions.width + 0.1
+            ]} />
+            <meshBasicMaterial
+              color="#ffcc00"
+              opacity={0.2}
+              transparent
+              wireframe
+            />
+          </mesh>
+        </TransformControls>
       )}
       
       {/* Connection Points */}
