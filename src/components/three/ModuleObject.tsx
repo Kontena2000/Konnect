@@ -43,23 +43,27 @@ export function ModuleObject({
     
     const position = meshRef.current.position.clone();
     const rotation = meshRef.current.rotation.clone();
+    const box = new Box3().setFromObject(meshRef.current);
+    const size = box.getSize(new Vector3());
     
     if (gridSnap) {
-      // Snap position to grid
+      // Snap X and Z to grid
       position.x = Math.round(position.x);
       position.z = Math.round(position.z);
       
+      // Snap Y to ground level by default
+      position.y = module.dimensions.height / 2;
+      
       // Snap rotation to 90-degree increments
       rotation.y = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
-      
-      // Apply snapped values
-      meshRef.current.position.copy(position);
-      meshRef.current.rotation.copy(rotation);
     }
     
-    // Check for collisions
-    const box = new Box3().setFromObject(meshRef.current);
-    const collisions = modules.filter(m => m.id !== module.id).some(otherModule => {
+    // Try to place side-by-side first
+    const currentBox = new Box3().setFromCenterAndSize(position, size);
+    let collisions = false;
+    
+    // Check for collisions at current position
+    modules.filter(m => m.id !== module.id).forEach(otherModule => {
       const otherBox = new Box3(
         new Vector3(
           otherModule.position[0] - otherModule.dimensions.length/2,
@@ -72,17 +76,61 @@ export function ModuleObject({
           otherModule.position[2] + otherModule.dimensions.width/2
         )
       );
-      return box.intersectsBox(otherBox);
+      
+      if (currentBox.intersectsBox(otherBox)) {
+        collisions = true;
+        
+        // Try to place beside the colliding object
+        const directions = [
+          new Vector3(otherModule.dimensions.length + size.x/2, 0, 0),
+          new Vector3(-otherModule.dimensions.length - size.x/2, 0, 0),
+          new Vector3(0, 0, otherModule.dimensions.width + size.z/2),
+          new Vector3(0, 0, -otherModule.dimensions.width - size.z/2)
+        ];
+        
+        // Try each direction
+        for (const offset of directions) {
+          const testPosition = position.clone().add(offset);
+          const testBox = new Box3().setFromCenterAndSize(testPosition, size);
+          
+          // Check if this position is free
+          const hasCollision = modules.some(m => {
+            if (m.id === module.id) return false;
+            const mBox = new Box3(
+              new Vector3(
+                m.position[0] - m.dimensions.length/2,
+                m.position[1] - m.dimensions.height/2,
+                m.position[2] - m.dimensions.width/2
+              ),
+              new Vector3(
+                m.position[0] + m.dimensions.length/2,
+                m.position[1] + m.dimensions.height/2,
+                m.position[2] + m.dimensions.width/2
+              )
+            );
+            return testBox.intersectsBox(mBox);
+          });
+          
+          if (!hasCollision) {
+            position.copy(testPosition);
+            collisions = false;
+            break;
+          }
+        }
+      }
     });
-
-    // Move object up if collision detected
+    
+    // If side-by-side placement failed, stack vertically
     if (collisions) {
       const highestY = modules
         .filter(m => m.id !== module.id)
         .reduce((max, m) => Math.max(max, m.position[1] + m.dimensions.height/2), 0);
       position.y = highestY + module.dimensions.height/2;
-      meshRef.current.position.copy(position);
     }
+    
+    // Apply final position and rotation
+    meshRef.current.position.copy(position);
+    meshRef.current.rotation.copy(rotation);
     
     // Update module state
     onUpdate?.({
@@ -109,7 +157,7 @@ export function ModuleObject({
     
     // Get world rotation
     meshRef.current.getWorldQuaternion(quaternion);
-    rotation.y = quaternion.y;
+    rotation.y = meshRef.current.rotation.y;
     
     return { position, rotation };
   }, []); // Remove unnecessary dependencies
