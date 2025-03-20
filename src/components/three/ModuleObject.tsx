@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -72,11 +71,11 @@ export function ModuleObject({
       gsap.to(meshRef.current.position, {
         y: module.position[1],
         duration: 0.6,
-        ease: "bounce.out",
+        ease: 'bounce.out',
         onComplete: () => setAnimating(false)
       });
     }
-  }, []);
+  }, [animating, module.position]);
 
   // Handle transform changes with optional Y-axis snapping
   const handleTransformChange = useCallback(() => {
@@ -93,7 +92,9 @@ export function ModuleObject({
       position.z = Math.round(position.z);
       
       // Only snap Y to ground level if not holding Shift
-      position.y = module.dimensions.height / 2;
+      if (!isShiftPressed) {
+        position.y = module.dimensions.height / 2;
+      }
       
       // Snap rotation to 90-degree increments with animation
       const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
@@ -101,80 +102,10 @@ export function ModuleObject({
         gsap.to(meshRef.current.rotation, {
           y: targetRotation,
           duration: 0.2,
-          ease: "power2.out"
+          ease: 'power2.out'
         });
         rotation.y = targetRotation;
       }
-    }
-    
-    // Try to place side-by-side first
-    const currentBox = new Box3().setFromCenterAndSize(position, size);
-    let collisions = false;
-    
-    // Check for collisions at current position
-    modules.filter(m => m.id !== module.id).forEach(otherModule => {
-      const otherBox = new Box3(
-        new Vector3(
-          otherModule.position[0] - otherModule.dimensions.length/2,
-          otherModule.position[1] - otherModule.dimensions.height/2,
-          otherModule.position[2] - otherModule.dimensions.width/2
-        ),
-        new Vector3(
-          otherModule.position[0] + otherModule.dimensions.length/2,
-          otherModule.position[1] + otherModule.dimensions.height/2,
-          otherModule.position[2] + otherModule.dimensions.width/2
-        )
-      );
-      
-      if (currentBox.intersectsBox(otherBox)) {
-        collisions = true;
-        
-        // Try to place beside the colliding object
-        const directions = [
-          new Vector3(otherModule.dimensions.length + size.x/2, 0, 0),
-          new Vector3(-otherModule.dimensions.length - size.x/2, 0, 0),
-          new Vector3(0, 0, otherModule.dimensions.width + size.z/2),
-          new Vector3(0, 0, -otherModule.dimensions.width - size.z/2)
-        ];
-        
-        // Try each direction
-        for (const offset of directions) {
-          const testPosition = position.clone().add(offset);
-          const testBox = new Box3().setFromCenterAndSize(testPosition, size);
-          
-          // Check if this position is free
-          const hasCollision = modules.some(m => {
-            if (m.id === module.id) return false;
-            const mBox = new Box3(
-              new Vector3(
-                m.position[0] - m.dimensions.length/2,
-                m.position[1] - m.dimensions.height/2,
-                m.position[2] - m.dimensions.width/2
-              ),
-              new Vector3(
-                m.position[0] + m.dimensions.length/2,
-                m.position[1] + m.dimensions.height/2,
-                m.position[2] + m.dimensions.width/2
-              )
-            );
-            return testBox.intersectsBox(mBox);
-          });
-          
-          if (!hasCollision) {
-            position.copy(testPosition);
-            collisions = false;
-            break;
-          }
-        }
-      }
-    });
-    
-    // If side-by-side placement failed, stack vertically
-    if (collisions) {
-      const highestY = modules
-        .filter(m => m.id !== module.id)
-        .reduce((max, m) => Math.max(max, m.position[1] + m.dimensions.height/2), 0);
-      position.y = highestY + module.dimensions.height/2;
     }
     
     // Apply final position and rotation
@@ -187,7 +118,7 @@ export function ModuleObject({
       rotation: [rotation.x, rotation.y, rotation.z],
       scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
     });
-  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed]);
+  }, [readOnly, onUpdate, module.dimensions, gridSnap, isShiftPressed]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
@@ -298,9 +229,9 @@ export function ModuleObject({
               pointerEvents: 'auto'
             }}
           >
-            <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none">
+            <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none'>
               <button 
-                className="p-1 hover:bg-accent rounded"
+                className='p-1 hover:bg-accent rounded'
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   if (meshRef.current) {
@@ -312,7 +243,7 @@ export function ModuleObject({
                 ⟲
               </button>
               <button 
-                className="p-1 hover:bg-accent rounded"
+                className='p-1 hover:bg-accent rounded'
                 onClick={(e: React.MouseEvent) => {
                   e.stopPropagation();
                   if (meshRef.current) {
@@ -325,7 +256,7 @@ export function ModuleObject({
               </button>
               {onDelete && (
                 <button 
-                  className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
+                  className='p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2'
                   onClick={(e: React.MouseEvent) => {
                     e.stopPropagation();
                     onDelete();
