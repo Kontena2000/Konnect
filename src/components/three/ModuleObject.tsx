@@ -77,7 +77,7 @@ export function ModuleObject({
     }
   }, [animating, module.position]);
 
-  // Handle transform changes with optional Y-axis snapping
+  // Update transform change handler with better collision handling
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -109,6 +109,7 @@ export function ModuleObject({
     // Check for collisions
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
+    let bestPosition = position.clone();
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -124,31 +125,51 @@ export function ModuleObject({
       
       if (box.intersectsBox(otherBox)) {
         hasCollision = true;
+        
+        // Try to find best position around the colliding object
+        const directions = [
+          new Vector3(1, 0, 0),
+          new Vector3(-1, 0, 0),
+          new Vector3(0, 0, 1),
+          new Vector3(0, 0, -1)
+        ];
+        
+        for (const dir of directions) {
+          const testPos = position.clone().add(dir.multiplyScalar(module.dimensions.length));
+          const testBox = box.clone().translate(dir.multiplyScalar(module.dimensions.length));
+          
+          if (!modules.some(m => {
+            if (m.id === module.id) return false;
+            const mBox = new Box3();
+            const mPos = new Vector3(...m.position);
+            const mSize = new Vector3(m.dimensions.length, m.dimensions.height, m.dimensions.width);
+            mBox.setFromCenterAndSize(mPos, mSize);
+            return testBox.intersectsBox(mBox);
+          })) {
+            bestPosition = testPos;
+            hasCollision = false;
+            break;
+          }
+        }
+        
+        // If no side position works, try stacking
+        if (hasCollision) {
+          bestPosition.y = otherBox.max.y + module.dimensions.height / 2;
+        }
       }
     });
     
-    // If collision detected, try to place on top
-    if (hasCollision) {
-      const highestY = modules
-        .filter(m => m.id !== module.id)
-        .reduce((max, m) => {
-          const top = m.position[1] + m.dimensions.height;
-          return Math.max(max, top);
-        }, 0);
-      position.y = highestY + module.dimensions.height / 2;
-    }
-    
     // Apply final position and rotation
-    meshRef.current.position.copy(position);
+    meshRef.current.position.copy(hasCollision ? bestPosition : position);
     meshRef.current.rotation.copy(rotation);
     
     // Update module state
     onUpdate?.({
-      position: [position.x, position.y, position.z],
+      position: [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
       rotation: [rotation.x, rotation.y, rotation.z],
       scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
     });
-  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed]);
+  }, [readOnly, onUpdate, module.dimensions, modules, gridSnap, isShiftPressed]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
@@ -172,7 +193,7 @@ export function ModuleObject({
     rotation.y = euler.y;
     
     return { position, rotation };
-  }, [meshRef.current?.position, meshRef.current?.rotation]);
+  }, [module.position, module.rotation]); // Only depend on module position and rotation
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -259,7 +280,8 @@ export function ModuleObject({
             center
             style={{
               transition: 'all 0.2s ease',
-              pointerEvents: 'auto'
+              pointerEvents: 'auto',
+              transform: `scale(${camera.zoom < 1 ? 1 / camera.zoom : 1})`
             }}
           >
             <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none'>
