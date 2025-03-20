@@ -1,8 +1,6 @@
-
-import { useRef, useState, useEffect, Suspense, useCallback } from "react";
+import { useRef, useState, useEffect, useCallback } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh } from "three";
-import { useLoader, ThreeEvent } from "@react-three/fiber";
-import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader';
+import { useLoader, useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
@@ -16,6 +14,8 @@ interface ModuleObjectProps {
   transformMode?: "translate" | "rotate" | "scale";
   gridSnap?: boolean;
   readOnly?: boolean;
+  onTransformStart?: () => void;
+  onTransformEnd?: () => void;
 }
 
 const ModelLoader = ({ url }: { url: string }) => {
@@ -43,13 +43,18 @@ export function ModuleObject({
   onDelete,
   transformMode = 'translate',
   gridSnap = true,
-  readOnly = false
+  readOnly = false,
+  onTransformStart,
+  onTransformEnd
 }: ModuleObjectProps) {
-  const meshRef = useRef<Object3D>(null);
+  const meshRef = useRef<Mesh>(null);
   const [hovered, setHovered] = useState(false);
-  const [showControls, setShowControls] = useState(false);
-  const [showContextMenu, setShowContextMenu] = useState(false);
-  const [contextMenuPosition, setContextMenuPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [showControls, setShowControls] = useState(selected);
+  const { camera } = useThree();
+
+  useEffect(() => {
+    setShowControls(selected);
+  }, [selected]);
 
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
@@ -65,8 +70,12 @@ export function ModuleObject({
     });
   }, [readOnly, onUpdate]);
 
-  const handleMouseEnter = useCallback((event: ThreeEvent<PointerEvent>) => {
+  const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
+    onClick?.();
+  }, [onClick]);
+
+  const handleMouseEnter = useCallback(() => {
     setHovered(true);
     setShowControls(true);
   }, []);
@@ -77,19 +86,6 @@ export function ModuleObject({
       setShowControls(false);
     }
   }, [selected]);
-
-  const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
-    event.stopPropagation();
-    onClick?.();
-  }, [onClick]);
-
-  const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
-    if (readOnly) return;
-    event.stopPropagation();
-    event.preventDefault();
-    setShowContextMenu(true);
-    setContextMenuPosition([0, module.dimensions.height, 0]);
-  }, [readOnly, module.dimensions.height]);
 
   useEffect(() => {
     if (!selected || readOnly) return;
@@ -113,47 +109,42 @@ export function ModuleObject({
     };
   }, [selected, readOnly, onDelete, handleTransformChange]);
 
+  // Ensure initial position is correct
   useEffect(() => {
     if (meshRef.current) {
-      const newPosition = new Vector3(...module.position);
-      if (!meshRef.current.position.equals(newPosition)) {
-        meshRef.current.position.copy(newPosition);
-      }
+      const position = [...module.position];
+      position[1] = module.dimensions.height / 2; // Place on top of grid
+      meshRef.current.position.set(...position);
+      handleTransformChange();
     }
-  }, [module.position]);
-
-  const commonProps = {
-    ref: meshRef,
-    position: module.position,
-    rotation: module.rotation,
-    scale: module.scale,
-    onPointerOver: handleMouseEnter,
-    onPointerOut: handleMouseLeave,
-    onClick: handleClick,
-    castShadow: module.castShadow !== false,
-    receiveShadow: module.receiveShadow !== false
-  };
+  }, [module.position, module.dimensions.height, handleTransformChange]);
 
   return (
-    <group onContextMenu={handleContextMenu}>
-      {module.modelUrl ? (
-        <Suspense fallback={<ModelFallback module={module} {...commonProps} transparent opacity={0.5} />}>
-          <ModelLoader url={module.modelUrl} />
-        </Suspense>
-      ) : (
-        <ModelFallback 
-          module={module} 
-          {...commonProps} 
-          transparent={hovered || selected} 
-          opacity={hovered || selected ? 0.8 : 1} 
+    <group onClick={handleClick}>
+      <mesh 
+        ref={meshRef}
+        position={[module.position[0], module.dimensions.height / 2, module.position[2]]}
+        rotation={module.rotation}
+        scale={module.scale}
+        onPointerOver={handleMouseEnter}
+        onPointerOut={handleMouseLeave}
+        castShadow
+        receiveShadow
+      >
+        <boxGeometry args={[module.dimensions.length, module.dimensions.height, module.dimensions.width]} />
+        <meshStandardMaterial
+          color={module.color || '#888888'}
+          transparent={hovered || selected}
+          opacity={hovered || selected ? 0.8 : 1}
+          wireframe={module.wireframe}
         />
-      )}
-      
-      {showControls && !readOnly && (
+      </mesh>
+
+      {(showControls || hovered) && !readOnly && (
         <Html position={[0, module.dimensions.height + 0.5, 0]}>
-          <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
+          <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1'>
             <button 
-              className="p-1 hover:bg-accent rounded"
+              className='p-1 hover:bg-accent rounded'
               onClick={(e) => {
                 e.stopPropagation();
                 if (meshRef.current) {
@@ -165,7 +156,7 @@ export function ModuleObject({
               ⟲
             </button>
             <button 
-              className="p-1 hover:bg-accent rounded"
+              className='p-1 hover:bg-accent rounded'
               onClick={(e) => {
                 e.stopPropagation();
                 if (meshRef.current) {
@@ -178,7 +169,7 @@ export function ModuleObject({
             </button>
             {onDelete && (
               <button 
-                className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
+                className='p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2'
                 onClick={(e) => {
                   e.stopPropagation();
                   onDelete();
@@ -191,61 +182,18 @@ export function ModuleObject({
         </Html>
       )}
       
-      {showContextMenu && !readOnly && (
-        <Html position={contextMenuPosition}>
-          <div className="bg-background/90 backdrop-blur-sm p-2 rounded shadow-lg">
-            <div className="space-y-1">
-              <button 
-                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (meshRef.current) {
-                    meshRef.current.rotation.y -= Math.PI/2;
-                    handleTransformChange();
-                  }
-                  setShowContextMenu(false);
-                }}
-              >
-                <span>Rotate Left</span>
-                <kbd className="ml-auto text-xs bg-muted px-1.5 rounded">⟲</kbd>
-              </button>
-              <button 
-                className="w-full text-left px-2 py-1 text-sm rounded hover:bg-accent flex items-center gap-2"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  if (meshRef.current) {
-                    meshRef.current.rotation.y += Math.PI/2;
-                    handleTransformChange();
-                  }
-                  setShowContextMenu(false);
-                }}
-              >
-                <span>Rotate Right</span>
-                <kbd className="ml-auto text-xs bg-muted px-1.5 rounded">⟳</kbd>
-              </button>
-              {onDelete && (
-                <button 
-                  className="w-full text-left px-2 py-1 text-sm rounded hover:bg-destructive hover:text-destructive-foreground flex items-center gap-2"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    onDelete();
-                    setShowContextMenu(false);
-                  }}
-                >
-                  <span>Delete</span>
-                  <kbd className="ml-auto text-xs bg-muted px-1.5 rounded">Del</kbd>
-                </button>
-              )}
-            </div>
-          </div>
-        </Html>
-      )}
-      
       {selected && !readOnly && meshRef.current && (
         <TransformControls
           object={meshRef.current}
           mode={transformMode}
           onObjectChange={handleTransformChange}
+          onDragging={(dragging) => {
+            if (dragging) {
+              onTransformStart?.();
+            } else {
+              onTransformEnd?.();
+            }
+          }}
           size={0.75}
           showX={true}
           showY={true}

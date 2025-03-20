@@ -1,4 +1,3 @@
-
 import { useRef, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
@@ -33,6 +32,12 @@ export function CameraControls({
       ref.current.reset();
     }
   }, [camera, ref]);
+
+  useEffect(() => {
+    if (ref.current) {
+      ref.current.enabled = enableZoom && enablePan;
+    }
+  }, [enableZoom, enablePan, ref]);
 
   return (
     <OrbitControls

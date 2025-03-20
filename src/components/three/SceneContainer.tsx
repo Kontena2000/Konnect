@@ -1,4 +1,3 @@
-
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -37,7 +36,10 @@ function SceneContent({
   showGuides,
   previewPosition,
   setRotationAngle,
-  controlsRef
+  controlsRef,
+  isTransforming,
+  onTransformStart,
+  onTransformEnd
 }: {
   modules: Module[];
   selectedModuleId?: string;
@@ -117,6 +119,9 @@ function SceneContent({
       previewPosition={previewPosition}
       readOnly={readOnly}
       setRotationAngle={setRotationAngle}
+      isTransforming={isTransforming}
+      onTransformStart={onTransformStart}
+      onTransformEnd={onTransformEnd}
     />
   );
 }
@@ -170,6 +175,7 @@ export function SceneContainer({
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [previewHeight, setPreviewHeight] = useState(0);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [isTransforming, setIsTransforming] = useState(false);
   const controlsRef = useRef(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
@@ -345,6 +351,9 @@ export function SceneContainer({
           previewPosition={previewPosition}
           setRotationAngle={setRotationAngle}
           controlsRef={controlsRef}
+          isTransforming={isTransforming}
+          onTransformStart={() => setIsTransforming(true)}
+          onTransformEnd={() => setIsTransforming(false)}
         />
       </Canvas>
 

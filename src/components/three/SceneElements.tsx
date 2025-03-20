@@ -1,4 +1,3 @@
-
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -34,6 +33,9 @@ interface SceneElementsProps {
   previewPosition: [number, number, number];
   readOnly?: boolean;
   setRotationAngle: (angle: number | ((prev: number) => number)) => void;
+  isTransforming: boolean;
+  onTransformStart?: () => void;
+  onTransformEnd?: () => void;
 }
 
 export function SceneElements({
@@ -56,7 +58,10 @@ export function SceneElements({
   snapLines,
   previewPosition,
   readOnly = false,
-  setRotationAngle
+  setRotationAngle,
+  isTransforming,
+  onTransformStart,
+  onTransformEnd
 }: SceneElementsProps) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -79,7 +84,7 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls controlsRef={controlsRef} />
+      <CameraControls controlsRef={controlsRef} enabled={!isTransforming} />
       <GridHelper />
 
       {terrain && <TerrainView terrain={terrain} />}
@@ -104,6 +109,8 @@ export function SceneElements({
           transformMode={transformMode}
           gridSnap={gridSnap}
           readOnly={readOnly}
+          onTransformStart={onTransformStart}
+          onTransformEnd={onTransformEnd}
         />
       ))}
 
