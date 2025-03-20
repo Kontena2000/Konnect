@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -87,19 +86,28 @@ export function ModuleObject({
     const position = meshRef.current.position.clone();
     const rotation = meshRef.current.rotation.clone();
     
+    // Only snap when not actively transforming
     if (gridSnap && !isShiftPressed && !isTransforming) {
-      // Only snap when not actively transforming
-      position.x = Math.round(position.x);
-      position.z = Math.round(position.z);
-      
-      // Only snap Y to ground level on initial placement
-      if (!selected) {
-        position.y = module.dimensions.height / 2;
+      // Snap position to grid
+      if (transformMode === 'translate') {
+        position.x = Math.round(position.x);
+        position.z = Math.round(position.z);
+        
+        // Only snap Y to ground level on initial placement
+        if (!selected) {
+          position.y = module.dimensions.height / 2;
+        }
       }
       
       // Snap rotation to 90-degree increments
       if (transformMode === 'rotate') {
-        rotation.y = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+        const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+        gsap.to(meshRef.current.rotation, {
+          y: targetRotation,
+          duration: 0.2,
+          ease: 'power2.out'
+        });
+        rotation.y = targetRotation;
       }
     }
     
@@ -156,7 +164,7 @@ export function ModuleObject({
     rotation.y = euler.y;
     
     return { position, rotation };
-  }, [module.position, module.rotation]);
+  }, []); // Empty dependency array - will update based on render cycles
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
