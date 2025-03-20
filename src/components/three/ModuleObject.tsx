@@ -83,8 +83,6 @@ export function ModuleObject({
     
     const position = meshRef.current.position.clone();
     const rotation = meshRef.current.rotation.clone();
-    const box = new Box3().setFromObject(meshRef.current);
-    const size = box.getSize(new Vector3());
     
     if (gridSnap && !isShiftPressed) {
       // Snap X and Z to grid
@@ -108,6 +106,38 @@ export function ModuleObject({
       }
     }
     
+    // Check for collisions
+    const box = new Box3().setFromObject(meshRef.current);
+    let hasCollision = false;
+    
+    modules.forEach(otherModule => {
+      if (otherModule.id === module.id) return;
+      
+      const otherBox = new Box3();
+      const otherPos = new Vector3(...otherModule.position);
+      const otherSize = new Vector3(
+        otherModule.dimensions.length,
+        otherModule.dimensions.height,
+        otherModule.dimensions.width
+      );
+      otherBox.setFromCenterAndSize(otherPos, otherSize);
+      
+      if (box.intersectsBox(otherBox)) {
+        hasCollision = true;
+      }
+    });
+    
+    // If collision detected, try to place on top
+    if (hasCollision) {
+      const highestY = modules
+        .filter(m => m.id !== module.id)
+        .reduce((max, m) => {
+          const top = m.position[1] + m.dimensions.height;
+          return Math.max(max, top);
+        }, 0);
+      position.y = highestY + module.dimensions.height / 2;
+    }
+    
     // Apply final position and rotation
     meshRef.current.position.copy(position);
     meshRef.current.rotation.copy(rotation);
@@ -118,7 +148,7 @@ export function ModuleObject({
       rotation: [rotation.x, rotation.y, rotation.z],
       scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
     });
-  }, [readOnly, onUpdate, module.dimensions, gridSnap, isShiftPressed]);
+  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
@@ -137,10 +167,12 @@ export function ModuleObject({
     
     // Get world rotation using quaternion
     meshRef.current.getWorldQuaternion(quaternion);
-    rotation.y = quaternion.toEuler(new Euler()).y;
+    const euler = new Euler();
+    euler.setFromQuaternion(quaternion);
+    rotation.y = euler.y;
     
     return { position, rotation };
-  }, []);
+  }, [meshRef.current?.position, meshRef.current?.rotation]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -221,6 +253,7 @@ export function ModuleObject({
           lockX={false}
           lockY={false}
           lockZ={false}
+          position={[0, module.dimensions.height + 0.5, 0]}
         >
           <Html
             center
