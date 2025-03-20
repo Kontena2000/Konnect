@@ -1,3 +1,4 @@
+
 import { auth } from "@/lib/firebase";
 import { 
   createUserWithEmailAndPassword, 
@@ -14,6 +15,16 @@ export interface AuthUser extends User {
   role?: UserRole;
 }
 
+export class AuthError extends Error {
+  code?: string;
+  
+  constructor(message: string, code?: string) {
+    super(message);
+    this.name = "AuthError";
+    this.code = code;
+  }
+}
+
 const authService = {
   async register(email: string, password: string, role: UserRole = "editor"): Promise<UserCredential> {
     try {
@@ -25,7 +36,10 @@ const authService = {
       return userCredential;
     } catch (error: any) {
       console.error("Registration error:", error);
-      throw new Error(error.message || "Failed to register user");
+      throw new AuthError(
+        error.message || "Failed to register user",
+        error.code
+      );
     }
   },
 
@@ -34,28 +48,33 @@ const authService = {
       return await signInWithEmailAndPassword(auth, email, password);
     } catch (error: any) {
       console.error("Login error:", error);
-      throw new Error(error.message || "Failed to login");
+      throw new AuthError(
+        error.message || "Failed to login",
+        error.code
+      );
     }
   },
 
   async signOut(): Promise<void> {
     try {
-      return await firebaseSignOut(auth);
+      await firebaseSignOut(auth);
     } catch (error: any) {
       console.error("Sign out error:", error);
-      throw new Error(error.message || "Failed to sign out");
+      throw new AuthError(
+        error.message || "Failed to sign out",
+        error.code
+      );
     }
   },
 
   getCurrentUser(): AuthUser | null {
-    const user = auth.currentUser as AuthUser | null;
-    return user;
+    return auth.currentUser as AuthUser | null;
   },
 
   async initializeDefaultUsers(): Promise<void> {
     const defaultUsers = [
-      { email: 'jef@kontena.eu', password: '123456', role: 'admin' as UserRole },
-      { email: 'lars@kontena.eu', password: '123456', role: 'admin' as UserRole }
+      { email: "jef@kontena.eu", password: "123456", role: "admin" as UserRole },
+      { email: "lars@kontena.eu", password: "123456", role: "admin" as UserRole }
     ];
 
     for (const user of defaultUsers) {
@@ -63,8 +82,7 @@ const authService = {
         await this.register(user.email, user.password, user.role);
         console.log(`Created user: ${user.email}`);
       } catch (error: any) {
-        if (error.code === 'auth/email-already-in-use') {
-          // Try to sign in instead to get the user
+        if (error.code === "auth/email-already-in-use") {
           try {
             await this.login(user.email, user.password);
             console.log(`User ${user.email} already exists and credentials are valid`);
