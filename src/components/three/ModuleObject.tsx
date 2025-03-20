@@ -1,5 +1,6 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide } from "three";
+import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4 } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
@@ -68,6 +69,13 @@ export function ModuleObject({
         .reduce((max, m) => Math.max(max, m.position[1] + m.dimensions.height/2), 0);
       meshRef.current.position.y = highestY + size.y/2;
     }
+
+    // Snap to grid if enabled
+    if (gridSnap) {
+      meshRef.current.position.x = Math.round(meshRef.current.position.x);
+      meshRef.current.position.z = Math.round(meshRef.current.position.z);
+      meshRef.current.rotation.y = Math.round(meshRef.current.rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+    }
     
     const position: [number, number, number] = [
       meshRef.current.position.x,
@@ -92,20 +100,26 @@ export function ModuleObject({
       rotation,
       scale
     });
-  }, [readOnly, onUpdate, module.id, modules]);
+  }, [readOnly, onUpdate, module.id, modules, gridSnap]);
 
-  // Calculate controls position to follow object
+  // Calculate controls position to follow camera rotation
   const controlsPosition = useMemo(() => {
     if (!meshRef.current) return new Vector3(0, 0, 0);
+    
     const worldPosition = meshRef.current.getWorldPosition(new Vector3());
     const box = new Box3().setFromObject(meshRef.current);
     const height = box.max.y - box.min.y;
-    return new Vector3(
-      worldPosition.x,
-      worldPosition.y + height + 1,
-      worldPosition.z
-    );
-  }, [meshRef.current?.position.x, meshRef.current?.position.y, meshRef.current?.position.z]); // Update when position changes
+    
+    // Get camera direction vector
+    const cameraDirection = new Vector3();
+    camera.getWorldDirection(cameraDirection);
+    
+    // Calculate offset based on camera angle
+    const offset = new Vector3(0, height + 1, 0);
+    offset.applyAxisAngle(new Vector3(1, 0, 0), -Math.atan2(cameraDirection.y, Math.sqrt(cameraDirection.x * cameraDirection.x + cameraDirection.z * cameraDirection.z)));
+    
+    return worldPosition.add(offset);
+  }, [camera, meshRef.current]);
 
   // Handle right-click deselection
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -143,15 +157,11 @@ export function ModuleObject({
     setShowControls(selected);
   }, [selected]);
 
-  // Update shadow position calculation
-  const shadowPosition = useMemo(() => {
-    if (!meshRef.current) return new Vector3(0, 0.01, 0);
-    return new Vector3(
-      meshRef.current.position.x,
-      0.01,
-      meshRef.current.position.z
-    );
-  }, [meshRef.current?.position.x, meshRef.current?.position.z]); // Update when x/z position changes
+  // Calculate shadow rotation to match object
+  const shadowRotation = useMemo(() => {
+    if (!meshRef.current) return [-Math.PI/2, 0, 0];
+    return [-Math.PI/2, meshRef.current.rotation.y, 0];
+  }, [meshRef.current?.rotation.y]);
 
   return (
     <group>
@@ -182,8 +192,8 @@ export function ModuleObject({
 
       {/* Shadow preview */}
       <mesh 
-        position={shadowPosition}
-        rotation={[-Math.PI/2, meshRef.current?.rotation.y || 0, 0]}
+        position={[meshRef.current?.position.x || 0, 0.01, meshRef.current?.position.z || 0]}
+        rotation={shadowRotation}
       >
         <planeGeometry args={[
           module.dimensions.length,
@@ -204,8 +214,7 @@ export function ModuleObject({
           transform
           style={{
             transition: 'all 0.2s ease',
-            pointerEvents: 'auto',
-            transform: `translateY(${selected ? '2em' : '0'})`
+            pointerEvents: 'auto'
           }}
         >
           <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none">
