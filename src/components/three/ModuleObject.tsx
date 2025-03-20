@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4 } from "three";
+import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html } from "@react-three/drei";
 import { Module } from "@/types/module";
@@ -98,23 +98,21 @@ export function ModuleObject({
     
     const matrix = new Matrix4();
     const position = new Vector3();
-    const rotation = new Euler();
+    const quaternion = new Quaternion();
+    const rotation = new Euler(-Math.PI/2, 0, 0);
     
-    // Get world matrix
+    // Get world matrix and position
     meshRef.current.updateMatrixWorld();
     matrix.copy(meshRef.current.matrixWorld);
-    
-    // Extract position and keep Y near ground
     position.setFromMatrixPosition(matrix);
     position.y = 0.01;
     
-    // Extract rotation but only use Y component
-    meshRef.current.getWorldQuaternion(rotation);
-    rotation.x = -Math.PI/2;
-    rotation.z = 0;
+    // Get world rotation
+    meshRef.current.getWorldQuaternion(quaternion);
+    rotation.y = meshRef.current.rotation.y;
     
     return { position, rotation };
-  }, [module.position, module.rotation]); // Add dependencies to update with object
+  }, [module.position, module.rotation]);
 
   // Calculate floating controls position
   const controlsPosition = useMemo(() => {
@@ -137,7 +135,7 @@ export function ModuleObject({
     );
     
     return worldPos.add(offset);
-  }, [camera, module.position, module.rotation]); // Add dependencies to update with object and camera
+  }, [camera, module.position, module.rotation]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
