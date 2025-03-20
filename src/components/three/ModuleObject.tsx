@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4 } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -42,10 +41,24 @@ export function ModuleObject({
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
-    const box = new Box3().setFromObject(meshRef.current);
-    const size = box.getSize(new Vector3());
+    const position = meshRef.current.position.clone();
+    const rotation = meshRef.current.rotation.clone();
+    
+    if (gridSnap) {
+      // Snap position to grid
+      position.x = Math.round(position.x);
+      position.z = Math.round(position.z);
+      
+      // Snap rotation to 90-degree increments
+      rotation.y = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+      
+      // Apply snapped values
+      meshRef.current.position.copy(position);
+      meshRef.current.rotation.copy(rotation);
+    }
     
     // Check for collisions
+    const box = new Box3().setFromObject(meshRef.current);
     const collisions = modules.filter(m => m.id !== module.id).some(otherModule => {
       const otherBox = new Box3(
         new Vector3(
@@ -62,69 +75,46 @@ export function ModuleObject({
       return box.intersectsBox(otherBox);
     });
 
-    // Move object on top if collision detected
+    // Move object up if collision detected
     if (collisions) {
       const highestY = modules
         .filter(m => m.id !== module.id)
         .reduce((max, m) => Math.max(max, m.position[1] + m.dimensions.height/2), 0);
-      meshRef.current.position.y = highestY + size.y/2;
-    }
-
-    // Apply grid snapping
-    if (gridSnap) {
-      meshRef.current.position.x = Math.round(meshRef.current.position.x);
-      meshRef.current.position.z = Math.round(meshRef.current.position.z);
-      
-      // Snap rotation to 90-degree increments
-      const rotationY = meshRef.current.rotation.y;
-      meshRef.current.rotation.y = Math.round(rotationY / (Math.PI / 2)) * (Math.PI / 2);
+      position.y = highestY + module.dimensions.height/2;
+      meshRef.current.position.copy(position);
     }
     
-    // Update position, rotation, and scale
-    const position: [number, number, number] = [
-      meshRef.current.position.x,
-      meshRef.current.position.y,
-      meshRef.current.position.z
-    ];
-    
-    const rotation: [number, number, number] = [
-      meshRef.current.rotation.x,
-      meshRef.current.rotation.y,
-      meshRef.current.rotation.z
-    ];
-    
-    const scale: [number, number, number] = [
-      meshRef.current.scale.x,
-      meshRef.current.scale.y,
-      meshRef.current.scale.z
-    ];
-    
-    onUpdate?.({ position, rotation, scale });
-  }, [readOnly, onUpdate, module.id, modules, gridSnap]);
+    // Update module state
+    onUpdate?.({
+      position: [position.x, position.y, position.z],
+      rotation: [rotation.x, rotation.y, rotation.z],
+      scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+    });
+  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
+    if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
+    
     const matrix = new Matrix4();
     const position = new Vector3();
     const rotation = new Euler();
     
-    if (meshRef.current) {
-      // Get world matrix
-      meshRef.current.updateMatrixWorld();
-      matrix.copy(meshRef.current.matrixWorld);
-      
-      // Extract position
-      position.setFromMatrixPosition(matrix);
-      position.y = 0.01; // Keep shadow just above ground
-      
-      // Extract rotation, but only use Y component
-      rotation.setFromRotationMatrix(matrix);
-      rotation.x = -Math.PI/2; // Keep shadow flat
-      rotation.z = 0; // No Z rotation for shadow
-    }
+    // Get world matrix
+    meshRef.current.updateMatrixWorld();
+    matrix.copy(meshRef.current.matrixWorld);
+    
+    // Extract position and keep Y near ground
+    position.setFromMatrixPosition(matrix);
+    position.y = 0.01;
+    
+    // Extract rotation but only use Y component
+    meshRef.current.getWorldQuaternion(rotation);
+    rotation.x = -Math.PI/2;
+    rotation.z = 0;
     
     return { position, rotation };
-  }, []);
+  }, [module.position, module.rotation]); // Add dependencies to update with object
 
   // Calculate floating controls position
   const controlsPosition = useMemo(() => {
@@ -134,17 +124,20 @@ export function ModuleObject({
     const box = new Box3().setFromObject(meshRef.current);
     const height = box.max.y - box.min.y;
     
-    // Get camera direction
+    // Calculate offset based on camera angle
     const cameraDir = new Vector3();
     camera.getWorldDirection(cameraDir);
+    const cameraAngle = Math.atan2(cameraDir.x, cameraDir.z);
     
-    // Calculate offset based on camera angle
-    const offset = new Vector3(0, height + 1, 0);
-    const cameraRotation = new Euler().setFromQuaternion(camera.quaternion);
-    offset.applyEuler(new Euler(0, cameraRotation.y, 0));
+    // Position controls above object and rotate with camera
+    const offset = new Vector3(
+      Math.sin(cameraAngle) * 2,
+      height + 1,
+      Math.cos(cameraAngle) * 2
+    );
     
     return worldPos.add(offset);
-  }, [camera]);
+  }, [camera, module.position, module.rotation]); // Add dependencies to update with object and camera
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
