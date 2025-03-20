@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4 } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -102,6 +101,26 @@ export function ModuleObject({
     });
   }, [readOnly, onUpdate, module.id, modules, gridSnap]);
 
+  // Update shadow transform calculation to match object rotation
+  const shadowTransform = useMemo(() => {
+    if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
+    
+    const position = new Vector3(
+      meshRef.current.position.x,
+      0.01,
+      meshRef.current.position.z
+    );
+    
+    // Match object rotation for shadow
+    const rotation = new Euler(
+      -Math.PI/2, // Keep shadow flat on ground
+      meshRef.current.rotation.y, // Match object Y rotation
+      0
+    );
+    
+    return { position, rotation };
+  }, [meshRef.current?.position.x, meshRef.current?.position.z, meshRef.current?.rotation.y]);
+
   // Calculate controls position to follow camera rotation
   const controlsPosition = useMemo(() => {
     if (!meshRef.current) return new Vector3(0, 0, 0);
@@ -116,33 +135,13 @@ export function ModuleObject({
     
     // Calculate offset based on camera angle
     const offset = new Vector3(0, height + 1, 0);
-    offset.applyAxisAngle(new Vector3(1, 0, 0), -Math.atan2(cameraDirection.y, Math.sqrt(cameraDirection.x * cameraDirection.x + cameraDirection.z * cameraDirection.z)));
     
-    // Apply camera rotation to controls
+    // Apply camera rotation to offset
     const cameraRotation = new Euler().setFromQuaternion(camera.quaternion);
     offset.applyEuler(new Euler(0, cameraRotation.y, 0));
     
     return worldPosition.add(offset);
-  }, [camera]);
-
-  // Calculate shadow position and rotation
-  const shadowTransform = useMemo(() => {
-    if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
-    
-    const position = new Vector3(
-      meshRef.current.position.x,
-      0.01,
-      meshRef.current.position.z
-    );
-    
-    const rotation = new Euler(
-      -Math.PI/2,
-      meshRef.current.rotation.y,
-      0
-    );
-    
-    return { position, rotation };
-  }, []);
+  }, [camera, meshRef.current]);
 
   // Handle right-click deselection
   const handleContextMenu = useCallback((event: ThreeEvent<MouseEvent>) => {

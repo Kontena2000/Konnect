@@ -43,6 +43,23 @@ export function CameraControls({
     // Force controls update
     controls.update();
 
+    // Add methods for camera position control
+    controls.reset = () => {
+      camera.position.set(10, 10, 10);
+      camera.lookAt(0, 0, 0);
+      controls.update();
+    };
+
+    controls.setAzimuthalAngle = (angle: number) => {
+      controls.setAzimuthalAngle(angle);
+      controls.update();
+    };
+
+    controls.setPolarAngle = (angle: number) => {
+      controls.setPolarAngle(angle);
+      controls.update();
+    };
+
     return () => {
       if (controls) {
         controls.enabled = true;
@@ -53,7 +70,7 @@ export function CameraControls({
         controls.update();
       }
     };
-  }, [enabled, enableZoom, enablePan, ref]);
+  }, [enabled, enableZoom, enablePan, ref, camera]);
 
   return (
     <OrbitControls
