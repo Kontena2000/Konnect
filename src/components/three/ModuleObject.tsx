@@ -77,7 +77,7 @@ export function ModuleObject({
     }
   }, [animating, module.position]);
 
-  // Update transform change handler with better collision handling
+  // Update transform change handler to be less restrictive
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -85,31 +85,34 @@ export function ModuleObject({
     const rotation = meshRef.current.rotation.clone();
     
     if (gridSnap && !isShiftPressed) {
-      // Snap X and Z to grid
-      position.x = Math.round(position.x);
-      position.z = Math.round(position.z);
-      
-      // Only snap Y to ground level if not holding Shift
-      if (!isShiftPressed) {
-        position.y = module.dimensions.height / 2;
+      // Only snap when not actively transforming
+      if (!transformMode || transformMode === 'rotate') {
+        position.x = Math.round(position.x);
+        position.z = Math.round(position.z);
+        
+        // Only snap Y to ground level on initial placement
+        if (!selected) {
+          position.y = module.dimensions.height / 2;
+        }
       }
       
       // Snap rotation to 90-degree increments with animation
-      const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
-      if (rotation.y !== targetRotation) {
-        gsap.to(meshRef.current.rotation, {
-          y: targetRotation,
-          duration: 0.2,
-          ease: 'power2.out'
-        });
-        rotation.y = targetRotation;
+      if (transformMode === 'rotate') {
+        const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
+        if (rotation.y !== targetRotation) {
+          gsap.to(meshRef.current.rotation, {
+            y: targetRotation,
+            duration: 0.2,
+            ease: 'power2.out'
+          });
+          rotation.y = targetRotation;
+        }
       }
     }
     
-    // Check for collisions and try to place side by side first
+    // Check for collisions but don't force side-by-side placement
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
-    let bestPosition = position.clone();
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -125,52 +128,22 @@ export function ModuleObject({
       
       if (box.intersectsBox(otherBox)) {
         hasCollision = true;
-        
-        // Try to find best position around the colliding object
-        const directions = [
-          new Vector3(1, 0, 0),
-          new Vector3(-1, 0, 0),
-          new Vector3(0, 0, 1),
-          new Vector3(0, 0, -1)
-        ];
-        
-        // Try side positions first
-        for (const dir of directions) {
-          const testPos = position.clone().add(dir.multiplyScalar(module.dimensions.length));
-          const testBox = box.clone().translate(dir.multiplyScalar(module.dimensions.length));
-          
-          if (!modules.some(m => {
-            if (m.id === module.id) return false;
-            const mBox = new Box3();
-            const mPos = new Vector3(...m.position);
-            const mSize = new Vector3(m.dimensions.length, m.dimensions.height, m.dimensions.width);
-            mBox.setFromCenterAndSize(mPos, mSize);
-            return testBox.intersectsBox(mBox);
-          })) {
-            bestPosition = testPos;
-            hasCollision = false;
-            break;
-          }
-        }
-        
-        // Only stack vertically if no side position works
-        if (hasCollision) {
-          bestPosition.y = otherBox.max.y + module.dimensions.height / 2;
-        }
       }
     });
     
-    // Apply final position and rotation
-    meshRef.current.position.copy(hasCollision ? bestPosition : position);
-    meshRef.current.rotation.copy(rotation);
-    
-    // Update module state
-    onUpdate?.({
-      position: [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
-      rotation: [rotation.x, rotation.y, rotation.z],
-      scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
-    });
-  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed]);
+    // Only prevent movement if there's a collision
+    if (!hasCollision) {
+      meshRef.current.position.copy(position);
+      meshRef.current.rotation.copy(rotation);
+      
+      // Update module state
+      onUpdate?.({
+        position: [position.x, position.y, position.z],
+        rotation: [rotation.x, rotation.y, rotation.z],
+        scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+      });
+    }
+  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed, selected, transformMode]);
 
   // Calculate shadow position and rotation
   const shadowTransform = useMemo(() => {
@@ -332,9 +305,17 @@ export function ModuleObject({
         <TransformControls
           object={meshRef.current}
           mode={transformMode}
-          onMouseDown={onTransformStart}
+          onMouseDown={() => {
+            onTransformStart?.();
+            if (controlsRef?.current) {
+              controlsRef.current.enabled = false;
+            }
+          }}
           onMouseUp={() => {
             onTransformEnd?.();
+            if (controlsRef?.current) {
+              controlsRef.current.enabled = true;
+            }
             handleTransformChange();
           }}
           onChange={handleTransformChange}
@@ -346,7 +327,7 @@ export function ModuleObject({
           translationSnap={gridSnap && !isShiftPressed ? 1 : null}
           rotationSnap={gridSnap ? Math.PI / 4 : null}
           scaleSnap={gridSnap ? 0.25 : null}
-          space="world"
+          space='world'
         >
           <mesh>
             <boxGeometry args={[
@@ -355,7 +336,7 @@ export function ModuleObject({
               module.dimensions.width + 0.1
             ]} />
             <meshBasicMaterial
-              color="#ffcc00"
+              color='#ffcc00'
               opacity={0.2}
               transparent
               wireframe
