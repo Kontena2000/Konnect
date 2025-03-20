@@ -145,25 +145,21 @@ export function ModuleObject({
     }
   }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming]);
 
-  // Calculate shadow transform
+  // Update shadow transform calculation
   const shadowTransform = useMemo(() => {
     if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
     
-    const matrix = new Matrix4();
-    const position = new Vector3();
-    const rotation = new Euler(-Math.PI/2, 0, 0);
+    const worldPosition = new Vector3();
+    const worldRotation = new Euler(-Math.PI/2, 0, 0);
     
-    meshRef.current.updateWorldMatrix(true, false);
-    matrix.copy(meshRef.current.matrixWorld);
+    // Get world position
+    meshRef.current.getWorldPosition(worldPosition);
+    worldPosition.y = 0.01; // Keep shadow just above ground
     
-    // Get world position for shadow
-    position.setFromMatrixPosition(matrix);
-    position.y = 0.01; // Keep shadow just above ground
+    // Match object's Y rotation
+    worldRotation.y = meshRef.current.rotation.y;
     
-    // Get world rotation for shadow
-    rotation.y = meshRef.current.rotation.y; // Only use Y rotation for shadow
-    
-    return { position, rotation };
+    return { position: worldPosition, rotation: worldRotation };
   }, []); // Empty dependency array - will update based on render cycles
 
   // Event handlers
@@ -231,7 +227,7 @@ export function ModuleObject({
           module.dimensions.width
         ]} />
         <meshBasicMaterial 
-          color="#000000"
+          color='#000000'
           transparent
           opacity={0.2}
           side={DoubleSide}
@@ -247,7 +243,7 @@ export function ModuleObject({
           lockZ={false}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
-            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 2.5, // Increased offset to 2.5
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 3, // Increased offset to 3 units
             meshRef.current ? meshRef.current.position.z : module.position[2]
           ]}
         >
