@@ -1,4 +1,3 @@
-
 import { db, auth } from "@/lib/firebase";
 import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -11,6 +10,7 @@ export interface OperationLog {
   details?: Record<string, unknown>;
   error?: string;
   userId?: string;
+  email?: string;
 }
 
 export interface FirebaseStatus {

@@ -1,4 +1,3 @@
-
 import { db, auth } from "@/lib/firebase";
 import { 
   collection, 
@@ -148,6 +147,14 @@ const moduleService = {
         return [];
       }
 
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'list',
+        status: 'pending',
+        timestamp: Date.now(),
+        details: { userId: user.uid }
+      });
+
       console.log('Fetching all modules...');
       const modulesRef = collection(db, 'modules');
       const snapshot = await getDocs(modulesRef);
@@ -164,7 +171,15 @@ const moduleService = {
           rotation: doc.data().rotation || [0, 0, 0],
           scale: doc.data().scale || [1, 1, 1]
         })) as Module[];
-        console.log('Modules after initialization:', modules);
+        
+        firebaseMonitor.logOperation({
+          type: 'module',
+          action: 'list',
+          status: 'success',
+          timestamp: Date.now(),
+          details: { userId: user.uid, count: modules.length }
+        });
+        
         return modules;
       }
 
@@ -180,10 +195,24 @@ const moduleService = {
         };
       }) as Module[];
       
-      console.log('Fetched modules:', modules);
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'list',
+        status: 'success',
+        timestamp: Date.now(),
+        details: { userId: user.uid, count: modules.length }
+      });
+      
       return modules;
     } catch (error) {
       console.error('Error fetching modules:', error);
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'list',
+        status: 'error',
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
       return [];
     }
   },
@@ -269,6 +298,14 @@ const moduleService = {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
       }
 
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'create',
+        status: 'pending',
+        timestamp: Date.now(),
+        details: { moduleId: data.id, name: data.name }
+      });
+
       // Special case for Ruud - always has full access
       const isRuud = user.email === 'ruud@kontena.eu';
       if (!isRuud && !(await this.checkUserPermissions())) {
@@ -294,10 +331,27 @@ const moduleService = {
       };
       
       await setDoc(moduleRef, moduleData);
+      
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'create',
+        status: 'success',
+        timestamp: Date.now(),
+        details: { moduleId: data.id, name: data.name }
+      });
+      
       console.log('Module created successfully:', data.id);
       return data.id;
     } catch (error) {
       console.error('Error creating module:', error);
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'create',
+        status: 'error',
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: { moduleId: data.id }
+      });
       if (error instanceof ModuleError) throw error;
       throw new ModuleError('Failed to create module', 'CREATE_FAILED', error);
     }
