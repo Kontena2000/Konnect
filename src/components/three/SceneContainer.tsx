@@ -42,7 +42,7 @@ export interface SceneContainerProps {
 export function SceneContainer({
   modules,
   selectedModuleId,
-  transformMode = 'translate',
+  transformMode = "translate",
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -60,12 +60,7 @@ export function SceneContainer({
   onTransformStart,
   onTransformEnd
 }: SceneContainerProps) {
-  const { setNodeRef } = useDroppable({ 
-    id: 'scene',
-    data: {
-      accepts: ['module']
-    }
-  });
+  const { setNodeRef } = useDroppable({ id: "scene" });
   const [previewMesh, setPreviewMesh] = useState<THREE.Mesh | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
@@ -138,17 +133,12 @@ export function SceneContainer({
   const handleDragOver = useCallback((event: React.DragEvent) => {
     if (readOnly) return;
     event.preventDefault();
-    event.dataTransfer.dropEffect = 'copy';
     setIsDraggingOver(true);
     
-    try {
-      const rect = event.currentTarget.getBoundingClientRect();
-      const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
-      const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
-      setMousePosition(new Vector2(x, y));
-    } catch (error) {
-      console.error('Error in handleDragOver:', error);
-    }
+    const rect = event.currentTarget.getBoundingClientRect();
+    const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+    const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+    setMousePosition(new Vector2(x, y));
   }, [readOnly]);
 
   const handleDragLeave = useCallback(() => {
@@ -161,32 +151,50 @@ export function SceneContainer({
     if (readOnly || !onDropPoint || !draggedModuleRef.current) return;
     event.preventDefault();
     
-    try {
-      const moduleData = event.dataTransfer.getData('application/json');
-      if (moduleData) {
-        const draggedModule = JSON.parse(moduleData); // Changed variable name from module to draggedModule
-        draggedModuleRef.current = draggedModule;
+    // Calculate proper height based on module dimensions
+    const moduleHeight = draggedModuleRef.current.dimensions.height;
+    const properY = moduleHeight / 2; // Place bottom at ground level
+    
+    // Snap to grid with proper height
+    const snappedPosition: [number, number, number] = [
+      Math.round(previewPosition[0]),
+      properY,
+      Math.round(previewPosition[2])
+    ];
+    
+    // Check for collisions before placement
+    const previewBox = new Box3();
+    const previewSize = new Vector3(
+      draggedModuleRef.current.dimensions.length,
+      draggedModuleRef.current.dimensions.height,
+      draggedModuleRef.current.dimensions.width
+    );
+    const previewPos = new Vector3(...snappedPosition);
+    previewBox.setFromCenterAndSize(previewPos, previewSize);
+    
+    let hasCollision = false;
+    modules.forEach(existingModule => {
+      const existingBox = new Box3();
+      const existingPos = new Vector3(...existingModule.position);
+      const existingSize = new Vector3(
+        existingModule.dimensions.length,
+        existingModule.dimensions.height,
+        existingModule.dimensions.width
+      );
+      existingBox.setFromCenterAndSize(existingPos, existingSize);
+      
+      if (previewBox.intersectsBox(existingBox)) {
+        hasCollision = true;
       }
-      
-      if (!draggedModuleRef.current) return;
-
-      const moduleHeight = draggedModuleRef.current.dimensions.height;
-      const properY = moduleHeight / 2;
-      
-      const snappedPosition: [number, number, number] = [
-        Math.round(previewPosition[0]),
-        properY,
-        Math.round(previewPosition[2])
-      ];
-      
+    });
+    
+    if (!hasCollision) {
       onDropPoint(snappedPosition);
-    } catch (error) {
-      console.error('Error in handleDrop:', error);
     }
     
     setIsDraggingOver(false);
     setMousePosition(null);
-  }, [readOnly, onDropPoint, previewPosition]);
+  }, [readOnly, onDropPoint, previewPosition, modules, draggedModuleRef]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
