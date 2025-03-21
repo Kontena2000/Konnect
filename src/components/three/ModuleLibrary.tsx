@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -83,27 +82,32 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
   }, {} as Record<string, Module[]>);
 
   const handleDragStart = (module: Module, event: React.DragEvent) => {
-    event.dataTransfer.effectAllowed = "copy";
-    event.dataTransfer.setData("application/json", JSON.stringify(module));
-    
-    // Create a drag image
-    const dragPreview = document.createElement("div");
-    dragPreview.className = "bg-background border rounded-lg p-2 shadow-lg";
-    dragPreview.innerHTML = `
-      <div class="flex items-center gap-2">
-        <div class="w-8 h-8 rounded" style="background-color: ${module.color}"></div>
-        <div class="text-sm font-medium">${module.name}</div>
-      </div>
-    `;
-    document.body.appendChild(dragPreview);
-    event.dataTransfer.setDragImage(dragPreview, 0, 0);
-    
-    // Clean up the preview element
-    requestAnimationFrame(() => {
-      document.body.removeChild(dragPreview);
-    });
+    try {
+      event.dataTransfer.effectAllowed = 'copy';
+      const moduleData = JSON.stringify(module);
+      event.dataTransfer.setData('application/json', moduleData);
+      
+      // Create a drag image
+      const dragPreview = document.createElement('div');
+      dragPreview.className = 'bg-background border rounded-lg p-2 shadow-lg';
+      dragPreview.innerHTML = `
+        <div class='flex items-center gap-2'>
+          <div class='w-8 h-8 rounded' style='background-color: ${module.color}'></div>
+          <div class='text-sm font-medium'>${module.name}</div>
+        </div>
+      `;
+      document.body.appendChild(dragPreview);
+      event.dataTransfer.setDragImage(dragPreview, 0, 0);
+      
+      // Clean up the preview element
+      requestAnimationFrame(() => {
+        document.body.removeChild(dragPreview);
+      });
 
-    onDragStart(module);
+      onDragStart(module);
+    } catch (error) {
+      console.error('Error in handleDragStart:', error);
+    }
   };
 
   const handleDuplicate = async (module: Module, e: React.MouseEvent) => {

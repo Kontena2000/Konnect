@@ -186,7 +186,7 @@ export default function LayoutEditorPage() {
     }
   };
 
-  const handleModuleDragStart = (templateItem: Module) => {
+  const handleModuleDragStart = useCallback((templateItem: Module) => {
     try {
       console.log('Module drag started:', templateItem);
       setDraggingTemplate(templateItem);
@@ -195,7 +195,7 @@ export default function LayoutEditorPage() {
     } catch (error) {
       console.error('Error in handleModuleDragStart:', error);
     }
-  };
+  }, []);
 
   const handleDragEnd = (event: DragEndEvent) => {
     try {

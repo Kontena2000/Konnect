@@ -164,8 +164,8 @@ export function SceneContainer({
     try {
       const moduleData = event.dataTransfer.getData('application/json');
       if (moduleData) {
-        const module = JSON.parse(moduleData);
-        draggedModuleRef.current = module;
+        const draggedModule = JSON.parse(moduleData); // Changed variable name from module to draggedModule
+        draggedModuleRef.current = draggedModule;
       }
       
       if (!draggedModuleRef.current) return;
