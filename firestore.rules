@@ -1,3 +1,4 @@
+
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -8,19 +9,14 @@ service cloud.firestore {
     function isAdmin() {
       return isAuthenticated() && 
         (request.auth.token.role == 'admin' || 
-         request.auth.email == 'ruud@kontena.eu');  // Added Ruud explicitly
+         request.auth.email == 'ruud@kontena.eu');
     }
     
     function canEdit() {
       return isAuthenticated() && 
         (request.auth.token.role == 'editor' || 
          request.auth.token.role == 'admin' ||
-         request.auth.email == 'ruud@kontena.eu');  // Added Ruud explicitly
-    }
-
-    function hasValidTimestamps() {
-      return request.resource.data.createdAt is timestamp &&
-             request.resource.data.updatedAt is timestamp;
+         request.auth.email == 'ruud@kontena.eu');
     }
 
     match /users/{userId} {
@@ -41,18 +37,14 @@ service cloud.firestore {
 
     match /projects/{projectId} {
       allow read: if isAuthenticated();
-      allow create: if canEdit();
-      allow update, delete: if canEdit() && 
+      allow create: if isAuthenticated();
+      allow update, delete: if isAuthenticated() && 
         (resource.data.ownerId == request.auth.uid || isAdmin());
-
-      function isValidProject() {
-        let data = request.resource.data;
-        return data.name is string && data.name.size() > 0 &&
-               data.ownerId is string &&
-               data.description is string &&
-               (!('clientInfo' in data) || (data.clientInfo is map)) &&
-               hasValidTimestamps() &&
-               (!('layouts' in data) || data.layouts is list);
+      
+      match /layouts/{layoutId} {
+        allow read: if isAuthenticated();
+        allow write: if isAuthenticated() && 
+          (get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid || isAdmin());
       }
     }
   }
