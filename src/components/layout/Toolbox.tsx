@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { toast } from '@/hooks/use-toast';
 
 interface ToolboxProps {
   onModuleDragStart: (module: Module) => void;
@@ -50,6 +51,15 @@ export function Toolbox({
     }
   ];
 
+  const handleSave = () => {
+    onSave?.();
+    toast({
+      title: 'Layout Saved',
+      description: 'Your layout changes have been saved successfully.',
+      duration: 2000
+    });
+  };
+
   return (
     <div 
       className={cn(
@@ -57,6 +67,7 @@ export function Toolbox({
         collapsed ? 'w-16' : 'w-80'
       )}
     >
+      {/* Header */}
       <div className='flex h-16 items-center justify-between px-4 border-b'>
         {collapsed ? (
           <Button
@@ -88,21 +99,29 @@ export function Toolbox({
           {collapsed ? (
             <div className='p-2 space-y-2'>
               {sections.map((section) => (
-                <Button
-                  key={section.id}
-                  variant='ghost'
-                  size='icon'
-                  className={cn(
-                    'w-full',
-                    expandedSection === section.id && 'bg-accent'
-                  )}
-                  onClick={() => {
-                    setCollapsed(false);
-                    setExpandedSection(section.id);
-                  }}
-                >
-                  {section.icon}
-                </Button>
+                <TooltipProvider key={section.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className={cn(
+                          'w-full',
+                          expandedSection === section.id && 'bg-accent'
+                        )}
+                        onClick={() => {
+                          setCollapsed(false);
+                          setExpandedSection(section.id);
+                        }}
+                      >
+                        {section.icon}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side='left'>
+                      <p>{section.title}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
               ))}
             </div>
           ) : (
@@ -137,17 +156,19 @@ export function Toolbox({
                 <Button 
                   variant='default' 
                   size={collapsed ? 'icon' : 'default'}
-                  onClick={onSave}
+                  onClick={handleSave}
                   className='w-full bg-primary hover:bg-primary/90'
                 >
                   <Save className='h-4 w-4' />
                   {!collapsed && <span className='ml-2'>Save Layout</span>}
                 </Button>
               </TooltipTrigger>
-              <TooltipContent>
+              <TooltipContent side='left'>
                 <p>Save current layout</p>
               </TooltipContent>
             </Tooltip>
+
+            <Separator />
 
             <div className={cn(
               'grid gap-2',
@@ -166,7 +187,7 @@ export function Toolbox({
                     {!collapsed && <span className='ml-2'>Undo</span>}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side='left'>
                   <p>Undo last action</p>
                 </TooltipContent>
               </Tooltip>
@@ -183,7 +204,7 @@ export function Toolbox({
                     {!collapsed && <span className='ml-2'>Redo</span>}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side='left'>
                   <p>Redo last action</p>
                 </TooltipContent>
               </Tooltip>
@@ -201,7 +222,7 @@ export function Toolbox({
                     {!collapsed && <span className='ml-2'>Zoom In</span>}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side='left'>
                   <p>Zoom in</p>
                 </TooltipContent>
               </Tooltip>
@@ -218,7 +239,7 @@ export function Toolbox({
                     {!collapsed && <span className='ml-2'>Zoom Out</span>}
                   </Button>
                 </TooltipTrigger>
-                <TooltipContent>
+                <TooltipContent side='left'>
                   <p>Zoom out</p>
                 </TooltipContent>
               </Tooltip>
