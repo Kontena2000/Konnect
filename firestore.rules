@@ -25,19 +25,20 @@ service cloud.firestore {
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin() || isRuud();
+      allow write: if isRuud() || isAdmin();
     }
 
     // Modules collection
     match /modules/{moduleId} {
       allow read: if isAuthenticated();
-      allow write: if isRuud() || canEdit();
+      allow write: if isRuud() || isAdmin();
+      allow update: if isRuud() || canEdit();
     }
 
     // Categories collection
     match /categories/{categoryId} {
       allow read: if isAuthenticated();
-      allow write: if isRuud() || canEdit();
+      allow write: if isRuud() || isAdmin();
     }
 
     // Projects collection
