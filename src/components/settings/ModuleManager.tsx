@@ -331,18 +331,27 @@ export function ModuleManager() {
       <ScrollArea className='h-[700px]'>
         <div className='space-y-4'>
           {filteredModules.map(module => (
-            <Card key={module.id} className='relative overflow-hidden group'>
+            <Card key={module.id} className='relative overflow-hidden group transition-all duration-200 hover:shadow-lg'>
               <CardHeader>
                 <div className='flex items-center justify-between'>
                   <CardTitle className='flex items-center gap-2'>
                     <div 
-                      className='w-6 h-6 rounded'
+                      className='w-8 h-8 rounded flex items-center justify-center shadow-sm transition-transform group-hover:scale-105'
                       style={{ backgroundColor: module.color }}
-                    />
-                    <span>{module.name}</span>
-                    <Badge variant='secondary' className='text-xs'>
-                      {module.category}
-                    </Badge>
+                    >
+                      <Box className='h-4 w-4 text-background' />
+                    </div>
+                    <div className='space-y-1'>
+                      <div className='flex items-center gap-2'>
+                        <span>{module.name}</span>
+                        <Badge variant='secondary' className='text-xs'>
+                          {module.category}
+                        </Badge>
+                      </div>
+                      <p className='text-sm text-muted-foreground font-normal'>
+                        {module.description}
+                      </p>
+                    </div>
                   </CardTitle>
                   <div className='flex items-center gap-2'>
                     <TooltipProvider>
