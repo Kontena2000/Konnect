@@ -73,7 +73,7 @@ export default function NewProjectPage() {
       
       const projectData = {
         ...data,
-        ownerId: user.uid,
+        userId: user.uid, // Changed from ownerId to userId
         status: data.status || 'planning'
       };
 

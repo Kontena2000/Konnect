@@ -44,7 +44,7 @@ export interface Project {
   id: string;
   name: string;
   description?: string;
-  ownerId: string;
+  userId: string; // Changed from ownerId to userId to match rules
   clientInfo: {
     name?: string;
     email?: string;
@@ -63,7 +63,7 @@ export interface Project {
 export interface CreateProjectData {
   name: string;
   description?: string;
-  ownerId: string;
+  userId: string; // Changed from ownerId to userId to match rules
   companyName?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -118,8 +118,8 @@ const projectService = {
       const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
-        ownerId: data.ownerId,
-        clientInfo: {
+        userId: data.userId, // Changed from ownerId to userId to match rules
+        clientInfo: {  // Restructured client info to match rules
           name: data.companyName?.trim() || '',
           email: data.clientEmail?.trim() || '',
           phone: data.clientPhone?.trim() || '',
@@ -216,7 +216,7 @@ const projectService = {
       });
 
       const [ownedSnapshot, sharedSnapshot] = await Promise.all([
-        getDocs(query(collection(db, 'projects'), where('ownerId', '==', userId))),
+        getDocs(query(collection(db, 'projects'), where('userId', '==', userId))), // Changed from ownerId to userId
         getDocs(query(collection(db, 'projects'), where('sharedWith', 'array-contains', userId)))
       ]);
       
@@ -291,7 +291,7 @@ const projectService = {
       }
 
       const project = projectSnap.data();
-      if (project.ownerId !== userId && !project.sharedWith?.includes(userId)) {
+      if (project.userId !== userId && !project.sharedWith?.includes(userId)) { // Changed from ownerId to userId
         firebaseMonitor.logOperation({
           type: 'project',
           action: 'update',
@@ -356,7 +356,7 @@ const projectService = {
       }
 
       const project = projectSnap.data();
-      if (project.ownerId !== userId) {
+      if (project.userId !== userId) { // Changed from ownerId to userId
         firebaseMonitor.logOperation({
           type: 'project',
           action: 'delete',
