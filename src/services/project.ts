@@ -51,7 +51,7 @@ export interface Project {
   updatedAt: Timestamp;
 }
 
-export interface CreateProjectData {
+export interface CreateProjectData extends Record<string, unknown> {
   name: string;
   description?: string;
   userId: string;
