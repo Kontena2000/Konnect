@@ -74,7 +74,8 @@ const authService = {
   async initializeDefaultUsers(): Promise<void> {
     const defaultUsers = [
       { email: "jef@kontena.eu", password: "123456", role: "admin" as UserRole },
-      { email: "lars@kontena.eu", password: "123456", role: "admin" as UserRole }
+      { email: "lars@kontena.eu", password: "123456", role: "admin" as UserRole },
+      { email: "ruud@kontena.eu", password: "123456", role: "admin" as UserRole }
     ];
 
     for (const user of defaultUsers) {
@@ -84,10 +85,14 @@ const authService = {
       } catch (error: any) {
         if (error.code === "auth/email-already-in-use") {
           try {
-            await this.login(user.email, user.password);
-            console.log(`User ${user.email} already exists and credentials are valid`);
-          } catch (signInError) {
-            console.error(`Failed to verify existing user ${user.email}:`, signInError);
+            // Update existing user's role to admin
+            const existingUser = await userService.getUserByEmail(user.email);
+            if (existingUser) {
+              await userService.updateUserRole(existingUser.id, "admin");
+              console.log(`Updated ${user.email} role to admin`);
+            }
+          } catch (updateError) {
+            console.error(`Failed to update role for ${user.email}:`, updateError);
           }
         } else {
           console.error(`Failed to create user ${user.email}:`, error);
