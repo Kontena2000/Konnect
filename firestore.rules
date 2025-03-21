@@ -41,14 +41,14 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && 
-        (resource.data.ownerId == request.auth.uid || 
+        (resource.data.userId == request.auth.uid || 
          isAdmin() || 
          isRuud());
       
       match /layouts/{layoutId} {
         allow read: if isAuthenticated();
         allow write: if isAuthenticated() && 
-          (get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid || 
+          (get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid || 
            isAdmin() || 
            isRuud());
       }

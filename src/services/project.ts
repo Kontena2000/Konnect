@@ -29,22 +29,11 @@ export class ProjectError extends Error {
   }
 }
 
-export interface ProjectValidation {
-  name: string;
-  description?: string;
-  companyName?: string;
-  clientEmail?: string;
-  clientPhone?: string;
-  clientAddress?: string;
-  plotWidth?: number;
-  plotLength?: number;
-}
-
 export interface Project {
   id: string;
   name: string;
   description?: string;
-  userId: string; // Changed from ownerId to userId to match rules
+  userId: string;
   clientInfo: {
     name?: string;
     email?: string;
@@ -63,7 +52,7 @@ export interface Project {
 export interface CreateProjectData {
   name: string;
   description?: string;
-  userId: string; // Changed from ownerId to userId to match rules
+  userId: string;
   companyName?: string;
   clientEmail?: string;
   clientPhone?: string;
@@ -118,8 +107,8 @@ const projectService = {
       const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
-        userId: data.userId, // Changed from ownerId to userId to match rules
-        clientInfo: {  // Restructured client info to match rules
+        userId: data.userId,
+        clientInfo: {
           name: data.companyName?.trim() || '',
           email: data.clientEmail?.trim() || '',
           phone: data.clientPhone?.trim() || '',
@@ -216,7 +205,7 @@ const projectService = {
       });
 
       const [ownedSnapshot, sharedSnapshot] = await Promise.all([
-        getDocs(query(collection(db, 'projects'), where('userId', '==', userId))), // Changed from ownerId to userId
+        getDocs(query(collection(db, 'projects'), where('userId', '==', userId))),
         getDocs(query(collection(db, 'projects'), where('sharedWith', 'array-contains', userId)))
       ]);
       
@@ -291,7 +280,7 @@ const projectService = {
       }
 
       const project = projectSnap.data();
-      if (project.userId !== userId && !project.sharedWith?.includes(userId)) { // Changed from ownerId to userId
+      if (project.userId !== userId && !project.sharedWith?.includes(userId)) {
         firebaseMonitor.logOperation({
           type: 'project',
           action: 'update',
@@ -356,7 +345,7 @@ const projectService = {
       }
 
       const project = projectSnap.data();
-      if (project.userId !== userId) { // Changed from ownerId to userId
+      if (project.userId !== userId) {
         firebaseMonitor.logOperation({
           type: 'project',
           action: 'delete',
