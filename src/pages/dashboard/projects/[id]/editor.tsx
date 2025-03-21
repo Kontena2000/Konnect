@@ -30,6 +30,7 @@ import { cn } from '@/lib/utils';
 import { Mesh } from 'three';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Toolbox } from '@/components/layout/Toolbox';
+import { useAuth } from '@/contexts/AuthContext';
 
 const createPreviewMesh = (item: Module) => {
   const geometry = new THREE.BoxGeometry(
@@ -54,9 +55,11 @@ export default function LayoutEditorPage() {
   const router = useRouter();
   const { id } = router.query;
   const { toast } = useToast();
+  const { user } = useAuth(); // Get user from AuthContext
   const [layout, setLayout] = useState<Layout | null>(null);
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [cameraZoom, setCameraZoom] = useState(1);
   const [gridSnap, setGridSnap] = useState(true);
   const [connectionMode, setConnectionMode] = useState<"cable" | "pipe">("cable");
@@ -66,7 +69,6 @@ export default function LayoutEditorPage() {
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [saving, setSaving] = useState(false); // Added saving state
-  const [user, setUser] = useState(null); // Added user state
 
   const {
     modules,
@@ -214,23 +216,40 @@ export default function LayoutEditorPage() {
 
   useEffect(() => {
     const loadLayoutData = async () => {
-      if (!id) return;
+      if (!id || !user) return;
 
       try {
+        setIsLoading(true);
+        setLoadError(null);
+        console.log('Loading layouts for project:', id);
+        
         const projectLayouts = await layoutService.getProjectLayouts(id as string);
+        console.log('Loaded project layouts:', projectLayouts);
         setLayouts(projectLayouts);
 
         const layoutId = router.query.layout as string;
         if (layoutId) {
-          const layoutData = await layoutService.getLayout(layoutId);
+          console.log('Loading specific layout:', layoutId);
+          const layoutData = await layoutService.getLayout(layoutId, user);
           if (layoutData) {
+            console.log('Loaded layout data:', layoutData);
             setLayout(layoutData);
-            setModules(layoutData.modules);
-            setConnections(layoutData.connections);
+            setModules(layoutData.modules || []);
+            setConnections(layoutData.connections || []);
+          } else {
+            setLoadError('Layout not found');
           }
+        } else if (projectLayouts.length > 0) {
+          // Load first layout if none specified
+          const defaultLayout = projectLayouts[0];
+          console.log('Loading default layout:', defaultLayout.id);
+          router.replace({
+            query: { ...router.query, layout: defaultLayout.id }
+          });
         }
       } catch (error) {
-        console.error("Error loading layout data:", error);
+        console.error('Error loading layout data:', error);
+        setLoadError(error instanceof Error ? error.message : 'Failed to load layout data');
         toast({
           variant: "destructive",
           title: "Error",
@@ -242,15 +261,42 @@ export default function LayoutEditorPage() {
     };
 
     loadLayoutData();
-  }, [id, router.query.layout, setModules, setConnections, toast]);
+  }, [id, user, router.query.layout, setModules, setConnections, toast, router]);
+
+  if (!user) {
+    return (
+      <AppLayout>
+        <div className='h-screen flex items-center justify-center'>
+          <div className='text-center space-y-4'>
+            <h2 className='text-2xl font-bold'>Authentication Required</h2>
+            <p className='text-muted-foreground'>Please sign in to access the editor</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   if (isLoading) {
     return (
       <AppLayout>
-        <div className="h-screen flex items-center justify-center">
-          <div className="flex items-center gap-2">
-            <Loader2 className="h-6 w-6 animate-spin" />
+        <div className='h-screen flex items-center justify-center'>
+          <div className='flex items-center gap-2'>
+            <Loader2 className='h-6 w-6 animate-spin' />
             <p>Loading editor...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <AppLayout>
+        <div className='h-screen flex items-center justify-center'>
+          <div className='text-center space-y-4'>
+            <h2 className='text-2xl font-bold text-destructive'>Error Loading Editor</h2>
+            <p className='text-muted-foreground'>{loadError}</p>
+            <Button onClick={() => router.back()}>Go Back</Button>
           </div>
         </div>
       </AppLayout>
