@@ -46,7 +46,7 @@ export default function NewProjectPage() {
     }
   });
 
-  const { register, handleSubmit, formState: { errors } } = form;
+  const { register, handleSubmit, formState: { errors, isValid } } = form;
 
   const onSubmit = async (data: ProjectFormData) => {
     if (!user) {
@@ -54,6 +54,15 @@ export default function NewProjectPage() {
         variant: 'destructive',
         title: 'Error',
         description: 'You must be logged in to create a project',
+      });
+      return;
+    }
+
+    if (!isValid) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please fix the form errors before submitting',
       });
       return;
     }

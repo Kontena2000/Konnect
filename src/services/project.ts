@@ -92,7 +92,7 @@ const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
     if (!validateProject(data)) {
       console.error('Project validation failed:', data);
-      throw new ProjectError('Invalid project data', 'VALIDATION_FAILED');
+      throw new ProjectError('Project name is required', 'VALIDATION_FAILED');
     }
 
     try {
