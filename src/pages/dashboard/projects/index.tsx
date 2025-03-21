@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
@@ -12,7 +13,6 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { Timestamp } from 'firebase/firestore';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -205,28 +205,28 @@ export default function ProjectsPage() {
                     
                     {/* Client Details Section */}
                     <div className='space-y-2 border-t pt-4'>
-                      {project.companyName && (
+                      {project.clientInfo?.name && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Building2 className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.companyName}</span>
+                          <span>{project.clientInfo.name}</span>
                         </div>
                       )}
-                      {project.clientEmail && (
+                      {project.clientInfo?.email && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Mail className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientEmail}</span>
+                          <span>{project.clientInfo.email}</span>
                         </div>
                       )}
-                      {project.clientPhone && (
+                      {project.clientInfo?.phone && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Phone className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientPhone}</span>
+                          <span>{project.clientInfo.phone}</span>
                         </div>
                       )}
-                      {project.clientAddress && (
+                      {project.clientInfo?.address && (
                         <div className='flex items-center gap-2 text-sm'>
                           <MapPin className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientAddress}</span>
+                          <span>{project.clientInfo.address}</span>
                         </div>
                       )}
                     </div>
