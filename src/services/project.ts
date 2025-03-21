@@ -65,6 +65,7 @@ export interface CreateProjectData {
   clientEmail?: string;
   clientPhone?: string;
   clientAddress?: string;
+  status?: string;
 }
 
 const validateProject = (data: Partial<ProjectValidation>): boolean => {
@@ -91,6 +92,7 @@ const projectService = {
         clientEmail: data.clientEmail?.trim() || '',
         clientPhone: data.clientPhone?.trim() || '',
         clientAddress: data.clientAddress?.trim() || '',
+        status: data.status || 'planning',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         layouts: []

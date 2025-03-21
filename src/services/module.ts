@@ -263,11 +263,11 @@ const moduleService = {
       const batch = writeBatch(db);
       const modulesRef = collection(db, 'modules');
 
-      for (const module of defaultModules) {
-        const moduleRef = doc(modulesRef, module.id);
+      for (const defaultModule of defaultModules) {
+        const moduleRef = doc(modulesRef, defaultModule.id);
         const now = new Date().toISOString();
         batch.set(moduleRef, {
-          ...module,
+          ...defaultModule,
           createdAt: now,
           updatedAt: now,
           visibleInEditor: true

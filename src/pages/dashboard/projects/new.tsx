@@ -16,11 +16,11 @@ import projectService from "@/services/project";
 import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 
 const projectSchema = z.object({
-  name: z.string().min(1, "Project name is required").max(100),
+  name: z.string().min(1, 'Project name is required').max(100),
   description: z.string().max(500).optional(),
-  status: z.enum(["planning", "in-progress", "completed", "on-hold"]).optional(),
+  status: z.enum(['planning', 'in-progress', 'completed', 'on-hold']).default('planning'),
   companyName: z.string().max(100).optional(),
-  clientEmail: z.string().email("Invalid email address").optional().or(z.literal("")),
+  clientEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
   clientPhone: z.string().max(20).optional(),
   clientAddress: z.string().max(200).optional(),
 });
@@ -63,8 +63,10 @@ export default function NewProjectPage() {
       const projectData = {
         ...data,
         ownerId: user.uid,
+        status: data.status || 'planning'
       };
 
+      console.log('Creating project with data:', projectData);
       const projectId = await projectService.createProject(projectData);
       
       toast({
