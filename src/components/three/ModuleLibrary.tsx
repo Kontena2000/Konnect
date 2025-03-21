@@ -112,77 +112,85 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
   }
 
   return (
-    <Card className="h-full border-0 rounded-none">
-      <CardHeader className="space-y-2 px-4">
-        <CardTitle className="text-lg font-medium">Module Library</CardTitle>
-        <div className="relative">
-          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+    <Card className='h-full border-0 rounded-none'>
+      <CardHeader className='space-y-2 px-4'>
+        <CardTitle className='text-lg font-medium'>Module Library</CardTitle>
+        <div className='relative'>
+          <Search className='absolute left-2 top-2.5 h-4 w-4 text-muted-foreground' />
           <Input
-            placeholder="Search modules..."
+            placeholder='Search modules...'
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-8"
+            className='pl-8'
           />
         </div>
       </CardHeader>
-      <CardContent className="p-0">
-        <ScrollArea className="h-[calc(100vh-8rem)]">
-          <div className="space-y-2 p-4">
+      <CardContent className='p-0'>
+        <ScrollArea className='h-[calc(100vh-8rem)]'>
+          <div className='space-y-2 p-4'>
             {Object.entries(modulesByCategory).map(([category, categoryModules]) => (
               <Collapsible
                 key={category}
                 open={expandedCategories.includes(category)}
                 onOpenChange={() => toggleCategory(category)}
               >
-                <CollapsibleTrigger className="flex items-center w-full hover:bg-accent rounded-md p-2">
+                <CollapsibleTrigger className='flex items-center w-full hover:bg-accent rounded-md p-2'>
                   {expandedCategories.includes(category) ? (
-                    <ChevronDown className="h-4 w-4 mr-2" />
+                    <ChevronDown className='h-4 w-4 mr-2' />
                   ) : (
-                    <ChevronRight className="h-4 w-4 mr-2" />
+                    <ChevronRight className='h-4 w-4 mr-2' />
                   )}
-                  <span className="flex items-center">
+                  <span className='flex items-center'>
                     {getCategoryIcon(category)}
                     {category}
                   </span>
-                  <Badge variant="secondary" className="ml-auto">
+                  <Badge variant='secondary' className='ml-auto'>
                     {categoryModules.length}
                   </Badge>
                 </CollapsibleTrigger>
-                <CollapsibleContent className="space-y-2 mt-2">
+                <CollapsibleContent className='space-y-2 mt-2'>
                   {categoryModules.map((module) => (
                     <div
                       key={module.id}
                       draggable
                       onDragStart={() => handleDragStart(module)}
-                      className="group flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-move"
+                      className='group relative flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-move'
                     >
-                      <div className="flex-shrink-0 w-10 h-10 rounded bg-muted flex items-center justify-center" style={{ backgroundColor: module.color }}>
-                        {module.type === "container" && <Truck className="h-5 w-5 text-background" />}
-                        {module.type === "vegetation" && <Leaf className="h-5 w-5 text-background" />}
+                      <div 
+                        className='flex-shrink-0 w-12 h-12 rounded bg-muted flex items-center justify-center shadow-sm' 
+                        style={{ backgroundColor: module.color }}
+                      >
+                        {module.type === 'container' && <Truck className='h-6 w-6 text-background' />}
+                        {module.type === 'vegetation' && <Leaf className='h-6 w-6 text-background' />}
                       </div>
-                      <div className="flex-1">
-                        <div className="text-sm font-medium">{module.name}</div>
-                        <div className="text-xs text-muted-foreground">
+                      <div className='flex-1 min-w-0'>
+                        <div className='text-sm font-medium truncate'>{module.name}</div>
+                        <div className='text-xs text-muted-foreground'>
                           {module.dimensions.length}m × {module.dimensions.width}m × {module.dimensions.height}m
                         </div>
+                        <div className='text-xs text-muted-foreground truncate'>
+                          {module.description}
+                        </div>
                       </div>
-                      <TooltipProvider>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              className="opacity-0 group-hover:opacity-100"
-                              onClick={(e) => handleDuplicate(module, e)}
-                            >
-                              <Copy className="h-4 w-4" />
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>
-                            <p>Duplicate module</p>
-                          </TooltipContent>
-                        </Tooltip>
-                      </TooltipProvider>
+                      <div className='absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-opacity'>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant='ghost'
+                                size='icon'
+                                className='h-8 w-8'
+                                onClick={(e) => handleDuplicate(module, e)}
+                              >
+                                <Copy className='h-4 w-4' />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Duplicate module</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                      </div>
                     </div>
                   ))}
                 </CollapsibleContent>
