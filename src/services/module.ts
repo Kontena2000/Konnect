@@ -202,23 +202,47 @@ const moduleService = {
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
-      if (!(await this.checkUserPermissions())) {
-        throw new Error("Insufficient permissions");
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Authentication required');
       }
 
-      console.log("Creating category:", data);
-      const categoryRef = doc(db, "categories", data.id);
+      // Special case for Ruud - always has full access
+      const isRuud = user.email === 'ruud@kontena.eu';
+      
+      if (!isRuud) {
+        const token = await user.getIdTokenResult(true);
+        if (token.claims.role !== 'admin' && token.claims.role !== 'editor') {
+          throw new Error('Insufficient permissions');
+        }
+      }
+
+      // Validate category data
+      if (!data.id || !data.name || data.name.trim().length === 0) {
+        throw new Error('Invalid category data');
+      }
+
+      console.log('Creating category:', data);
+      const categoryRef = doc(db, 'categories', data.id);
+
+      // Check if category already exists
+      const existingCategory = await getDoc(categoryRef);
+      if (existingCategory.exists()) {
+        throw new Error('Category already exists');
+      }
+
       const now = new Date().toISOString();
       await setDoc(categoryRef, {
         ...data,
         createdAt: now,
-        updatedAt: now
+        updatedAt: now,
+        createdBy: user.uid
       });
-      console.log("Category created successfully:", data.id);
+      
+      console.log('Category created successfully:', data.id);
     } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error creating category:", fbError);
-      throw new Error(`Failed to create category: ${fbError.message}`);
+      console.error('Error creating category:', error);
+      throw error;
     }
   },
 
