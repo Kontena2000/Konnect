@@ -29,15 +29,17 @@ const gridPreferencesService = {
         return null;
       }
 
+      const data = snapshot.data() as GridPreferences;
+      
       firebaseMonitor.logOperation({
         type: "settings",
         action: "get_grid_preferences",
         status: "success",
         timestamp: Date.now(),
-        details: { userId, preferences: snapshot.data() }
+        details: { userId, preferences: data }
       });
 
-      return snapshot.data() as GridPreferences;
+      return data;
     } catch (error) {
       firebaseMonitor.logOperation({
         type: "settings",
@@ -51,23 +53,28 @@ const gridPreferencesService = {
     }
   },
 
-  async savePreferences(preferences: GridPreferences, user: AuthUser): Promise<void> {
+  async savePreferences(preferences: Omit<GridPreferences, "userId">, user: AuthUser): Promise<void> {
     try {
+      const prefsWithUser = {
+        ...preferences,
+        userId: user.uid
+      };
+
       firebaseMonitor.logOperation({
         type: "settings",
         action: "save_grid_preferences",
         status: "pending",
         timestamp: Date.now(),
-        details: { userId: user.uid, preferences }
+        details: { userId: user.uid, preferences: prefsWithUser }
       });
 
       const prefsRef = doc(db, "gridPreferences", user.uid);
       const snapshot = await getDoc(prefsRef);
 
       if (snapshot.exists()) {
-        await updateDoc(prefsRef, preferences);
+        await updateDoc(prefsRef, prefsWithUser);
       } else {
-        await setDoc(prefsRef, preferences);
+        await setDoc(prefsRef, prefsWithUser);
       }
 
       firebaseMonitor.logOperation({
@@ -75,7 +82,7 @@ const gridPreferencesService = {
         action: "save_grid_preferences",
         status: "success",
         timestamp: Date.now(),
-        details: { userId: user.uid, preferences }
+        details: { userId: user.uid, preferences: prefsWithUser }
       });
     } catch (error) {
       firebaseMonitor.logOperation({

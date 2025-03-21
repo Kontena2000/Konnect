@@ -1,6 +1,6 @@
 
 import { db, auth } from "@/lib/firebase";
-import { disableNetwork, enableNetwork } from "firebase/firestore";
+import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export interface OperationLog {
@@ -8,7 +8,7 @@ export interface OperationLog {
   action: string;
   status: 'success' | 'error' | 'pending';
   timestamp: number;
-  details?: any;
+  details?: Record<string, unknown>;
   error?: string;
   userId?: string;
 }
@@ -44,11 +44,12 @@ class FirebaseMonitor {
     });
 
     // Monitor connection state
-    db.enableNetwork().then(() => {
+    const firestore = getFirestore();
+    enableNetwork(firestore).then(() => {
       this.status.connectionState = 'online';
       this.status.isOnline = true;
       this.notifySubscribers();
-    }).catch((error) => {
+    }).catch((error: Error) => {
       console.error('Error enabling network:', error);
       this.status.lastError = error.message;
       this.notifySubscribers();
@@ -56,13 +57,14 @@ class FirebaseMonitor {
   }
 
   async testConnection(): Promise<void> {
+    const firestore = getFirestore();
     try {
-      await disableNetwork(db);
+      await disableNetwork(firestore);
       this.status.connectionState = 'offline';
       this.status.isOnline = false;
       this.notifySubscribers();
 
-      await enableNetwork(db);
+      await enableNetwork(firestore);
       this.status.connectionState = 'online';
       this.status.isOnline = true;
       this.notifySubscribers();
@@ -78,7 +80,7 @@ class FirebaseMonitor {
     if (currentUser) {
       log.userId = currentUser.uid;
       if (!log.details) log.details = {};
-      log.details.email = currentUser.email;
+      log.details = { ...log.details, email: currentUser.email };
     }
 
     this.status.operationLogs.unshift(log);
