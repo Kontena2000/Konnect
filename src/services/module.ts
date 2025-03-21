@@ -253,23 +253,63 @@ const moduleService = {
     }
   },
 
+  async initializeDefaultModules(): Promise<void> {
+    try {
+      if (!(await this.checkUserPermissions())) {
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      }
+
+      console.log('Initializing default modules...');
+      const batch = writeBatch(db);
+      const modulesRef = collection(db, 'modules');
+
+      for (const module of defaultModules) {
+        const moduleRef = doc(modulesRef, module.id);
+        const now = new Date().toISOString();
+        batch.set(moduleRef, {
+          ...module,
+          createdAt: now,
+          updatedAt: now,
+          visibleInEditor: true
+        });
+      }
+
+      await batch.commit();
+      console.log('Default modules initialized successfully');
+    } catch (error) {
+      console.error('Error initializing default modules:', error);
+      throw new ModuleError('Failed to initialize default modules', 'INIT_FAILED', error);
+    }
+  },
+
   async updateModule(id: string, data: Partial<Module>): Promise<void> {
     try {
       if (!(await this.checkUserPermissions())) {
-        throw new Error("Insufficient permissions");
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
       }
 
-      console.log("Updating module:", id, data);
-      const moduleRef = doc(db, "modules", id);
+      if (!(await this.validateModuleData({ ...data, id }))) {
+        throw new ModuleError('Invalid module data', 'VALIDATION_FAILED');
+      }
+
+      console.log('Updating module:', id, data);
+      const moduleRef = doc(db, 'modules', id);
+      
+      // Check if module exists
+      const moduleSnap = await getDoc(moduleRef);
+      if (!moduleSnap.exists()) {
+        throw new ModuleError('Module not found', 'NOT_FOUND');
+      }
+
       await updateDoc(moduleRef, {
         ...data,
         updatedAt: serverTimestamp()
       });
-      console.log("Module updated successfully:", id);
+      console.log('Module updated successfully:', id);
     } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error updating module:", fbError);
-      throw new Error(`Failed to update module: ${fbError.message}`);
+      console.error('Error updating module:', error);
+      if (error instanceof ModuleError) throw error;
+      throw new ModuleError('Failed to update module', 'UPDATE_FAILED', error);
     }
   },
 

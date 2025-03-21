@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -149,19 +148,34 @@ const projectService = {
     }
   },
 
-  async updateProject(id: string, data: Partial<Project>): Promise<void> {
-    if (!validateProject(data)) {
-      throw new ProjectError("Invalid project data", "VALIDATION_FAILED");
-    }
-
+  async updateProject(id: string, data: Partial<Project>, userId: string): Promise<void> {
     try {
-      const projectRef = doc(db, "projects", id);
+      // Validate project data
+      if (!validateProject(data)) {
+        throw new ProjectError('Invalid project data', 'VALIDATION_FAILED');
+      }
+
+      // Check project ownership
+      const projectRef = doc(db, 'projects', id);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new ProjectError('Project not found', 'NOT_FOUND');
+      }
+
+      const project = projectSnap.data();
+      if (project.ownerId !== userId && !project.sharedWith?.includes(userId)) {
+        throw new ProjectError('Unauthorized to update project', 'UNAUTHORIZED');
+      }
+
       await updateDoc(projectRef, {
         ...data,
         updatedAt: serverTimestamp()
       });
     } catch (error) {
-      throw new ProjectError("Failed to update project", "UPDATE_FAILED", error);
+      console.error('Error updating project:', error);
+      if (error instanceof ProjectError) throw error;
+      throw new ProjectError('Failed to update project', 'UPDATE_FAILED', error);
     }
   },
 
@@ -181,6 +195,7 @@ const projectService = {
 
       const batch = writeBatch(db);
 
+      // Delete all layouts associated with the project
       const layoutsQuery = query(
         collection(db, 'layouts'),
         where('projectId', '==', id)
@@ -190,9 +205,21 @@ const projectService = {
         batch.delete(doc.ref);
       });
 
+      // Delete all modules associated with the layouts
+      const modulesQuery = query(
+        collection(db, 'modules'),
+        where('projectId', '==', id)
+      );
+      const modulesSnapshot = await getDocs(modulesQuery);
+      modulesSnapshot.docs.forEach(doc => {
+        batch.delete(doc.ref);
+      });
+
+      // Finally delete the project
       batch.delete(projectRef);
       await batch.commit();
     } catch (error) {
+      console.error('Error deleting project:', error);
       if (error instanceof ProjectError) throw error;
       throw new ProjectError('Failed to delete project', 'DELETE_FAILED', error);
     }
