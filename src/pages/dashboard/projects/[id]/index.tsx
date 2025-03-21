@@ -106,7 +106,7 @@ export default function ProjectDetailsPage() {
   };
 
   const handleSaveProject = async () => {
-    if (!project || !id) return;
+    if (!project || !id || !user) return;
     
     setSaving(true);
     try {
@@ -115,7 +115,7 @@ export default function ProjectDetailsPage() {
         description: formData.description,
         plotWidth: formData.plotWidth,
         plotLength: formData.plotLength
-      });
+      }, user.uid);  // Add the missing userId argument
       
       setProject(prev => prev ? {
         ...prev,
@@ -127,15 +127,15 @@ export default function ProjectDetailsPage() {
       
       setEditMode(false);
       toast({
-        title: "Success",
-        description: "Project updated successfully"
+        title: 'Success',
+        description: 'Project updated successfully'
       });
     } catch (error) {
-      console.error("Error updating project:", error);
+      console.error('Error updating project:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update project"
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update project'
       });
     } finally {
       setSaving(false);

@@ -17,12 +17,12 @@ import { Building2, Mail, Phone, MapPin } from 'lucide-react';
 
 const projectSchema = z.object({
   name: z.string().min(1, 'Project name is required').max(100),
-  description: z.string().max(500).optional(),
+  description: z.string().max(500).optional().or(z.literal('')),
   status: z.enum(['planning', 'in-progress', 'completed', 'on-hold']).default('planning'),
-  companyName: z.string().max(100).optional(),
+  companyName: z.string().max(100).optional().or(z.literal('')),
   clientEmail: z.string().email('Invalid email address').optional().or(z.literal('')),
-  clientPhone: z.string().max(20).optional(),
-  clientAddress: z.string().max(200).optional(),
+  clientPhone: z.string().max(20).optional().or(z.literal('')),
+  clientAddress: z.string().max(200).optional().or(z.literal('')),
 });
 
 type ProjectFormData = z.infer<typeof projectSchema>;
@@ -60,13 +60,14 @@ export default function NewProjectPage() {
 
     try {
       setLoading(true);
+      console.log('Creating project with data:', data);
+      
       const projectData = {
         ...data,
         ownerId: user.uid,
         status: data.status || 'planning'
       };
 
-      console.log('Creating project with data:', projectData);
       const projectId = await projectService.createProject(projectData);
       
       toast({
