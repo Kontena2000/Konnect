@@ -16,6 +16,7 @@ import {
   Timestamp
 } from "firebase/firestore";
 import firebaseMonitor from '@/services/firebase-monitor';
+import { auth } from "@/lib/firebase"; // Added import for auth
 
 export class ProjectError extends Error {
   constructor(
@@ -91,6 +92,14 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
     try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ProjectError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      // Special case for Ruud - always has full access
+      const isRuud = user.email === 'ruud@kontena.eu';
+      
       firebaseMonitor.logOperation({
         type: 'project',
         action: 'create',
@@ -115,7 +124,7 @@ const projectService = {
       const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
-        userId: data.userId,
+        userId: user.uid,
         clientInfo: {
           name: data.companyName?.trim() || '',
           email: data.clientEmail?.trim() || '',
