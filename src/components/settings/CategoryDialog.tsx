@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { FolderPlus, Loader2 } from "lucide-react";
 import { useAuth } from '@/contexts/AuthContext';
+import { getIdTokenResult } from 'firebase/auth';
 
 interface CategoryDialogProps {
   onCreateCategory: (data: { id: string; name: string }) => Promise<void>;
@@ -27,7 +28,11 @@ export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogPr
         return;
       }
 
-      console.log('Creating category as user:', user.email);
+      // Get latest token claims
+      const tokenResult = await getIdTokenResult(user, true);
+      console.log('User token claims:', tokenResult.claims);
+      console.log('Creating category as user:', user.email, 'Role:', tokenResult.claims.role);
+
       const trimmedName = name.trim();
       if (!trimmedName) {
         setError('Category name is required');

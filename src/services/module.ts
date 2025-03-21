@@ -13,6 +13,7 @@ import {
   where,
   FirestoreError
 } from "firebase/firestore";
+import { getIdTokenResult } from 'firebase/auth';
 import { Module, ModuleCategory, defaultModules } from "@/types/module";
 import firebaseMonitor from '@/services/firebase-monitor';
 
@@ -55,11 +56,12 @@ const moduleService = {
         return true;
       }
 
-      const token = await user.getIdTokenResult(true); // Force token refresh
-      console.log('User token claims:', token.claims);
+      // Force token refresh to get latest claims
+      const tokenResult = await getIdTokenResult(user, true);
+      console.log('User token claims:', tokenResult.claims);
       
-      const canEdit = token.claims.role === 'admin' || token.claims.role === 'editor';
-      console.log('User can edit:', canEdit);
+      const canEdit = tokenResult.claims.role === 'admin' || tokenResult.claims.role === 'editor';
+      console.log('User can edit:', canEdit, 'Role:', tokenResult.claims.role);
       
       return canEdit;
     } catch (error) {
@@ -203,26 +205,10 @@ const moduleService = {
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'pending',
-        timestamp: Date.now(),
-        details: data
-      });
-
       const user = auth.currentUser;
       if (!user) {
-        const error = 'Authentication required';
-        firebaseMonitor.logOperation({
-          type: 'category',
-          action: 'create',
-          status: 'error',
-          timestamp: Date.now(),
-          error,
-          details: data
-        });
-        throw new Error(error);
+        console.error('No user logged in');
+        throw new Error('Authentication required');
       }
 
       // Special case for Ruud - always has full access
@@ -230,34 +216,19 @@ const moduleService = {
       console.log('Creating category as user:', user.email, 'isRuud:', isRuud);
       
       if (!isRuud) {
-        const token = await user.getIdTokenResult(true);
-        console.log('User token claims:', token.claims);
-        if (token.claims.role !== 'admin' && token.claims.role !== 'editor') {
-          const error = 'Insufficient permissions';
-          firebaseMonitor.logOperation({
-            type: 'category',
-            action: 'create',
-            status: 'error',
-            timestamp: Date.now(),
-            error,
-            details: { ...data, userRole: token.claims.role }
-          });
-          throw new Error(error);
+        // Force token refresh to get latest claims
+        const tokenResult = await getIdTokenResult(user, true);
+        console.log('User token claims:', tokenResult.claims);
+        
+        if (tokenResult.claims.role !== 'admin' && tokenResult.claims.role !== 'editor') {
+          console.error('User lacks required role. Current role:', tokenResult.claims.role);
+          throw new Error('Insufficient permissions');
         }
       }
 
       // Validate category data
       if (!data.id || !data.name || data.name.trim().length === 0) {
-        const error = 'Invalid category data';
-        firebaseMonitor.logOperation({
-          type: 'category',
-          action: 'create',
-          status: 'error',
-          timestamp: Date.now(),
-          error,
-          details: data
-        });
-        throw new Error(error);
+        throw new Error('Invalid category data');
       }
 
       console.log('Creating category:', data);
@@ -266,16 +237,7 @@ const moduleService = {
       // Check if category already exists
       const existingCategory = await getDoc(categoryRef);
       if (existingCategory.exists()) {
-        const error = 'Category already exists';
-        firebaseMonitor.logOperation({
-          type: 'category',
-          action: 'create',
-          status: 'error',
-          timestamp: Date.now(),
-          error,
-          details: data
-        });
-        throw new Error(error);
+        throw new Error('Category already exists');
       }
 
       const now = new Date().toISOString();
@@ -287,23 +249,8 @@ const moduleService = {
       });
       
       console.log('Category created successfully:', data.id);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'success',
-        timestamp: Date.now(),
-        details: { ...data, userId: user.uid }
-      });
     } catch (error) {
       console.error('Error creating category:', error);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: data
-      });
       throw error;
     }
   },
