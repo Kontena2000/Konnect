@@ -42,7 +42,7 @@ export class ModuleError extends Error {
 }
 
 const moduleService = {
-  async checkUserPermissions(): Promise<boolean> {
+  async checkUserPermissions(requireAdmin: boolean = false): Promise<boolean> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -59,6 +59,12 @@ const moduleService = {
       // Force token refresh to get latest claims
       const tokenResult = await getIdTokenResult(user, true);
       console.log('User token claims:', tokenResult.claims);
+      
+      if (requireAdmin) {
+        const isAdmin = tokenResult.claims.role === 'admin';
+        console.log('User is admin:', isAdmin);
+        return isAdmin;
+      }
       
       const canEdit = tokenResult.claims.role === 'admin' || tokenResult.claims.role === 'editor';
       console.log('User can edit:', canEdit, 'Role:', tokenResult.claims.role);
@@ -411,8 +417,8 @@ const moduleService = {
 
   async deleteModule(id: string): Promise<void> {
     try {
-      if (!(await this.checkUserPermissions())) {
-        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      if (!(await this.checkUserPermissions(true))) {
+        throw new ModuleError('Only admins can delete modules', 'UNAUTHORIZED');
       }
 
       console.log('Deleting module:', id);
@@ -453,8 +459,8 @@ const moduleService = {
 
   async deleteCategory(id: string): Promise<void> {
     try {
-      if (!(await this.checkUserPermissions())) {
-        throw new Error('Insufficient permissions');
+      if (!(await this.checkUserPermissions(true))) {
+        throw new Error('Only admins can delete categories');
       }
 
       if (id === 'basic') {
