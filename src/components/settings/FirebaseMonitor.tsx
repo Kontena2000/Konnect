@@ -80,6 +80,18 @@ export function FirebaseMonitor() {
     }
   };
 
+  const renderLogDetails = (details: Record<string, unknown>) => {
+    return (
+      <div className="mt-2 text-xs text-muted-foreground">
+        {Object.entries(details).map(([key, value]) => (
+          <div key={key}>
+            <strong>{key}:</strong> {String(value)}
+          </div>
+        ))}
+      </div>
+    );
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -194,16 +206,7 @@ export function FirebaseMonitor() {
                       )}
                       {log.details && (
                         <div className="mt-2 p-2 bg-muted rounded-md">
-                          <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
-                            {JSON.stringify(log.details, null, 2)}
-                          </pre>
-                          {log.details.userId && (
-                            <div className="mt-2 text-xs text-muted-foreground">
-                              <div>User ID: {log.details.userId}</div>
-                              {log.details.email && <div>Email: {log.details.email}</div>}
-                              {log.details.role && <div>Role: {log.details.role}</div>}
-                            </div>
-                          )}
+                          {renderLogDetails(log.details)}
                         </div>
                       )}
                     </CollapsibleContent>
