@@ -66,6 +66,7 @@ export default function LayoutEditorPage() {
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [saving, setSaving] = useState(false); // Added saving state
+  const [user, setUser] = useState(null); // Added user state
 
   const {
     modules,
@@ -135,12 +136,21 @@ export default function LayoutEditorPage() {
         return;
       }
 
-      setSaving(true); // Set saving state to true
+      if (!user) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'You must be logged in to save layouts'
+        });
+        return;
+      }
+
+      setSaving(true);
       await layoutService.updateLayout(layout.id, {
         modules,
         connections,
         updatedAt: new Date()
-      });
+      }, user);
 
       toast({
         title: 'Success',
@@ -154,7 +164,7 @@ export default function LayoutEditorPage() {
         description: 'Failed to save layout'
       });
     } finally {
-      setSaving(false); // Reset saving state
+      setSaving(false);
     }
   };
 

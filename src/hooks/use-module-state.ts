@@ -79,7 +79,7 @@ export function useModuleState({
 
   // Add autosave effect
   useEffect(() => {
-    if (!autoSave || !layoutId || !hasChanges) return;
+    if (!autoSave || !layoutId || !hasChanges || !user) return;
 
     const saveTimer = setTimeout(async () => {
       try {
@@ -89,14 +89,20 @@ export function useModuleState({
           updatedAt: new Date()
         }, user);
         
+        setHasChanges(false);
         setSaving(false);
       } catch (error) {
         console.error('Error auto-saving layout:', error);
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to auto-save layout'
+        });
       }
     }, 2000); // 2 second debounce
 
     return () => clearTimeout(saveTimer);
-  }, [modules, connections, layoutId, autoSave, hasChanges]);
+  }, [modules, connections, layoutId, autoSave, hasChanges, user, toast]);
 
   const updateModule = useCallback((moduleId: string, updates: Partial<Module>) => {
     setModules(prev => prev.map(module =>
