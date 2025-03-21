@@ -11,17 +11,30 @@ export default async function handler(
   }
 
   try {
-    const { uid, role } = req.body;
+    const { uid, email, role } = req.body;
 
-    if (!uid || !role) {
+    if ((!uid && !email) || !role) {
       return res.status(400).json({ error: "Missing required fields" });
     }
 
+    let userUid = uid;
+    
+    // If email is provided but no uid, get the uid from email
+    if (!uid && email) {
+      try {
+        const userRecord = await auth.getUserByEmail(email);
+        userUid = userRecord.uid;
+      } catch (error) {
+        console.error("Error getting user by email:", error);
+        return res.status(404).json({ error: "User not found" });
+      }
+    }
+
     // Set custom claims
-    await auth.setCustomUserClaims(uid, { role });
+    await auth.setCustomUserClaims(userUid, { role });
 
     // Force token refresh
-    await auth.revokeRefreshTokens(uid);
+    await auth.revokeRefreshTokens(userUid);
 
     return res.status(200).json({ success: true });
   } catch (error) {

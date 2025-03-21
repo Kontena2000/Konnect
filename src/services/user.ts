@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -9,10 +10,8 @@ import {
   query, 
   orderBy,
   where,
-  serverTimestamp,
-  DocumentData
+  serverTimestamp
 } from "firebase/firestore";
-import { auth } from '@/lib/firebase';
 
 export interface User {
   id: string;
@@ -81,24 +80,20 @@ const userService = {
         createdAt: serverTimestamp()
       });
 
-      // Get the Firebase Auth user
-      const authUser = (await auth.fetchSignInMethodsForEmail(email)).length > 0;
-      if (authUser) {
-        // Set custom claims via API
-        const response = await fetch('/api/auth/set-custom-claims', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            uid: auth.currentUser?.uid,
-            role
-          })
-        });
+      // Set custom claims via API
+      const response = await fetch('/api/auth/set-custom-claims', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email,
+          role
+        })
+      });
 
-        if (!response.ok) {
-          console.error('Failed to set custom claims');
-        }
+      if (!response.ok) {
+        console.error('Failed to set custom claims');
       }
 
       return {
