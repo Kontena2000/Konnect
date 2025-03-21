@@ -60,6 +60,14 @@ export interface CreateProjectData {
   status?: string;
 }
 
+export interface ProjectValidation {
+  name: string;
+  description?: string;
+  clientEmail?: string;
+  plotWidth?: number;
+  plotLength?: number;
+}
+
 const validateProject = (data: Partial<ProjectValidation>): boolean => {
   if (!data.name || data.name.trim().length === 0) {
     console.error('Project validation failed: name is required');
