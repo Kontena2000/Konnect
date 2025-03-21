@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -70,7 +69,7 @@ export function ModuleObject({
     };
   }, []);
 
-  // Drop-in animation
+  // Enhanced drop-in animation with better physics
   useEffect(() => {
     if (animating && meshRef.current) {
       const startPos = new Vector3(
@@ -80,24 +79,34 @@ export function ModuleObject({
       );
       meshRef.current.position.copy(startPos);
 
+      // Enhanced drop animation with better physics feel
       gsap.to(meshRef.current.position, {
-        y: module.position[1],
-        duration: 0.6,
+        y: module.dimensions.height / 2, // Place bottom at ground level
+        duration: 0.8,
         ease: 'bounce.out',
-        onComplete: () => setAnimating(false)
+        onUpdate: () => updateShadowTransform(),
+        onComplete: () => {
+          setAnimating(false);
+          updateShadowTransform();
+        }
       });
     }
-  }, [animating, module.position]);
+  }, [animating, module.position, module.dimensions.height, updateShadowTransform]);
 
-  // Update shadow transform calculation
+  // Improved shadow transform calculation
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
     const worldPosition = new Vector3();
     meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.01; // Keep shadow just above ground
+    worldPosition.y = 0.01; // Keep shadow just above ground to prevent z-fighting
     
-    const worldRotation = new Euler(-Math.PI/2, meshRef.current.rotation.y, 0);
+    // Update shadow rotation to match module
+    const worldRotation = new Euler(
+      -Math.PI/2, // Keep flat on ground
+      meshRef.current.rotation.y, // Match module's Y rotation
+      0
+    );
     
     setShadowTransform({
       position: worldPosition,
@@ -105,54 +114,76 @@ export function ModuleObject({
     });
   }, []);
 
-  // Keep shadow updated
-  useEffect(() => {
-    if (!meshRef.current) return;
-    
-    const updateInterval = setInterval(updateShadowTransform, 1000 / 60); // 60fps updates
-    return () => clearInterval(updateInterval);
-  }, [updateShadowTransform]);
+  // Enhanced collision detection with visual feedback
+  const handleCollision = useCallback((hasCollision: boolean) => {
+    if (!meshRef.current || !(meshRef.current.material instanceof MeshStandardMaterial)) return;
 
-  // Handle transform changes
+    if (hasCollision) {
+      // Immediate visual feedback
+      gsap.to(meshRef.current.material, {
+        emissive: new THREE.Color('#ff0000'),
+        emissiveIntensity: 0.5,
+        opacity: 0.7,
+        duration: 0.2
+      });
+    } else {
+      // Smooth transition back to normal
+      gsap.to(meshRef.current.material, {
+        emissive: new THREE.Color('#000000'),
+        emissiveIntensity: 0,
+        opacity: selected ? 0.8 : 1,
+        duration: 0.3
+      });
+    }
+  }, [selected]);
+
+  // Enhanced transform handling
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
     const position = meshRef.current.position.clone();
     const rotation = meshRef.current.rotation.clone();
     
-    // Always ensure minimum height is maintained
+    // Ensure proper height positioning
     const minHeight = module.dimensions.height / 2;
     position.y = Math.max(position.y, minHeight);
     
-    // Only snap when not actively transforming
+    // Grid snapping with smooth transitions
     if (gridSnap && !isShiftPressed && !isTransforming) {
-      // Snap position to grid
       if (transformMode === 'translate') {
-        position.x = Math.round(position.x);
-        position.z = Math.round(position.z);
+        const snappedPosition = new Vector3(
+          Math.round(position.x),
+          position.y,
+          Math.round(position.z)
+        );
         
-        // Ensure proper height positioning
-        if (!selected) {
-          position.y = minHeight;
-        }
+        // Smooth transition to snapped position
+        gsap.to(meshRef.current.position, {
+          x: snappedPosition.x,
+          z: snappedPosition.z,
+          duration: 0.2,
+          ease: 'power2.out',
+          onUpdate: updateShadowTransform
+        });
+        
+        position.copy(snappedPosition);
       }
       
-      // Snap rotation to 90-degree increments
       if (transformMode === 'rotate') {
         const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
         gsap.to(meshRef.current.rotation, {
           y: targetRotation,
           duration: 0.2,
-          ease: 'power2.out'
+          ease: 'power2.out',
+          onUpdate: updateShadowTransform
         });
         rotation.y = targetRotation;
       }
     }
     
-    // Check for collisions with improved feedback
+    // Enhanced collision detection
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
-    let collisionModule: Module | null = null;
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -168,47 +199,45 @@ export function ModuleObject({
       
       if (box.intersectsBox(otherBox)) {
         hasCollision = true;
-        collisionModule = otherModule;
       }
     });
     
+    handleCollision(hasCollision);
+    
     if (hasCollision) {
-      // Visual feedback for collision
-      if (meshRef.current.material instanceof MeshStandardMaterial) {
-        meshRef.current.material.color.setHex(0xff0000);
-        meshRef.current.material.opacity = 0.7;
-        
-        // Reset color after a short delay
-        setTimeout(() => {
-          if (meshRef.current && meshRef.current.material instanceof MeshStandardMaterial) {
-            meshRef.current.material.color.set(module.color || '#888888');
-            meshRef.current.material.opacity = selected ? 0.8 : 1;
-          }
-        }, 200);
-      }
+      // Revert position with smooth animation
+      gsap.to(meshRef.current.position, {
+        x: module.position[0],
+        y: module.position[1],
+        z: module.position[2],
+        duration: 0.3,
+        ease: 'power2.out',
+        onUpdate: updateShadowTransform
+      });
       
-      // Prevent movement if there's a collision
-      if (meshRef.current) {
-        meshRef.current.position.copy(new Vector3(...module.position));
-        meshRef.current.rotation.copy(new Euler(...module.rotation));
-      }
+      gsap.to(meshRef.current.rotation, {
+        x: module.rotation[0],
+        y: module.rotation[1],
+        z: module.rotation[2],
+        duration: 0.3,
+        ease: 'power2.out',
+        onUpdate: updateShadowTransform
+      });
     } else {
       // Update position and rotation if no collision
-      if (meshRef.current) {
-        meshRef.current.position.copy(position);
-        meshRef.current.rotation.copy(rotation);
-        
-        onUpdate?.({
-          position: [position.x, position.y, position.z],
-          rotation: [rotation.x, rotation.y, rotation.z],
-          scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
-        });
-      }
+      onUpdate?.({
+        position: [position.x, position.y, position.z],
+        rotation: [rotation.x, rotation.y, rotation.z],
+        scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+      });
     }
     
-    // Update shadow position
     updateShadowTransform();
-  }, [readOnly, onUpdate, module.id, module.dimensions, module.position, module.rotation, module.color, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming, updateShadowTransform]);
+  }, [
+    readOnly, onUpdate, module.id, module.dimensions, module.position, 
+    module.rotation, modules, gridSnap, isShiftPressed, selected, 
+    transformMode, isTransforming, updateShadowTransform, handleCollision
+  ]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
