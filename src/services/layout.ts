@@ -119,8 +119,17 @@ const layoutService = {
         throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
       }
 
+      // Special case for ruud@kontena.eu - always has full access
+      if (user.email === 'ruud@kontena.eu') {
+        await updateDoc(layoutRef, {
+          ...data,
+          updatedAt: serverTimestamp()
+        });
+        return;
+      }
+
       const project = projectSnap.data();
-      if (project.ownerId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+      if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
         throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
       }
 
@@ -153,6 +162,18 @@ const layoutService = {
       const data = snapshot.data();
       
       if (user) {
+        // Special case for ruud@kontena.eu - always has full access
+        if (user.email === 'ruud@kontena.eu') {
+          return {
+            id: snapshot.id,
+            ...data,
+            modules: data.modules || [],
+            connections: data.connections || [],
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          } as Layout;
+        }
+
         const projectRef = doc(db, 'projects', data.projectId);
         const projectSnap = await getDoc(projectRef);
         
@@ -161,7 +182,7 @@ const layoutService = {
         }
 
         const project = projectSnap.data();
-        if (project.ownerId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+        if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
           throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
         }
       }
