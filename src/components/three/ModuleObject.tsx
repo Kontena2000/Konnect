@@ -86,6 +86,10 @@ export function ModuleObject({
     const position = meshRef.current.position.clone();
     const rotation = meshRef.current.rotation.clone();
     
+    // Always ensure minimum height is maintained
+    const minHeight = module.dimensions.height / 2;
+    position.y = Math.max(position.y, minHeight);
+    
     // Only snap when not actively transforming
     if (gridSnap && !isShiftPressed && !isTransforming) {
       // Snap position to grid
@@ -93,9 +97,9 @@ export function ModuleObject({
         position.x = Math.round(position.x);
         position.z = Math.round(position.z);
         
-        // Only snap Y to ground level on initial placement
+        // Ensure proper height positioning
         if (!selected) {
-          position.y = module.dimensions.height / 2;
+          position.y = minHeight;
         }
       }
       
@@ -111,9 +115,10 @@ export function ModuleObject({
       }
     }
     
-    // Check for collisions
+    // Check for collisions with improved feedback
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
+    let collisionModule: Module | null = null;
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -129,38 +134,71 @@ export function ModuleObject({
       
       if (box.intersectsBox(otherBox)) {
         hasCollision = true;
+        collisionModule = otherModule;
       }
     });
     
-    // Only prevent movement if there's a collision
-    if (!hasCollision) {
-      meshRef.current.position.copy(position);
-      meshRef.current.rotation.copy(rotation);
+    if (hasCollision) {
+      // Visual feedback for collision
+      if (meshRef.current.material instanceof MeshStandardMaterial) {
+        meshRef.current.material.color.setHex(0xff0000);
+        meshRef.current.material.opacity = 0.7;
+        
+        // Reset color after a short delay
+        setTimeout(() => {
+          if (meshRef.current && meshRef.current.material instanceof MeshStandardMaterial) {
+            meshRef.current.material.color.set(module.color || '#888888');
+            meshRef.current.material.opacity = selected ? 0.8 : 1;
+          }
+        }, 200);
+      }
       
-      onUpdate?.({
-        position: [position.x, position.y, position.z],
-        rotation: [rotation.x, rotation.y, rotation.z],
-        scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
-      });
+      // Prevent movement if there's a collision
+      if (meshRef.current) {
+        meshRef.current.position.copy(new Vector3(...module.position));
+        meshRef.current.rotation.copy(new Euler(...module.rotation));
+      }
+    } else {
+      // Update position and rotation if no collision
+      if (meshRef.current) {
+        meshRef.current.position.copy(position);
+        meshRef.current.rotation.copy(rotation);
+        
+        onUpdate?.({
+          position: [position.x, position.y, position.z],
+          rotation: [rotation.x, rotation.y, rotation.z],
+          scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+        });
+      }
     }
-  }, [readOnly, onUpdate, module.id, module.dimensions, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming]);
+    
+    // Update shadow position
+    updateShadowTransform();
+  }, [readOnly, onUpdate, module.id, module.dimensions, module.position, module.rotation, module.color, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming]);
 
   // Update shadow transform calculation
-  const shadowTransform = useMemo(() => {
-    if (!meshRef.current) return { position: new Vector3(0, 0.01, 0), rotation: new Euler(-Math.PI/2, 0, 0) };
+  const updateShadowTransform = useCallback(() => {
+    if (!meshRef.current) return;
     
     const worldPosition = new Vector3();
-    const worldRotation = new Euler(-Math.PI/2, 0, 0);
-    
-    // Get world position
     meshRef.current.getWorldPosition(worldPosition);
     worldPosition.y = 0.01; // Keep shadow just above ground
     
-    // Match object's Y rotation
-    worldRotation.y = meshRef.current.rotation.y;
+    const worldRotation = new Euler(-Math.PI/2, meshRef.current.rotation.y, 0);
     
     return { position: worldPosition, rotation: worldRotation };
-  }, []); // Empty dependency array - will update based on render cycles
+  }, []);
+
+  // Keep shadow updated
+  useEffect(() => {
+    if (!meshRef.current) return;
+    
+    const updateInterval = setInterval(() => {
+      updateShadowTransform();
+    }, 1000 / 60); // 60fps updates
+    
+    return () => clearInterval(updateInterval);
+  }, [updateShadowTransform]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {

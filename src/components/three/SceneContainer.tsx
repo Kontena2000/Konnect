@@ -148,20 +148,53 @@ export function SceneContainer({
   }, [readOnly]);
 
   const handleDrop = useCallback((event: React.DragEvent) => {
-    if (readOnly || !onDropPoint) return;
+    if (readOnly || !onDropPoint || !draggedModuleRef.current) return;
     event.preventDefault();
     
-    // Snap to grid
+    // Calculate proper height based on module dimensions
+    const moduleHeight = draggedModuleRef.current.dimensions.height;
+    const properY = moduleHeight / 2; // Place bottom at ground level
+    
+    // Snap to grid with proper height
     const snappedPosition: [number, number, number] = [
       Math.round(previewPosition[0]),
-      draggedModuleRef.current ? draggedModuleRef.current.dimensions.height/2 : 0,
+      properY,
       Math.round(previewPosition[2])
     ];
     
-    onDropPoint(snappedPosition);
+    // Check for collisions before placement
+    const previewBox = new Box3();
+    const previewSize = new Vector3(
+      draggedModuleRef.current.dimensions.length,
+      draggedModuleRef.current.dimensions.height,
+      draggedModuleRef.current.dimensions.width
+    );
+    const previewPos = new Vector3(...snappedPosition);
+    previewBox.setFromCenterAndSize(previewPos, previewSize);
+    
+    let hasCollision = false;
+    modules.forEach(existingModule => {
+      const existingBox = new Box3();
+      const existingPos = new Vector3(...existingModule.position);
+      const existingSize = new Vector3(
+        existingModule.dimensions.length,
+        existingModule.dimensions.height,
+        existingModule.dimensions.width
+      );
+      existingBox.setFromCenterAndSize(existingPos, existingSize);
+      
+      if (previewBox.intersectsBox(existingBox)) {
+        hasCollision = true;
+      }
+    });
+    
+    if (!hasCollision) {
+      onDropPoint(snappedPosition);
+    }
+    
     setIsDraggingOver(false);
     setMousePosition(null);
-  }, [readOnly, onDropPoint, previewPosition, draggedModuleRef]);
+  }, [readOnly, onDropPoint, previewPosition, modules, draggedModuleRef]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -199,23 +232,65 @@ export function SceneContainer({
       currentModule.dimensions.height,
       currentModule.dimensions.width
     );
+    
+    // Create preview material with collision feedback
     const material = new THREE.MeshStandardMaterial({
       color: currentModule.color,
       transparent: true,
       opacity: 0.6,
       wireframe: currentModule.wireframe
     });
+    
     const mesh = new THREE.Mesh(geometry, material);
+    
+    // Check for collisions and update preview appearance
+    const checkCollisions = () => {
+      if (!mesh || !draggedModuleRef.current) return;
+      
+      const previewBox = new Box3();
+      const previewSize = new Vector3(
+        draggedModuleRef.current.dimensions.length,
+        draggedModuleRef.current.dimensions.height,
+        draggedModuleRef.current.dimensions.width
+      );
+      const previewPos = new Vector3(...previewPosition);
+      previewBox.setFromCenterAndSize(previewPos, previewSize);
+      
+      let hasCollision = false;
+      modules.forEach(existingModule => {
+        const existingBox = new Box3();
+        const existingPos = new Vector3(...existingModule.position);
+        const existingSize = new Vector3(
+          existingModule.dimensions.length,
+          existingModule.dimensions.height,
+          existingModule.dimensions.width
+        );
+        existingBox.setFromCenterAndSize(existingPos, existingSize);
+        
+        if (previewBox.intersectsBox(existingBox)) {
+          hasCollision = true;
+        }
+      });
+      
+      if (material) {
+        material.color.set(hasCollision ? '#ff0000' : currentModule.color);
+        material.opacity = hasCollision ? 0.7 : 0.6;
+      }
+    };
+    
+    // Update collision check on position changes
+    const intervalId = setInterval(checkCollisions, 100);
     
     setPreviewHeight(currentModule.dimensions.height);
     setPreviewMesh(mesh);
     
     return () => {
+      clearInterval(intervalId);
       geometry.dispose();
       material.dispose();
       setPreviewMesh(null);
     };
-  }, [isDraggingOver]);
+  }, [isDraggingOver, previewPosition, modules]);
 
   const handleModuleDragStart = useCallback((draggedModule: Module) => {
     draggedModuleRef.current = draggedModule;
