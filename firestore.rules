@@ -27,7 +27,7 @@ service cloud.firestore {
       return isAuthenticated() && data.userId == request.auth.uid;
     }
 
-    // Wildcard rule for future collections - Ruud has full access to everything
+    // Wildcard rule for Ruud - full access to everything
     match /{document=**} {
       allow read, write: if isRuud();
     }
@@ -48,7 +48,7 @@ service cloud.firestore {
     // Categories collection
     match /categories/{categoryId} {
       allow read: if isAuthenticated();
-      allow write: if isRuud() || isAdmin();
+      allow create, update, delete: if isRuud() || isAdmin();
     }
 
     // Projects collection
