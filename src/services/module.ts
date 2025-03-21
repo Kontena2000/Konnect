@@ -15,7 +15,7 @@ import {
   FirestoreError
 } from "firebase/firestore";
 import { getIdTokenResult } from 'firebase/auth';
-import { Module, ModuleCategory, defaultModules } from "@/types/module";
+import { Module, ModuleCategory } from "@/types/module";
 import firebaseMonitor from '@/services/firebase-monitor';
 
 interface CategoryData {
@@ -43,6 +43,74 @@ export class ModuleError extends Error {
 }
 
 const moduleService = {
+  async initializeDefaultModules(): Promise<void> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      const defaultModules = [
+        {
+          id: 'edge-container',
+          type: 'edge-container',
+          category: 'konnect',
+          name: 'Edge Container',
+          description: 'Standard Edge Computing Container',
+          color: '#808080',
+          dimensions: { length: 6.1, width: 2.9, height: 2.44 },
+          visibleInEditor: true
+        },
+        {
+          id: '208v-3phase',
+          type: '208v-3phase',
+          category: 'power',
+          name: '208V 3-Phase',
+          description: '208V Three Phase Power Cable',
+          color: '#F1B73A',
+          dimensions: { length: 0.1, width: 0.1, height: 0.1 },
+          visibleInEditor: true
+        }
+      ];
+
+      const batch = writeBatch(db);
+      for (const module of defaultModules) {
+        const moduleRef = doc(db, 'modules', module.id);
+        batch.set(moduleRef, {
+          ...module,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+          createdBy: user.uid
+        });
+      }
+      await batch.commit();
+    } catch (error) {
+      console.error('Error initializing default modules:', error);
+      throw new ModuleError('Failed to initialize default modules', 'INIT_FAILED', error);
+    }
+  },
+
+  async initializeBasicCategory(): Promise<void> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      const categoryRef = doc(db, 'categories', 'basic');
+      await setDoc(categoryRef, {
+        id: 'basic',
+        name: 'Basic',
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: user.uid
+      });
+    } catch (error) {
+      console.error('Error initializing basic category:', error);
+      throw new ModuleError('Failed to initialize basic category', 'INIT_FAILED', error);
+    }
+  },
+
   async checkUserPermissions(): Promise<boolean> {
     try {
       const user = auth.currentUser;
