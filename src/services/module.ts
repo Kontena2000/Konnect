@@ -205,10 +205,26 @@ const moduleService = {
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
+      firebaseMonitor.logOperation({
+        type: 'category',
+        action: 'create',
+        status: 'pending',
+        timestamp: Date.now(),
+        details: data
+      });
+
       const user = auth.currentUser;
       if (!user) {
-        console.error('No user logged in');
-        throw new Error('Authentication required');
+        const error = 'No user logged in';
+        firebaseMonitor.logOperation({
+          type: 'category',
+          action: 'create',
+          status: 'error',
+          timestamp: Date.now(),
+          error,
+          details: data
+        });
+        throw new Error(error);
       }
 
       // Special case for Ruud - always has full access
@@ -216,19 +232,35 @@ const moduleService = {
       console.log('Creating category as user:', user.email, 'isRuud:', isRuud);
       
       if (!isRuud) {
-        // Force token refresh to get latest claims
         const tokenResult = await getIdTokenResult(user, true);
         console.log('User token claims:', tokenResult.claims);
         
         if (tokenResult.claims.role !== 'admin' && tokenResult.claims.role !== 'editor') {
-          console.error('User lacks required role. Current role:', tokenResult.claims.role);
-          throw new Error('Insufficient permissions');
+          const error = 'Insufficient permissions';
+          firebaseMonitor.logOperation({
+            type: 'category',
+            action: 'create',
+            status: 'error',
+            timestamp: Date.now(),
+            error,
+            details: { ...data, userRole: tokenResult.claims.role }
+          });
+          throw new Error(error);
         }
       }
 
       // Validate category data
       if (!data.id || !data.name || data.name.trim().length === 0) {
-        throw new Error('Invalid category data');
+        const error = 'Invalid category data';
+        firebaseMonitor.logOperation({
+          type: 'category',
+          action: 'create',
+          status: 'error',
+          timestamp: Date.now(),
+          error,
+          details: data
+        });
+        throw new Error(error);
       }
 
       console.log('Creating category:', data);
@@ -237,7 +269,16 @@ const moduleService = {
       // Check if category already exists
       const existingCategory = await getDoc(categoryRef);
       if (existingCategory.exists()) {
-        throw new Error('Category already exists');
+        const error = 'Category already exists';
+        firebaseMonitor.logOperation({
+          type: 'category',
+          action: 'create',
+          status: 'error',
+          timestamp: Date.now(),
+          error,
+          details: data
+        });
+        throw new Error(error);
       }
 
       const now = new Date().toISOString();
@@ -248,9 +289,25 @@ const moduleService = {
         createdBy: user.uid
       });
       
+      firebaseMonitor.logOperation({
+        type: 'category',
+        action: 'create',
+        status: 'success',
+        timestamp: Date.now(),
+        details: { ...data, userId: user.uid }
+      });
+
       console.log('Category created successfully:', data.id);
     } catch (error) {
       console.error('Error creating category:', error);
+      firebaseMonitor.logOperation({
+        type: 'category',
+        action: 'create',
+        status: 'error',
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+        details: data
+      });
       throw error;
     }
   },
