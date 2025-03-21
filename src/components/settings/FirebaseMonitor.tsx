@@ -4,13 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, Wifi, WifiOff, AlertCircle, CheckCircle2, Trash2 } from "lucide-react";
+import { Loader2, Wifi, WifiOff, AlertCircle, CheckCircle2, Trash2, ChevronDown, ChevronUp } from "lucide-react";
 import firebaseMonitor, { FirebaseStatus, OperationLog } from "@/services/firebase-monitor";
 import { format } from "date-fns";
+import { useAuth } from "@/contexts/AuthContext";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
 
 export function FirebaseMonitor() {
   const [status, setStatus] = useState<FirebaseStatus>(firebaseMonitor.getStatus());
   const [testing, setTesting] = useState(false);
+  const [expandedLogs, setExpandedLogs] = useState<number[]>([]);
+  const { user } = useAuth();
 
   useEffect(() => {
     return firebaseMonitor.subscribe(setStatus);
@@ -27,6 +35,14 @@ export function FirebaseMonitor() {
 
   const handleClearLogs = () => {
     firebaseMonitor.clearLogs();
+  };
+
+  const toggleLogExpansion = (index: number) => {
+    setExpandedLogs(prev => 
+      prev.includes(index) 
+        ? prev.filter(i => i !== index)
+        : [...prev, index]
+    );
   };
 
   const getStatusColor = (state: string) => {
@@ -68,7 +84,15 @@ export function FirebaseMonitor() {
     <Card>
       <CardHeader>
         <div className="flex items-center justify-between">
-          <CardTitle>Firebase Status Monitor</CardTitle>
+          <div className="space-y-2">
+            <CardTitle>Firebase Status Monitor</CardTitle>
+            {user && (
+              <div className="text-sm text-muted-foreground">
+                <div>Current User: {user.email}</div>
+                <div>User ID: {user.uid}</div>
+              </div>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button 
               variant="outline" 
@@ -130,10 +154,15 @@ export function FirebaseMonitor() {
 
           <div className="space-y-2">
             <h3 className="text-sm font-medium">Operation Logs</h3>
-            <ScrollArea className="h-[300px] rounded-md border">
+            <ScrollArea className="h-[400px] rounded-md border">
               <div className="p-4 space-y-2">
                 {status.operationLogs.map((log, index) => (
-                  <div key={index} className="text-sm border-b pb-2">
+                  <Collapsible
+                    key={index}
+                    open={expandedLogs.includes(index)}
+                    onOpenChange={() => toggleLogExpansion(index)}
+                    className="border rounded-md p-2"
+                  >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <span>{getOperationIcon(log.type)}</span>
@@ -142,19 +171,43 @@ export function FirebaseMonitor() {
                           {log.status}
                         </Badge>
                       </div>
-                      <span className="text-xs text-muted-foreground">
-                        {format(log.timestamp, 'HH:mm:ss')}
-                      </span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-muted-foreground">
+                          {format(log.timestamp, 'HH:mm:ss')}
+                        </span>
+                        <CollapsibleTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            {expandedLogs.includes(index) ? (
+                              <ChevronUp className="h-4 w-4" />
+                            ) : (
+                              <ChevronDown className="h-4 w-4" />
+                            )}
+                          </Button>
+                        </CollapsibleTrigger>
+                      </div>
                     </div>
-                    {log.error && (
-                      <p className="mt-1 text-xs text-red-500">{log.error}</p>
-                    )}
-                    {log.details && (
-                      <pre className="mt-1 text-xs text-muted-foreground overflow-x-auto">
-                        {JSON.stringify(log.details, null, 2)}
-                      </pre>
-                    )}
-                  </div>
+                    <CollapsibleContent className="pt-2">
+                      {log.error && (
+                        <div className="mt-2 p-2 bg-red-50 dark:bg-red-900/10 rounded-md">
+                          <p className="text-xs text-red-500">{log.error}</p>
+                        </div>
+                      )}
+                      {log.details && (
+                        <div className="mt-2 p-2 bg-muted rounded-md">
+                          <pre className="text-xs text-muted-foreground overflow-x-auto whitespace-pre-wrap">
+                            {JSON.stringify(log.details, null, 2)}
+                          </pre>
+                          {log.details.userId && (
+                            <div className="mt-2 text-xs text-muted-foreground">
+                              <div>User ID: {log.details.userId}</div>
+                              {log.details.email && <div>Email: {log.details.email}</div>}
+                              {log.details.role && <div>Role: {log.details.role}</div>}
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </CollapsibleContent>
+                  </Collapsible>
                 ))}
               </div>
             </ScrollArea>
