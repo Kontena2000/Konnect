@@ -44,19 +44,25 @@ const moduleService = {
     try {
       const user = auth.currentUser;
       if (!user) {
-        console.error("No user logged in");
+        console.error('No user logged in');
         return false;
       }
 
+      // Special case for Ruud
+      if (user.email === 'ruud@kontena.eu') {
+        console.log('Ruud has full access');
+        return true;
+      }
+
       const token = await user.getIdTokenResult();
-      console.log("User token claims:", token.claims);
+      console.log('User token claims:', token.claims);
       
       const canEdit = token.claims.role === 'admin' || token.claims.role === 'editor';
-      console.log("User can edit:", canEdit);
+      console.log('User can edit:', canEdit);
       
       return canEdit;
     } catch (error) {
-      console.error("Error checking permissions:", error);
+      console.error('Error checking permissions:', error);
       return false;
     }
   },

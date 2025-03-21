@@ -1,10 +1,7 @@
 
 const { initializeApp } = require("firebase/app");
-const { getAuth } = require("firebase/auth");
-const { getFirestore } = require("firebase/firestore");
-const path = require("path");
-
-// Load environment variables
+const { getAuth, createUserWithEmailAndPassword } = require("firebase/auth");
+const { getFirestore, collection, doc, setDoc } = require("firebase/firestore");
 require("dotenv").config({ path: ".env.local" });
 
 const firebaseConfig = {
@@ -26,7 +23,7 @@ const defaultUsers = [
 
 async function createUser(email, password) {
   try {
-    const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
     console.log(`Created user: ${email}`);
     return userCredential.user;
   } catch (error) {
@@ -40,12 +37,29 @@ async function createUser(email, password) {
 
 async function setUserRole(email, role) {
   try {
-    const usersRef = db.collection("users");
-    await usersRef.doc(email).set({
+    const usersRef = collection(db, "users");
+    await setDoc(doc(usersRef, email), {
       email,
       role,
       createdAt: new Date()
     });
+    
+    // Set custom claims via API
+    const response = await fetch('http://localhost:3000/api/auth/set-custom-claims', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email,
+        role
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error('Failed to set custom claims');
+    }
+    
     console.log(`Set role for ${email} to ${role}`);
   } catch (error) {
     console.error(`Failed to set role for ${email}:`, error);
@@ -57,8 +71,10 @@ async function initialize() {
   
   try {
     for (const user of defaultUsers) {
-      await createUser(user.email, user.password);
-      await setUserRole(user.email, user.role);
+      const userRecord = await createUser(user.email, user.password);
+      if (userRecord) {
+        await setUserRole(user.email, user.role);
+      }
     }
     console.log("Users initialized successfully");
   } catch (error) {
