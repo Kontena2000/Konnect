@@ -1,4 +1,3 @@
-
 import { db, auth } from "@/lib/firebase";
 import { 
   collection, 
@@ -17,6 +16,7 @@ import {
 import { getIdTokenResult } from 'firebase/auth';
 import { Module, ModuleCategory } from "@/types/module";
 import firebaseMonitor from '@/services/firebase-monitor';
+import { moduleOperations } from './module-operations';
 
 interface CategoryData {
   id: string;
@@ -354,6 +354,10 @@ const moduleService = {
       throw new ModuleError('Failed to initialize basic category', 'INIT_FAILED', error);
     }
   },
+
+  createModule: moduleOperations.createModule,
+  updateModule: moduleOperations.updateModule,
+  deleteModule: moduleOperations.deleteModule,
 
   // Rest of the service methods remain unchanged...
 };
