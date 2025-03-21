@@ -48,7 +48,7 @@ const moduleService = {
 
       // Special case for Ruud - always has full access
       if (user.email === 'ruud@kontena.eu') {
-        console.log('Admin user detected, granting full access');
+        console.log('Admin user detected (ruud@kontena.eu), granting full access');
         return true;
       }
 
@@ -58,12 +58,55 @@ const moduleService = {
         return tokenResult.claims.role === 'admin';
       } catch (tokenError) {
         console.error('Error getting token claims:', tokenError);
-        // Fall back to true if token verification fails during development
-        return true;
+        return false;
       }
     } catch (error) {
       console.error('Permission check failed:', error);
       return false;
+    }
+  },
+
+  async deleteCategory(categoryId: string): Promise<void> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      firebaseMonitor.logOperation({
+        type: 'category',
+        action: 'delete',
+        status: 'pending',
+        timestamp: Date.now(),
+        details: { categoryId, email: user.email }
+      });
+
+      // Check permissions
+      const hasPermission = await this.checkUserPermissions();
+      if (!hasPermission) {
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      }
+
+      const categoryRef = doc(db, 'categories', categoryId);
+      await deleteDoc(categoryRef);
+
+      firebaseMonitor.logOperation({
+        type: 'category',
+        action: 'delete',
+        status: 'success',
+        timestamp: Date.now(),
+        details: { categoryId, email: user.email }
+      });
+    } catch (error) {
+      console.error('Error deleting category:', error);
+      firebaseMonitor.logOperation({
+        type: 'category',
+        action: 'delete',
+        status: 'error',
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
     }
   },
 
