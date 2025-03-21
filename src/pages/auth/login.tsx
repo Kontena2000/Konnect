@@ -13,17 +13,15 @@ export default function LoginPage() {
         <meta name="description" content="Sign in to your Konnect account" />
       </Head>
       <div className="relative min-h-screen flex items-center justify-center p-4 overflow-hidden">
-        {/* Background Image */}
         <div 
           className="absolute inset-0 bg-cover bg-center bg-no-repeat"
           style={{ 
-            backgroundImage: "url('/images/grid-background.png')",
-            filter: "brightness(0.9) sepia(20%) hue-rotate(180deg)"
+            backgroundImage: "url('/images/grid-cubes-background.png')",
+            filter: "brightness(1) contrast(1.1)"
           }}
         />
         
-        {/* Overlay */}
-        <div className="absolute inset-0 bg-background/60 backdrop-blur-[2px]" />
+        <div className="absolute inset-0 bg-background/40 backdrop-blur-[1px]" />
         
         <Card className="relative w-full max-w-lg bg-background/20 backdrop-blur-md border-primary/20">
           <CardHeader className="space-y-1">
