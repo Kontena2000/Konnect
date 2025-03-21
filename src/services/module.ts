@@ -1,3 +1,4 @@
+
 import { db, auth } from "@/lib/firebase";
 import { 
   collection, 
@@ -42,7 +43,7 @@ export class ModuleError extends Error {
 }
 
 const moduleService = {
-  async checkUserPermissions(requireAdmin: boolean = false): Promise<boolean> {
+  async checkUserPermissions(): Promise<boolean> {
     try {
       const user = auth.currentUser;
       if (!user) {
@@ -60,64 +61,13 @@ const moduleService = {
       const tokenResult = await getIdTokenResult(user, true);
       console.log('User token claims:', tokenResult.claims);
       
-      if (requireAdmin) {
-        const isAdmin = tokenResult.claims.role === 'admin';
-        console.log('User is admin:', isAdmin);
-        return isAdmin;
-      }
+      const isAdmin = tokenResult.claims.role === 'admin';
+      console.log('User is admin:', isAdmin);
       
-      const canEdit = tokenResult.claims.role === 'admin' || tokenResult.claims.role === 'editor';
-      console.log('User can edit:', canEdit, 'Role:', tokenResult.claims.role);
-      
-      return canEdit;
+      return isAdmin;
     } catch (error) {
       console.error('Error checking permissions:', error);
       return false;
-    }
-  },
-
-  async initializeBasicCategory(): Promise<void> {
-    try {
-      if (!(await this.checkUserPermissions())) {
-        throw new Error("Insufficient permissions");
-      }
-
-      console.log("Checking categories collection...");
-      const categoriesRef = collection(db, "categories");
-      const snapshot = await getDocs(categoriesRef);
-      
-      if (!snapshot.empty) {
-        console.log("Categories already exist");
-        return;
-      }
-
-      console.log("No categories found, initializing...");
-      const categories = [
-        { id: "basic", name: "Basic" },
-        { id: "konnect", name: "Konnect Modules" },
-        { id: "network", name: "Network" },
-        { id: "piping", name: "Piping" },
-        { id: "environment", name: "Environment" }
-      ];
-
-      const batch = writeBatch(db);
-      const now = new Date().toISOString();
-
-      for (const category of categories) {
-        const categoryRef = doc(categoriesRef, category.id);
-        batch.set(categoryRef, {
-          ...category,
-          createdAt: now,
-          updatedAt: now
-        });
-      }
-
-      await batch.commit();
-      console.log("Categories initialized successfully");
-    } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error initializing categories:", fbError);
-      throw new Error(`Failed to initialize categories: ${fbError.message}`);
     }
   },
 
@@ -165,8 +115,7 @@ const moduleService = {
       console.log('Fetched modules:', modules);
       return modules;
     } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error('Error fetching modules:', fbError);
+      console.error('Error fetching modules:', error);
       return [];
     }
   },
@@ -203,70 +152,22 @@ const moduleService = {
       console.log("Fetched categories:", categories);
       return categories;
     } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error("Error fetching categories:", fbError);
+      console.error("Error fetching categories:", error);
       return [];
     }
   },
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'pending',
-        timestamp: Date.now(),
-        details: data
-      });
-
       const user = auth.currentUser;
       if (!user) {
-        const error = 'No user logged in';
-        firebaseMonitor.logOperation({
-          type: 'category',
-          action: 'create',
-          status: 'error',
-          timestamp: Date.now(),
-          error,
-          details: data
-        });
-        throw new Error(error);
+        throw new Error('No user logged in');
       }
 
       // Special case for Ruud - always has full access
       const isRuud = user.email === 'ruud@kontena.eu';
-      console.log('Creating category as user:', user.email, 'isRuud:', isRuud);
-      
-      if (!isRuud) {
-        const tokenResult = await getIdTokenResult(user, true);
-        console.log('User token claims:', tokenResult.claims);
-        
-        if (tokenResult.claims.role !== 'admin' && tokenResult.claims.role !== 'editor') {
-          const error = 'Insufficient permissions';
-          firebaseMonitor.logOperation({
-            type: 'category',
-            action: 'create',
-            status: 'error',
-            timestamp: Date.now(),
-            error,
-            details: { ...data, userRole: tokenResult.claims.role }
-          });
-          throw new Error(error);
-        }
-      }
-
-      // Validate category data
-      if (!data.id || !data.name || data.name.trim().length === 0) {
-        const error = 'Invalid category data';
-        firebaseMonitor.logOperation({
-          type: 'category',
-          action: 'create',
-          status: 'error',
-          timestamp: Date.now(),
-          error,
-          details: data
-        });
-        throw new Error(error);
+      if (!isRuud && !(await this.checkUserPermissions())) {
+        throw new Error('Insufficient permissions');
       }
 
       console.log('Creating category:', data);
@@ -275,16 +176,7 @@ const moduleService = {
       // Check if category already exists
       const existingCategory = await getDoc(categoryRef);
       if (existingCategory.exists()) {
-        const error = 'Category already exists';
-        firebaseMonitor.logOperation({
-          type: 'category',
-          action: 'create',
-          status: 'error',
-          timestamp: Date.now(),
-          error,
-          details: data
-        });
-        throw new Error(error);
+        throw new Error('Category already exists');
       }
 
       const now = new Date().toISOString();
@@ -295,37 +187,24 @@ const moduleService = {
         createdBy: user.uid
       });
       
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'success',
-        timestamp: Date.now(),
-        details: { ...data, userId: user.uid }
-      });
-
       console.log('Category created successfully:', data.id);
     } catch (error) {
       console.error('Error creating category:', error);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error',
-        details: data
-      });
       throw error;
     }
   },
 
   async createModule(data: Module): Promise<string> {
     try {
-      if (!(await this.checkUserPermissions())) {
-        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
       }
 
-      if (!(await this.validateModuleData(data))) {
-        throw new ModuleError('Invalid module data', 'VALIDATION_FAILED');
+      // Special case for Ruud - always has full access
+      const isRuud = user.email === 'ruud@kontena.eu';
+      if (!isRuud && !(await this.checkUserPermissions())) {
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
       }
 
       console.log('Creating new module:', data);
@@ -342,6 +221,7 @@ const moduleService = {
         ...data,
         createdAt: now,
         updatedAt: now,
+        createdBy: user.uid,
         visibleInEditor: true
       };
       
@@ -355,43 +235,17 @@ const moduleService = {
     }
   },
 
-  async initializeDefaultModules(): Promise<void> {
-    try {
-      if (!(await this.checkUserPermissions())) {
-        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
-      }
-
-      console.log('Initializing default modules...');
-      const batch = writeBatch(db);
-      const modulesRef = collection(db, 'modules');
-
-      for (const defaultModule of defaultModules) {
-        const moduleRef = doc(modulesRef, defaultModule.id);
-        const now = new Date().toISOString();
-        batch.set(moduleRef, {
-          ...defaultModule,
-          createdAt: now,
-          updatedAt: now,
-          visibleInEditor: true
-        });
-      }
-
-      await batch.commit();
-      console.log('Default modules initialized successfully');
-    } catch (error) {
-      console.error('Error initializing default modules:', error);
-      throw new ModuleError('Failed to initialize default modules', 'INIT_FAILED', error);
-    }
-  },
-
   async updateModule(id: string, data: Partial<Module>): Promise<void> {
     try {
-      if (!(await this.checkUserPermissions())) {
-        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
       }
 
-      if (!(await this.validateModuleData({ ...data, id }))) {
-        throw new ModuleError('Invalid module data', 'VALIDATION_FAILED');
+      // Special case for Ruud - always has full access
+      const isRuud = user.email === 'ruud@kontena.eu';
+      if (!isRuud && !(await this.checkUserPermissions())) {
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
       }
 
       console.log('Updating module:', id, data);
@@ -405,7 +259,8 @@ const moduleService = {
 
       await updateDoc(moduleRef, {
         ...data,
-        updatedAt: serverTimestamp()
+        updatedAt: serverTimestamp(),
+        updatedBy: user.uid
       });
       console.log('Module updated successfully:', id);
     } catch (error) {
@@ -417,50 +272,39 @@ const moduleService = {
 
   async deleteModule(id: string): Promise<void> {
     try {
-      if (!(await this.checkUserPermissions(true))) {
-        throw new ModuleError('Only admins can delete modules', 'UNAUTHORIZED');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      // Special case for Ruud - always has full access
+      const isRuud = user.email === 'ruud@kontena.eu';
+      if (!isRuud && !(await this.checkUserPermissions())) {
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
       }
 
       console.log('Deleting module:', id);
       const moduleRef = doc(db, 'modules', id);
-      
-      // Check if module exists
-      const moduleSnap = await getDoc(moduleRef);
-      if (!moduleSnap.exists()) {
-        throw new ModuleError('Module not found', 'NOT_FOUND');
-      }
-
-      // Check if module is in use in any layouts
-      const layoutsQuery = query(
-        collection(db, 'layouts'),
-        where('modules', 'array-contains', id)
-      );
-      const layoutsSnap = await getDocs(layoutsQuery);
-      
-      if (!layoutsSnap.empty) {
-        throw new ModuleError(
-          'Cannot delete module that is in use in layouts',
-          'MODULE_IN_USE'
-        );
-      }
-
       await deleteDoc(moduleRef);
       console.log('Module deleted successfully:', id);
     } catch (error) {
       console.error('Error deleting module:', error);
       if (error instanceof ModuleError) throw error;
-      throw new ModuleError(
-        'Failed to delete module',
-        'DELETE_FAILED',
-        error
-      );
+      throw new ModuleError('Failed to delete module', 'DELETE_FAILED', error);
     }
   },
 
   async deleteCategory(id: string): Promise<void> {
     try {
-      if (!(await this.checkUserPermissions(true))) {
-        throw new Error('Only admins can delete categories');
+      const user = auth.currentUser;
+      if (!user) {
+        throw new Error('Not authenticated');
+      }
+
+      // Special case for Ruud - always has full access
+      const isRuud = user.email === 'ruud@kontena.eu';
+      if (!isRuud && !(await this.checkUserPermissions())) {
+        throw new Error('Insufficient permissions');
       }
 
       if (id === 'basic') {
@@ -472,20 +316,9 @@ const moduleService = {
       await deleteDoc(categoryRef);
       console.log('Category deleted successfully:', id);
     } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error('Error deleting category:', fbError);
-      throw new Error(`Failed to delete category: ${fbError.message}`);
+      console.error('Error deleting category:', error);
+      throw error;
     }
-  },
-
-  async validateModuleData(data: Partial<Module>): Promise<boolean> {
-    if (!data.name || data.name.trim().length === 0) return false;
-    if (!data.category) return false;
-    if (!data.dimensions || 
-        data.dimensions.length <= 0 || 
-        data.dimensions.width <= 0 || 
-        data.dimensions.height <= 0) return false;
-    return true;
   }
 };
 
