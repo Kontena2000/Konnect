@@ -65,13 +65,13 @@ export default function LayoutEditorPage() {
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
   const [rotationAngle, setRotationAngle] = useState(0);
+  const [saving, setSaving] = useState(false); // Added saving state
 
   const {
     modules,
     connections,
     selectedModuleId,
     hasChanges,
-    saving,
     setModules,
     setConnections,
     setSelectedModuleId,
@@ -123,6 +123,40 @@ export default function LayoutEditorPage() {
       }
     }
   });
+
+  const handleSave = async () => {
+    try {
+      if (!layout?.id) {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'No layout selected to save'
+        });
+        return;
+      }
+
+      setSaving(true); // Set saving state to true
+      await layoutService.updateLayout(layout.id, {
+        modules,
+        connections,
+        updatedAt: new Date()
+      });
+
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully'
+      });
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save layout'
+      });
+    } finally {
+      setSaving(false); // Reset saving state
+    }
+  };
 
   const handleDragStart = (event: DragStartEvent) => {
     const draggedItem = modules.find(item => item.id === event.active.id);
@@ -222,6 +256,32 @@ export default function LayoutEditorPage() {
           onDragStart={handleDragStart}
         >
           <div className='flex-1 relative'>
+            {/* Add Save Button */}
+            <div className='absolute top-4 right-4 z-10 flex items-center gap-2'>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline'
+                      size='icon'
+                      onClick={handleSave}
+                      disabled={saving}
+                      className='bg-background'
+                    >
+                      {saving ? (
+                        <Loader2 className='h-4 w-4 animate-spin' />
+                      ) : (
+                        <Save className='h-4 w-4' />
+                      )}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Save Layout (Ctrl+S)</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
+
             <SceneContainer
               modules={modules}
               connections={connections}

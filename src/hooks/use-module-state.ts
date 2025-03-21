@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -77,6 +76,27 @@ export function useModuleState({
       debouncedSave(modules, connections);
     }
   }, [modules, connections, autoSave, saving, layoutId, user, debouncedSave]);
+
+  // Add autosave effect
+  useEffect(() => {
+    if (!autoSave || !layoutId || !hasChanges) return;
+
+    const saveTimer = setTimeout(async () => {
+      try {
+        await layoutService.updateLayout(layoutId, {
+          modules,
+          connections,
+          updatedAt: new Date()
+        }, user);
+        
+        setSaving(false);
+      } catch (error) {
+        console.error('Error auto-saving layout:', error);
+      }
+    }, 2000); // 2 second debounce
+
+    return () => clearTimeout(saveTimer);
+  }, [modules, connections, layoutId, autoSave, hasChanges]);
 
   const updateModule = useCallback((moduleId: string, updates: Partial<Module>) => {
     setModules(prev => prev.map(module =>
