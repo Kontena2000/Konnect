@@ -39,7 +39,7 @@ service cloud.firestore {
 
     match /projects/{projectId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated();
+      allow create: if isAuthenticated() || isRuud();
       allow update, delete: if isAuthenticated() && 
         (resource.data.userId == request.auth.uid || 
          isAdmin() || 

@@ -48,13 +48,13 @@ const moduleService = {
         return false;
       }
 
-      // Special case for Ruud
+      // Special case for Ruud - always has full access
       if (user.email === 'ruud@kontena.eu') {
         console.log('Ruud has full access');
         return true;
       }
 
-      const token = await user.getIdTokenResult();
+      const token = await user.getIdTokenResult(true); // Force token refresh
       console.log('User token claims:', token.claims);
       
       const canEdit = token.claims.role === 'admin' || token.claims.role === 'editor';
