@@ -4,7 +4,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Plus, Search, Loader2, Trash2, FolderPlus } from "lucide-react";
+import { Plus, Search, Loader2, Trash2, FolderPlus, Copy } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import moduleService, { ModuleError } from "@/services/module";
 import { Module, ModuleCategory } from "@/types/module";
@@ -120,6 +120,12 @@ export function ModuleManager() {
   const handleUpdateModule = async (id: string, data: Partial<Module>) => {
     setIsSaving(id);
     try {
+      // Show saving feedback
+      toast({
+        title: 'Saving changes...',
+        description: 'Please wait while we update the module'
+      });
+
       // Optimistic update
       setModules(prev => prev.map(module => 
         module.id === id ? { ...module, ...data } : module
@@ -145,6 +151,29 @@ export function ModuleManager() {
       });
     } finally {
       setIsSaving(null);
+    }
+  };
+
+  const handleDuplicate = async (moduleId: string) => {
+    try {
+      toast({
+        title: 'Duplicating module...',
+        description: 'Please wait while we create a copy'
+      });
+
+      await moduleService.duplicateModule(moduleId);
+      await loadModules();
+      
+      toast({
+        title: 'Success',
+        description: 'Module duplicated successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to duplicate module'
+      });
     }
   };
 
@@ -219,16 +248,16 @@ export function ModuleManager() {
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-4 flex-1">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <div className='space-y-6'>
+      <div className='flex items-center justify-between'>
+        <div className='flex items-center gap-4 flex-1'>
+          <div className='relative flex-1'>
+            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4' />
             <Input
-              placeholder="Search modules..."
+              placeholder='Search modules...'
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className='pl-10'
             />
           </div>
           <Select value={categoryFilter} onValueChange={setCategoryFilter}>
@@ -298,21 +327,39 @@ export function ModuleManager() {
         <CreateModuleDialog onModuleCreate={handleCreateModule} />
       </div>
 
-      <ScrollArea className="h-[700px]">
-        <div className="space-y-4">
+      <ScrollArea className='h-[700px]'>
+        <div className='space-y-4'>
           {filteredModules.map(module => (
-            <Card key={module.id} className="relative">
+            <Card key={module.id} className='relative overflow-hidden'>
               <CardHeader>
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
+                <div className='flex items-center justify-between'>
+                  <CardTitle className='flex items-center gap-2'>
                     {module.name}
-                    <span className="text-sm font-normal text-muted-foreground">
+                    <span className='text-sm font-normal text-muted-foreground'>
                       ({module.category})
                     </span>
                   </CardTitle>
-                  <div className="flex items-center gap-4">
-                    <div className="flex items-center gap-2">
-                      <Label htmlFor={`visible-${module.id}`} className="text-sm">
+                  <div className='flex items-center gap-2'>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant='ghost'
+                            size='icon'
+                            onClick={() => handleDuplicate(module.id)}
+                            className='h-8 w-8'
+                          >
+                            <Copy className='h-4 w-4' />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Duplicate module</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
+                    <div className='flex items-center gap-2'>
+                      <Label htmlFor={`visible-${module.id}`} className='text-sm'>
                         Show in Editor
                       </Label>
                       <Switch
@@ -321,14 +368,15 @@ export function ModuleManager() {
                         onCheckedChange={() => handleToggleVisibility(module)}
                       />
                     </div>
+
                     <AlertDialog open={moduleToDelete === module.id} onOpenChange={(open) => !open && setModuleToDelete(null)}>
                       <AlertDialogTrigger asChild>
                         <Button 
-                          variant="destructive" 
-                          size="icon"
+                          variant='destructive' 
+                          size='icon'
                           onClick={() => setModuleToDelete(module.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className='h-4 w-4' />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
@@ -359,14 +407,16 @@ export function ModuleManager() {
                   </div>
                 </div>
               </CardHeader>
+
               <CardContent>
-                <Tabs defaultValue="basic">
+                <Tabs defaultValue='basic'>
                   <TabsList>
-                    <TabsTrigger value="basic">Basic Properties</TabsTrigger>
+                    <TabsTrigger value='basic'>Basic Properties</TabsTrigger>
+                    <TabsTrigger value='advanced'>Advanced</TabsTrigger>
                   </TabsList>
 
-                  <TabsContent value="basic" className="space-y-4">
-                    <div className="grid grid-cols-2 gap-4">
+                  <TabsContent value='basic' className='space-y-4'>
+                    <div className='grid grid-cols-2 gap-4'>
                       <div>
                         <Label>Name</Label>
                         <Input
@@ -377,12 +427,12 @@ export function ModuleManager() {
                       </div>
                       <div>
                         <Label>Color</Label>
-                        <div className="flex gap-2">
+                        <div className='flex gap-2'>
                           <Input
-                            type="color"
+                            type='color'
                             value={module.color}
                             onChange={(e) => handleUpdateModule(module.id, { color: e.target.value })}
-                            className="w-12 h-12 p-1"
+                            className='w-12 h-12 p-1'
                           />
                           <Input
                             value={module.color}
@@ -390,21 +440,21 @@ export function ModuleManager() {
                           />
                         </div>
                       </div>
-                      <div className="col-span-2">
+                      <div className='col-span-2'>
                         <Label>Description</Label>
                         <Input
                           value={module.description}
                           onChange={(e) => handleUpdateModule(module.id, { description: e.target.value })}
                         />
                       </div>
-                      <div className="col-span-2">
+                      <div className='col-span-2'>
                         <Label>Dimensions (meters)</Label>
-                        <div className="grid grid-cols-3 gap-2">
+                        <div className='grid grid-cols-3 gap-2'>
                           {Object.entries(module.dimensions).map(([key, value]) => (
                             <div key={key}>
-                              <Label className="text-xs">{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
+                              <Label className='text-xs'>{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
                               <Input
-                                type="number"
+                                type='number'
                                 value={value}
                                 onChange={(e) => handleUpdateModule(module.id, {
                                   dimensions: {
@@ -422,12 +472,23 @@ export function ModuleManager() {
                       </div>
                     </div>
                   </TabsContent>
+
+                  <TabsContent value='advanced' className='space-y-4'>
+                    <div className='grid gap-4'>
+                      <div>
+                        <Label>Connection Points</Label>
+                        <div className='text-sm text-muted-foreground'>
+                          Connection point management coming soon
+                        </div>
+                      </div>
+                    </div>
+                  </TabsContent>
                 </Tabs>
                 
                 {isSaving === module.id && (
-                  <div className="absolute inset-0 bg-background/80 flex items-center justify-center">
-                    <div className="flex flex-col items-center gap-2">
-                      <Loader2 className="h-8 w-8 animate-spin" />
+                  <div className='absolute inset-0 bg-background/80 backdrop-blur-sm flex items-center justify-center'>
+                    <div className='flex flex-col items-center gap-2'>
+                      <Loader2 className='h-8 w-8 animate-spin' />
                       <p>Saving changes...</p>
                     </div>
                   </div>
