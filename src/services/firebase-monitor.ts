@@ -1,6 +1,6 @@
 
 import { db, auth } from "@/lib/firebase";
-import { enableIndexedDbPersistence, disableNetwork, enableNetwork } from "firebase/firestore";
+import { disableNetwork, enableNetwork } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export interface FirebaseStatus {
@@ -28,10 +28,13 @@ class FirebaseMonitor {
 
   constructor() {
     this.isClient = typeof window !== 'undefined';
+    if (this.isClient) {
+      this.initializeMonitoring();
+    }
   }
 
   private initializeMonitoring() {
-    if (!this.isClient || this.initialized) return;
+    if (this.initialized) return;
     this.initialized = true;
 
     // Monitor authentication state
@@ -42,25 +45,18 @@ class FirebaseMonitor {
       });
     });
 
-    // Enable offline persistence
-    enableIndexedDbPersistence(db).catch((err) => {
-      if (err.code === "failed-precondition") {
-        this.logError("Multiple tabs open, persistence can only be enabled in one tab at a time.");
-      } else if (err.code === "unimplemented") {
-        this.logError("The current browser doesn't support persistence.");
-      }
-    });
-
     // Monitor online/offline status
-    window.addEventListener("online", () => this.handleConnectionChange(true));
-    window.addEventListener("offline", () => this.handleConnectionChange(false));
+    if (typeof window !== 'undefined') {
+      window.addEventListener("online", () => this.handleConnectionChange(true));
+      window.addEventListener("offline", () => this.handleConnectionChange(false));
 
-    // Initial online status
-    this.updateStatus({
-      isOnline: navigator.onLine,
-      connectionState: navigator.onLine ? "online" : "offline",
-      timestamp: Date.now()
-    });
+      // Initial online status
+      this.updateStatus({
+        isOnline: navigator.onLine,
+        connectionState: navigator.onLine ? "online" : "offline",
+        timestamp: Date.now()
+      });
+    }
   }
 
   private async handleConnectionChange(isOnline: boolean) {
@@ -115,10 +111,6 @@ class FirebaseMonitor {
   }
 
   public subscribe(listener: (status: FirebaseStatus) => void) {
-    if (this.isClient && !this.initialized) {
-      this.initializeMonitoring();
-    }
-
     this.listeners.push(listener);
     listener(this.status);
     return () => {
