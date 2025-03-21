@@ -1,6 +1,5 @@
-
 import { createContext, useContext, useEffect, useState } from "react";
-import { onAuthStateChanged } from "firebase/auth";
+import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
 import { auth } from "@/lib/firebase";
 import type { AuthUser, UserRole } from "@/services/auth";
 import userService from "@/services/user";
@@ -34,16 +33,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (user) {
+          // Get the user's ID token result which includes custom claims
+          const tokenResult = await getIdTokenResult(user, true);
           const userDoc = await userService.getUserByEmail(user.email!);
           
           if (mounted) {
             setUser(user as AuthUser);
-            setRole(userDoc?.role || "editor");
+            // Use the role from custom claims, fallback to Firestore role
+            setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
           }
 
           // Only redirect if we're on auth pages
-          if (router.pathname === "/auth/login" || router.pathname === "/" || router.pathname === "/auth/register") {
-            router.replace("/dashboard/projects");
+          if (router.pathname === '/auth/login' || router.pathname === '/' || router.pathname === '/auth/register') {
+            router.replace('/dashboard/projects');
           }
         } else {
           if (mounted) {
@@ -52,19 +54,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           }
 
           // Only redirect if we're on protected pages
-          if (router.pathname.startsWith("/dashboard")) {
-            router.replace("/auth/login");
+          if (router.pathname.startsWith('/dashboard')) {
+            router.replace('/auth/login');
           }
         }
       } catch (error) {
-        console.error("Error in auth state change:", error);
+        console.error('Error in auth state change:', error);
         
         if (mounted) {
-          setRole("editor");
+          setRole('editor');
           toast({
-            title: "Authentication Error",
-            description: "There was a problem verifying your account. Some features may be limited.",
-            variant: "destructive"
+            title: 'Authentication Error',
+            description: 'There was a problem verifying your account. Some features may be limited.',
+            variant: 'destructive'
           });
         }
       } finally {

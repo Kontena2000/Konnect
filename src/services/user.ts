@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -13,6 +12,7 @@ import {
   serverTimestamp,
   DocumentData
 } from "firebase/firestore";
+import { auth } from '@/lib/firebase';
 
 export interface User {
   id: string;
@@ -81,6 +81,26 @@ const userService = {
         createdAt: serverTimestamp()
       });
 
+      // Get the Firebase Auth user
+      const authUser = (await auth.fetchSignInMethodsForEmail(email)).length > 0;
+      if (authUser) {
+        // Set custom claims via API
+        const response = await fetch('/api/auth/set-custom-claims', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: auth.currentUser?.uid,
+            role
+          })
+        });
+
+        if (!response.ok) {
+          console.error('Failed to set custom claims');
+        }
+      }
+
       return {
         id: docRef.id,
         email,
@@ -100,6 +120,22 @@ const userService = {
         role,
         updatedAt: serverTimestamp()
       });
+
+      // Update custom claims via API
+      const response = await fetch('/api/auth/set-custom-claims', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          uid: userId,
+          role
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to update custom claims');
+      }
     } catch (error) {
       console.error("Error updating user role:", error);
       throw new Error("Failed to update user role");
