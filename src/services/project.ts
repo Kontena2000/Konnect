@@ -15,6 +15,7 @@ import {
   writeBatch,
   Timestamp
 } from "firebase/firestore";
+import firebaseMonitor from '@/services/firebase-monitor';
 
 export class ProjectError extends Error {
   constructor(
@@ -90,13 +91,15 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
 
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
-    if (!validateProject(data)) {
-      console.error('Project validation failed:', data);
-      throw new ProjectError('Project name is required', 'VALIDATION_FAILED');
-    }
-
     try {
-      console.log('Creating project with data:', data);
+      firebaseMonitor.logOperation('Creating new project');
+      
+      if (!validateProject(data)) {
+        const error = 'Project validation failed: ' + JSON.stringify(data);
+        firebaseMonitor.logError(error);
+        throw new ProjectError('Project validation failed', 'VALIDATION_FAILED');
+      }
+
       const projectRef = await addDoc(collection(db, 'projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
@@ -110,10 +113,12 @@ const projectService = {
         updatedAt: serverTimestamp(),
         layouts: []
       });
-      console.log('Project created with ID:', projectRef.id);
+
+      firebaseMonitor.logOperation('Project created successfully: ' + projectRef.id);
       return projectRef.id;
     } catch (error) {
-      console.error('Error in createProject:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      firebaseMonitor.logError('Error creating project: ' + errorMessage);
       throw new ProjectError('Failed to create project', 'CREATE_FAILED', error);
     }
   },

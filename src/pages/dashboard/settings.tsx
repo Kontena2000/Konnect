@@ -23,6 +23,7 @@ import { useToast } from '@/hooks/use-toast';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
 import { ModuleManager } from '@/components/settings/ModuleManager';
 import { Module, ModuleCategory } from '@/types/module';
+import { FirebaseMonitor } from '@/components/settings/FirebaseMonitor';
 
 interface ModuleInputProps {
   module: Module;
@@ -162,6 +163,7 @@ export default function SettingsPage() {
             <TabsTrigger value='preferences'>Preferences</TabsTrigger>
             <TabsTrigger value='modules'>Module Management</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
+            <TabsTrigger value='system'>System</TabsTrigger>
           </TabsList>
 
           <TabsContent value='theme'>
@@ -354,6 +356,10 @@ export default function SettingsPage() {
                 </div>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          <TabsContent value='system' className='space-y-6'>
+            <FirebaseMonitor />
           </TabsContent>
         </Tabs>
       </div>
