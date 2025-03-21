@@ -1,4 +1,3 @@
-
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
@@ -7,12 +6,16 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return isAuthenticated() && request.auth.token.role == 'admin';
+      return isAuthenticated() && 
+        (request.auth.token.role == 'admin' || 
+         request.auth.email == 'ruud@kontena.eu');  // Added Ruud explicitly
     }
     
     function canEdit() {
       return isAuthenticated() && 
-        (request.auth.token.role == 'editor' || request.auth.token.role == 'admin');
+        (request.auth.token.role == 'editor' || 
+         request.auth.token.role == 'admin' ||
+         request.auth.email == 'ruud@kontena.eu');  // Added Ruud explicitly
     }
 
     function hasValidTimestamps() {

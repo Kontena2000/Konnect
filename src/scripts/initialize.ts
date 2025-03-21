@@ -82,14 +82,37 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
+const defaultUsers = [
+  { email: 'jef@kontena.eu', password: '123456', role: 'admin' },
+  { email: 'lars@kontena.eu', password: '123456', role: 'admin' },
+  { email: 'ruud@kontena.eu', password: '123456', role: 'admin' }  // Added Ruud
+];
+
 async function initialize() {
-  console.log("Starting initialization...");
+  console.log('Starting initialization...');
   
   try {
-    // Initialize default users
-    const authService = require("../services/auth").default;
-    await authService.initializeDefaultUsers();
-    console.log("Default users initialized");
+    // Initialize users with admin roles
+    for (const user of defaultUsers) {
+      try {
+        const authService = require('../services/auth').default;
+        await authService.register(user.email, user.password, user.role);
+        console.log(`Created/Updated user: ${user.email} with role: ${user.role}`);
+      } catch (error: any) {
+        if (error.code === 'auth/email-already-in-use') {
+          console.log(`User ${user.email} already exists`);
+          // Update their role to admin
+          const userService = require('../services/user').default;
+          const existingUser = await userService.getUserByEmail(user.email);
+          if (existingUser) {
+            await userService.updateUserRole(existingUser.id, 'admin');
+            console.log(`Updated ${user.email} role to admin`);
+          }
+        } else {
+          console.error(`Error processing user ${user.email}:`, error);
+        }
+      }
+    }
 
     // Initialize module database
     const moduleService = require("../services/module").default;
