@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -46,10 +45,12 @@ export interface Project {
   name: string;
   description?: string;
   ownerId: string;
-  companyName?: string;
-  clientEmail?: string;
-  clientPhone?: string;
-  clientAddress?: string;
+  clientInfo: {
+    name?: string;
+    email?: string;
+    phone?: string;
+    address?: string;
+  };
   plotWidth?: number;
   plotLength?: number;
   sharedWith?: string[];
@@ -118,10 +119,12 @@ const projectService = {
         name: data.name.trim(),
         description: data.description?.trim() || '',
         ownerId: data.ownerId,
-        companyName: data.companyName?.trim() || '',
-        clientEmail: data.clientEmail?.trim() || '',
-        clientPhone: data.clientPhone?.trim() || '',
-        clientAddress: data.clientAddress?.trim() || '',
+        clientInfo: {
+          name: data.companyName?.trim() || '',
+          email: data.clientEmail?.trim() || '',
+          phone: data.clientPhone?.trim() || '',
+          address: data.clientAddress?.trim() || ''
+        },
         status: data.status || 'planning',
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
