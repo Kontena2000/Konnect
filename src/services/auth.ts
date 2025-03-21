@@ -1,4 +1,3 @@
-
 import { auth } from "@/lib/firebase";
 import { 
   createUserWithEmailAndPassword, 
@@ -73,9 +72,9 @@ const authService = {
 
   async initializeDefaultUsers(): Promise<void> {
     const defaultUsers = [
-      { email: "jef@kontena.eu", password: "123456", role: "admin" as UserRole },
-      { email: "lars@kontena.eu", password: "123456", role: "admin" as UserRole },
-      { email: "ruud@kontena.eu", password: "123456", role: "admin" as UserRole }
+      { email: 'ruud@kontena.eu', password: '123456', role: 'admin' as UserRole },
+      { email: 'jef@kontena.eu', password: '123456', role: 'admin' as UserRole },
+      { email: 'lars@kontena.eu', password: '123456', role: 'admin' as UserRole }
     ];
 
     for (const user of defaultUsers) {
@@ -83,12 +82,12 @@ const authService = {
         await this.register(user.email, user.password, user.role);
         console.log(`Created user: ${user.email}`);
       } catch (error: any) {
-        if (error.code === "auth/email-already-in-use") {
+        if (error.code === 'auth/email-already-in-use') {
           try {
             // Update existing user's role to admin
             const existingUser = await userService.getUserByEmail(user.email);
             if (existingUser) {
-              await userService.updateUserRole(existingUser.id, "admin");
+              await userService.updateUserRole(existingUser.id, 'admin');
               console.log(`Updated ${user.email} role to admin`);
             }
           } catch (updateError) {
