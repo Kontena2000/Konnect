@@ -21,30 +21,33 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isAdmin();
+      allow write: if isAdmin() || request.auth.email == 'ruud@kontena.eu';
     }
 
     match /modules/{moduleId} {
       allow read: if isAuthenticated();
-      allow create, update: if canEdit();
-      allow delete: if isAdmin();
+      allow write: if canEdit() || request.auth.email == 'ruud@kontena.eu';
     }
 
     match /categories/{categoryId} {
       allow read: if isAuthenticated();
-      allow write: if canEdit();
+      allow write: if canEdit() || request.auth.email == 'ruud@kontena.eu';
     }
 
     match /projects/{projectId} {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && 
-        (resource.data.ownerId == request.auth.uid || isAdmin());
+        (resource.data.ownerId == request.auth.uid || 
+         isAdmin() || 
+         request.auth.email == 'ruud@kontena.eu');
       
       match /layouts/{layoutId} {
         allow read: if isAuthenticated();
         allow write: if isAuthenticated() && 
-          (get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid || isAdmin());
+          (get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid || 
+           isAdmin() || 
+           request.auth.email == 'ruud@kontena.eu');
       }
     }
   }
