@@ -398,6 +398,61 @@ const moduleService = {
     }
   },
 
+  async duplicateModule(moduleId: string): Promise<void> {
+    try {
+      const user = auth.currentUser;
+      if (!user) {
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'duplicate',
+        status: 'pending',
+        timestamp: Date.now(),
+        details: { moduleId, email: user.email }
+      });
+
+      const moduleRef = doc(db, 'modules', moduleId);
+      const moduleDoc = await getDoc(moduleRef);
+
+      if (!moduleDoc.exists()) {
+        throw new ModuleError('Module not found', 'NOT_FOUND');
+      }
+
+      const moduleData = moduleDoc.data() as Module;
+      const newModuleId = `${moduleId}-copy-${Date.now()}`;
+      const newModuleRef = doc(db, 'modules', newModuleId);
+
+      await setDoc(newModuleRef, {
+        ...moduleData,
+        id: newModuleId,
+        name: `${moduleData.name} (Copy)`,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        createdBy: user.uid
+      });
+
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'duplicate',
+        status: 'success',
+        timestamp: Date.now(),
+        details: { originalId: moduleId, newId: newModuleId, email: user.email }
+      });
+    } catch (error) {
+      console.error('Error duplicating module:', error);
+      firebaseMonitor.logOperation({
+        type: 'module',
+        action: 'duplicate',
+        status: 'error',
+        timestamp: Date.now(),
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+      throw error;
+    }
+  },
+
   createModule: moduleOperations.createModule,
   updateModule: moduleOperations.updateModule,
   deleteModule: moduleOperations.deleteModule,

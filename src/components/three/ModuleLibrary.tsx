@@ -4,12 +4,13 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Module } from "@/types/module";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronDown, ChevronRight, Eye, EyeOff, Loader2, RefreshCcw, Search, Filter, Box, Truck, Trees, Database, Server, Leaf } from "lucide-react";
+import { Copy, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, RefreshCcw, Search, Filter, Box, Truck, Trees, Database, Server, Leaf } from "lucide-react";
 import moduleService from "@/services/module";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 interface ModuleLibraryProps {
   onDragStart: (module: Module) => void;
@@ -84,6 +85,24 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
     onDragStart(module);
   };
 
+  const handleDuplicate = async (module: Module, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      await moduleService.duplicateModule(module.id);
+      await loadModules();
+      toast({
+        title: "Success",
+        description: "Module duplicated successfully"
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to duplicate module"
+      });
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full">
@@ -135,11 +154,35 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
                       key={module.id}
                       draggable
                       onDragStart={() => handleDragStart(module)}
-                      className="flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-move"
+                      className="group flex items-center gap-2 p-2 hover:bg-accent rounded-md cursor-move"
                     >
-                      {module.type === "container" && <Truck className="h-5 w-5" />}
-                      {module.type === "vegetation" && <Leaf className="h-5 w-5" />}
-                      <span className="flex-1 text-sm">{module.name}</span>
+                      <div className="flex-shrink-0 w-10 h-10 rounded bg-muted flex items-center justify-center" style={{ backgroundColor: module.color }}>
+                        {module.type === "container" && <Truck className="h-5 w-5 text-background" />}
+                        {module.type === "vegetation" && <Leaf className="h-5 w-5 text-background" />}
+                      </div>
+                      <div className="flex-1">
+                        <div className="text-sm font-medium">{module.name}</div>
+                        <div className="text-xs text-muted-foreground">
+                          {module.dimensions.length}m × {module.dimensions.width}m × {module.dimensions.height}m
+                        </div>
+                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="opacity-0 group-hover:opacity-100"
+                              onClick={(e) => handleDuplicate(module, e)}
+                            >
+                              <Copy className="h-4 w-4" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <p>Duplicate module</p>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   ))}
                 </CollapsibleContent>
