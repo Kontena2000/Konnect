@@ -17,6 +17,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { auth } from '@/lib/firebase';
 import { CategoryDialog } from '@/components/settings/CategoryDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Box, Badge } from 'lucide-react';
+import { Badge as UIBadge } from '@/components/ui/badge';
 
 export function ModuleManager() {
   const [modules, setModules] = useState<Module[]>([]);
@@ -344,9 +346,9 @@ export function ModuleManager() {
                     <div className='space-y-1'>
                       <div className='flex items-center gap-2'>
                         <span>{module.name}</span>
-                        <Badge variant='secondary' className='text-xs'>
+                        <UIBadge variant='secondary' className='text-xs'>
                           {module.category}
-                        </Badge>
+                        </UIBadge>
                       </div>
                       <p className='text-sm text-muted-foreground font-normal'>
                         {module.description}
