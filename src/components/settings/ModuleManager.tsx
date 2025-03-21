@@ -331,14 +331,18 @@ export function ModuleManager() {
       <ScrollArea className='h-[700px]'>
         <div className='space-y-4'>
           {filteredModules.map(module => (
-            <Card key={module.id} className='relative overflow-hidden'>
+            <Card key={module.id} className='relative overflow-hidden group'>
               <CardHeader>
                 <div className='flex items-center justify-between'>
                   <CardTitle className='flex items-center gap-2'>
-                    {module.name}
-                    <span className='text-sm font-normal text-muted-foreground'>
-                      ({module.category})
-                    </span>
+                    <div 
+                      className='w-6 h-6 rounded'
+                      style={{ backgroundColor: module.color }}
+                    />
+                    <span>{module.name}</span>
+                    <Badge variant='secondary' className='text-xs'>
+                      {module.category}
+                    </Badge>
                   </CardTitle>
                   <div className='flex items-center gap-2'>
                     <TooltipProvider>
@@ -348,7 +352,7 @@ export function ModuleManager() {
                             variant='ghost'
                             size='icon'
                             onClick={() => handleDuplicate(module.id)}
-                            className='h-8 w-8'
+                            className='h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity'
                           >
                             <Copy className='h-4 w-4' />
                           </Button>
@@ -373,8 +377,9 @@ export function ModuleManager() {
                     <AlertDialog open={moduleToDelete === module.id} onOpenChange={(open) => !open && setModuleToDelete(null)}>
                       <AlertDialogTrigger asChild>
                         <Button 
-                          variant='destructive' 
+                          variant='ghost' 
                           size='icon'
+                          className='h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity hover:bg-destructive hover:text-destructive-foreground'
                           onClick={() => setModuleToDelete(module.id)}
                         >
                           <Trash2 className='h-4 w-4' />
@@ -395,11 +400,11 @@ export function ModuleManager() {
                           >
                             {isDeleting ? (
                               <>
-                                <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                                <Loader2 className='h-4 w-4 mr-2 animate-spin' />
                                 Deleting...
                               </>
                             ) : (
-                              "Delete"
+                              'Delete'
                             )}
                           </AlertDialogAction>
                         </AlertDialogFooter>
