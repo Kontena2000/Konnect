@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Plus, Search, Loader2, Trash2, FolderPlus } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import moduleService from "@/services/module";
+import moduleService, { ModuleError } from "@/services/module";
 import { Module, ModuleCategory } from "@/types/module";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CreateModuleDialog } from "@/components/settings/CreateModuleDialog";
@@ -120,19 +120,28 @@ export function ModuleManager() {
   const handleUpdateModule = async (id: string, data: Partial<Module>) => {
     setIsSaving(id);
     try {
-      await moduleService.updateModule(id, data);
+      // Optimistic update
       setModules(prev => prev.map(module => 
         module.id === id ? { ...module, ...data } : module
       ));
+      
+      await moduleService.updateModule(id, data);
       toast({
-        title: "Success",
-        description: "Module updated successfully"
+        title: 'Success',
+        description: 'Module updated successfully'
       });
     } catch (error) {
+      // Revert optimistic update on error
+      await loadModules();
+      
+      const errorMessage = error instanceof ModuleError 
+        ? error.message 
+        : 'Failed to update module';
+      
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to update module"
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage
       });
     } finally {
       setIsSaving(null);
@@ -162,17 +171,26 @@ export function ModuleManager() {
   const handleDeleteModule = async (id: string) => {
     setIsDeleting(true);
     try {
-      await moduleService.deleteModule(id);
+      // Optimistic update
       setModules(prev => prev.filter(module => module.id !== id));
+      
+      await moduleService.deleteModule(id);
       toast({
-        title: "Success",
-        description: "Module deleted successfully"
+        title: 'Success',
+        description: 'Module deleted successfully'
       });
     } catch (error) {
+      // Revert optimistic update on error
+      await loadModules();
+      
+      const errorMessage = error instanceof ModuleError 
+        ? error.message 
+        : 'Failed to delete module';
+      
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to delete module"
+        variant: 'destructive',
+        title: 'Error',
+        description: errorMessage
       });
     } finally {
       setIsDeleting(false);

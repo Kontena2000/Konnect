@@ -27,6 +27,18 @@ interface FirebaseError extends Error {
   message: string;
 }
 
+export class ModuleError extends Error {
+  constructor(
+    message: string,
+    public code: string,
+    public details?: unknown
+  ) {
+    super(message);
+    this.name = 'ModuleError';
+    Object.setPrototypeOf(this, ModuleError.prototype);
+  }
+}
+
 const moduleService = {
   async checkUserPermissions(): Promise<boolean> {
     try {
@@ -207,11 +219,22 @@ const moduleService = {
   async createModule(data: Module): Promise<string> {
     try {
       if (!(await this.checkUserPermissions())) {
-        throw new Error("Insufficient permissions");
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      }
+
+      if (!(await this.validateModuleData(data))) {
+        throw new ModuleError('Invalid module data', 'VALIDATION_FAILED');
       }
 
       console.log('Creating new module:', data);
       const moduleRef = doc(db, 'modules', data.id);
+      
+      // Check for duplicate ID
+      const existingModule = await getDoc(moduleRef);
+      if (existingModule.exists()) {
+        throw new ModuleError('Module ID already exists', 'DUPLICATE_ID');
+      }
+
       const now = new Date().toISOString();
       const moduleData = {
         ...data,
@@ -224,9 +247,9 @@ const moduleService = {
       console.log('Module created successfully:', data.id);
       return data.id;
     } catch (error) {
-      const fbError = error as FirebaseError;
-      console.error('Error creating module:', fbError);
-      throw new Error(`Failed to create module: ${fbError.message}`);
+      console.error('Error creating module:', error);
+      if (error instanceof ModuleError) throw error;
+      throw new ModuleError('Failed to create module', 'CREATE_FAILED', error);
     }
   },
 
@@ -250,6 +273,48 @@ const moduleService = {
     }
   },
 
+  async deleteModule(id: string): Promise<void> {
+    try {
+      if (!(await this.checkUserPermissions())) {
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
+      }
+
+      console.log('Deleting module:', id);
+      const moduleRef = doc(db, 'modules', id);
+      
+      // Check if module exists
+      const moduleSnap = await getDoc(moduleRef);
+      if (!moduleSnap.exists()) {
+        throw new ModuleError('Module not found', 'NOT_FOUND');
+      }
+
+      // Check if module is in use in any layouts
+      const layoutsQuery = query(
+        collection(db, 'layouts'),
+        where('modules', 'array-contains', id)
+      );
+      const layoutsSnap = await getDocs(layoutsQuery);
+      
+      if (!layoutsSnap.empty) {
+        throw new ModuleError(
+          'Cannot delete module that is in use in layouts',
+          'MODULE_IN_USE'
+        );
+      }
+
+      await deleteDoc(moduleRef);
+      console.log('Module deleted successfully:', id);
+    } catch (error) {
+      console.error('Error deleting module:', error);
+      if (error instanceof ModuleError) throw error;
+      throw new ModuleError(
+        'Failed to delete module',
+        'DELETE_FAILED',
+        error
+      );
+    }
+  },
+
   async deleteCategory(id: string): Promise<void> {
     try {
       if (!(await this.checkUserPermissions())) {
@@ -269,6 +334,16 @@ const moduleService = {
       console.error('Error deleting category:', fbError);
       throw new Error(`Failed to delete category: ${fbError.message}`);
     }
+  },
+
+  async validateModuleData(data: Partial<Module>): Promise<boolean> {
+    if (!data.name || data.name.trim().length === 0) return false;
+    if (!data.category) return false;
+    if (!data.dimensions || 
+        data.dimensions.length <= 0 || 
+        data.dimensions.width <= 0 || 
+        data.dimensions.height <= 0) return false;
+    return true;
   }
 };
 
