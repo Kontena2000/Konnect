@@ -23,12 +23,6 @@ service cloud.firestore {
          isRuud());
     }
 
-    function isOwner(data) {
-      return isAuthenticated() && 
-        (data.userId == request.auth.uid || 
-         data.ownerId == request.auth.uid);
-    }
-
     // Special rule for Ruud - full access to everything
     match /{document=**} {
       allow read, write: if isRuud();
@@ -43,9 +37,8 @@ service cloud.firestore {
     // Modules collection
     match /modules/{moduleId} {
       allow read: if isAuthenticated();
-      allow create: if isRuud() || isAdmin();
+      allow create, delete: if isRuud() || isAdmin();
       allow update: if isRuud() || canEdit();
-      allow delete: if isRuud() || isAdmin();
     }
 
     // Categories collection
@@ -57,15 +50,17 @@ service cloud.firestore {
     // Projects collection
     match /projects/{projectId} {
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() || isRuud();
+      allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && 
-        (isOwner(resource.data) || isAdmin() || isRuud());
+        (resource.data.userId == request.auth.uid || 
+         isAdmin() || 
+         isRuud());
       
       // Layouts subcollection
       match /layouts/{layoutId} {
         allow read: if isAuthenticated();
         allow write: if isAuthenticated() && 
-          (isOwner(get(/databases/$(database)/documents/projects/$(projectId)).data) || 
+          (get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid || 
            isAdmin() || 
            isRuud());
       }
