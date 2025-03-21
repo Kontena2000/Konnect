@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -18,6 +19,11 @@ interface ModuleObjectProps {
   readOnly?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+}
+
+interface ShadowTransform {
+  position: Vector3;
+  rotation: Euler;
 }
 
 export function ModuleObject({
@@ -41,6 +47,10 @@ export function ModuleObject({
   const { camera } = useThree();
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
+  const [shadowTransform, setShadowTransform] = useState<ShadowTransform>({
+    position: new Vector3(module.position[0], 0.01, module.position[2]),
+    rotation: new Euler(-Math.PI/2, 0, 0)
+  });
 
   // Handle keyboard events for Y-axis movement
   useEffect(() => {
@@ -78,6 +88,30 @@ export function ModuleObject({
       });
     }
   }, [animating, module.position]);
+
+  // Update shadow transform calculation
+  const updateShadowTransform = useCallback(() => {
+    if (!meshRef.current) return;
+    
+    const worldPosition = new Vector3();
+    meshRef.current.getWorldPosition(worldPosition);
+    worldPosition.y = 0.01; // Keep shadow just above ground
+    
+    const worldRotation = new Euler(-Math.PI/2, meshRef.current.rotation.y, 0);
+    
+    setShadowTransform({
+      position: worldPosition,
+      rotation: worldRotation
+    });
+  }, []);
+
+  // Keep shadow updated
+  useEffect(() => {
+    if (!meshRef.current) return;
+    
+    const updateInterval = setInterval(updateShadowTransform, 1000 / 60); // 60fps updates
+    return () => clearInterval(updateInterval);
+  }, [updateShadowTransform]);
 
   // Handle transform changes
   const handleTransformChange = useCallback(() => {
@@ -174,31 +208,7 @@ export function ModuleObject({
     
     // Update shadow position
     updateShadowTransform();
-  }, [readOnly, onUpdate, module.id, module.dimensions, module.position, module.rotation, module.color, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming]);
-
-  // Update shadow transform calculation
-  const updateShadowTransform = useCallback(() => {
-    if (!meshRef.current) return;
-    
-    const worldPosition = new Vector3();
-    meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.01; // Keep shadow just above ground
-    
-    const worldRotation = new Euler(-Math.PI/2, meshRef.current.rotation.y, 0);
-    
-    return { position: worldPosition, rotation: worldRotation };
-  }, []);
-
-  // Keep shadow updated
-  useEffect(() => {
-    if (!meshRef.current) return;
-    
-    const updateInterval = setInterval(() => {
-      updateShadowTransform();
-    }, 1000 / 60); // 60fps updates
-    
-    return () => clearInterval(updateInterval);
-  }, [updateShadowTransform]);
+  }, [readOnly, onUpdate, module.id, module.dimensions, module.position, module.rotation, module.color, modules, gridSnap, isShiftPressed, selected, transformMode, isTransforming, updateShadowTransform]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -281,7 +291,7 @@ export function ModuleObject({
           lockZ={false}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
-            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 3, // Increased offset to 3 units
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 3,
             meshRef.current ? meshRef.current.position.z : module.position[2]
           ]}
         >
