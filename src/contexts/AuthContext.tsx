@@ -33,14 +33,22 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         if (!mounted) return;
 
         if (user) {
-          // Get the user's ID token result which includes custom claims
-          const tokenResult = await getIdTokenResult(user, true);
-          const userDoc = await userService.getUserByEmail(user.email!);
-          
-          if (mounted) {
-            setUser(user as AuthUser);
-            // Use the role from custom claims, fallback to Firestore role
-            setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
+          // Special case for ruud@kontena.eu - always admin
+          if (user.email === 'ruud@kontena.eu') {
+            if (mounted) {
+              setUser(user as AuthUser);
+              setRole('admin');
+            }
+          } else {
+            // Get the user's ID token result which includes custom claims
+            const tokenResult = await getIdTokenResult(user, true);
+            const userDoc = await userService.getUserByEmail(user.email!);
+            
+            if (mounted) {
+              setUser(user as AuthUser);
+              // Use the role from custom claims, fallback to Firestore role
+              setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
+            }
           }
 
           // Only redirect if we're on auth pages
@@ -62,12 +70,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         console.error('Error in auth state change:', error);
         
         if (mounted) {
-          setRole('editor');
-          toast({
-            title: 'Authentication Error',
-            description: 'There was a problem verifying your account. Some features may be limited.',
-            variant: 'destructive'
-          });
+          // If error occurs for ruud@kontena.eu, still grant admin access
+          if (user?.email === 'ruud@kontena.eu') {
+            setRole('admin');
+          } else {
+            setRole('editor');
+            toast({
+              title: 'Authentication Error',
+              description: 'There was a problem verifying your account. Some features may be limited.',
+              variant: 'destructive'
+            });
+          }
         }
       } finally {
         if (mounted) {
