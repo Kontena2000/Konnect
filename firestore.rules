@@ -2,6 +2,7 @@
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
+    // Core functions for permission checks
     function isAuthenticated() {
       return request.auth != null;
     }
@@ -22,16 +23,25 @@ service cloud.firestore {
          isRuud());
     }
 
+    function isOwner(data) {
+      return isAuthenticated() && data.userId == request.auth.uid;
+    }
+
+    // Wildcard rule for future collections
+    match /{document=**} {
+      allow read, write: if isRuud();
+    }
+
     // Users collection
     match /users/{userId} {
       allow read: if isAuthenticated();
-      allow write: if isRuud() || isAdmin();
+      allow create, update, delete: if isRuud() || isAdmin();
     }
 
     // Modules collection
     match /modules/{moduleId} {
       allow read: if isAuthenticated();
-      allow write: if isRuud() || isAdmin();
+      allow create, delete: if isRuud() || isAdmin();
       allow update: if isRuud() || canEdit();
     }
 
@@ -46,15 +56,13 @@ service cloud.firestore {
       allow read: if isAuthenticated();
       allow create: if isAuthenticated();
       allow update, delete: if isAuthenticated() && 
-        (resource.data.userId == request.auth.uid || 
-         isAdmin() || 
-         isRuud());
+        (isOwner(resource.data) || isAdmin() || isRuud());
       
       // Layouts subcollection
       match /layouts/{layoutId} {
         allow read: if isAuthenticated();
         allow write: if isAuthenticated() && 
-          (get(/databases/$(database)/documents/projects/$(projectId)).data.userId == request.auth.uid || 
+          (isOwner(get(/databases/$(database)/documents/projects/$(projectId)).data) || 
            isAdmin() || 
            isRuud());
       }
@@ -62,8 +70,16 @@ service cloud.firestore {
 
     // Grid preferences collection
     match /gridPreferences/{userId} {
-      allow read: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isRuud());
-      allow write: if isAuthenticated() && (request.auth.uid == userId || isAdmin() || isRuud());
+      allow read: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin() || isRuud());
+      allow write: if isAuthenticated() && 
+        (request.auth.uid == userId || isAdmin() || isRuud());
+    }
+
+    // Settings collection
+    match /settings/{settingId} {
+      allow read: if isAuthenticated();
+      allow write: if isRuud() || isAdmin();
     }
   }
 }
