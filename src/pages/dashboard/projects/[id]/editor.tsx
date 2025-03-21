@@ -33,6 +33,8 @@ import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 
 const createPreviewMesh = (item: Module) => {
+  if (!item) return null;
+  
   const geometry = new THREE.BoxGeometry(
     item.dimensions.length,
     item.dimensions.height,
@@ -171,41 +173,63 @@ export default function LayoutEditorPage() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const draggedItem = modules.find(item => item.id === event.active.id);
-    setDraggingItem(draggedItem || null);
-    
-    if (draggedItem) {
-      setPreviewMesh(createPreviewMesh(draggedItem));
+    try {
+      const draggedItem = modules.find(item => item.id === event.active.id);
+      setDraggingItem(draggedItem || null);
+      
+      if (draggedItem) {
+        const mesh = createPreviewMesh(draggedItem);
+        setPreviewMesh(mesh);
+      }
+    } catch (error) {
+      console.error('Error in handleDragStart:', error);
     }
   };
 
   const handleModuleDragStart = (templateItem: Module) => {
-    setDraggingTemplate(templateItem);
-    setPreviewMesh(createPreviewMesh(templateItem));
+    try {
+      console.log('Module drag started:', templateItem);
+      setDraggingTemplate(templateItem);
+      const mesh = createPreviewMesh(templateItem);
+      setPreviewMesh(mesh);
+    } catch (error) {
+      console.error('Error in handleModuleDragStart:', error);
+    }
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setDraggingTemplate(null);
-    setDraggingItem(null);
-    setPreviewMesh(null);
-    
-    if (event.over?.id !== 'scene') return;
-
-    if (draggingTemplate) {
-      const newItemId = `${draggingTemplate.id}-${Date.now()}`;
-      const newItem: Module = {
-        ...draggingTemplate,
-        id: newItemId,
-        position: [0, draggingTemplate.dimensions.height / 2, 0],
-        rotation: [0, rotationAngle, 0],
-        scale: [1, 1, 1],
-        visibleInEditor: true
-      };
-      addModule(newItem);
+    try {
+      console.log('Drag ended:', { event, draggingTemplate });
       
+      if (event.over?.id === 'scene' && draggingTemplate) {
+        const newItemId = `${draggingTemplate.id}-${Date.now()}`;
+        const newItem: Module = {
+          ...draggingTemplate,
+          id: newItemId,
+          position: [0, draggingTemplate.dimensions.height / 2, 0],
+          rotation: [0, rotationAngle, 0],
+          scale: [1, 1, 1],
+          visibleInEditor: true
+        };
+        
+        console.log('Adding new module:', newItem);
+        addModule(newItem);
+        
+        toast({
+          title: 'Module Added',
+          description: `${draggingTemplate.name} has been added to the scene`
+        });
+      }
+      
+      setDraggingTemplate(null);
+      setDraggingItem(null);
+      setPreviewMesh(null);
+    } catch (error) {
+      console.error('Error in handleDragEnd:', error);
       toast({
-        title: 'Module Added',
-        description: `${draggingTemplate.name} has been added to the scene`
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to add module to scene'
       });
     }
   };
