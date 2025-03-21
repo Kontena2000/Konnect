@@ -22,10 +22,12 @@ export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogPr
       setError(null);
       
       if (!user) {
+        console.error('No user logged in');
         setError('You must be logged in to create categories');
         return;
       }
 
+      console.log('Creating category as user:', user.email);
       const trimmedName = name.trim();
       if (!trimmedName) {
         setError('Category name is required');
@@ -38,7 +40,9 @@ export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogPr
       }
 
       const id = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      console.log('Submitting category:', { id, name: trimmedName });
       await onCreateCategory({ id, name: trimmedName });
+      console.log('Category created successfully');
       setOpen(false);
       setName('');
       setError(null);
