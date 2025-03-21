@@ -74,10 +74,10 @@ const moduleService = {
       ];
 
       const batch = writeBatch(db);
-      for (const module of defaultModules) {
-        const moduleRef = doc(db, 'modules', module.id);
+      for (const defaultItem of defaultModules) {
+        const moduleRef = doc(db, 'modules', defaultItem.id);
         batch.set(moduleRef, {
-          ...module,
+          ...defaultItem,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
           createdBy: user.uid
