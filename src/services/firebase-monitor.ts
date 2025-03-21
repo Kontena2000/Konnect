@@ -24,16 +24,14 @@ class FirebaseMonitor {
 
   private listeners: ((status: FirebaseStatus) => void)[] = [];
   private initialized = false;
+  private isClient = false;
 
   constructor() {
-    // Only initialize if we're in the browser
-    if (typeof window !== 'undefined') {
-      this.initializeMonitoring();
-    }
+    this.isClient = typeof window !== 'undefined';
   }
 
   private initializeMonitoring() {
-    if (this.initialized) return;
+    if (!this.isClient || this.initialized) return;
     this.initialized = true;
 
     // Monitor authentication state
@@ -45,29 +43,29 @@ class FirebaseMonitor {
     });
 
     // Enable offline persistence
-    if (typeof window !== 'undefined') {
-      enableIndexedDbPersistence(db).catch((err) => {
-        if (err.code === "failed-precondition") {
-          this.logError("Multiple tabs open, persistence can only be enabled in one tab at a time.");
-        } else if (err.code === "unimplemented") {
-          this.logError("The current browser doesn't support persistence.");
-        }
-      });
+    enableIndexedDbPersistence(db).catch((err) => {
+      if (err.code === "failed-precondition") {
+        this.logError("Multiple tabs open, persistence can only be enabled in one tab at a time.");
+      } else if (err.code === "unimplemented") {
+        this.logError("The current browser doesn't support persistence.");
+      }
+    });
 
-      // Monitor online/offline status
-      window.addEventListener("online", () => this.handleConnectionChange(true));
-      window.addEventListener("offline", () => this.handleConnectionChange(false));
+    // Monitor online/offline status
+    window.addEventListener("online", () => this.handleConnectionChange(true));
+    window.addEventListener("offline", () => this.handleConnectionChange(false));
 
-      // Initial online status
-      this.updateStatus({
-        isOnline: navigator.onLine,
-        connectionState: navigator.onLine ? "online" : "offline",
-        timestamp: Date.now()
-      });
-    }
+    // Initial online status
+    this.updateStatus({
+      isOnline: navigator.onLine,
+      connectionState: navigator.onLine ? "online" : "offline",
+      timestamp: Date.now()
+    });
   }
 
   private async handleConnectionChange(isOnline: boolean) {
+    if (!this.isClient) return;
+
     try {
       if (isOnline) {
         await enableNetwork(db);
@@ -117,13 +115,12 @@ class FirebaseMonitor {
   }
 
   public subscribe(listener: (status: FirebaseStatus) => void) {
-    // Initialize monitoring if not already done (in case component mounts before window is available)
-    if (typeof window !== 'undefined' && !this.initialized) {
+    if (this.isClient && !this.initialized) {
       this.initializeMonitoring();
     }
 
     this.listeners.push(listener);
-    listener(this.status); // Initial status
+    listener(this.status);
     return () => {
       this.listeners = this.listeners.filter(l => l !== listener);
     };
@@ -138,9 +135,7 @@ class FirebaseMonitor {
   }
 
   public async testConnection(): Promise<boolean> {
-    if (typeof window === 'undefined') {
-      return false;
-    }
+    if (!this.isClient) return false;
 
     try {
       await enableNetwork(db);
@@ -157,6 +152,5 @@ class FirebaseMonitor {
   }
 }
 
-// Create a singleton instance
 const firebaseMonitor = new FirebaseMonitor();
 export default firebaseMonitor;
