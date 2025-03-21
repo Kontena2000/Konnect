@@ -3,6 +3,16 @@ import { db, auth } from "@/lib/firebase";
 import { disableNetwork, enableNetwork } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
+export interface OperationLog {
+  type: 'project' | 'module' | 'category' | 'auth' | 'connection';
+  action: string;
+  status: 'success' | 'error' | 'pending';
+  timestamp: number;
+  details?: any;
+  error?: string;
+  userId?: string;
+}
+
 export interface FirebaseStatus {
   isOnline: boolean;
   lastError: string | null;
@@ -10,6 +20,7 @@ export interface FirebaseStatus {
   timestamp: number;
   authState: "authenticated" | "unauthenticated" | "unknown";
   connectionState: "online" | "offline" | "error";
+  operationLogs: OperationLog[];
 }
 
 class FirebaseMonitor {
@@ -19,12 +30,14 @@ class FirebaseMonitor {
     lastOperation: null,
     timestamp: Date.now(),
     authState: "unknown",
-    connectionState: "online"
+    connectionState: "online",
+    operationLogs: []
   };
 
   private listeners: ((status: FirebaseStatus) => void)[] = [];
   private initialized = false;
   private isClient = false;
+  private maxLogs = 100;
 
   constructor() {
     this.isClient = typeof window !== 'undefined';
@@ -39,6 +52,15 @@ class FirebaseMonitor {
 
     // Monitor authentication state
     onAuthStateChanged(auth, (user) => {
+      this.logOperation({
+        type: 'auth',
+        action: user ? 'sign_in' : 'sign_out',
+        status: 'success',
+        timestamp: Date.now(),
+        userId: user?.uid,
+        details: { email: user?.email }
+      });
+
       this.updateStatus({
         authState: user ? "authenticated" : "unauthenticated",
         timestamp: Date.now()
@@ -65,6 +87,12 @@ class FirebaseMonitor {
     try {
       if (isOnline) {
         await enableNetwork(db);
+        this.logOperation({
+          type: 'connection',
+          action: 'enable_network',
+          status: 'success',
+          timestamp: Date.now()
+        });
         this.updateStatus({
           isOnline: true,
           connectionState: "online",
@@ -72,6 +100,12 @@ class FirebaseMonitor {
         });
       } else {
         await disableNetwork(db);
+        this.logOperation({
+          type: 'connection',
+          action: 'disable_network',
+          status: 'success',
+          timestamp: Date.now()
+        });
         this.updateStatus({
           isOnline: false,
           connectionState: "offline",
@@ -79,7 +113,15 @@ class FirebaseMonitor {
         });
       }
     } catch (error) {
-      this.logError("Error handling connection change: " + (error as Error).message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logOperation({
+        type: 'connection',
+        action: isOnline ? 'enable_network' : 'disable_network',
+        status: 'error',
+        timestamp: Date.now(),
+        error: errorMessage
+      });
+      this.logError("Error handling connection change: " + errorMessage);
       this.updateStatus({
         connectionState: "error",
         timestamp: Date.now()
@@ -87,10 +129,28 @@ class FirebaseMonitor {
     }
   }
 
-  public logOperation(operation: string) {
+  public logOperation(log: OperationLog) {
+    const updatedLogs = [log, ...this.status.operationLogs].slice(0, this.maxLogs);
+    
     this.updateStatus({
-      lastOperation: operation,
+      lastOperation: `${log.type}:${log.action}`,
+      operationLogs: updatedLogs,
       timestamp: Date.now()
+    });
+
+    if (log.status === 'error') {
+      this.logError(`${log.type}:${log.action} - ${log.error}`);
+    }
+
+    // Log to console for debugging
+    console.log(`Firebase Operation:`, {
+      type: log.type,
+      action: log.action,
+      status: log.status,
+      timestamp: new Date(log.timestamp).toISOString(),
+      ...(log.details && { details: log.details }),
+      ...(log.error && { error: log.error }),
+      ...(log.userId && { userId: log.userId })
     });
   }
 
@@ -131,6 +191,12 @@ class FirebaseMonitor {
 
     try {
       await enableNetwork(db);
+      this.logOperation({
+        type: 'connection',
+        action: 'test_connection',
+        status: 'success',
+        timestamp: Date.now()
+      });
       this.updateStatus({
         isOnline: true,
         connectionState: "online",
@@ -138,9 +204,24 @@ class FirebaseMonitor {
       });
       return true;
     } catch (error) {
-      this.logError("Connection test failed: " + (error as Error).message);
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      this.logOperation({
+        type: 'connection',
+        action: 'test_connection',
+        status: 'error',
+        timestamp: Date.now(),
+        error: errorMessage
+      });
+      this.logError("Connection test failed: " + errorMessage);
       return false;
     }
+  }
+
+  public clearLogs() {
+    this.updateStatus({
+      operationLogs: [],
+      timestamp: Date.now()
+    });
   }
 }
 
