@@ -59,23 +59,26 @@ export function ModuleObject({
     module.position[2]
   ), [module.position]);
 
-  // Improved shadow transform calculation
+  // Update the updateShadowTransform function to properly handle rotations
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
     const worldPosition = new Vector3();
+    const worldQuaternion = new Quaternion();
     meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.01; // Keep shadow just above ground
+    meshRef.current.getWorldQuaternion(worldQuaternion);
     
-    const worldRotation = new Euler(
-      -Math.PI/2,
-      meshRef.current.rotation.y,
-      0
-    );
+    // Keep shadow just above ground
+    worldPosition.y = 0.01;
+    
+    // Create shadow rotation that maintains flat orientation while following Y rotation
+    const shadowRotation = new Euler(-Math.PI/2, 0, 0);
+    shadowRotation.setFromQuaternion(worldQuaternion);
+    shadowRotation.x = -Math.PI/2; // Keep shadow flat on ground
     
     setShadowTransform({
       position: worldPosition,
-      rotation: worldRotation
+      rotation: shadowRotation
     });
   }, []);
 
@@ -127,7 +130,7 @@ export function ModuleObject({
     });
   }, [selected]);
 
-  // Enhanced transform handling
+  // Update collision detection in handleTransformChange
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -170,9 +173,15 @@ export function ModuleObject({
       }
     }
     
-    // Check collisions
+    // Check collisions with improved stacking detection
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
+    let isValidStacking = false;
+    let isValidSideBySide = false;
+    
+    const BUFFER = 0.0001; // 0.1mm buffer
+    const STACK_THRESHOLD = 0.01; // 1cm threshold for stacking
+    const SIDE_THRESHOLD = 0.01; // 1cm threshold for side-by-side placement
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -180,20 +189,34 @@ export function ModuleObject({
       const otherBox = new Box3();
       const otherPos = new Vector3(...otherModule.position);
       const otherSize = new Vector3(
-        otherModule.dimensions.length,
-        otherModule.dimensions.height,
-        otherModule.dimensions.width
+        otherModule.dimensions.length + BUFFER,
+        otherModule.dimensions.height + BUFFER,
+        otherModule.dimensions.width + BUFFER
       );
       otherBox.setFromCenterAndSize(otherPos, otherSize);
       
       if (box.intersectsBox(otherBox)) {
-        hasCollision = true;
+        // Check if modules are stacked vertically
+        const verticalDistance = Math.abs(position.y - otherPos.y);
+        const combinedHeight = (module.dimensions.height + otherModule.dimensions.height) / 2;
+        
+        // Check if modules are side by side
+        const horizontalDistance = new Vector2(position.x - otherPos.x, position.z - otherPos.z).length();
+        const combinedWidth = Math.max(module.dimensions.width, otherModule.dimensions.width);
+        
+        if (Math.abs(verticalDistance - combinedHeight) < STACK_THRESHOLD) {
+          isValidStacking = true;
+        } else if (horizontalDistance < combinedWidth + SIDE_THRESHOLD) {
+          isValidSideBySide = true;
+        } else {
+          hasCollision = true;
+        }
       }
     });
     
-    handleCollision(hasCollision);
+    handleCollision(hasCollision && !isValidStacking && !isValidSideBySide);
     
-    if (hasCollision) {
+    if (hasCollision && !isValidStacking && !isValidSideBySide) {
       // Revert position with smooth animation
       gsap.to(meshRef.current.position, {
         x: module.position[0],

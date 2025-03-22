@@ -75,6 +75,7 @@ export function SceneContainer({
   const [transforming, setTransforming] = useState(false);
   const controlsRef = useRef<any>(null);
   const draggedModuleRef = useRef<Module | null>(null);
+  const { camera } = useThree(); // Added camera reference
 
   const handleModuleSelect = useCallback((moduleId?: string) => {
     if (isTransforming) return;
@@ -144,7 +145,24 @@ export function SceneContainer({
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     setMousePosition(new Vector2(x, y));
-  }, [readOnly]);
+
+    // Update preview position based on cursor
+    if (draggedModuleRef.current) {
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(new Vector2(x, y), camera);
+      const intersects = raycaster.intersectObjects([scene], true);
+      
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        const snappedPosition: [number, number, number] = [
+          Math.round(point.x),
+          draggedModuleRef.current.dimensions.height / 2,
+          Math.round(point.z)
+        ];
+        setPreviewPosition(snappedPosition);
+      }
+    }
+  }, [readOnly, camera, draggedModuleRef]);
 
   const handleDragLeave = useCallback(() => {
     if (readOnly) return;
