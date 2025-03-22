@@ -82,8 +82,64 @@ export function SceneContainer({
   const [transforming, setTransforming] = useState(false);
   const draggedModuleRef = useRef<Module | null>(null);
 
-  // Rest of the component implementation remains the same...
-  // Only showing the changed parts for brevity
+  const snapPoints = useMemo(() => {
+    return modules.reduce((points: Vector3[], module) => {
+      const pos = new Vector3(...module.position);
+      points.push(pos);
+      return points;
+    }, []);
+  }, [modules]);
+
+  const snapLines = useMemo(() => {
+    return modules.reduce((lines: Line3[], module) => {
+      const pos = new Vector3(...module.position);
+      const box = new Box3().setFromCenterAndSize(
+        pos,
+        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
+      );
+      lines.push(
+        new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),
+        new Line3(box.min, new Vector3(box.max.x, box.min.y, box.min.z)),
+        new Line3(box.max, new Vector3(box.min.x, box.max.y, box.max.z)),
+        new Line3(box.max, new Vector3(box.max.x, box.min.y, box.max.z))
+      );
+      return lines;
+    }, []);
+  }, [modules]);
+
+  const handleDragOver = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDraggingOver(true);
+    const rect = event.currentTarget.getBoundingClientRect();
+    setMousePosition(new Vector2(
+      ((event.clientX - rect.left) / rect.width) * 2 - 1,
+      -((event.clientY - rect.top) / rect.height) * 2 + 1
+    ));
+  }, []);
+
+  const handleDragLeave = useCallback(() => {
+    setIsDraggingOver(false);
+    setMousePosition(null);
+  }, []);
+
+  const handleDrop = useCallback((event: React.DragEvent) => {
+    event.preventDefault();
+    setIsDraggingOver(false);
+    setMousePosition(null);
+    if (previewPosition && onDropPoint) {
+      onDropPoint(previewPosition);
+    }
+  }, [previewPosition, onDropPoint]);
+
+  const handleTransformStart = useCallback(() => {
+    setTransforming(true);
+    onTransformStart?.();
+  }, [onTransformStart]);
+
+  const handleTransformEnd = useCallback(() => {
+    setTransforming(false);
+    onTransformEnd?.();
+  }, [onTransformEnd]);
 
   return (
     <div 
