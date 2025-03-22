@@ -77,8 +77,19 @@ export default function LayoutEditorPage() {
   const [saving, setSaving] = useState(false); // Added saving state
   const [gridPreferences, setGridPreferences] = useState<GridPreferences | null>(null);
   const controlsRef = useRef<any>(null);
-  const [undoStack, setUndoStack] = useState<EditorState[]>([]);
+  const [undoStack, setUndoStack] = useState<EditorState[]>([{ modules: [], connections: [] }]);
   const [redoStack, setRedoStack] = useState<EditorState[]>([]);
+
+  // Initialize undo stack with initial state
+  useEffect(() => {
+    if (layout) {
+      setUndoStack([{ 
+        modules: layout.modules || [], 
+        connections: layout.connections || [] 
+      }]);
+      setRedoStack([]);
+    }
+  }, [layout]);
 
   const {
     modules,

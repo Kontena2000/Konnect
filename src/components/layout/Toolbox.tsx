@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid3d } from "lucide-react";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from "lucide-react";
 import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
@@ -242,7 +242,7 @@ export function Toolbox({
                     }}
                     className='w-full'
                   >
-                    <Grid3d className='h-4 w-4' />
+                    <Grid className='h-4 w-4' />
                     {!collapsed && <span className='ml-2'>3D View</span>}
                   </Button>
                 </TooltipTrigger>
