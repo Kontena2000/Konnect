@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -8,6 +7,8 @@ import { ConnectionPoint } from "./ConnectionPoint";
 import { ModuleMesh } from "./ModuleMesh";
 import { ModuleShadow } from "./ModuleShadow";
 import { ModuleControls } from "./ModuleControls";
+import { ModuleTransform } from "./ModuleTransform";
+import { ModuleAnimation } from "./ModuleAnimation";
 import { useModuleTransform } from "@/hooks/use-module-transform";
 import { EditorPreferences } from "@/services/editor-preferences";
 import gsap from "gsap";
@@ -42,7 +43,6 @@ export function ModuleObject({
   editorPreferences
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
-  const transformRef = useRef<any>(null);
   const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
   const [shadowTransform, setShadowTransform] = useState({
@@ -88,40 +88,6 @@ export function ModuleObject({
     });
   }, []);
 
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Shift") setIsShiftPressed(true);
-    };
-    const handleKeyUp = (e: KeyboardEvent) => {
-      if (e.key === "Shift") setIsShiftPressed(false);
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    window.addEventListener("keyup", handleKeyUp);
-
-    return () => {
-      window.removeEventListener("keydown", handleKeyDown);
-      window.removeEventListener("keyup", handleKeyUp);
-    };
-  }, [setIsShiftPressed]);
-
-  useEffect(() => {
-    if (animating && meshRef.current) {
-      meshRef.current.position.copy(initialPosition);
-
-      gsap.to(meshRef.current.position, {
-        y: module.dimensions.height / 2,
-        duration: 0.8,
-        ease: "bounce.out",
-        onUpdate: updateShadowTransform,
-        onComplete: () => {
-          setAnimating(false);
-          updateShadowTransform();
-        }
-      });
-    }
-  }, [animating, initialPosition, module.dimensions.height, updateShadowTransform]);
-
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     onClick?.();
@@ -162,6 +128,16 @@ export function ModuleObject({
         rotation={shadowTransform.rotation}
       />
 
+      {animating && (
+        <ModuleAnimation
+          meshRef={meshRef}
+          initialPosition={initialPosition}
+          finalHeight={module.dimensions.height / 2}
+          onComplete={() => setAnimating(false)}
+          onUpdate={updateShadowTransform}
+        />
+      )}
+
       {selected && !readOnly && (
         <ModuleControls
           meshRef={meshRef}
@@ -178,29 +154,20 @@ export function ModuleObject({
       )}
       
       {selected && !readOnly && meshRef.current && (
-        <TransformControls
-          ref={transformRef}
-          object={meshRef.current}
-          mode={transformMode}
-          onMouseDown={() => {
+        <ModuleTransform
+          meshRef={meshRef}
+          transformMode={transformMode}
+          gridSnap={gridSnap && !isShiftPressed}
+          onTransformStart={() => {
             setIsTransforming(true);
             onTransformStart?.();
           }}
-          onMouseUp={() => {
+          onTransformEnd={() => {
             setIsTransforming(false);
             onTransformEnd?.();
             handleTransformChange(meshRef, updateShadowTransform);
           }}
-          onChange={() => handleTransformChange(meshRef, updateShadowTransform)}
-          size={0.75}
-          showX={true}
-          showY={true}
-          showZ={true}
-          enabled={true}
-          translationSnap={gridSnap && !isShiftPressed ? 1 : null}
-          rotationSnap={gridSnap ? Math.PI / 4 : null}
-          scaleSnap={gridSnap ? 0.25 : null}
-          space="world"
+          onUpdate={() => handleTransformChange(meshRef, updateShadowTransform)}
         />
       )}
       
