@@ -64,18 +64,25 @@ export function ModuleObject({
     if (!meshRef.current) return;
     
     const worldPosition = new Vector3();
-    meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.01; // Keep shadow just above ground
+    const worldQuaternion = new Quaternion();
+    const worldScale = new Vector3();
     
-    const worldRotation = new Euler(
-      -Math.PI/2,
-      meshRef.current.rotation.y,
-      0
+    meshRef.current.matrixWorld.decompose(worldPosition, worldQuaternion, worldScale);
+    
+    // Keep shadow at ground level
+    worldPosition.y = 0.01;
+    
+    // Calculate shadow rotation based on object's world rotation
+    const worldEuler = new Euler().setFromQuaternion(worldQuaternion);
+    const shadowRotation = new Euler(
+      -Math.PI/2, // Keep shadow flat on ground
+      worldEuler.y, // Match object's Y rotation
+      worldEuler.z  // Match object's Z rotation
     );
     
     setShadowTransform({
       position: worldPosition,
-      rotation: worldRotation
+      rotation: shadowRotation
     });
   }, []);
 
@@ -264,8 +271,9 @@ export function ModuleObject({
           child.updateMatrixWorld(true);
         }
       });
+      updateShadowTransform();
     }
-  }, [meshRef.current?.rotation]);
+  }, [meshRef.current?.rotation, meshRef.current?.position, updateShadowTransform]);
 
   return (
     <group>
@@ -298,6 +306,7 @@ export function ModuleObject({
       <mesh 
         position={shadowTransform.position}
         rotation={shadowTransform.rotation}
+        scale={[1, 1, 1]} // Ensure consistent shadow scale
       >
         <planeGeometry args={[
           module.dimensions.length,
@@ -308,6 +317,7 @@ export function ModuleObject({
           transparent
           opacity={0.2}
           side={DoubleSide}
+          depthWrite={false} // Prevent z-fighting
         />
       </mesh>
 
