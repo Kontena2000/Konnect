@@ -41,6 +41,7 @@ export function ModuleObject({
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const transformRef = useRef<any>(null);
+  const controlsRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(selected);
   const [animating, setAnimating] = useState(true);
@@ -250,6 +251,41 @@ export function ModuleObject({
     isTransforming, updateShadowTransform, handleCollision
   ]);
 
+  // Add useEffect to handle orbit controls locking
+  useEffect(() => {
+    if (transformRef.current && controlsRef?.current) {
+      const controls = transformRef.current;
+      const orbitControls = controlsRef.current;
+
+      const handleTransformStart = () => {
+        const dom = orbitControls.domElement;
+        dom.style.cursor = 'move';
+        orbitControls.enabled = false;
+        setIsTransforming(true);
+        onTransformStart?.();
+      };
+
+      const handleTransformEnd = () => {
+        const dom = orbitControls.domElement;
+        dom.style.cursor = 'auto';
+        orbitControls.enabled = true;
+        setIsTransforming(false);
+        onTransformEnd?.();
+        handleTransformChange();
+      };
+
+      controls.addEventListener('mouseDown', handleTransformStart);
+      controls.addEventListener('mouseUp', handleTransformEnd);
+      controls.addEventListener('objectChange', updateShadowTransform);
+
+      return () => {
+        controls.removeEventListener('mouseDown', handleTransformStart);
+        controls.removeEventListener('mouseUp', handleTransformEnd);
+        controls.removeEventListener('objectChange', updateShadowTransform);
+      };
+    }
+  }, [transformRef, controlsRef, onTransformStart, onTransformEnd, handleTransformChange, updateShadowTransform]);
+
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
@@ -397,22 +433,12 @@ export function ModuleObject({
         </Billboard>
       )}
       
-      {/* Transform Controls */}
+      {/* Update Transform Controls */}
       {selected && !readOnly && meshRef.current && (
         <TransformControls
           ref={transformRef}
           object={meshRef.current}
           mode={transformMode}
-          onMouseDown={() => {
-            setIsTransforming(true);
-            onTransformStart?.();
-          }}
-          onMouseUp={() => {
-            setIsTransforming(false);
-            onTransformEnd?.();
-            handleTransformChange();
-          }}
-          onChange={handleTransformChange}
           size={0.75}
           showX={true}
           showY={true}

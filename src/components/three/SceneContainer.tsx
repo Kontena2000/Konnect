@@ -1,4 +1,3 @@
-
 import { Canvas } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -72,6 +71,9 @@ export function SceneContainer({
   const [transforming, setTransforming] = useState(false);
   const controlsRef = useRef<any>(null);
   const draggedModuleRef = useRef<Module | null>(null);
+
+  // Add ref to orbit controls
+  const orbitControlsRef = useRef<any>(null);
 
   const handleDragOver = useCallback((event: React.DragEvent) => {
     if (readOnly) return;
@@ -147,7 +149,7 @@ export function SceneContainer({
         />
         
         <OrbitControls
-          ref={controlsRef}
+          ref={orbitControlsRef}
           enableDamping
           dampingFactor={0.05}
           minDistance={5}
@@ -186,7 +188,7 @@ export function SceneContainer({
           showGuides={showGuides}
           previewPosition={previewPosition}
           setRotationAngle={setRotationAngle}
-          controlsRef={controlsRef}
+          controlsRef={orbitControlsRef}
           isTransforming={transforming}
           onTransformStart={onTransformStart}
           onTransformEnd={onTransformEnd}
