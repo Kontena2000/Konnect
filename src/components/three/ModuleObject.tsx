@@ -307,14 +307,11 @@ export function ModuleObject({
       </mesh>
 
       {/* Shadow */}
-      <mesh 
-        position={shadowTransform.position}
-        rotation={shadowTransform.rotation}
+      <mesh
+        position={[meshRef.current?.position.x || 0, 0.01, meshRef.current?.position.z || 0]}
+        rotation={[Math.PI/2, 0, meshRef.current?.rotation.y || 0]}
       >
-        <planeGeometry args={[
-          module.dimensions.length, // Width matches object length
-          module.dimensions.width   // Height matches object width
-        ]} />
+        <planeGeometry args={[module.dimensions.length, module.dimensions.width]} />
         <meshBasicMaterial 
           color='#000000'
           transparent
