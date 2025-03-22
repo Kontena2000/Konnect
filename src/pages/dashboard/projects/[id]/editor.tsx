@@ -206,9 +206,8 @@ export default function LayoutEditorPage() {
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
       const nextState = redoStack[redoStack.length - 1];
-      const currentState: EditorState = { modules, connections };
       
-      setUndoStack(prev => [...prev, currentState]);
+      setUndoStack(prev => [...prev, { modules, connections }]);
       setRedoStack(prev => prev.slice(0, -1));
       setModules(nextState.modules);
       setConnections(nextState.connections);
@@ -225,7 +224,8 @@ export default function LayoutEditorPage() {
         JSON.stringify(lastState.modules) !== JSON.stringify(newState.modules) ||
         JSON.stringify(lastState.connections) !== JSON.stringify(newState.connections)) {
       setUndoStack(prev => [...prev, newState]);
-      setRedoStack([]); // Clear redo stack when new changes are made
+      // Clear redo stack when new changes are made
+      setRedoStack([]);
     }
   }, [modules, connections, undoStack]);
 
