@@ -65,7 +65,7 @@ export function SceneContainer({
   onTransformStart,
   onTransformEnd,
   gridPreferences,
-  controlsRef
+  controlsRef = useRef(null)
 }: SceneContainerProps) {
   const { toast } = useToast();
   const { setNodeRef, isOver } = useDroppable({

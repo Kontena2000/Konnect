@@ -33,6 +33,11 @@ import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 import gridPreferencesService, { GridPreferences } from '@/services/grid-preferences';
 
+interface EditorState {
+  modules: Module[];
+  connections: Connection[];
+}
+
 const createPreviewMesh = (item: Module) => {
   const geometry = new THREE.BoxGeometry(
     item.dimensions.length,
@@ -72,8 +77,8 @@ export default function LayoutEditorPage() {
   const [saving, setSaving] = useState(false); // Added saving state
   const [gridPreferences, setGridPreferences] = useState<GridPreferences | null>(null);
   const controlsRef = useRef<any>(null);
-  const [undoStack, setUndoStack] = useState<any[]>([]);
-  const [redoStack, setRedoStack] = useState<any[]>([]);
+  const [undoStack, setUndoStack] = useState<EditorState[]>([]);
+  const [redoStack, setRedoStack] = useState<EditorState[]>([]);
 
   const {
     modules,
@@ -176,9 +181,9 @@ export default function LayoutEditorPage() {
   };
 
   const handleUndo = useCallback(() => {
-    if (undoStack.length > 1) { // Keep at least one state in the stack
-      const currentState = { modules, connections };
-      const previousState = undoStack[undoStack.length - 2]; // Get second to last state
+    if (undoStack.length > 1) {
+      const currentState: EditorState = { modules, connections };
+      const previousState = undoStack[undoStack.length - 2];
       
       setRedoStack(prev => [...prev, currentState]);
       setUndoStack(prev => prev.slice(0, -1));
@@ -190,7 +195,7 @@ export default function LayoutEditorPage() {
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
       const nextState = redoStack[redoStack.length - 1];
-      const currentState = { modules, connections };
+      const currentState: EditorState = { modules, connections };
       
       setUndoStack(prev => [...prev, currentState]);
       setRedoStack(prev => prev.slice(0, -1));
@@ -201,7 +206,7 @@ export default function LayoutEditorPage() {
 
   // Save state for undo when modules or connections change
   useEffect(() => {
-    const newState = { modules, connections };
+    const newState: EditorState = { modules, connections };
     const lastState = undoStack[undoStack.length - 1];
     
     // Only save state if it's different from the last one
@@ -209,10 +214,9 @@ export default function LayoutEditorPage() {
         JSON.stringify(lastState.modules) !== JSON.stringify(newState.modules) ||
         JSON.stringify(lastState.connections) !== JSON.stringify(newState.connections)) {
       setUndoStack(prev => [...prev, newState]);
-      // Clear redo stack when new changes are made
-      setRedoStack([]);
+      setRedoStack([]); // Clear redo stack when new changes are made
     }
-  }, [modules, connections]);
+  }, [modules, connections, undoStack]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const draggedItem = event.active.data.current as Module;
