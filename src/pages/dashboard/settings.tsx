@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -8,6 +7,7 @@ import { ModuleManager } from "@/components/settings/ModuleManager";
 import { ThemeEditor } from "@/components/settings/ThemeEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import editorPreferencesService, { EditorPreferences } from "@/services/editor-preferences";
+import { EditorSettings } from '@/components/settings/EditorSettings';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -53,9 +53,10 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 {preferences && (
-                  <div className="space-y-6">
-                    {/* Editor settings content */}
-                  </div>
+                  <EditorSettings
+                    preferences={preferences}
+                    onUpdate={setPreferences}
+                  />
                 )}
               </CardContent>
             </Card>
