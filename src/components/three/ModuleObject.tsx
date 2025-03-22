@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Object3D, MeshStandardMaterial, Vector3, Vector2, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion, Color } from "three";
+import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion, Color } from "three";
 import * as THREE from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html, Billboard } from "@react-three/drei";
@@ -41,7 +41,6 @@ export function ModuleObject({
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const transformRef = useRef<any>(null);
-  const controlsRef = useRef<any>(null);
   const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(selected);
   const [animating, setAnimating] = useState(true);
@@ -60,26 +59,23 @@ export function ModuleObject({
     module.position[2]
   ), [module.position]);
 
-  // Update the updateShadowTransform function to properly handle rotations
+  // Improved shadow transform calculation
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
     const worldPosition = new Vector3();
-    const worldQuaternion = new Quaternion();
     meshRef.current.getWorldPosition(worldPosition);
-    meshRef.current.getWorldQuaternion(worldQuaternion);
+    worldPosition.y = 0.01; // Keep shadow just above ground
     
-    // Keep shadow just above ground
-    worldPosition.y = 0.01;
-    
-    // Create shadow rotation that maintains flat orientation while following Y rotation
-    const shadowRotation = new Euler(-Math.PI/2, 0, 0);
-    shadowRotation.setFromQuaternion(worldQuaternion);
-    shadowRotation.x = -Math.PI/2; // Keep shadow flat on ground
+    const worldRotation = new Euler(
+      -Math.PI/2,
+      meshRef.current.rotation.y,
+      0
+    );
     
     setShadowTransform({
       position: worldPosition,
-      rotation: shadowRotation
+      rotation: worldRotation
     });
   }, []);
 
@@ -131,7 +127,7 @@ export function ModuleObject({
     });
   }, [selected]);
 
-  // Update collision detection in handleTransformChange
+  // Enhanced transform handling
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -174,15 +170,9 @@ export function ModuleObject({
       }
     }
     
-    // Check collisions with improved stacking detection
+    // Check collisions
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
-    let isValidStacking = false;
-    let isValidSideBySide = false;
-    
-    const BUFFER = 0.0001; // 0.1mm buffer
-    const STACK_THRESHOLD = 0.01; // 1cm threshold for stacking
-    const SIDE_THRESHOLD = 0.01; // 1cm threshold for side-by-side placement
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -190,34 +180,20 @@ export function ModuleObject({
       const otherBox = new Box3();
       const otherPos = new Vector3(...otherModule.position);
       const otherSize = new Vector3(
-        otherModule.dimensions.length + BUFFER,
-        otherModule.dimensions.height + BUFFER,
-        otherModule.dimensions.width + BUFFER
+        otherModule.dimensions.length,
+        otherModule.dimensions.height,
+        otherModule.dimensions.width
       );
       otherBox.setFromCenterAndSize(otherPos, otherSize);
       
       if (box.intersectsBox(otherBox)) {
-        // Check if modules are stacked vertically
-        const verticalDistance = Math.abs(position.y - otherPos.y);
-        const combinedHeight = (module.dimensions.height + otherModule.dimensions.height) / 2;
-        
-        // Check if modules are side by side
-        const horizontalDistance = new Vector2(position.x - otherPos.x, position.z - otherPos.z).length();
-        const combinedWidth = Math.max(module.dimensions.width, otherModule.dimensions.width);
-        
-        if (Math.abs(verticalDistance - combinedHeight) < STACK_THRESHOLD) {
-          isValidStacking = true;
-        } else if (horizontalDistance < combinedWidth + SIDE_THRESHOLD) {
-          isValidSideBySide = true;
-        } else {
-          hasCollision = true;
-        }
+        hasCollision = true;
       }
     });
     
-    handleCollision(hasCollision && !isValidStacking && !isValidSideBySide);
+    handleCollision(hasCollision);
     
-    if (hasCollision && !isValidStacking && !isValidSideBySide) {
+    if (hasCollision) {
       // Revert position with smooth animation
       gsap.to(meshRef.current.position, {
         x: module.position[0],
@@ -250,41 +226,6 @@ export function ModuleObject({
     module.rotation, modules, gridSnap, isShiftPressed, transformMode, 
     isTransforming, updateShadowTransform, handleCollision
   ]);
-
-  // Add useEffect to handle orbit controls locking
-  useEffect(() => {
-    if (transformRef.current && controlsRef?.current) {
-      const controls = transformRef.current;
-      const orbitControls = controlsRef.current;
-
-      const handleTransformStart = () => {
-        const dom = orbitControls.domElement;
-        dom.style.cursor = 'move';
-        orbitControls.enabled = false;
-        setIsTransforming(true);
-        onTransformStart?.();
-      };
-
-      const handleTransformEnd = () => {
-        const dom = orbitControls.domElement;
-        dom.style.cursor = 'auto';
-        orbitControls.enabled = true;
-        setIsTransforming(false);
-        onTransformEnd?.();
-        handleTransformChange();
-      };
-
-      controls.addEventListener('mouseDown', handleTransformStart);
-      controls.addEventListener('mouseUp', handleTransformEnd);
-      controls.addEventListener('objectChange', updateShadowTransform);
-
-      return () => {
-        controls.removeEventListener('mouseDown', handleTransformStart);
-        controls.removeEventListener('mouseUp', handleTransformEnd);
-        controls.removeEventListener('objectChange', updateShadowTransform);
-      };
-    }
-  }, [transformRef, controlsRef, onTransformStart, onTransformEnd, handleTransformChange, updateShadowTransform]);
 
   // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
@@ -433,12 +374,22 @@ export function ModuleObject({
         </Billboard>
       )}
       
-      {/* Update Transform Controls */}
+      {/* Transform Controls */}
       {selected && !readOnly && meshRef.current && (
         <TransformControls
           ref={transformRef}
           object={meshRef.current}
           mode={transformMode}
+          onMouseDown={() => {
+            setIsTransforming(true);
+            onTransformStart?.();
+          }}
+          onMouseUp={() => {
+            setIsTransforming(false);
+            onTransformEnd?.();
+            handleTransformChange();
+          }}
+          onChange={handleTransformChange}
           size={0.75}
           showX={true}
           showY={true}
