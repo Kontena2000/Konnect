@@ -80,6 +80,7 @@ export default function LayoutEditorPage() {
   const [undoStack, setUndoStack] = useState<EditorState[]>([{ modules: [], connections: [] }]);
   const [redoStack, setRedoStack] = useState<EditorState[]>([]);
   const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false);
+  const isUndoingOrRedoing = useRef(false);
 
   // Initialize undo stack with initial state
   useEffect(() => {
@@ -194,67 +195,83 @@ export default function LayoutEditorPage() {
 
   const handleUndo = useCallback(() => {
     if (undoStack.length > 0) {
-      // Set flag to prevent state saving in the effect
-      setIsUndoRedoOperation(true);
+      // Set flag to true
+      isUndoingOrRedoing.current = true;
       
-      // Take the most recent state from the undo stack
+      // Get previous state
       const previousState = undoStack[undoStack.length - 1];
+      const currentState = { modules, connections };
       
-      // Add current state to redo stack
-      setRedoStack(prev => [...prev, { modules, connections }]);
+      // Update stacks directly to avoid race conditions
+      const newUndoStack = undoStack.slice(0, -1);
+      const newRedoStack = [...redoStack, currentState];
       
-      // Remove the used state from undo stack
-      setUndoStack(prev => prev.slice(0, -1));
-      
-      // Apply the previous state
+      // Update all state at once
+      setUndoStack(newUndoStack);
+      setRedoStack(newRedoStack);
       setModules(previousState.modules);
       setConnections(previousState.connections);
       
-      // Reset flag after a short delay to ensure state updates complete
-      setTimeout(() => setIsUndoRedoOperation(false), 0);
+      // Reset flag after a delay
+      setTimeout(() => {
+        isUndoingOrRedoing.current = false;
+      }, 50);
+      
+      console.log('Undo performed. New stack sizes:', newUndoStack.length, newRedoStack.length);
     }
-  }, [undoStack, modules, connections, setModules, setConnections]);
+  }, [undoStack, redoStack, modules, connections]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
-      // Set flag to prevent state saving in the effect
-      setIsUndoRedoOperation(true);
+      // Set flag to true
+      isUndoingOrRedoing.current = true;
       
-      // Take the most recent state from the redo stack
+      // Get next state
       const nextState = redoStack[redoStack.length - 1];
+      const currentState = { modules, connections };
       
-      // Add current state to undo stack
-      setUndoStack(prev => [...prev, { modules, connections }]);
+      // Update stacks directly to avoid race conditions
+      const newUndoStack = [...undoStack, currentState];
+      const newRedoStack = redoStack.slice(0, -1);
       
-      // Remove the used state from redo stack
-      setRedoStack(prev => prev.slice(0, -1));
-      
-      // Apply the state
+      // Update all state at once
+      setUndoStack(newUndoStack);
+      setRedoStack(newRedoStack);
       setModules(nextState.modules);
       setConnections(nextState.connections);
       
-      // Reset flag after a short delay to ensure state updates complete
-      setTimeout(() => setIsUndoRedoOperation(false), 0);
+      // Reset flag after a delay
+      setTimeout(() => {
+        isUndoingOrRedoing.current = false;
+      }, 50);
+      
+      console.log('Redo performed. New stack sizes:', newUndoStack.length, newRedoStack.length);
     }
-  }, [redoStack, modules, connections, setModules, setConnections]);
+  }, [undoStack, redoStack, modules, connections]);
 
-  // Save state for undo when modules or connections change
+  // Modified effect to use ref instead of state
   useEffect(() => {
-    // Skip this effect during undo/redo operations
-    if (isUndoRedoOperation) return;
+    // Skip if we're undoing or redoing
+    if (isUndoingOrRedoing.current) return;
     
-    const newState: EditorState = { modules, connections };
-    const lastState = undoStack[undoStack.length - 1];
+    const newState = { modules, connections };
     
-    // Only save state if it's different from the last one
-    if (!lastState || 
-        JSON.stringify(lastState.modules) !== JSON.stringify(newState.modules) ||
-        JSON.stringify(lastState.connections) !== JSON.stringify(newState.connections)) {
+    // Only add to history if we have changes
+    if (undoStack.length === 0 || 
+        JSON.stringify(undoStack[undoStack.length - 1].modules) !== JSON.stringify(modules) || 
+        JSON.stringify(undoStack[undoStack.length - 1].connections) !== JSON.stringify(connections)) {
+      
       setUndoStack(prev => [...prev, newState]);
-      // Clear redo stack when new changes are made
-      setRedoStack([]);
+      setRedoStack([]); // Clear redo stack on changes
+      
+      console.log('History updated. Undo stack:', undoStack.length + 1, 'Redo stack: 0');
     }
-  }, [modules, connections, undoStack, isUndoRedoOperation]);
+  }, [modules, connections, undoStack]);
+
+  // Add debugging
+  useEffect(() => {
+    console.log('Undo stack size:', undoStack.length, 'Redo stack size:', redoStack.length);
+  }, [undoStack, redoStack]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const draggedItem = event.active.data.current as Module;
