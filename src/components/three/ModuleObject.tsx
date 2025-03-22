@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion, Color } from "three";
+import { Object3D, MeshStandardMaterial, Vector3, Vector2, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion, Color } from "three";
 import * as THREE from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls, Html, Billboard } from "@react-three/drei";
