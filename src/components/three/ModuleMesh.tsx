@@ -1,6 +1,7 @@
 
 import { useEffect } from "react";
-import { Mesh } from "three";
+import { Mesh, MeshStandardMaterial } from "three";
+import * as THREE from "three";
 import { Module } from "@/types/module";
 import { EditorPreferences } from "@/services/editor-preferences";
 
@@ -29,7 +30,7 @@ export function ModuleMesh({
         }
       });
     }
-  }, [meshRef.current?.rotation, meshRef.current?.position]);
+  }, [meshRef]);
 
   return (
     <mesh 

@@ -1,6 +1,7 @@
 
 import { useCallback, useState } from "react";
-import { Vector3, Euler, Mesh } from "three";
+import { Vector3, Euler, Mesh, Box3 } from "three";
+import * as THREE from "three";
 import { Module } from "@/types/module";
 import gsap from "gsap";
 
@@ -64,14 +65,14 @@ export function useModuleTransform({
       }
     }
     
-    const box = new THREE.Box3().setFromObject(meshRef.current);
+    const box = new Box3().setFromObject(meshRef.current);
     let adjustedPosition = position.clone();
     let maxCollisionHeight = minHeight;
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
       
-      const otherBox = new THREE.Box3();
+      const otherBox = new Box3();
       const otherPos = new Vector3(...otherModule.position);
       const otherSize = new Vector3(
         otherModule.dimensions.length,
