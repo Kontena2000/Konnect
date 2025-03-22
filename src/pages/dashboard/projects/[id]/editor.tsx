@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -7,6 +8,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
 import { Connection } from '@/services/layout';
+import layoutService from "@/services/layout";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditorState {
   modules: Module[];
@@ -15,7 +18,9 @@ interface EditorState {
 
 export default function LayoutEditorPage() {
   const router = useRouter();
+  const { id: projectId } = router.query;
   const { user } = useAuth();
+  const { toast } = useToast();
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
 
@@ -27,10 +32,58 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Load initial layout
+  useEffect(() => {
+    if (projectId && user) {
+      layoutService.getLayout(projectId as string)
+        .then(layout => {
+          if (layout) {
+            setModules(layout.modules || []);
+            setConnections(layout.connections || []);
+          }
+        })
+        .catch(error => {
+          console.error("Failed to load layout:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load layout",
+            variant: "destructive"
+          });
+        });
+    }
+  }, [projectId, user, toast]);
+
+  // Handle save
+  const handleSave = useCallback(async () => {
+    if (!projectId) return;
+    
+    setIsSaving(true);
+    try {
+      await layoutService.saveLayout(projectId as string, {
+        modules,
+        connections
+      });
+      
+      toast({
+        title: "Success",
+        description: "Layout saved successfully"
+      });
+    } catch (error) {
+      console.error("Failed to save layout:", error);
+      toast({
+        title: "Error",
+        description: "Failed to save layout",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSaving(false);
+    }
+  }, [projectId, modules, connections, toast]);
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
-    // Create a new module instance with unique ID
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
@@ -108,6 +161,7 @@ export default function LayoutEditorPage() {
         JSON.stringify(lastState.modules) !== JSON.stringify(newState.modules) ||
         JSON.stringify(lastState.connections) !== JSON.stringify(newState.connections)) {
       setUndoStack(prev => [...prev, newState]);
+      setRedoStack([]); // Clear redo stack on new changes
     }
   }, [modules, connections, undoStack]);
 
@@ -126,25 +180,27 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='h-screen w-full relative overflow-hidden'> {/* Add w-full and overflow-hidden */}
-        <SceneContainer
-          modules={modules}
-          selectedModuleId={selectedModuleId}
-          transformMode={transformMode}
-          onModuleSelect={handleModuleSelect}
-          onModuleUpdate={handleModuleUpdate}
-          onModuleDelete={handleModuleDelete}
-          connections={connections}
-          controlsRef={controlsRef}
-          editorPreferences={editorPreferences}
-        />
-        <Toolbox
-          onModuleDragStart={handleModuleDragStart}
-          onSave={() => {}}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          controlsRef={controlsRef}
-        />
+      <div className="w-full h-full flex overflow-hidden">
+        <div className="flex-1 relative">
+          <SceneContainer
+            modules={modules}
+            selectedModuleId={selectedModuleId}
+            transformMode={transformMode}
+            onModuleSelect={handleModuleSelect}
+            onModuleUpdate={handleModuleUpdate}
+            onModuleDelete={handleModuleDelete}
+            connections={connections}
+            controlsRef={controlsRef}
+            editorPreferences={editorPreferences}
+          />
+          <Toolbox
+            onModuleDragStart={handleModuleDragStart}
+            onSave={handleSave}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            controlsRef={controlsRef}
+          />
+        </div>
       </div>
     </AppLayout>
   );
