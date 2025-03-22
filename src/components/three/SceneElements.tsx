@@ -1,3 +1,4 @@
+
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -11,6 +12,7 @@ import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
 import { CameraControls } from "./CameraControls";
 import { Html } from "@react-three/drei";
+import { EditorPreferences } from "@/services/editor-preferences";
 
 interface SceneElementsProps {
   modules: Module[];
@@ -36,6 +38,7 @@ interface SceneElementsProps {
   isTransforming: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+  editorPreferences?: EditorPreferences | null;
 }
 
 export function SceneElements({
@@ -61,12 +64,12 @@ export function SceneElements({
   setRotationAngle,
   isTransforming,
   onTransformStart,
-  onTransformEnd
+  onTransformEnd,
+  editorPreferences
 }: SceneElementsProps) {
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
 
-  // Fixed cleanup function
   useEffect(() => {
     const controls = controlsRef.current;
     return () => {
@@ -76,7 +79,6 @@ export function SceneElements({
     };
   }, []);
 
-  // Improved camera initialization
   useEffect(() => {
     if (camera) {
       camera.position.set(10, 10, 10);
@@ -106,7 +108,7 @@ export function SceneElements({
         minPolarAngle={0}
         maxPolarAngle={Math.PI / 2.1}
       />
-      <GridHelper />
+      <GridHelper preferences={editorPreferences?.grid} />
 
       {terrain && <TerrainView terrain={terrain} />}
       
@@ -132,6 +134,7 @@ export function SceneElements({
           readOnly={readOnly}
           onTransformStart={onTransformStart}
           onTransformEnd={onTransformEnd}
+          editorPreferences={editorPreferences}
         />
       ))}
 
