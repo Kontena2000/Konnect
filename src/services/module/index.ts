@@ -6,6 +6,7 @@ import {
   getDoc,
   getDocs,
   setDoc,
+  deleteDoc,
   writeBatch,
   query,
   where
