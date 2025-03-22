@@ -205,14 +205,14 @@ export default function LayoutEditorPage() {
 
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
-      // Only take the most recent state from the redo stack
+      // Take the most recent state from the redo stack
       const nextState = redoStack[redoStack.length - 1];
       
       // Add current state to undo stack
       setUndoStack(prev => [...prev, { modules, connections }]);
       
-      // Clear the entire redo stack after using one step
-      setRedoStack([]);
+      // Remove only the used state from redo stack
+      setRedoStack(prev => prev.slice(0, -1));
       
       // Apply the state
       setModules(nextState.modules);
