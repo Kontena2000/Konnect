@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -126,25 +127,27 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='h-screen w-full relative overflow-hidden'> {/* Add w-full and overflow-hidden */}
-        <SceneContainer
-          modules={modules}
-          selectedModuleId={selectedModuleId}
-          transformMode={transformMode}
-          onModuleSelect={handleModuleSelect}
-          onModuleUpdate={handleModuleUpdate}
-          onModuleDelete={handleModuleDelete}
-          connections={connections}
-          controlsRef={controlsRef}
-          editorPreferences={editorPreferences}
-        />
-        <Toolbox
-          onModuleDragStart={handleModuleDragStart}
-          onSave={() => {}}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          controlsRef={controlsRef}
-        />
+      <div className="flex-1 flex overflow-hidden">
+        <div className="flex-1 relative">
+          <SceneContainer
+            modules={modules}
+            selectedModuleId={selectedModuleId}
+            transformMode={transformMode}
+            onModuleSelect={handleModuleSelect}
+            onModuleUpdate={handleModuleUpdate}
+            onModuleDelete={handleModuleDelete}
+            connections={connections}
+            controlsRef={controlsRef}
+            editorPreferences={editorPreferences}
+          />
+          <Toolbox
+            onModuleDragStart={handleModuleDragStart}
+            onSave={() => {}}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            controlsRef={controlsRef}
+          />
+        </div>
       </div>
     </AppLayout>
   );
