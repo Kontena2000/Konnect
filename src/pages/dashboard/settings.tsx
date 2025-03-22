@@ -33,7 +33,7 @@ export default function SettingsPage() {
   const [newUserRole, setNewUserRole] = useState<'editor' | 'admin' | 'viewer'>('editor');
   const [loading, setLoading] = useState(false);
   const [addingUser, setAddingUser] = useState(false);
-  const [gridWeight, setGridWeight] = useState("1");
+  const [gridWeight, setGridWeight] = useState<'0.5' | '1' | '2'>('1');
   const [gridColor, setGridColor] = useState("#808080");
   const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
@@ -189,7 +189,7 @@ export default function SettingsPage() {
               <CardContent className='space-y-4'>
                 <div className='space-y-2'>
                   <Label>Grid Size</Label>
-                  <Select value={gridSize} onValueChange={setGridSize}>
+                  <Select value={gridSize} onValueChange={(value: 'small' | 'medium' | 'large') => setGridSize(value)}>
                     <SelectTrigger>
                       <SelectValue placeholder='Select grid size' />
                     </SelectTrigger>
@@ -202,14 +202,14 @@ export default function SettingsPage() {
                 </div>
                 <div className="space-y-2">
                   <Label>Grid Line Weight</Label>
-                  <Select value={gridWeight} onValueChange={setGridWeight}>
+                  <Select value={gridWeight} onValueChange={(value: '0.5' | '1' | '2') => setGridWeight(value)}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select line weight" />
+                      <SelectValue placeholder='Select line weight' />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="0.5">Thin (0.5px)</SelectItem>
-                      <SelectItem value="1">Normal (1px)</SelectItem>
-                      <SelectItem value="2">Bold (2px)</SelectItem>
+                      <SelectItem value='0.5'>Thin (0.5px)</SelectItem>
+                      <SelectItem value='1'>Normal (1px)</SelectItem>
+                      <SelectItem value='2'>Bold (2px)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>

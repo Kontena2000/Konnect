@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -24,6 +23,17 @@ export function EditModuleDialog({ module, onModuleUpdate, categories }: EditMod
     color: module.color,
     dimensions: { ...module.dimensions }
   });
+
+  const handleDimensionChange = (key: string, value: string) => {
+    const numValue = parseFloat(value) || 0;
+    setFormData(prev => ({
+      ...prev,
+      dimensions: {
+        ...(prev.dimensions || {}),
+        [key]: numValue
+      }
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -118,13 +128,7 @@ export function EditModuleDialog({ module, onModuleUpdate, categories }: EditMod
                     <Input
                       type="number"
                       value={value}
-                      onChange={(e) => setFormData(prev => ({
-                        ...prev,
-                        dimensions: {
-                          ...prev.dimensions,
-                          [key]: parseFloat(e.target.value) || 0
-                        }
-                      }))}
+                      onChange={(e) => handleDimensionChange(key, e.target.value)}
                       step={0.1}
                       min={0.1}
                       required
