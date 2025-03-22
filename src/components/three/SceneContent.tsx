@@ -4,6 +4,7 @@ import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { Vector2, Vector3, Line3, Mesh } from "three";
 import { SceneElements } from "./SceneElements";
+import { EditorPreferences } from '@/services/editor-preferences';
 
 interface SceneContentProps {
   modules: Module[];
@@ -33,6 +34,7 @@ interface SceneContentProps {
   isTransforming: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+  editorPreferences?: EditorPreferences | null;
 }
 
 export function SceneContent({
@@ -62,7 +64,8 @@ export function SceneContent({
   controlsRef,
   isTransforming,
   onTransformStart,
-  onTransformEnd
+  onTransformEnd,
+  editorPreferences,
 }: SceneContentProps) {
   const { camera } = useThree();
 

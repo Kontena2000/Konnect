@@ -1,6 +1,7 @@
+
 import { Grid } from "@react-three/drei";
 import { Float32BufferAttribute } from "three";
-import { GridPreferences } from '@/services/grid-preferences';
+import { EditorPreferences } from '@/services/editor-preferences';
 
 interface GridHelperProps {
   size?: number;
@@ -8,7 +9,7 @@ interface GridHelperProps {
   fadeDistance?: number;
   showAxes?: boolean;
   gridColor?: string;
-  preferences?: GridPreferences | null;
+  preferences?: EditorPreferences["grid"] | null;
 }
 
 export function GridHelper({
