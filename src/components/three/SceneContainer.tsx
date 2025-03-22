@@ -153,15 +153,15 @@ export function SceneContainer({
     if (readOnly || !onDropPoint || !draggedModuleRef.current) return;
     event.preventDefault();
     
-    // Calculate proper height based on module dimensions
+    // Use the actual preview position instead of [0,0,0]
     const moduleHeight = draggedModuleRef.current.dimensions.height;
     const properY = moduleHeight / 2; // Place bottom at ground level
     
-    // Snap to grid with proper height
+    // Use the actual preview position for X and Z
     const snappedPosition: [number, number, number] = [
-      Math.round(previewPosition[0]),
+      previewPosition[0],
       properY,
-      Math.round(previewPosition[2])
+      previewPosition[2]
     ];
     
     // Check for collisions before placement
@@ -192,6 +192,13 @@ export function SceneContainer({
     
     if (!hasCollision) {
       onDropPoint(snappedPosition);
+    } else {
+      // Show feedback that placement is not allowed
+      toast({
+        variant: 'destructive',
+        title: 'Cannot place module',
+        description: 'Objects cannot overlap with each other'
+      });
     }
     
     setIsDraggingOver(false);
@@ -330,7 +337,11 @@ export function SceneContainer({
           near: 0.1,
           far: 1000
         }}
-        shadows
+        shadows={{
+          enabled: true,
+          type: THREE.PCFSoftShadowMap,
+          autoUpdate: true
+        }}
       >
         <SceneContent
           modules={modules}
@@ -364,26 +375,25 @@ export function SceneContainer({
       </Canvas>
 
       {isDraggingOver && previewMesh && (
-        <>
-          <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
-            <primitive object={previewMesh.clone()} />
-            <mesh 
-              position={[0, 0.01, 0]} 
-              rotation={[-Math.PI/2, 0, 0]}
-            >
-              <planeGeometry args={[
-                draggedModuleRef.current?.dimensions.length || 1,
-                draggedModuleRef.current?.dimensions.width || 1
-              ]} />
-              <meshBasicMaterial 
-                color='#000000'
-                transparent
-                opacity={0.2}
-                side={THREE.DoubleSide}
-              />
-            </mesh>
-          </group>
-        </>
+        <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
+          <primitive object={previewMesh.clone()} />
+          <mesh 
+            position={[0, 0.01, 0]} 
+            rotation={[-Math.PI/2, 0, 0]}
+            receiveShadow
+          >
+            <planeGeometry args={[
+              draggedModuleRef.current?.dimensions.length || 1,
+              draggedModuleRef.current?.dimensions.width || 1
+            ]} />
+            <meshBasicMaterial 
+              color='#000000'
+              transparent
+              opacity={0.2}
+              side={THREE.DoubleSide}
+            />
+          </mesh>
+        </group>
       )}
 
       {!readOnly && isDraggingOver && (
