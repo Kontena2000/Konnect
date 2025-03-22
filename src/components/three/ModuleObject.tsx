@@ -42,7 +42,6 @@ export function ModuleObject({
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const transformRef = useRef<any>(null);
-  const [hovered, setHovered] = useState(false);
   const [showControls, setShowControls] = useState(selected);
   const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
@@ -249,18 +248,6 @@ export function ModuleObject({
     onClick?.();
   }, [onClick]);
 
-  const handleMouseEnter = useCallback(() => {
-    setHovered(true);
-    setShowControls(true);
-  }, []);
-
-  const handleMouseLeave = useCallback(() => {
-    setHovered(false);
-    if (!selected) {
-      setShowControls(false);
-    }
-  }, [selected]);
-
   // Update controls visibility
   useEffect(() => {
     setShowControls(selected);
@@ -288,8 +275,6 @@ export function ModuleObject({
         scale={module.scale}
         onClick={handleClick}
         onContextMenu={handleContextMenu}
-        onPointerOver={handleMouseEnter}
-        onPointerOut={handleMouseLeave}
         castShadow
         receiveShadow
       >
@@ -300,8 +285,8 @@ export function ModuleObject({
         ]} />
         <meshStandardMaterial
           color={module.color || '#888888'}
-          transparent={hovered || selected}
-          opacity={hovered || selected ? 0.8 : 1}
+          transparent={selected}
+          opacity={selected ? 0.8 : 1}
           wireframe={module.wireframe}
         />
       </mesh>
@@ -321,8 +306,8 @@ export function ModuleObject({
         />
       </mesh>
 
-      {/* Floating Controls */}
-      {(showControls || hovered || selected) && !readOnly && (
+      {/* Floating Controls - Only show when selected */}
+      {selected && !readOnly && (
         <Billboard
           follow={true}
           lockX={false}
@@ -340,7 +325,7 @@ export function ModuleObject({
               transition: 'all 0.2s ease',
               pointerEvents: 'auto',
               transform: `scale(${camera.zoom < 1 ? 1 / camera.zoom : 1})`,
-              opacity: hovered ? 1 : 0.8
+              opacity: 0.8
             }}
           >
             <div className='bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none'>
