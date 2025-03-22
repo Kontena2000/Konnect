@@ -1,10 +1,11 @@
-import React, { useMemo } from "react";
+import React, { useMemo, useEffect } from "react";
 import { Vector2, Vector3, Line3, Color, Mesh } from "three";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { ModuleObject } from "./ModuleObject";
 import { ModulePreview } from "./ModulePreview";
+import { useThree } from '@react-three/fiber';
 import * as THREE from "three";
 
 interface SceneElementsProps {
@@ -31,6 +32,9 @@ interface SceneElementsProps {
   isTransforming: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+  onPreviewPositionUpdate: (position: [number, number, number]) => void;
+  mousePosition?: Vector2;
+  draggedDimensions?: { height: number };
 }
 
 export function SceneElements({
@@ -56,13 +60,34 @@ export function SceneElements({
   setRotationAngle,
   isTransforming,
   onTransformStart,
-  onTransformEnd
+  onTransformEnd,
+  onPreviewPositionUpdate,
+  mousePosition,
+  draggedDimensions
 }: SceneElementsProps) {
-  
+  const { scene, camera, raycaster } = useThree();
+
   // Memoize the selected module to prevent unnecessary re-renders
   const selectedModule = useMemo(() => {
     return modules.find(m => m.id === selectedModuleId);
   }, [modules, selectedModuleId]);
+
+  useEffect(() => {
+    if (isDraggingOver && mousePosition && draggedDimensions) {
+      raycaster.setFromCamera(mousePosition, camera);
+      const intersects = raycaster.intersectObjects([scene], true);
+      
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        const snappedPosition: [number, number, number] = [
+          Math.round(point.x),
+          draggedDimensions.height / 2,
+          Math.round(point.z)
+        ];
+        onPreviewPositionUpdate(snappedPosition);
+      }
+    }
+  }, [isDraggingOver, mousePosition, draggedDimensions, camera, scene, raycaster, onPreviewPositionUpdate]);
 
   // Render connections between modules
   const renderConnections = useMemo(() => {

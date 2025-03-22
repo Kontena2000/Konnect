@@ -48,7 +48,7 @@ export function ModuleObject({
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
   const [shadowTransform, setShadowTransform] = useState<ShadowTransform>({
-    position: new Vector3(module.position[0], 0.01, module.position[2]),
+    position: new Vector3(module.position[0], 0.001, module.position[2]),
     rotation: new Euler(-Math.PI/2, 0, 0)
   });
 
@@ -59,32 +59,23 @@ export function ModuleObject({
     module.position[2]
   ), [module.position]);
 
-  // Improved shadow transform calculation
+  // Update shadow transform calculation
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
-    // Get the world position of the mesh
     const worldPosition = new Vector3();
     meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.01; // Keep shadow just above ground
+    worldPosition.y = 0.001; // Keep shadow just above ground to prevent z-fighting
     
-    // Extract the world rotation - focusing on Y rotation for the shadow
-    const worldQuaternion = new Quaternion();
-    meshRef.current.getWorldQuaternion(worldQuaternion);
-    
-    // Convert quaternion to Euler angles
-    const worldRotation = new Euler().setFromQuaternion(worldQuaternion);
-    
-    // Shadow rotation: always flat on ground (-PI/2 around X) but follows the module's Y rotation
-    const shadowRotation = new Euler(
-      -Math.PI/2,  // Always flat on the ground (rotated 90° around X)
-      worldRotation.y,  // Follow the module's Y rotation
-      0  // No Z rotation needed
+    const worldRotation = new Euler(
+      -Math.PI/2, // Always flat on ground
+      meshRef.current.rotation.y, // Match object rotation
+      0
     );
     
     setShadowTransform({
       position: worldPosition,
-      rotation: shadowRotation
+      rotation: worldRotation
     });
   }, []);
 
@@ -363,7 +354,7 @@ export function ModuleObject({
         />
       </mesh>
 
-      {/* Floating Controls */}
+      {/* Floating Controls - Moved further up */}
       {(showControls || hovered || selected) && !readOnly && (
         <Billboard
           follow={true}
@@ -372,7 +363,7 @@ export function ModuleObject({
           lockZ={false}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
-            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 3,
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 5, // Increased distance
             meshRef.current ? meshRef.current.position.z : module.position[2]
           ]}
         >
