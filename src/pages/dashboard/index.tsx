@@ -10,17 +10,34 @@ export default function DashboardPage() {
   const { user, loading } = useAuth();
 
   useEffect(() => {
-    if (!loading && user) {
-      router.replace('/dashboard/projects');
+    if (!loading) {
+      if (user) {
+        router.replace("/dashboard/projects");
+      } else {
+        router.replace("/auth/login");
+      }
     }
   }, [user, loading, router]);
+
+  if (loading) {
+    return (
+      <AppLayout>
+        <div className="h-screen flex items-center justify-center">
+          <div className="flex flex-col items-center gap-4">
+            <Loader2 className="h-8 w-8 animate-spin" />
+            <p className="text-muted-foreground">Loading...</p>
+          </div>
+        </div>
+      </AppLayout>
+    );
+  }
 
   return (
     <AppLayout>
       <div className="h-screen flex items-center justify-center">
-        <div className="flex items-center gap-2">
-          <Loader2 className="h-6 w-6 animate-spin" />
-          <p>Redirecting to projects...</p>
+        <div className="flex flex-col items-center gap-4">
+          <Loader2 className="h-8 w-8 animate-spin" />
+          <p className="text-muted-foreground">Redirecting to projects...</p>
         </div>
       </div>
     </AppLayout>
