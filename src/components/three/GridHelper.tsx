@@ -1,4 +1,3 @@
-
 import { Grid } from "@react-three/drei";
 import { Float32BufferAttribute } from "three";
 import { EditorPreferences } from '@/services/editor-preferences';
@@ -13,21 +12,21 @@ interface GridHelperProps {
 }
 
 export function GridHelper({
-  size = 100,
-  divisions = 100,
-  fadeDistance = 100,
+  size = 50, // Reduced default size
+  divisions = 50, // Reduced divisions for better performance
+  fadeDistance = 50, // Adjusted fade distance
   showAxes = true,
-  gridColor = "#444444",
+  gridColor = '#444444',
   preferences
 }: GridHelperProps) {
   // Convert grid size to actual dimensions
   const getGridSize = () => {
     if (!preferences) return size;
     switch (preferences.size) {
-      case 'small': return 50;
-      case 'medium': return 100;
-      case 'large': return 200;
-      default: return 100;
+      case 'small': return 25;
+      case 'medium': return 50;
+      case 'large': return 100; // Reduced maximum size
+      default: return 50;
     }
   };
 
