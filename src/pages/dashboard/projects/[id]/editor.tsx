@@ -31,6 +31,7 @@ import { Mesh } from 'three';
 import { useHotkeys } from 'react-hotkeys-hook';
 import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
+import gridPreferencesService, { GridPreferences } from '@/services/grid-preferences';
 
 const createPreviewMesh = (item: Module) => {
   const geometry = new THREE.BoxGeometry(
@@ -69,6 +70,7 @@ export default function LayoutEditorPage() {
   const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
   const [rotationAngle, setRotationAngle] = useState(0);
   const [saving, setSaving] = useState(false); // Added saving state
+  const [gridPreferences, setGridPreferences] = useState<GridPreferences | null>(null);
 
   const {
     modules,
@@ -257,6 +259,23 @@ export default function LayoutEditorPage() {
     loadLayoutData();
   }, [id, user, router.query.layout, setModules, setConnections, toast, router]);
 
+  // Add grid preferences loading
+  useEffect(() => {
+    const loadGridPreferences = async () => {
+      if (!user) return;
+      try {
+        const prefs = await gridPreferencesService.getPreferences(user.uid);
+        if (prefs) {
+          setGridPreferences(prefs);
+        }
+      } catch (error) {
+        console.error('Error loading grid preferences:', error);
+      }
+    };
+
+    loadGridPreferences();
+  }, [user]);
+
   if (!user) {
     return (
       <AppLayout>
@@ -356,6 +375,7 @@ export default function LayoutEditorPage() {
               }}
               cameraZoom={cameraZoom}
               gridSnap={gridSnap}
+              gridPreferences={gridPreferences}
             />
           </div>
 

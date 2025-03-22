@@ -13,6 +13,7 @@ import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { SceneContent } from './SceneContent';
 import { useToast } from '@/hooks/use-toast';
+import { GridPreferences } from '@/services/grid-preferences';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -38,6 +39,7 @@ export interface SceneContainerProps {
   isTransforming?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+  gridPreferences?: GridPreferences | null;
 }
 
 export function SceneContainer({
@@ -59,7 +61,8 @@ export function SceneContainer({
   gridSnap = true,
   isTransforming = false,
   onTransformStart,
-  onTransformEnd
+  onTransformEnd,
+  gridPreferences
 }: SceneContainerProps) {
   const { toast } = useToast();
   const { setNodeRef, isOver } = useDroppable({
@@ -343,6 +346,10 @@ export function SceneContainer({
           isTransforming={transforming}
           onTransformStart={handleTransformStart}
           onTransformEnd={handleTransformEnd}
+        />
+        <GridHelper
+          showAxes={true}
+          preferences={gridPreferences}
         />
       </Canvas>
 
