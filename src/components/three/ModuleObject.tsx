@@ -61,45 +61,34 @@ export function ModuleObject({
     module.position[2]
   ), [module.position]);
 
-  // Improved shadow transform calculation
+  // Simplified shadow transform calculation
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
-    const worldPosition = new Vector3();
-    const worldQuaternion = new Quaternion();
-    const worldScale = new Vector3();
-    
-    meshRef.current.matrixWorld.decompose(worldPosition, worldQuaternion, worldScale);
-    
-    // Calculate the center position of the bottom face
-    // This ensures the shadow is centered directly under the object
-    const bottomCenterY = 0.01; // Slightly above ground to prevent z-fighting
-    
-    // Maintain the shadow's position directly under the object
+    // 1. Position the shadow directly below the object
     const shadowPosition = new Vector3(
-      worldPosition.x,
-      bottomCenterY,
-      worldPosition.z
+      meshRef.current.position.x,
+      0.01, // Just above ground
+      meshRef.current.position.z
     );
+
+    // 2. For rotation, only take the Y component from the object
+    const objectYRotation = meshRef.current.rotation.y;
     
-    // Create shadow rotation - use ONLY Y rotation component
-    const worldEuler = new Euler().setFromQuaternion(worldQuaternion);
+    // 3. Create a shadow rotation that's flat on the ground but rotated to match object
     const shadowRotation = new Euler(
-      -Math.PI/2, // This keeps the shadow flat on the ground
-      worldEuler.y, 
+      -Math.PI/2, // This is crucial - makes it lie flat on XZ plane
+      objectYRotation,
       0
     );
     
-    // Calculate shadow dimensions based on object's current rotation
-    const box = new Box3().setFromObject(meshRef.current);
-    const size = box.getSize(new Vector3());
-    
+    // 4. Update shadow transform state
     setShadowTransform({
       position: shadowPosition,
       rotation: shadowRotation,
-      scale: [size.x/module.dimensions.length, size.z/module.dimensions.width, 1]
+      scale: [1, 1, 1] // Start with no scaling
     });
-  }, [module.dimensions.length, module.dimensions.width]);
+  }, []);
 
   // Handle keyboard events
   useEffect(() => {
@@ -321,11 +310,10 @@ export function ModuleObject({
       <mesh 
         position={shadowTransform.position}
         rotation={shadowTransform.rotation}
-        scale={shadowTransform.scale}
       >
         <planeGeometry args={[
-          module.dimensions.length,
-          module.dimensions.width
+          module.dimensions.length, // Width matches object length
+          module.dimensions.width   // Height matches object width
         ]} />
         <meshBasicMaterial 
           color='#000000'
