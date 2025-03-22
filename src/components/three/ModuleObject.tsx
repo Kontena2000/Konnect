@@ -1,6 +1,6 @@
 
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Vector3, Mesh, Euler } from "three";
+import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls } from "@react-three/drei";
 import { Module } from "@/types/module";
@@ -65,14 +65,12 @@ export function ModuleObject({
     onUpdate
   });
 
-  // Memoize initial position for drop animation
   const initialPosition = useMemo(() => new Vector3(
     module.position[0],
     module.position[1] + 5,
     module.position[2]
   ), [module.position]);
 
-  // Simplified shadow transform calculation
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
@@ -90,7 +88,6 @@ export function ModuleObject({
     });
   }, []);
 
-  // Handle keyboard events
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Shift") setIsShiftPressed(true);
@@ -108,7 +105,6 @@ export function ModuleObject({
     };
   }, [setIsShiftPressed]);
 
-  // Enhanced drop-in animation
   useEffect(() => {
     if (animating && meshRef.current) {
       meshRef.current.position.copy(initialPosition);
@@ -126,7 +122,6 @@ export function ModuleObject({
     }
   }, [animating, initialPosition, module.dimensions.height, updateShadowTransform]);
 
-  // Event handlers
   const handleClick = useCallback((event: ThreeEvent<MouseEvent>) => {
     event.stopPropagation();
     onClick?.();
@@ -170,7 +165,7 @@ export function ModuleObject({
       {selected && !readOnly && (
         <ModuleControls
           meshRef={meshRef}
-          camera={camera}
+          camera={camera as PerspectiveCamera | OrthographicCamera}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
             (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 3,

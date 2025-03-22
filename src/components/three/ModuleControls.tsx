@@ -1,11 +1,11 @@
 
 import { Html, Billboard } from "@react-three/drei";
-import { Camera } from "three";
+import { PerspectiveCamera, OrthographicCamera } from "three";
 import { Mesh } from "three";
 
 interface ModuleControlsProps {
   meshRef: React.RefObject<Mesh>;
-  camera: Camera;
+  camera: PerspectiveCamera | OrthographicCamera;
   position: [number, number, number];
   onRotateLeft: () => void;
   onRotateRight: () => void;
