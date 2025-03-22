@@ -1,3 +1,4 @@
+
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -13,7 +14,6 @@ import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { SceneContent } from './SceneContent';
 import { useToast } from '@/hooks/use-toast';
-import { GridPreferences } from '@/services/grid-preferences';
 import { GridHelper } from './GridHelper';
 import { EditorPreferences } from '@/services/editor-preferences';
 
@@ -41,7 +41,6 @@ export interface SceneContainerProps {
   isTransforming?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
-  gridPreferences?: GridPreferences | null;
   editorPreferences?: EditorPreferences | null;
   controlsRef: React.RefObject<any>;
 }
@@ -66,7 +65,6 @@ export function SceneContainer({
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
-  gridPreferences,
   editorPreferences,
   controlsRef
 }: SceneContainerProps) {
