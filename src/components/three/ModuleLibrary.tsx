@@ -12,6 +12,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useDraggable } from '@dnd-kit/core';
+import { cn } from '@/lib/utils';
 
 interface ModuleLibraryProps {
   onDragStart: (module: Module) => void;

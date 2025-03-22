@@ -42,7 +42,7 @@ export interface SceneContainerProps {
 export function SceneContainer({
   modules,
   selectedModuleId,
-  transformMode = "translate",
+  transformMode = 'translate',
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -60,7 +60,9 @@ export function SceneContainer({
   onTransformStart,
   onTransformEnd
 }: SceneContainerProps) {
-  const { setNodeRef } = useDroppable({ id: "scene" });
+  const { setNodeRef, isOver } = useDroppable({
+    id: 'scene',
+  });
   const [previewMesh, setPreviewMesh] = useState<THREE.Mesh | null>(null);
   const [isDraggingOver, setIsDraggingOver] = useState(false);
   const [rotationAngle, setRotationAngle] = useState(0);
@@ -312,8 +314,8 @@ export function SceneContainer({
     <div 
       ref={setNodeRef} 
       className={cn(
-        "w-full h-full relative",
-        !readOnly && isDraggingOver && "cursor-crosshair"
+        'w-full h-full relative',
+        !readOnly && isOver && 'cursor-crosshair'
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}

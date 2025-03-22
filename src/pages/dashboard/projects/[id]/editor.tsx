@@ -203,6 +203,11 @@ export default function LayoutEditorPage() {
     setSelectedModuleId(moduleId || undefined);  // Fixed null assignment
   }, [setSelectedModuleId]);
 
+  const handleModuleDragStart = useCallback((module: Module) => {
+    setDraggingTemplate(module);
+    setPreviewMesh(createPreviewMesh(module));
+  }, []);
+
   useEffect(() => {
     const loadLayoutData = async () => {
       if (!id || !user) return;
