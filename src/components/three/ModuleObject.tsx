@@ -125,19 +125,12 @@ export function ModuleObject({
     }
   }, [animating, initialPosition, module.dimensions.height, updateShadowTransform]);
 
-  // Enhanced collision detection
+  // Remove handleCollision since we won't be using visual feedback
   const handleCollision = useCallback((hasCollision: boolean) => {
-    if (!meshRef.current || !(meshRef.current.material instanceof MeshStandardMaterial)) return;
+    // Empty function - we're not showing collision feedback anymore
+  }, []);
 
-    gsap.to(meshRef.current.material, {
-      emissive: new Color(hasCollision ? '#ff0000' : '#000000'),
-      emissiveIntensity: hasCollision ? 0.5 : 0,
-      opacity: hasCollision ? 0.7 : (selected ? 0.8 : 1),
-      duration: hasCollision ? 0.2 : 0.3
-    });
-  }, [selected]);
-
-  // Enhanced transform handling
+  // Enhanced transform handling with sliding behavior
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -180,9 +173,9 @@ export function ModuleObject({
       }
     }
     
-    // Check collisions
+    // Check collisions and implement sliding behavior
     const box = new Box3().setFromObject(meshRef.current);
-    let hasCollision = false;
+    let adjustedPosition = position.clone();
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -197,44 +190,54 @@ export function ModuleObject({
       otherBox.setFromCenterAndSize(otherPos, otherSize);
       
       if (box.intersectsBox(otherBox)) {
-        hasCollision = true;
+        // Calculate overlap on each axis
+        const overlap = {
+          x: Math.min(box.max.x - otherBox.min.x, otherBox.max.x - box.min.x),
+          z: Math.min(box.max.z - otherBox.min.z, otherBox.max.z - box.min.z)
+        };
+        
+        // Determine which axis has less overlap and adjust position accordingly
+        if (overlap.x < overlap.z) {
+          // Adjust X position
+          if (position.x > otherPos.x) {
+            adjustedPosition.x = otherBox.max.x + module.dimensions.length/2;
+          } else {
+            adjustedPosition.x = otherBox.min.x - module.dimensions.length/2;
+          }
+        } else {
+          // Adjust Z position
+          if (position.z > otherPos.z) {
+            adjustedPosition.z = otherBox.max.z + module.dimensions.width/2;
+          } else {
+            adjustedPosition.z = otherBox.min.z - module.dimensions.width/2;
+          }
+        }
       }
     });
     
-    handleCollision(hasCollision);
-    
-    if (hasCollision) {
-      // Revert position with smooth animation
+    // Smoothly move to adjusted position
+    if (!adjustedPosition.equals(position)) {
       gsap.to(meshRef.current.position, {
-        x: module.position[0],
-        y: module.position[1],
-        z: module.position[2],
-        duration: 0.3,
+        x: adjustedPosition.x,
+        z: adjustedPosition.z,
+        duration: 0.2,
         ease: 'power2.out',
         onUpdate: updateShadowTransform
-      });
-      
-      gsap.to(meshRef.current.rotation, {
-        x: module.rotation[0],
-        y: module.rotation[1],
-        z: module.rotation[2],
-        duration: 0.3,
-        ease: 'power2.out',
-        onUpdate: updateShadowTransform
-      });
-    } else {
-      onUpdate?.({
-        position: [position.x, position.y, position.z],
-        rotation: [rotation.x, rotation.y, rotation.z],
-        scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
       });
     }
+    
+    // Update module state with new position
+    onUpdate?.({
+      position: [adjustedPosition.x, adjustedPosition.y, adjustedPosition.z],
+      rotation: [rotation.x, rotation.y, rotation.z],
+      scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+    });
     
     updateShadowTransform();
   }, [
     readOnly, onUpdate, module.id, module.dimensions, module.position, 
     module.rotation, modules, gridSnap, isShiftPressed, transformMode, 
-    isTransforming, updateShadowTransform, handleCollision
+    isTransforming, updateShadowTransform
   ]);
 
   // Event handlers
