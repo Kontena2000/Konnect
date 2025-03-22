@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -127,7 +126,7 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className="h-screen relative">
+      <div className='h-screen w-full relative overflow-hidden'> {/* Add w-full and overflow-hidden */}
         <SceneContainer
           modules={modules}
           selectedModuleId={selectedModuleId}
