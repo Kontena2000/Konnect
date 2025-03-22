@@ -71,29 +71,33 @@ export function ModuleObject({
     
     meshRef.current.matrixWorld.decompose(worldPosition, worldQuaternion, worldScale);
     
-    // Keep shadow at ground level
-    worldPosition.y = 0.01;
+    // Calculate the center position of the bottom face
+    // This ensures the shadow is centered directly under the object
+    const bottomCenterY = 0.01; // Slightly above ground to prevent z-fighting
     
-    // Create shadow rotation - only use Y rotation component
+    // Maintain the shadow's position directly under the object
+    const shadowPosition = new Vector3(
+      worldPosition.x,
+      bottomCenterY,
+      worldPosition.z
+    );
+    
+    // Create shadow rotation - use ONLY Y rotation component
     const worldEuler = new Euler().setFromQuaternion(worldQuaternion);
     const shadowRotation = new Euler(
-      -Math.PI/2, // Keep shadow flat on ground
-      worldEuler.y, // Match object's Y rotation
-      0 // Don't use Z rotation for the shadow
+      -Math.PI/2, // This keeps the shadow flat on the ground
+      worldEuler.y, 
+      0
     );
     
     // Calculate shadow dimensions based on object's current rotation
     const box = new Box3().setFromObject(meshRef.current);
     const size = box.getSize(new Vector3());
     
-    // Use the XZ dimensions from the bounding box for the shadow
-    const shadowWidth = size.x;
-    const shadowLength = size.z;
-    
     setShadowTransform({
-      position: worldPosition,
+      position: shadowPosition,
       rotation: shadowRotation,
-      scale: [shadowWidth/module.dimensions.length, shadowLength/module.dimensions.width, 1]
+      scale: [size.x/module.dimensions.length, size.z/module.dimensions.width, 1]
     });
   }, [module.dimensions.length, module.dimensions.width]);
 
