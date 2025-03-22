@@ -1,7 +1,6 @@
 
 import { TransformControls } from "@react-three/drei";
-import { Mesh } from "three";
-import { useModuleTransform } from "@/hooks/use-module-transform";
+import { Mesh, Object3D } from "three";
 
 interface ModuleTransformProps {
   meshRef: React.RefObject<Mesh>;
@@ -20,9 +19,11 @@ export function ModuleTransform({
   onTransformEnd,
   onUpdate
 }: ModuleTransformProps) {
+  if (!meshRef.current) return null;
+
   return (
     <TransformControls
-      object={meshRef.current}
+      object={meshRef.current as Object3D}
       mode={transformMode}
       onMouseDown={onTransformStart}
       onMouseUp={onTransformEnd}
