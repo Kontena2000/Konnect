@@ -1,3 +1,4 @@
+
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -144,7 +145,7 @@ export function SceneContainer({
     <div 
       ref={setNodeRef} 
       className={cn(
-        'w-full h-full relative overflow-hidden', // Added overflow-hidden
+        'w-full h-full relative',
         !readOnly && isOver && 'cursor-none'
       )}
       onDragOver={handleDragOver}
@@ -153,10 +154,10 @@ export function SceneContainer({
     >
       <Canvas 
         camera={{ 
-          position: [5, 5, 5], // Reduced camera distance
+          position: [10, 10, 10], 
           zoom: cameraZoom,
           near: 0.1,
-          far: 500 // Reduced far plane
+          far: 1000
         }}
         shadows={{
           enabled: true,
