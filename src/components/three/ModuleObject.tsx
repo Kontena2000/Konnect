@@ -130,7 +130,7 @@ export function ModuleObject({
     // Empty function - we're not showing collision feedback anymore
   }, []);
 
-  // Enhanced transform handling with sliding behavior
+  // Enhanced transform handling with elevation behavior
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -173,9 +173,10 @@ export function ModuleObject({
       }
     }
     
-    // Check collisions and implement sliding behavior
+    // Check collisions and implement elevation behavior
     const box = new Box3().setFromObject(meshRef.current);
     let adjustedPosition = position.clone();
+    let maxCollisionHeight = minHeight;
     
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
@@ -189,41 +190,40 @@ export function ModuleObject({
       );
       otherBox.setFromCenterAndSize(otherPos, otherSize);
       
-      if (box.intersectsBox(otherBox)) {
-        // Calculate overlap on each axis
-        const overlap = {
-          x: Math.min(box.max.x - otherBox.min.x, otherBox.max.x - box.min.x),
-          z: Math.min(box.max.z - otherBox.min.z, otherBox.max.z - box.min.z)
-        };
-        
-        // Determine which axis has less overlap and adjust position accordingly
-        if (overlap.x < overlap.z) {
-          // Adjust X position
-          if (position.x > otherPos.x) {
-            adjustedPosition.x = otherBox.max.x + module.dimensions.length/2;
-          } else {
-            adjustedPosition.x = otherBox.min.x - module.dimensions.length/2;
-          }
-        } else {
-          // Adjust Z position
-          if (position.z > otherPos.z) {
-            adjustedPosition.z = otherBox.max.z + module.dimensions.width/2;
-          } else {
-            adjustedPosition.z = otherBox.min.z - module.dimensions.width/2;
-          }
-        }
+      // Check if boxes intersect in XZ plane (ignoring Y)
+      const xzIntersection = (
+        box.min.x <= otherBox.max.x &&
+        box.max.x >= otherBox.min.x &&
+        box.min.z <= otherBox.max.z &&
+        box.max.z >= otherBox.min.z
+      );
+      
+      if (xzIntersection && selected) {
+        // If there's a collision and this module is selected,
+        // elevate it to the top of the other module
+        const collisionHeight = otherBox.max.y + module.dimensions.height/2;
+        maxCollisionHeight = Math.max(maxCollisionHeight, collisionHeight);
       }
     });
     
-    // Smoothly move to adjusted position
-    if (!adjustedPosition.equals(position)) {
+    // Apply elevation if there's a collision
+    if (maxCollisionHeight > minHeight) {
       gsap.to(meshRef.current.position, {
-        x: adjustedPosition.x,
-        z: adjustedPosition.z,
-        duration: 0.2,
+        y: maxCollisionHeight,
+        duration: 0.3,
         ease: 'power2.out',
         onUpdate: updateShadowTransform
       });
+      adjustedPosition.y = maxCollisionHeight;
+    } else {
+      // Return to normal height if no collision
+      gsap.to(meshRef.current.position, {
+        y: minHeight,
+        duration: 0.3,
+        ease: 'power2.out',
+        onUpdate: updateShadowTransform
+      });
+      adjustedPosition.y = minHeight;
     }
     
     // Update module state with new position
@@ -235,9 +235,9 @@ export function ModuleObject({
     
     updateShadowTransform();
   }, [
-    readOnly, onUpdate, module.id, module.dimensions, module.position, 
-    module.rotation, modules, gridSnap, isShiftPressed, transformMode, 
-    isTransforming, updateShadowTransform
+    readOnly, onUpdate, module.id, module.dimensions, selected,
+    gridSnap, isShiftPressed, transformMode, isTransforming, 
+    updateShadowTransform, modules
   ]);
 
   // Event handlers
