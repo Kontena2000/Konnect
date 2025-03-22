@@ -7,7 +7,7 @@ import { ModuleDragOverlay } from "@/components/three/DragOverlay";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-import { Save, Undo, Redo, ZoomIn, ZoomOut, Loader2, Grid } from "lucide-react";
+import { Save, Undo, Redo, Loader2, Grid } from "lucide-react";
 import { DndContext, DragEndEvent, DragStartEvent, useSensor, useSensors, MouseSensor, TouchSensor } from "@dnd-kit/core";
 import { ModuleProperties } from "@/components/three/ModuleProperties";
 import { ConnectionManager } from "@/components/three/ConnectionManager";
@@ -183,7 +183,7 @@ export default function LayoutEditorPage() {
       setModules(previousState.modules);
       setConnections(previousState.connections);
     }
-  }, [undoStack, modules, connections]);
+  }, [undoStack, modules, connections, setRedoStack, setUndoStack, setModules, setConnections]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
@@ -193,12 +193,14 @@ export default function LayoutEditorPage() {
       setModules(nextState.modules);
       setConnections(nextState.connections);
     }
-  }, [redoStack, modules, connections]);
+  }, [redoStack, modules, connections, setUndoStack, setRedoStack, setModules, setConnections]);
 
   // Save state for undo when modules or connections change
   useEffect(() => {
-    setUndoStack(prev => [...prev, { modules, connections }]);
-    setRedoStack([]);
+    if (modules.length > 0 || connections.length > 0) {
+      setUndoStack(prev => [...prev, { modules, connections }]);
+      setRedoStack([]);
+    }
   }, [modules, connections]);
 
   const handleDragStart = (event: DragStartEvent) => {

@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid3D, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid3d, ZoomIn, ZoomOut } from "lucide-react";
 import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
@@ -15,8 +15,7 @@ interface ToolboxProps {
   onSave?: () => void;
   onUndo?: () => void;
   onRedo?: () => void;
-  onZoomIn?: () => void;
-  onZoomOut?: () => void;
+  controlsRef?: React.RefObject<any>;
 }
 
 export function Toolbox({ 
@@ -25,7 +24,7 @@ export function Toolbox({
   onUndo, 
   onRedo,
   controlsRef
-}: ToolboxProps & { controlsRef?: React.RefObject<any> }) {
+}: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("modules");
 
@@ -243,7 +242,7 @@ export function Toolbox({
                     }}
                     className='w-full'
                   >
-                    <Grid3D className='h-4 w-4' />
+                    <Grid3d className='h-4 w-4' />
                     {!collapsed && <span className='ml-2'>3D View</span>}
                   </Button>
                 </TooltipTrigger>
