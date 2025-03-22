@@ -68,29 +68,35 @@ export function SceneContent({
 
   return (
     <SceneElements
-      modules={modules}
-      selectedModuleId={selectedModuleId}
-      transformMode={transformMode}
-      onModuleSelect={onModuleSelect}
-      onModuleUpdate={onModuleUpdate}
-      onModuleDelete={onModuleDelete}
-      connections={connections}
-      environmentalElements={environmentalElements}
-      terrain={terrain}
-      onEnvironmentalElementSelect={onEnvironmentalElementSelect}
-      gridSnap={gridSnap}
-      isDraggingOver={isDraggingOver}
-      previewMesh={previewMesh}
-      rotationAngle={rotationAngle}
-      showGuides={showGuides}
-      snapPoints={snapPoints}
-      snapLines={snapLines}
-      previewPosition={previewPosition}
-      readOnly={readOnly}
-      setRotationAngle={setRotationAngle}
-      isTransforming={isTransforming}
-      onTransformStart={onTransformStart}
-      onTransformEnd={onTransformEnd}
+      {...{
+        modules,
+        selectedModuleId,
+        transformMode,
+        onModuleSelect,
+        onModuleUpdate,
+        onModuleDelete,
+        connections,
+        environmentalElements,
+        terrain,
+        onEnvironmentalElementSelect,
+        gridSnap,
+        isDraggingOver,
+        mousePosition,
+        draggedDimensions,
+        readOnly,
+        snapPoints,
+        snapLines,
+        onPreviewPositionUpdate,
+        previewMesh,
+        rotationAngle,
+        showGuides,
+        previewPosition,
+        setRotationAngle,
+        controlsRef,
+        isTransforming,
+        onTransformStart,
+        onTransformEnd
+      }}
     />
   );
 }

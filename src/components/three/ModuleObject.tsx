@@ -65,13 +65,22 @@ export function ModuleObject({
     
     const worldPosition = new Vector3();
     meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.001; // Keep shadow just above ground to prevent z-fighting
+    worldPosition.y = 0.001; // Keep shadow just above ground
     
     const worldRotation = new Euler(
       -Math.PI/2, // Always flat on ground
       meshRef.current.rotation.y, // Match object rotation
       0
     );
+    
+    // Update shadow immediately
+    meshRef.current.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.updateMatrixWorld(true);
+      }
+    });
     
     setShadowTransform({
       position: worldPosition,

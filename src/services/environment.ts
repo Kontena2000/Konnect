@@ -1,96 +1,40 @@
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  query, 
-  where 
-} from "firebase/firestore";
 
-export interface TerrainPoint {
-  x: number;
-  y: number;
-  z: number;
+export type ElementType = "vegetation" | "infrastructure" | "utility" | "hardscape";
+
+export interface EnvironmentalElement {
+  id: string;
+  type: ElementType;
+  position: [number, number, number];
+  rotation: [number, number, number];
+  scale: [number, number, number];
+  dimensions: {
+    width: number;
+    height: number;
+    depth: number;
+  };
+  color: string;
 }
 
 export interface TerrainData {
   id: string;
-  projectId: string;
-  points: TerrainPoint[];
-  resolution: number;
-  dimensions: [number, number];
-  materialType?: 'soil' | 'concrete' | 'grass';
-}
-
-export interface EnvironmentalElement {
-  id: string;
-  type: "vegetation" | "infrastructure" | "utility" | "hardscape";
-  category: string;
-  name: string;
   position: [number, number, number];
-  rotation: [number, number, number];
-  scale: [number, number, number];
-  model: string;
-  properties: {
-    [key: string]: any;
+  dimensions: {
+    width: number;
+    depth: number;
   };
+  color: string;
+  roughness: number;
+  metalness: number;
 }
 
-export interface SiteData {
-  id: string;
-  projectId: string;
-  terrain?: TerrainData;
-  elements: EnvironmentalElement[];
-  settings: {
-    sunPath?: boolean;
-    shadows?: boolean;
-    groundPreparation?: boolean;
-  };
-}
-
-const environmentService = {
-  async createSiteData(data: Omit<SiteData, "id">): Promise<string> {
-    const siteRef = await addDoc(collection(db, "sites"), {
-      ...data,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-    return siteRef.id;
+export const defaultTerrainData: TerrainData = {
+  id: "default",
+  position: [0, 0, 0],
+  dimensions: {
+    width: 100,
+    depth: 100
   },
-
-  async updateSiteData(id: string, data: Partial<SiteData>): Promise<void> {
-    const siteRef = doc(db, "sites", id);
-    await updateDoc(siteRef, {
-      ...data,
-      updatedAt: new Date()
-    });
-  },
-
-  async getProjectSiteData(projectId: string): Promise<SiteData | null> {
-    const sitesQuery = query(
-      collection(db, "sites"),
-      where("projectId", "==", projectId)
-    );
-    
-    const snapshot = await getDocs(sitesQuery);
-    if (snapshot.empty) return null;
-    
-    return {
-      id: snapshot.docs[0].id,
-      ...snapshot.docs[0].data()
-    } as SiteData;
-  },
-
-  async updateTerrainData(siteId: string, terrainData: Partial<TerrainData>): Promise<void> {
-    const siteRef = doc(db, 'sites', siteId);
-    await updateDoc(siteRef, {
-      'terrain': terrainData,
-      updatedAt: new Date()
-    });
-  }
+  color: "#7a7d7c",
+  roughness: 0.8,
+  metalness: 0.2
 };
-
-export default environmentService;
