@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,23 +14,39 @@ interface EditModuleDialogProps {
   categories: { id: string; name: string; }[];
 }
 
+type ModuleFormData = {
+  name: string;
+  description: string;
+  category: string;
+  color: string;
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+  };
+};
+
 export function EditModuleDialog({ module, onModuleUpdate, categories }: EditModuleDialogProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
-  const [formData, setFormData] = useState<Partial<Module>>({
+  const [formData, setFormData] = useState<ModuleFormData>({
     name: module.name,
     description: module.description,
     category: module.category,
     color: module.color,
-    dimensions: { ...module.dimensions }
+    dimensions: {
+      length: module.dimensions.length,
+      width: module.dimensions.width,
+      height: module.dimensions.height
+    }
   });
 
-  const handleDimensionChange = (key: string, value: string) => {
-    const numValue = parseFloat(value) || 0;
+  const handleDimensionChange = (key: keyof ModuleFormData["dimensions"], value: string) => {
+    const numValue = Math.max(0.1, parseFloat(value) || 0);
     setFormData(prev => ({
       ...prev,
       dimensions: {
-        ...(prev.dimensions || {}),
+        ...prev.dimensions,
         [key]: numValue
       }
     }));
@@ -122,12 +139,12 @@ export function EditModuleDialog({ module, onModuleUpdate, categories }: EditMod
             <div>
               <Label>Dimensions (meters)</Label>
               <div className="grid grid-cols-3 gap-2">
-                {Object.entries(formData.dimensions || {}).map(([key, value]) => (
+                {(Object.keys(formData.dimensions) as Array<keyof ModuleFormData["dimensions"]>).map((key) => (
                   <div key={key}>
                     <Label className="text-xs">{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
                     <Input
                       type="number"
-                      value={value}
+                      value={formData.dimensions[key]}
                       onChange={(e) => handleDimensionChange(key, e.target.value)}
                       step={0.1}
                       min={0.1}
