@@ -144,7 +144,7 @@ export default function SettingsPage() {
                     <PopoverContent className="w-auto p-0" align="start">
                       <HexColorPicker
                         color={preferences.grid.color}
-                        onChange={(color) =>
+                        onChange={(color: string) =>
                           setPreferences(prev => prev ? {
                             ...prev,
                             grid: { ...prev.grid, color }
