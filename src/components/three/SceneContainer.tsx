@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { SceneContent } from './SceneContent';
 import { useToast } from '@/hooks/use-toast';
 import { GridPreferences } from '@/services/grid-preferences';
+import { GridHelper } from './GridHelper';
 
 export interface SceneContainerProps {
   modules: Module[];
