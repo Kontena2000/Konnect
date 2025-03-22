@@ -1,5 +1,6 @@
+
 import { db, auth } from "@/lib/firebase";
-import { getFirestore, disableNetwork, enableNetwork } from "firebase/firestore";
+import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
 
 export interface OperationLog {
@@ -37,13 +38,11 @@ class FirebaseMonitor {
   }
 
   private initializeMonitoring() {
-    // Monitor authentication state
     onAuthStateChanged(auth, (user) => {
       this.status.authState = user ? 'authenticated' : 'unauthenticated';
       this.notifySubscribers();
     });
 
-    // Monitor connection state
     const firestore = getFirestore();
     enableNetwork(firestore).then(() => {
       this.status.connectionState = 'online';
@@ -58,20 +57,64 @@ class FirebaseMonitor {
 
   async testConnection(): Promise<void> {
     const firestore = getFirestore();
+    
     try {
+      // Log the test start
+      this.logOperation({
+        type: 'connection',
+        action: 'test_connection',
+        status: 'pending',
+        timestamp: Date.now()
+      });
+
+      // First test: Disable network
       await disableNetwork(firestore);
       this.status.connectionState = 'offline';
       this.status.isOnline = false;
       this.notifySubscribers();
 
+      // Second test: Enable network
       await enableNetwork(firestore);
       this.status.connectionState = 'online';
       this.status.isOnline = true;
+
+      // Third test: Actually try to read from Firestore
+      const testCollection = collection(firestore, 'editorPreferences');
+      await getDocs(testCollection);
+
+      // Log success
+      this.logOperation({
+        type: 'connection',
+        action: 'test_connection',
+        status: 'success',
+        timestamp: Date.now(),
+        details: {
+          connectionState: this.status.connectionState,
+          authState: this.status.authState
+        }
+      });
+
       this.notifySubscribers();
     } catch (error) {
-      console.error('Connection test failed:', error);
+      // Update status and log error
+      this.status.connectionState = 'error';
+      this.status.isOnline = false;
       this.status.lastError = error instanceof Error ? error.message : 'Connection test failed';
+      
+      this.logOperation({
+        type: 'connection',
+        action: 'test_connection',
+        status: 'error',
+        timestamp: Date.now(),
+        error: this.status.lastError,
+        details: {
+          connectionState: this.status.connectionState,
+          authState: this.status.authState
+        }
+      });
+
       this.notifySubscribers();
+      throw error;
     }
   }
 
