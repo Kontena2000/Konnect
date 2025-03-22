@@ -1,5 +1,4 @@
 
-{/* Updating editor.tsx with fixed dependencies and imports */}
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -35,48 +34,107 @@ import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 
-{/* Rest of the file content remains the same, just updating the imports and dependencies */}
+export default function LayoutEditorPage() {
+  const router = useRouter();
+  const { user } = useAuth();
+  const { toast } = useToast();
+  const controlsRef = useRef<any>(null);
+  const isUndoingOrRedoing = useRef(false);
 
-// Update handleUndo with correct dependencies
-const handleUndo = useCallback(() => {
-  if (undoStack.length > 0) {
-    isUndoingOrRedoing.current = true;
-    const previousState = undoStack[undoStack.length - 1];
-    const currentState = { modules, connections };
-    
-    const newUndoStack = undoStack.slice(0, -1);
-    const newRedoStack = [...redoStack, currentState];
-    
-    setUndoStack(newUndoStack);
-    setRedoStack(newRedoStack);
-    setModules(previousState.modules);
-    setConnections(previousState.connections);
-    
-    setTimeout(() => {
-      isUndoingOrRedoing.current = false;
-    }, 50);
-  }
-}, [undoStack, redoStack, modules, connections, setModules, setConnections]);
+  // State
+  const [modules, setModules] = useState<Module[]>([]);
+  const [connections, setConnections] = useState<Connection[]>([]);
+  const [undoStack, setUndoStack] = useState<{modules: Module[], connections: Connection[]}[]>([]);
+  const [redoStack, setRedoStack] = useState<{modules: Module[], connections: Connection[]}[]>([]);
+  const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
 
-// Update handleRedo with correct dependencies
-const handleRedo = useCallback(() => {
-  if (redoStack.length > 0) {
-    isUndoingOrRedoing.current = true;
-    const nextState = redoStack[redoStack.length - 1];
-    const currentState = { modules, connections };
-    
-    const newUndoStack = [...undoStack, currentState];
-    const newRedoStack = redoStack.slice(0, -1);
-    
-    setUndoStack(newUndoStack);
-    setRedoStack(newRedoStack);
-    setModules(nextState.modules);
-    setConnections(nextState.connections);
-    
-    setTimeout(() => {
-      isUndoingOrRedoing.current = false;
-    }, 50);
-  }
-}, [undoStack, redoStack, modules, connections, setModules, setConnections]);
+  // Undo handler
+  const handleUndo = useCallback(() => {
+    if (undoStack.length > 0) {
+      isUndoingOrRedoing.current = true;
+      const previousState = undoStack[undoStack.length - 1];
+      const currentState = { modules, connections };
+      
+      const newUndoStack = undoStack.slice(0, -1);
+      const newRedoStack = [...redoStack, currentState];
+      
+      setUndoStack(newUndoStack);
+      setRedoStack(newRedoStack);
+      setModules(previousState.modules);
+      setConnections(previousState.connections);
+      
+      setTimeout(() => {
+        isUndoingOrRedoing.current = false;
+      }, 50);
+    }
+  }, [undoStack, redoStack, modules, connections]);
 
-{/* Rest of the file content remains the same */}
+  // Redo handler
+  const handleRedo = useCallback(() => {
+    if (redoStack.length > 0) {
+      isUndoingOrRedoing.current = true;
+      const nextState = redoStack[redoStack.length - 1];
+      const currentState = { modules, connections };
+      
+      const newUndoStack = [...undoStack, currentState];
+      const newRedoStack = redoStack.slice(0, -1);
+      
+      setUndoStack(newUndoStack);
+      setRedoStack(newRedoStack);
+      setModules(nextState.modules);
+      setConnections(nextState.connections);
+      
+      setTimeout(() => {
+        isUndoingOrRedoing.current = false;
+      }, 50);
+    }
+  }, [undoStack, redoStack, modules, connections]);
+
+  // Save state for undo when modules or connections change
+  useEffect(() => {
+    if (isUndoingOrRedoing.current) return;
+    
+    const newState = { modules, connections };
+    const lastState = undoStack[undoStack.length - 1];
+    
+    if (!lastState || 
+        JSON.stringify(lastState.modules) !== JSON.stringify(newState.modules) ||
+        JSON.stringify(lastState.connections) !== JSON.stringify(newState.connections)) {
+      setUndoStack(prev => [...prev, newState]);
+      setRedoStack([]); // Clear redo stack when new changes are made
+    }
+  }, [modules, connections]);
+
+  // Load editor preferences
+  useEffect(() => {
+    if (user) {
+      editorPreferencesService.getPreferences(user.uid)
+        .then(prefs => {
+          setEditorPreferences(prefs);
+        })
+        .catch(error => {
+          console.error("Failed to load editor preferences:", error);
+        });
+    }
+  }, [user]);
+
+  return (
+    <AppLayout>
+      <div className="h-screen relative">
+        <SceneContainer
+          modules={modules}
+          connections={connections}
+          controlsRef={controlsRef}
+          editorPreferences={editorPreferences}
+        />
+        <Toolbox
+          onModuleDragStart={() => {}}
+          onSave={() => {}}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          controlsRef={controlsRef}
+        />
+      </div>
+    </AppLayout>
+  );
+}
