@@ -144,7 +144,24 @@ export function SceneContainer({
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
     setMousePosition(new Vector2(x, y));
-  }, [readOnly]);
+
+    // Update preview position based on cursor
+    if (draggedModuleRef.current) {
+      const raycaster = new THREE.Raycaster();
+      raycaster.setFromCamera(new Vector2(x, y), camera);
+      const intersects = raycaster.intersectObjects([scene], true);
+      
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        const snappedPosition: [number, number, number] = [
+          Math.round(point.x),
+          draggedModuleRef.current.dimensions.height / 2,
+          Math.round(point.z)
+        ];
+        setPreviewPosition(snappedPosition);
+      }
+    }
+  }, [readOnly, camera, scene, draggedModuleRef]);
 
   const handleDragLeave = useCallback(() => {
     if (readOnly) return;
@@ -156,13 +173,10 @@ export function SceneContainer({
     if (readOnly || !onDropPoint || !draggedModuleRef.current) return;
     event.preventDefault();
     
-    const moduleHeight = draggedModuleRef.current.dimensions.height;
-    const properY = moduleHeight / 2;
-    
     // Use the actual preview position for placement
     const snappedPosition: [number, number, number] = [
       previewPosition[0],
-      properY,
+      draggedModuleRef.current.dimensions.height / 2,
       previewPosition[2]
     ];
     

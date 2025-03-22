@@ -54,25 +54,35 @@ export function ModulePreview({
     opacity: 0.6,
     wireframe: false
   });
-  
+
+  useEffect(() => {
+    previewMesh.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
+        child.updateMatrixWorld(true);
+      }
+    });
+  }, [previewMesh, rotationY]);
+
   return (
     <>
       {/* The preview mesh */}
       <group ref={groupRef} position={position} rotation={[0, rotationY, 0]}>
-        <primitive 
-          object={previewMesh.clone()} 
-          scale={[1, 1, 1]} 
-          material={previewMaterial}
-        />
+        <primitive object={previewMesh} />
       </group>
       
       {/* Shadow below the preview */}
       <mesh 
         ref={shadowRef}
         position={[position[0], 0.01, position[2]]}
-        rotation={[-Math.PI/2, 0, rotationY]}
+        rotation={[-Math.PI/2, 0, 0]}
+        receiveShadow
       >
-        <planeGeometry args={[size.x, size.z]} />
+        <planeGeometry args={[
+          previewMesh.geometry.parameters.width,
+          previewMesh.geometry.parameters.depth
+        ]} />
         <meshBasicMaterial 
           color='#000000'
           transparent
