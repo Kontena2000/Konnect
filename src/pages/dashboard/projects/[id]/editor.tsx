@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -71,6 +71,9 @@ export default function LayoutEditorPage() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [saving, setSaving] = useState(false); // Added saving state
   const [gridPreferences, setGridPreferences] = useState<GridPreferences | null>(null);
+  const controlsRef = useRef<any>(null);
+  const [undoStack, setUndoStack] = useState<any[]>([]);
+  const [redoStack, setRedoStack] = useState<any[]>([]);
 
   const {
     modules,
@@ -171,6 +174,32 @@ export default function LayoutEditorPage() {
       setSaving(false);
     }
   };
+
+  const handleUndo = useCallback(() => {
+    if (undoStack.length > 0) {
+      const previousState = undoStack[undoStack.length - 1];
+      setRedoStack(prev => [...prev, { modules, connections }]);
+      setUndoStack(prev => prev.slice(0, -1));
+      setModules(previousState.modules);
+      setConnections(previousState.connections);
+    }
+  }, [undoStack, modules, connections]);
+
+  const handleRedo = useCallback(() => {
+    if (redoStack.length > 0) {
+      const nextState = redoStack[redoStack.length - 1];
+      setUndoStack(prev => [...prev, { modules, connections }]);
+      setRedoStack(prev => prev.slice(0, -1));
+      setModules(nextState.modules);
+      setConnections(nextState.connections);
+    }
+  }, [redoStack, modules, connections]);
+
+  // Save state for undo when modules or connections change
+  useEffect(() => {
+    setUndoStack(prev => [...prev, { modules, connections }]);
+    setRedoStack([]);
+  }, [modules, connections]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const draggedItem = event.active.data.current as Module;
@@ -325,32 +354,6 @@ export default function LayoutEditorPage() {
           onDragStart={handleDragStart}
         >
           <div className='flex-1 relative'>
-            {/* Add Save Button */}
-            <div className='absolute top-4 right-4 z-10 flex items-center gap-2'>
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant='outline'
-                      size='icon'
-                      onClick={handleSave}
-                      disabled={saving}
-                      className='bg-background'
-                    >
-                      {saving ? (
-                        <Loader2 className='h-4 w-4 animate-spin' />
-                      ) : (
-                        <Save className='h-4 w-4' />
-                      )}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>Save Layout (Ctrl+S)</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-            </div>
-
             <SceneContainer
               modules={modules}
               connections={connections}
@@ -376,10 +379,17 @@ export default function LayoutEditorPage() {
               cameraZoom={cameraZoom}
               gridSnap={gridSnap}
               gridPreferences={gridPreferences}
+              controlsRef={controlsRef}
             />
           </div>
 
-          <Toolbox onModuleDragStart={handleModuleDragStart} />
+          <Toolbox 
+            onModuleDragStart={handleModuleDragStart}
+            onSave={handleSave}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            controlsRef={controlsRef}
+          />
 
           {draggingTemplate && (
             <ModuleDragOverlay template={draggingTemplate} />

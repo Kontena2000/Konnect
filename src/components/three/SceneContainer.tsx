@@ -300,7 +300,7 @@ export function SceneContainer({
       ref={setNodeRef} 
       className={cn(
         'w-full h-full relative',
-        !readOnly && isOver && 'cursor-none' // Hide default cursor
+        !readOnly && isOver && 'cursor-none'
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
@@ -354,28 +354,7 @@ export function SceneContainer({
         />
       </Canvas>
 
-      {isDraggingOver && previewMesh && (
-        <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
-          <primitive object={previewMesh.clone()} />
-          <mesh 
-            position={[0, 0.01, 0]} 
-            rotation={[-Math.PI/2, 0, 0]}
-            receiveShadow
-          >
-            <planeGeometry args={[
-              draggedModuleRef.current?.dimensions.length || 1,
-              draggedModuleRef.current?.dimensions.width || 1
-            ]} />
-            <meshBasicMaterial 
-              color='#000000'
-              transparent
-              opacity={0.2}
-              side={THREE.DoubleSide}
-            />
-          </mesh>
-        </group>
-      )}
-
+      {/* Keep only the drag overlay and keyboard shortcuts info */}
       {!readOnly && isDraggingOver && (
         <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-lg space-y-2'>
           <div className='flex items-center gap-2'>
@@ -391,34 +370,6 @@ export function SceneContainer({
           </div>
         </div>
       )}
-
-      <div className='absolute top-40 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
-        <div className='flex gap-1'>
-          <Button 
-            variant='outline' 
-            size='sm'
-            onClick={() => {
-              if (controlsRef?.current) {
-                controlsRef.current.reset();
-              }
-            }}
-          >
-            Top
-          </Button>
-          <Button 
-            variant='outline' 
-            size='sm'
-            onClick={() => {
-              if (controlsRef?.current) {
-                controlsRef.current.setAzimuthalAngle(Math.PI / 4);
-                controlsRef.current.setPolarAngle(Math.PI / 4);
-              }
-            }}
-          >
-            Isometric
-          </Button>
-        </div>
-      </div>
     </div>
   );
 }

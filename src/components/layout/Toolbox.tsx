@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid3D, ZoomIn, ZoomOut } from "lucide-react";
 import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
@@ -24,9 +24,8 @@ export function Toolbox({
   onSave, 
   onUndo, 
   onRedo,
-  onZoomIn,
-  onZoomOut 
-}: ToolboxProps) {
+  controlsRef
+}: ToolboxProps & { controlsRef?: React.RefObject<any> }) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("modules");
 
@@ -206,6 +205,50 @@ export function Toolbox({
                 </TooltipTrigger>
                 <TooltipContent side='left'>
                   <p>Redo last action</p>
+                </TooltipContent>
+              </Tooltip>
+
+              {/* View controls */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant='outline' 
+                    size={collapsed ? 'icon' : 'default'}
+                    onClick={() => {
+                      if (controlsRef?.current) {
+                        controlsRef.current.reset();
+                      }
+                    }}
+                    className='w-full'
+                  >
+                    <View className='h-4 w-4' />
+                    {!collapsed && <span className='ml-2'>2D View</span>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='left'>
+                  <p>Switch to 2D top view</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant='outline' 
+                    size={collapsed ? 'icon' : 'default'}
+                    onClick={() => {
+                      if (controlsRef?.current) {
+                        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
+                        controlsRef.current.setPolarAngle(Math.PI / 4);
+                      }
+                    }}
+                    className='w-full'
+                  >
+                    <Grid3D className='h-4 w-4' />
+                    {!collapsed && <span className='ml-2'>3D View</span>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='left'>
+                  <p>Switch to 3D isometric view</p>
                 </TooltipContent>
               </Tooltip>
 
