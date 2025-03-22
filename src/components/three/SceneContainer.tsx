@@ -240,10 +240,12 @@ export function SceneContainer({
       color: currentModule.color,
       transparent: true,
       opacity: 0.6,
-      wireframe: currentModule.wireframe
+      wireframe: false
     });
     
     const mesh = new THREE.Mesh(geometry, material);
+    mesh.castShadow = true;
+    mesh.receiveShadow = true;
     
     // Check for collisions and update preview appearance
     const checkCollisions = () => {
@@ -400,7 +402,7 @@ export function SceneContainer({
         </div>
       )}
 
-      <div className='absolute top-20 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
+      <div className='absolute top-40 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
         <div className='flex gap-1'>
           <Button 
             variant='outline' 
