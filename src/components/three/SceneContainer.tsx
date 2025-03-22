@@ -139,6 +139,7 @@ export function SceneContainer({
     event.preventDefault();
     setIsDraggingOver(true);
     
+    // Get cursor position in normalized device coordinates (-1 to +1)
     const rect = event.currentTarget.getBoundingClientRect();
     const x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
     const y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
@@ -158,14 +159,15 @@ export function SceneContainer({
     const moduleHeight = draggedModuleRef.current.dimensions.height;
     const properY = moduleHeight / 2;
     
+    // Use the actual preview position for placement
     const snappedPosition: [number, number, number] = [
       previewPosition[0],
       properY,
       previewPosition[2]
     ];
     
-    // Check for collisions with a small buffer zone
-    const BUFFER = 0.01; // 1cm buffer
+    // Check for collisions with minimal buffer
+    const BUFFER = 0.001; // 1mm buffer
     const previewBox = new Box3();
     const previewSize = new Vector3(
       draggedModuleRef.current.dimensions.length + BUFFER,
@@ -246,6 +248,7 @@ export function SceneContainer({
       color: currentModule.color,
       transparent: true,
       opacity: 0.5,
+      depthWrite: true,
       side: THREE.DoubleSide,
       shadowSide: THREE.FrontSide
     });
@@ -254,21 +257,14 @@ export function SceneContainer({
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     
-    // Update shadow map every frame during drag
-    const animate = () => {
-      if (mesh && isDraggingOver) {
-        mesh.traverse((child) => {
-          if (child instanceof THREE.Mesh) {
-            child.castShadow = true;
-            child.receiveShadow = true;
-          }
-        });
-        requestAnimationFrame(animate);
+    // Force shadow map update
+    mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        child.castShadow = true;
+        child.receiveShadow = true;
       }
-    };
-    animate();
+    });
     
-    setPreviewHeight(currentModule.dimensions.height);
     setPreviewMesh(mesh);
     
     return () => {
@@ -299,7 +295,7 @@ export function SceneContainer({
       ref={setNodeRef} 
       className={cn(
         'w-full h-full relative',
-        !readOnly && isOver && 'cursor-crosshair'
+        !readOnly && isOver && 'cursor-none' // Hide default cursor
       )}
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
