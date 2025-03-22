@@ -11,6 +11,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { useDraggable } from '@dnd-kit/core';
 
 interface ModuleLibraryProps {
   onDragStart: (module: Module) => void;
@@ -29,6 +30,67 @@ const getCategoryIcon = (categoryId: string) => {
     default:
       return <Truck className="h-4 w-4 mr-2" />;
   }
+};
+
+const ModuleItem = ({ module, onDragStart, onDuplicate }: { 
+  module: Module; 
+  onDragStart: (module: Module) => void;
+  onDuplicate: (module: Module, e: React.MouseEvent) => void;
+}) => {
+  const { attributes, listeners, setNodeRef, isDragging } = useDraggable({
+    id: module.id,
+    data: module
+  });
+
+  return (
+    <div
+      ref={setNodeRef}
+      {...listeners}
+      {...attributes}
+      className={cn(
+        'group relative flex items-center gap-2 p-2 hover:bg-accent/50 rounded-md cursor-move transition-colors',
+        isDragging && 'opacity-50'
+      )}
+    >
+      <div 
+        className='flex-shrink-0 w-12 h-12 rounded bg-muted flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 group-active:scale-95' 
+        style={{ backgroundColor: module.color }}
+      >
+        {module.type === 'container' && <Truck className='h-6 w-6 text-background' />}
+        {module.type === 'vegetation' && <Leaf className='h-6 w-6 text-background' />}
+        {!module.type && <Box className='h-6 w-6 text-background' />}
+      </div>
+      <div className='flex-1 min-w-0'>
+        <div className='text-sm font-medium truncate'>{module.name}</div>
+        <div className='text-xs text-muted-foreground'>
+          {module.dimensions.length}m × {module.dimensions.width}m × {module.dimensions.height}m
+        </div>
+        <div className='text-xs text-muted-foreground truncate'>
+          {module.description}
+        </div>
+      </div>
+      <div className='absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0'>
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant='ghost'
+                size='icon'
+                className='h-8 w-8 hover:bg-background/50'
+                onClick={(e) => onDuplicate(module, e)}
+              >
+                <Copy className='h-4 w-4' />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent side='left'>
+              <p>Duplicate module</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+      <div className='absolute inset-0 rounded-md border-2 border-primary opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity' />
+    </div>
+  );
 };
 
 export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
@@ -153,50 +215,12 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
                 </CollapsibleTrigger>
                 <CollapsibleContent className='space-y-1 mt-1'>
                   {categoryModules.map((module) => (
-                    <div
+                    <ModuleItem
                       key={module.id}
-                      draggable
-                      onDragStart={() => handleDragStart(module)}
-                      className='group relative flex items-center gap-2 p-2 hover:bg-accent/50 rounded-md cursor-move transition-colors'
-                    >
-                      <div 
-                        className='flex-shrink-0 w-12 h-12 rounded bg-muted flex items-center justify-center shadow-sm transition-transform group-hover:scale-105 group-active:scale-95' 
-                        style={{ backgroundColor: module.color }}
-                      >
-                        {module.type === 'container' && <Truck className='h-6 w-6 text-background' />}
-                        {module.type === 'vegetation' && <Leaf className='h-6 w-6 text-background' />}
-                        {!module.type && <Box className='h-6 w-6 text-background' />}
-                      </div>
-                      <div className='flex-1 min-w-0'>
-                        <div className='text-sm font-medium truncate'>{module.name}</div>
-                        <div className='text-xs text-muted-foreground'>
-                          {module.dimensions.length}m × {module.dimensions.width}m × {module.dimensions.height}m
-                        </div>
-                        <div className='text-xs text-muted-foreground truncate'>
-                          {module.description}
-                        </div>
-                      </div>
-                      <div className='absolute right-2 top-2 opacity-0 group-hover:opacity-100 transition-all transform translate-x-2 group-hover:translate-x-0'>
-                        <TooltipProvider>
-                          <Tooltip>
-                            <TooltipTrigger asChild>
-                              <Button
-                                variant='ghost'
-                                size='icon'
-                                className='h-8 w-8 hover:bg-background/50'
-                                onClick={(e) => handleDuplicate(module, e)}
-                              >
-                                <Copy className='h-4 w-4' />
-                              </Button>
-                            </TooltipTrigger>
-                            <TooltipContent side='left'>
-                              <p>Duplicate module</p>
-                            </TooltipContent>
-                          </Tooltip>
-                        </TooltipProvider>
-                      </div>
-                      <div className='absolute inset-0 rounded-md border-2 border-primary opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity' />
-                    </div>
+                      module={module}
+                      onDragStart={handleDragStart}
+                      onDuplicate={handleDuplicate}
+                    />
                   ))}
                 </CollapsibleContent>
               </Collapsible>

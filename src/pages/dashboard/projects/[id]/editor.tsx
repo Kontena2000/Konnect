@@ -171,27 +171,13 @@ export default function LayoutEditorPage() {
   };
 
   const handleDragStart = (event: DragStartEvent) => {
-    const draggedItem = modules.find(item => item.id === event.active.id);
-    setDraggingItem(draggedItem || null);
-    
-    if (draggedItem) {
-      setPreviewMesh(createPreviewMesh(draggedItem));
-    }
-  };
-
-  const handleModuleDragStart = (templateItem: Module) => {
-    setDraggingTemplate(templateItem);
-    setPreviewMesh(createPreviewMesh(templateItem));
+    const draggedItem = event.active.data.current as Module;
+    setDraggingTemplate(draggedItem);
+    setPreviewMesh(createPreviewMesh(draggedItem));
   };
 
   const handleDragEnd = (event: DragEndEvent) => {
-    setDraggingTemplate(null);
-    setDraggingItem(null);
-    setPreviewMesh(null);
-    
-    if (event.over?.id !== 'scene') return;
-
-    if (draggingTemplate) {
+    if (event.over?.id === 'scene' && draggingTemplate) {
       const newItemId = `${draggingTemplate.id}-${Date.now()}`;
       const newItem: Module = {
         ...draggingTemplate,
@@ -208,6 +194,9 @@ export default function LayoutEditorPage() {
         description: `${draggingTemplate.name} has been added to the scene`
       });
     }
+    
+    setDraggingTemplate(null);
+    setPreviewMesh(null);
   };
 
   const handleModuleSelect = useCallback((moduleId?: string) => {
