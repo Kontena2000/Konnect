@@ -94,6 +94,7 @@ export function SceneContent({
       isTransforming={isTransforming}
       onTransformStart={onTransformStart}
       onTransformEnd={onTransformEnd}
+      editorPreferences={editorPreferences}
     />
   );
 }

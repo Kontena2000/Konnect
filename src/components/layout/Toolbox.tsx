@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -64,7 +65,7 @@ export function Toolbox({
         'fixed top-0 right-0 h-screen bg-background border-l transition-all duration-200 z-50 flex flex-col',
         collapsed ? 'w-16' : 'w-80'
       )}
-      style={{ marginLeft: 'auto' }} {/* Add this line to ensure right alignment */}
+      style={{ marginLeft: 'auto' }}
     >
       {/* Header */}
       <div className='flex h-16 items-center justify-between px-4 border-b'>
