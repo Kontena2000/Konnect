@@ -48,7 +48,7 @@ export function ModuleObject({
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
   const [shadowTransform, setShadowTransform] = useState<ShadowTransform>({
-    position: new Vector3(module.position[0], 0.001, module.position[2]),
+    position: new Vector3(module.position[0], 0.01, module.position[2]),
     rotation: new Euler(-Math.PI/2, 0, 0)
   });
 
@@ -59,28 +59,19 @@ export function ModuleObject({
     module.position[2]
   ), [module.position]);
 
-  // Update shadow transform calculation
+  // Improved shadow transform calculation
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
     
     const worldPosition = new Vector3();
     meshRef.current.getWorldPosition(worldPosition);
-    worldPosition.y = 0.001; // Keep shadow just above ground
+    worldPosition.y = 0.01; // Keep shadow just above ground
     
     const worldRotation = new Euler(
-      -Math.PI/2, // Always flat on ground
-      meshRef.current.rotation.y, // Match object rotation
+      -Math.PI/2,
+      meshRef.current.rotation.y,
       0
     );
-    
-    // Update shadow immediately
-    meshRef.current.traverse((child) => {
-      if (child instanceof THREE.Mesh) {
-        child.castShadow = true;
-        child.receiveShadow = true;
-        child.updateMatrixWorld(true);
-      }
-    });
     
     setShadowTransform({
       position: worldPosition,
@@ -136,7 +127,7 @@ export function ModuleObject({
     });
   }, [selected]);
 
-  // Enhanced transform handling with improved collision detection
+  // Enhanced transform handling
   const handleTransformChange = useCallback(() => {
     if (!meshRef.current || readOnly) return;
     
@@ -179,11 +170,10 @@ export function ModuleObject({
       }
     }
     
-    // Create a bounding box for collision detection
+    // Check collisions
     const box = new Box3().setFromObject(meshRef.current);
     let hasCollision = false;
     
-    // Modified collision detection that allows for stacking and side connections
     modules.forEach(otherModule => {
       if (otherModule.id === module.id) return;
       
@@ -196,50 +186,8 @@ export function ModuleObject({
       );
       otherBox.setFromCenterAndSize(otherPos, otherSize);
       
-      // If boxes intersect, check if it's a valid connection
       if (box.intersectsBox(otherBox)) {
-        // Get intersection volume
-        const intersection = box.clone().intersect(otherBox);
-        const intersectionSize = new Vector3();
-        intersection.getSize(intersectionSize);
-        
-        // Get box sizes
-        const boxSize = new Vector3();
-        box.getSize(boxSize);
-        const otherBoxSize = new Vector3();
-        otherBox.getSize(otherBoxSize);
-        
-        // Calculate overlap in each dimension as a percentage of the smaller module
-        const xOverlapPercent = intersectionSize.x / Math.min(boxSize.x, otherBoxSize.x);
-        const yOverlapPercent = intersectionSize.y / Math.min(boxSize.y, otherBoxSize.y);
-        const zOverlapPercent = intersectionSize.z / Math.min(boxSize.z, otherBoxSize.z);
-        
-        // Calculate center-to-center distance in each dimension
-        const boxCenter = new Vector3();
-        box.getCenter(boxCenter);
-        const otherBoxCenter = new Vector3();
-        otherBox.getCenter(otherBoxCenter);
-        const centerDistance = boxCenter.clone().sub(otherBoxCenter);
-        
-        // Allow vertical stacking: if modules are directly on top of each other
-        const isVerticalStack = 
-          Math.abs(centerDistance.x) < 0.1 && 
-          Math.abs(centerDistance.z) < 0.1 && 
-          Math.abs(centerDistance.y) >= Math.min(boxSize.y, otherBoxSize.y) * 0.4;
-          
-        // Allow side-by-side placement: if modules are next to each other with minimal overlap
-        const isSideBySide = 
-          (Math.abs(centerDistance.x) >= Math.min(boxSize.x, otherBoxSize.x) * 0.4 || 
-           Math.abs(centerDistance.z) >= Math.min(boxSize.z, otherBoxSize.z) * 0.4) &&
-          yOverlapPercent < 0.2; // Allow small vertical overlap
-        
-        // Determine if it's a valid connection
-        const isValidConnection = isVerticalStack || isSideBySide;
-        
-        // Only count as collision if it's not a valid connection
-        if (!isValidConnection) {
-          hasCollision = true;
-        }
+        hasCollision = true;
       }
     });
     
@@ -363,7 +311,7 @@ export function ModuleObject({
         />
       </mesh>
 
-      {/* Floating Controls - Moved further up */}
+      {/* Floating Controls */}
       {(showControls || hovered || selected) && !readOnly && (
         <Billboard
           follow={true}
@@ -372,7 +320,7 @@ export function ModuleObject({
           lockZ={false}
           position={[
             meshRef.current ? meshRef.current.position.x : module.position[0],
-            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 5, // Increased distance
+            (meshRef.current ? meshRef.current.position.y : module.position[1]) + module.dimensions.height + 3,
             meshRef.current ? meshRef.current.position.z : module.position[2]
           ]}
         >
