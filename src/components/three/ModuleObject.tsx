@@ -153,8 +153,8 @@ export function ModuleObject({
         gsap.to(meshRef.current.position, {
           x: snappedPosition.x,
           z: snappedPosition.z,
-          duration: 0.2,
-          ease: 'power2.out',
+          duration: 0.1, // Faster animation
+          ease: 'power1.out', // Smoother easing
           onUpdate: updateShadowTransform
         });
         
@@ -165,8 +165,8 @@ export function ModuleObject({
         const targetRotation = Math.round(rotation.y / (Math.PI / 2)) * (Math.PI / 2);
         gsap.to(meshRef.current.rotation, {
           y: targetRotation,
-          duration: 0.2,
-          ease: 'power2.out',
+          duration: 0.1, // Faster animation
+          ease: 'power1.out', // Smoother easing
           onUpdate: updateShadowTransform
         });
         rotation.y = targetRotation;
@@ -199,19 +199,18 @@ export function ModuleObject({
       );
       
       if (xzIntersection && selected) {
-        // If there's a collision and this module is selected,
-        // elevate it to the top of the other module
-        const collisionHeight = otherBox.max.y + module.dimensions.height/2;
+        // Calculate exact height needed to place on top
+        const collisionHeight = otherPos.y + otherModule.dimensions.height/2 + module.dimensions.height/2;
         maxCollisionHeight = Math.max(maxCollisionHeight, collisionHeight);
       }
     });
     
-    // Apply elevation if there's a collision
+    // Apply elevation with smoother animation
     if (maxCollisionHeight > minHeight) {
       gsap.to(meshRef.current.position, {
         y: maxCollisionHeight,
-        duration: 0.3,
-        ease: 'power2.out',
+        duration: 0.15, // Faster animation
+        ease: 'power2.out', // Smoother easing
         onUpdate: updateShadowTransform
       });
       adjustedPosition.y = maxCollisionHeight;
@@ -219,8 +218,8 @@ export function ModuleObject({
       // Return to normal height if no collision
       gsap.to(meshRef.current.position, {
         y: minHeight,
-        duration: 0.3,
-        ease: 'power2.out',
+        duration: 0.15, // Faster animation
+        ease: 'power2.out', // Smoother easing
         onUpdate: updateShadowTransform
       });
       adjustedPosition.y = minHeight;
