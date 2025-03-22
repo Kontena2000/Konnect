@@ -226,6 +226,19 @@ const layoutService = {
       console.error('Error fetching project layouts:', error);
       throw new Error('Failed to load project layouts');
     }
+  },
+
+  async saveLayout(id: string, data: { modules: Module[]; connections: Connection[]; }): Promise<void> {
+    try {
+      const layoutRef = doc(db, 'layouts', id);
+      await updateDoc(layoutRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      throw new Error('Failed to save layout');
+    }
   }
 };
 
