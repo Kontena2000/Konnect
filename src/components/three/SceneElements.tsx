@@ -1,16 +1,11 @@
-import { useThree } from "@react-three/fiber";
-import { ModuleObject } from "./ModuleObject";
-import { ConnectionLine } from "./ConnectionLine";
+import React, { useMemo } from "react";
+import { Vector2, Vector3, Line3, Color, Mesh } from "three";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
-import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useRef, useEffect } from "react";
-import { Vector2, Vector3, Line3, Mesh, Object3D, BufferAttribute, BufferGeometry, LineBasicMaterial, Float32BufferAttribute } from "three";
-import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
-import { TerrainView } from "@/components/environment/TerrainView";
-import { GridHelper } from "./GridHelper";
-import { CameraControls } from "./CameraControls";
-import { Html } from "@react-three/drei";
+import { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
+import { ModuleObject } from "./ModuleObject";
+import { ModulePreview } from "./ModulePreview";
+import * as THREE from "three";
 
 interface SceneElementsProps {
   modules: Module[];
@@ -41,7 +36,7 @@ interface SceneElementsProps {
 export function SceneElements({
   modules,
   selectedModuleId,
-  transformMode = 'translate',
+  transformMode,
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -53,7 +48,7 @@ export function SceneElements({
   isDraggingOver = false,
   previewMesh,
   rotationAngle,
-  showGuides = false,
+  showGuides = true,
   snapPoints,
   snapLines,
   previewPosition,
@@ -63,61 +58,153 @@ export function SceneElements({
   onTransformStart,
   onTransformEnd
 }: SceneElementsProps) {
-  const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
+  
+  // Memoize the selected module to prevent unnecessary re-renders
+  const selectedModule = useMemo(() => {
+    return modules.find(m => m.id === selectedModuleId);
+  }, [modules, selectedModuleId]);
 
-  // Fixed cleanup function
-  useEffect(() => {
-    const controls = controlsRef.current;
-    return () => {
-      if (controls) {
-        controls.dispose();
-      }
-    };
-  }, []);
+  // Render connections between modules
+  const renderConnections = useMemo(() => {
+    return connections.map((connection, index) => {
+      const sourceModule = modules.find(m => m.id === connection.sourceModuleId);
+      const targetModule = modules.find(m => m.id === connection.targetModuleId);
+      
+      if (!sourceModule || !targetModule) return null;
+      
+      // Find the connection points
+      const sourcePoint = sourceModule.connectionPoints?.find(
+        cp => cp.id === connection.sourcePointId
+      );
+      
+      const targetPoint = targetModule.connectionPoints?.find(
+        cp => cp.id === connection.targetPointId
+      );
+      
+      if (!sourcePoint || !targetPoint) return null;
+      
+      // Calculate world positions
+      const sourcePos = new Vector3(
+        sourceModule.position[0] + sourcePoint.position[0],
+        sourceModule.position[1] + sourcePoint.position[1],
+        sourceModule.position[2] + sourcePoint.position[2]
+      );
+      
+      const targetPos = new Vector3(
+        targetModule.position[0] + targetPoint.position[0],
+        targetModule.position[1] + targetPoint.position[1],
+        targetModule.position[2] + targetPoint.position[2]
+      );
+      
+      // Create a material with a color based on the connection type
+      const material = new THREE.LineBasicMaterial({ 
+        color: connection.color || '#ff8800',
+        linewidth: 2,
+        opacity: 0.8,
+        transparent: true
+      });
+      
+      // Create a geometry from the points
+      const geometry = new THREE.BufferGeometry().setFromPoints([sourcePos, targetPos]);
+      
+      return (
+        <primitive key={`connection-${index}`} object={new THREE.Line(geometry, material)} />
+      );
+    });
+  }, [connections, modules]);
 
-  // Improved camera initialization
-  useEffect(() => {
-    if (camera) {
-      camera.position.set(10, 10, 10);
-      camera.lookAt(0, 0, 0);
-    }
-  }, [camera]);
+  // Render environmental elements
+  const renderEnvironmentalElements = useMemo(() => {
+    return environmentalElements.map((element) => {
+      return (
+        <group
+          key={element.id}
+          position={element.position}
+          rotation={element.rotation}
+          scale={element.scale}
+          onClick={() => onEnvironmentalElementSelect?.(element.id)}
+        >
+          {element.type === 'box' && (
+            <mesh castShadow receiveShadow>
+              <boxGeometry args={[element.size?.width || 1, element.size?.height || 1, element.size?.depth || 1]} />
+              <meshStandardMaterial color={element.color || '#aaaaaa'} />
+            </mesh>
+          )}
+          {element.type === 'sphere' && (
+            <mesh castShadow receiveShadow>
+              <sphereGeometry args={[(element.size?.width || 1) / 2, 32, 32]} />
+              <meshStandardMaterial color={element.color || '#aaaaaa'} />
+            </mesh>
+          )}
+          {element.type === 'cylinder' && (
+            <mesh castShadow receiveShadow>
+              <cylinderGeometry args={[(element.size?.width || 1) / 2, (element.size?.width || 1) / 2, element.size?.height || 1, 32]} />
+              <meshStandardMaterial color={element.color || '#aaaaaa'} />
+            </mesh>
+          )}
+        </group>
+      );
+    });
+  }, [environmentalElements, onEnvironmentalElementSelect]);
+
+  // Render alignment guides
+  const renderGuides = useMemo(() => {
+    if (!showGuides || (!isDraggingOver && !isTransforming)) return null;
+
+    return (
+      <group>
+        {/* Snap points */}
+        {snapPoints.map((point, index) => (
+          <mesh key={`point-${index}`} position={point}>
+            <sphereGeometry args={[0.1, 8, 8]} />
+            <meshBasicMaterial color="#ffaa00" transparent opacity={0.7} />
+          </mesh>
+        ))}
+        
+        {/* Snap lines */}
+        {snapLines.map((line, index) => {
+          // Extend the line for better visibility
+          const direction = line.end.clone().sub(line.start).normalize();
+          const startExtended = line.start.clone().sub(direction.clone().multiplyScalar(100));
+          const endExtended = line.end.clone().add(direction.clone().multiplyScalar(100));
+          
+          const geometry = new THREE.BufferGeometry().setFromPoints([startExtended, endExtended]);
+          const material = new THREE.LineBasicMaterial({ color: '#00ffff', transparent: true, opacity: 0.6 });
+          
+          return (
+            <primitive key={`line-${index}`} object={new THREE.Line(geometry, material)} />
+          );
+        })}
+      </group>
+    );
+  }, [showGuides, isDraggingOver, isTransforming, snapPoints, snapLines]);
+
+  // Render terrain if available
+  const renderTerrain = useMemo(() => {
+    if (!terrain) return null;
+    
+    return (
+      <mesh
+        position={[0, terrain.position?.[1] || 0, 0]}
+        rotation={[-Math.PI / 2, 0, 0]}
+        receiveShadow
+      >
+        <planeGeometry args={[terrain.size?.width || 100, terrain.size?.depth || 100, 1, 1]} />
+        <meshStandardMaterial
+          color={terrain.color || "#7a7d7c"}
+          roughness={terrain.roughness || 0.8}
+          metalness={terrain.metalness || 0.2}
+        />
+      </mesh>
+    );
+  }, [terrain]);
 
   return (
-    <>
-      <ambientLight intensity={0.5} />
-      <directionalLight 
-        position={[10, 10, 10]} 
-        intensity={0.8} 
-        castShadow 
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
-      />
-      
-      <CameraControls 
-        controlsRef={controlsRef}
-        enabled={!isTransforming}
-        enableZoom={!isTransforming}
-        enablePan={!isTransforming}
-        enableRotate={!isTransforming}
-        minDistance={5}
-        maxDistance={50}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 2.1}
-      />
-      <GridHelper />
+    <group>
+      {/* Render terrain */}
+      {renderTerrain}
 
-      {terrain && <TerrainView terrain={terrain} />}
-      
-      {environmentalElements?.map(element => (
-        <EnvironmentalElement
-          key={element.id}
-          element={element}
-          onClick={() => onEnvironmentalElementSelect?.(element.id)}
-        />
-      ))}
-
+      {/* Render all modules */}
       {modules.map(module => (
         <ModuleObject
           key={module.id}
@@ -125,8 +212,8 @@ export function SceneElements({
           modules={modules}
           selected={module.id === selectedModuleId}
           onClick={() => onModuleSelect?.(module.id)}
-          onUpdate={updates => onModuleUpdate?.(module.id, updates)}
-          onDelete={() => onModuleDelete?.(module.id)}
+          onUpdate={(updates) => onModuleUpdate?.(module.id, updates)}
+          onDelete={onModuleDelete ? () => onModuleDelete(module.id) : undefined}
           transformMode={transformMode}
           gridSnap={gridSnap}
           readOnly={readOnly}
@@ -135,61 +222,24 @@ export function SceneElements({
         />
       ))}
 
-      {connections.map(connection => (
-        <ConnectionLine
-          key={connection.id}
-          connection={connection}
-        />
-      ))}
+      {/* Render connections */}
+      {renderConnections}
 
+      {/* Render environmental elements */}
+      {renderEnvironmentalElements}
+
+      {/* Render alignment guides */}
+      {renderGuides}
+
+      {/* Render module preview when dragging */}
       {isDraggingOver && previewMesh && (
-        <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
-          <primitive object={previewMesh.clone()} />
-          <Html position={[0, 2, 0]}>
-            <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
-              <button 
-                className="p-1 hover:bg-accent rounded"
-                onClick={() => setRotationAngle(prev => prev - Math.PI/2)}
-              >
-                ⟲
-              </button>
-              <button 
-                className="p-1 hover:bg-accent rounded"
-                onClick={() => setRotationAngle(prev => prev + Math.PI/2)}
-              >
-                ⟳
-              </button>
-            </div>
-          </Html>
-        </group>
+        <ModulePreview
+          position={previewPosition}
+          rotationY={rotationAngle}
+          previewMesh={previewMesh}
+          setRotationAngle={setRotationAngle}
+        />
       )}
-
-      {showGuides && snapPoints.map((point, i) => (
-        <mesh key={`point-${i}`} position={[point.x, 0.01, point.z]}>
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshBasicMaterial color="#ffcc00" transparent opacity={0.5} />
-        </mesh>
-      ))}
-      
-      {showGuides && snapLines.map((line, i) => {
-        const positions = new Float32Array([
-          line.start.x, 0.01, line.start.z,
-          line.end.x, 0.01, line.end.z
-        ]);
-        return (
-          <line key={`line-${i}`}>
-            <bufferGeometry>
-              <bufferAttribute
-                attach='attributes-position'
-                array={positions}
-                count={2}
-                itemSize={3}
-              />
-            </bufferGeometry>
-            <lineBasicMaterial color='#ffcc00' opacity={0.5} transparent />
-          </line>
-        );
-      })}
-    </>
+    </group>
   );
 }
