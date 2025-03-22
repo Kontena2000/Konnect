@@ -6,6 +6,7 @@ import { TransformControls, Html, Billboard } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
 import gsap from "gsap";
+import { EditorPreferences } from '@/services/editor-preferences';
 
 interface ModuleObjectProps {
   module: Module;
@@ -19,6 +20,7 @@ interface ModuleObjectProps {
   readOnly?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
+  editorPreferences?: EditorPreferences | null;
 }
 
 interface ShadowTransform {
@@ -38,7 +40,8 @@ export function ModuleObject({
   gridSnap = true,
   readOnly = false,
   onTransformStart,
-  onTransformEnd
+  onTransformEnd,
+  editorPreferences
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
   const transformRef = useRef<any>(null);
@@ -287,8 +290,8 @@ export function ModuleObject({
         ]} />
         <meshStandardMaterial
           color={module.color || '#888888'}
-          transparent={selected}
-          opacity={selected ? 0.8 : 1}
+          transparent={true}
+          opacity={editorPreferences?.objects.transparency || 0.85}
           wireframe={module.wireframe}
         />
       </mesh>

@@ -4,36 +4,52 @@ import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { AuthUser } from "@/services/auth";
 import firebaseMonitor from "./firebase-monitor";
 
-export interface GridPreferences {
-  size: "small" | "medium" | "large";
-  weight: "0.5" | "1" | "2";
-  color: string;
+export interface EditorPreferences {
+  grid: {
+    size: "small" | "medium" | "large";
+    weight: "0.5" | "1" | "2";
+    color: string;
+  };
+  objects: {
+    transparency: number;
+  };
   userId: string;
 }
 
-const gridPreferencesService = {
-  async getPreferences(userId: string): Promise<GridPreferences | null> {
+const editorPreferencesService = {
+  async getPreferences(userId: string): Promise<EditorPreferences | null> {
     try {
       firebaseMonitor.logOperation({
         type: "settings",
-        action: "get_grid_preferences",
+        action: "get_editor_preferences",
         status: "pending",
         timestamp: Date.now(),
         details: { userId }
       });
 
-      const prefsRef = doc(db, "gridPreferences", userId);
+      const prefsRef = doc(db, "editorPreferences", userId);
       const snapshot = await getDoc(prefsRef);
 
       if (!snapshot.exists()) {
-        return null;
+        // Return default preferences
+        return {
+          grid: {
+            size: "medium",
+            weight: "1",
+            color: "#888888"
+          },
+          objects: {
+            transparency: 0.85
+          },
+          userId
+        };
       }
 
-      const data = snapshot.data() as GridPreferences;
+      const data = snapshot.data() as EditorPreferences;
       
       firebaseMonitor.logOperation({
         type: "settings",
-        action: "get_grid_preferences",
+        action: "get_editor_preferences",
         status: "success",
         timestamp: Date.now(),
         details: { userId, preferences: data }
@@ -43,7 +59,7 @@ const gridPreferencesService = {
     } catch (error) {
       firebaseMonitor.logOperation({
         type: "settings",
-        action: "get_grid_preferences",
+        action: "get_editor_preferences",
         status: "error",
         timestamp: Date.now(),
         error: error instanceof Error ? error.message : "Unknown error",
@@ -53,7 +69,7 @@ const gridPreferencesService = {
     }
   },
 
-  async savePreferences(preferences: Omit<GridPreferences, "userId">, user: AuthUser): Promise<void> {
+  async savePreferences(preferences: Omit<EditorPreferences, "userId">, user: AuthUser): Promise<void> {
     try {
       const prefsWithUser = {
         ...preferences,
@@ -62,13 +78,13 @@ const gridPreferencesService = {
 
       firebaseMonitor.logOperation({
         type: "settings",
-        action: "save_grid_preferences",
+        action: "save_editor_preferences",
         status: "pending",
         timestamp: Date.now(),
         details: { userId: user.uid, preferences: prefsWithUser }
       });
 
-      const prefsRef = doc(db, "gridPreferences", user.uid);
+      const prefsRef = doc(db, "editorPreferences", user.uid);
       const snapshot = await getDoc(prefsRef);
 
       if (snapshot.exists()) {
@@ -79,7 +95,7 @@ const gridPreferencesService = {
 
       firebaseMonitor.logOperation({
         type: "settings",
-        action: "save_grid_preferences",
+        action: "save_editor_preferences",
         status: "success",
         timestamp: Date.now(),
         details: { userId: user.uid, preferences: prefsWithUser }
@@ -87,7 +103,7 @@ const gridPreferencesService = {
     } catch (error) {
       firebaseMonitor.logOperation({
         type: "settings",
-        action: "save_grid_preferences",
+        action: "save_editor_preferences",
         status: "error",
         timestamp: Date.now(),
         error: error instanceof Error ? error.message : "Unknown error",
@@ -98,4 +114,4 @@ const gridPreferencesService = {
   }
 };
 
-export default gridPreferencesService;
+export default editorPreferencesService;

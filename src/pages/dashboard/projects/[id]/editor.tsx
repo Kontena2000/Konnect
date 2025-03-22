@@ -32,6 +32,7 @@ import { useHotkeys } from 'react-hotkeys-hook';
 import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 import gridPreferencesService, { GridPreferences } from '@/services/grid-preferences';
+import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 
 interface EditorState {
   modules: Module[];
@@ -76,6 +77,7 @@ export default function LayoutEditorPage() {
   const [rotationAngle, setRotationAngle] = useState(0);
   const [saving, setSaving] = useState(false); // Added saving state
   const [gridPreferences, setGridPreferences] = useState<GridPreferences | null>(null);
+  const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const controlsRef = useRef<any>(null);
   const [undoStack, setUndoStack] = useState<EditorState[]>([{ modules: [], connections: [] }]);
   const [redoStack, setRedoStack] = useState<EditorState[]>([]);
@@ -377,6 +379,23 @@ export default function LayoutEditorPage() {
     loadGridPreferences();
   }, [user]);
 
+  // Update grid preferences loading to editor preferences
+  useEffect(() => {
+    const loadEditorPreferences = async () => {
+      if (!user) return;
+      try {
+        const prefs = await editorPreferencesService.getPreferences(user.uid);
+        if (prefs) {
+          setEditorPreferences(prefs);
+        }
+      } catch (error) {
+        console.error('Error loading editor preferences:', error);
+      }
+    };
+
+    loadEditorPreferences();
+  }, [user]);
+
   if (!user) {
     return (
       <AppLayout>
@@ -450,7 +469,7 @@ export default function LayoutEditorPage() {
               }}
               cameraZoom={cameraZoom}
               gridSnap={gridSnap}
-              gridPreferences={gridPreferences}
+              editorPreferences={editorPreferences}
               controlsRef={controlsRef}
             />
           </div>
