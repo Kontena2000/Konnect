@@ -27,22 +27,22 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="container mx-auto p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className='w-full p-4 md:p-6 space-y-6'>
+        <div className='flex items-center justify-between'>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-            <p className="text-muted-foreground">
+            <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
+            <p className='text-muted-foreground'>
               Manage your application settings and preferences
             </p>
           </div>
         </div>
 
-        <Tabs defaultValue="editor" className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="editor">Editor Settings</TabsTrigger>
-            <TabsTrigger value="modules">Module Manager</TabsTrigger>
-            <TabsTrigger value="theme">Theme Editor</TabsTrigger>
-            <TabsTrigger value="firebase">Firebase Monitor</TabsTrigger>
+        <Tabs defaultValue='editor' className='space-y-6'>
+          <TabsList className='w-full sm:w-auto'>
+            <TabsTrigger value='editor'>Editor Settings</TabsTrigger>
+            <TabsTrigger value='modules'>Module Manager</TabsTrigger>
+            <TabsTrigger value='theme'>Theme Editor</TabsTrigger>
+            <TabsTrigger value='firebase'>Firebase Monitor</TabsTrigger>
           </TabsList>
 
           <TabsContent value="editor">
