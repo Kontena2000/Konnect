@@ -24,6 +24,7 @@ interface ModuleObjectProps {
 interface ShadowTransform {
   position: Vector3;
   rotation: Euler;
+  scale: [number, number, number];
 }
 
 export function ModuleObject({
@@ -49,7 +50,8 @@ export function ModuleObject({
   const [isTransforming, setIsTransforming] = useState(false);
   const [shadowTransform, setShadowTransform] = useState<ShadowTransform>({
     position: new Vector3(module.position[0], 0.01, module.position[2]),
-    rotation: new Euler(-Math.PI/2, 0, 0)
+    rotation: new Euler(-Math.PI/2, 0, 0),
+    scale: [1, 1, 1]
   });
 
   // Memoize initial position for drop animation
@@ -72,19 +74,28 @@ export function ModuleObject({
     // Keep shadow at ground level
     worldPosition.y = 0.01;
     
-    // Calculate shadow rotation based on object's world rotation
+    // Create shadow rotation - only use Y rotation component
     const worldEuler = new Euler().setFromQuaternion(worldQuaternion);
     const shadowRotation = new Euler(
       -Math.PI/2, // Keep shadow flat on ground
       worldEuler.y, // Match object's Y rotation
-      worldEuler.z  // Match object's Z rotation
+      0 // Don't use Z rotation for the shadow
     );
+    
+    // Calculate shadow dimensions based on object's current rotation
+    const box = new Box3().setFromObject(meshRef.current);
+    const size = box.getSize(new Vector3());
+    
+    // Use the XZ dimensions from the bounding box for the shadow
+    const shadowWidth = size.x;
+    const shadowLength = size.z;
     
     setShadowTransform({
       position: worldPosition,
-      rotation: shadowRotation
+      rotation: shadowRotation,
+      scale: [shadowWidth/module.dimensions.length, shadowLength/module.dimensions.width, 1]
     });
-  }, []);
+  }, [module.dimensions.length, module.dimensions.width]);
 
   // Handle keyboard events
   useEffect(() => {
@@ -306,7 +317,7 @@ export function ModuleObject({
       <mesh 
         position={shadowTransform.position}
         rotation={shadowTransform.rotation}
-        scale={[1, 1, 1]} // Ensure consistent shadow scale
+        scale={shadowTransform.scale}
       >
         <planeGeometry args={[
           module.dimensions.length,
@@ -317,7 +328,7 @@ export function ModuleObject({
           transparent
           opacity={0.2}
           side={DoubleSide}
-          depthWrite={false} // Prevent z-fighting
+          depthWrite={false}
         />
       </mesh>
 
