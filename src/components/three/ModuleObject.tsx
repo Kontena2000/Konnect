@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Object3D, MeshStandardMaterial, Vector3, Mesh, Box3, Euler, DoubleSide, Matrix4, Quaternion, Color } from "three";
 import * as THREE from "three";
@@ -255,6 +254,18 @@ export function ModuleObject({
   useEffect(() => {
     setShowControls(selected);
   }, [selected]);
+
+  useEffect(() => {
+    if (meshRef.current) {
+      meshRef.current.traverse((child) => {
+        if (child instanceof THREE.Mesh) {
+          child.castShadow = true;
+          child.receiveShadow = true;
+          child.updateMatrixWorld(true);
+        }
+      });
+    }
+  }, [meshRef.current?.rotation]);
 
   return (
     <group>

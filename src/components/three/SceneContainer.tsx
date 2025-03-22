@@ -167,7 +167,7 @@ export function SceneContainer({
     ];
     
     // Check for collisions with minimal buffer
-    const BUFFER = 0.001; // 1mm buffer
+    const BUFFER = 0.0001; // 0.1mm buffer
     const previewBox = new Box3();
     const previewSize = new Vector3(
       draggedModuleRef.current.dimensions.length + BUFFER,
@@ -248,20 +248,21 @@ export function SceneContainer({
       color: currentModule.color,
       transparent: true,
       opacity: 0.5,
-      depthWrite: true,
-      side: THREE.DoubleSide,
-      shadowSide: THREE.FrontSide
+      depthWrite: false,
+      side: THREE.DoubleSide
     });
     
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     
-    // Force shadow map update
+    // Update shadow direction based on rotation
+    mesh.updateMatrixWorld(true);
     mesh.traverse((child) => {
       if (child instanceof THREE.Mesh) {
         child.castShadow = true;
         child.receiveShadow = true;
+        child.updateMatrixWorld(true);
       }
     });
     
