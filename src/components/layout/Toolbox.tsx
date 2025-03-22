@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid3d, ZoomIn, ZoomOut } from "lucide-react";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from "lucide-react";
 import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
@@ -242,47 +242,12 @@ export function Toolbox({
                     }}
                     className='w-full'
                   >
-                    <Grid3d className='h-4 w-4' />
+                    <Grid className='h-4 w-4' />
                     {!collapsed && <span className='ml-2'>3D View</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side='left'>
                   <p>Switch to 3D isometric view</p>
-                </TooltipContent>
-              </Tooltip>
-
-              {/* Zoom controls */}
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant='ghost' 
-                    size={collapsed ? 'icon' : 'default'}
-                    onClick={onZoomIn}
-                    className='w-full'
-                  >
-                    <ZoomIn className='h-4 w-4' />
-                    {!collapsed && <span className='ml-2'>Zoom In</span>}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side='left'>
-                  <p>Zoom in</p>
-                </TooltipContent>
-              </Tooltip>
-
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button 
-                    variant='ghost' 
-                    size={collapsed ? 'icon' : 'default'}
-                    onClick={onZoomOut}
-                    className='w-full'
-                  >
-                    <ZoomOut className='h-4 w-4' />
-                    {!collapsed && <span className='ml-2'>Zoom Out</span>}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side='left'>
-                  <p>Zoom out</p>
                 </TooltipContent>
               </Tooltip>
             </div>

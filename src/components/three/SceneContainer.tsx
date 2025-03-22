@@ -41,6 +41,7 @@ export interface SceneContainerProps {
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
   gridPreferences?: GridPreferences | null;
+  controlsRef?: React.RefObject<any>;
 }
 
 export function SceneContainer({
@@ -63,7 +64,8 @@ export function SceneContainer({
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
-  gridPreferences
+  gridPreferences,
+  controlsRef
 }: SceneContainerProps) {
   const { toast } = useToast();
   const { setNodeRef, isOver } = useDroppable({
@@ -77,7 +79,6 @@ export function SceneContainer({
   const [previewHeight, setPreviewHeight] = useState(0);
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [transforming, setTransforming] = useState(false);
-  const controlsRef = useRef<any>(null);
   const draggedModuleRef = useRef<Module | null>(null);
 
   const handleModuleSelect = useCallback((moduleId?: string) => {
