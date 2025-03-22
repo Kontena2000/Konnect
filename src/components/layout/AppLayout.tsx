@@ -23,7 +23,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className='flex min-h-screen w-full overflow-hidden bg-background'>
       <Sidebar />
-      <main className='flex-1 relative overflow-y-auto w-full pl-[4rem] md:pl-[4.5rem]'>
+      <main className='flex-1 relative overflow-y-auto w-full pl-16 md:pl-[17rem]'>
         <div className='w-full max-w-[2000px] mx-auto'>
           {children}
         </div>
