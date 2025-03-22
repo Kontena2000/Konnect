@@ -1,5 +1,5 @@
 
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Card } from "@/components/ui/card";
 import { TerrainEditor } from "@/components/environment/TerrainEditor";
 import { TerrainView } from "@/components/environment/TerrainView";
@@ -9,6 +9,7 @@ import { useToast } from "@/hooks/use-toast";
 
 export default function TerrainEditorPreview() {
   const { toast } = useToast();
+  const controlsRef = useRef<any>(null);
   const [terrain, setTerrain] = useState<TerrainData>({
     id: "preview",
     projectId: "preview",
@@ -56,6 +57,7 @@ export default function TerrainEditorPreview() {
               gridSnap={true}
               connections={[]}
               environmentalElements={[]}
+              controlsRef={controlsRef}
             />
           </Card>
         </div>

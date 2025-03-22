@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,7 @@ import { ViewComments } from "@/components/viewer/ViewComments";
 export default function ViewerPage() {
   const router = useRouter();
   const { id } = router.query;
+  const controlsRef = useRef<any>(null);
   
   const [layout, setLayout] = useState<Layout | null>(null);
   const [activeView, setActiveView] = useState<"normal" | "measure" | "comment">("normal");
@@ -90,6 +91,7 @@ export default function ViewerPage() {
                 connections={layout.connections}
                 readOnly={true}
                 onDropPoint={handleDropPoint}
+                controlsRef={controlsRef}
               />
             </Card>
 
