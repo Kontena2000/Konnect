@@ -73,6 +73,9 @@ class FirebaseMonitor {
       this.status.isOnline = false;
       this.notifySubscribers();
 
+      // Wait a bit to simulate network transition
+      await new Promise(resolve => setTimeout(resolve, 1000));
+
       // Second test: Enable network
       await enableNetwork(firestore);
       this.status.connectionState = 'online';
@@ -97,7 +100,7 @@ class FirebaseMonitor {
       this.notifySubscribers();
     } catch (error) {
       // Update status and log error
-      this.status.connectionState = 'error';
+      this.status.connectionState = 'offline'; // Changed from 'error' to 'offline' to match type
       this.status.isOnline = false;
       this.status.lastError = error instanceof Error ? error.message : 'Connection test failed';
       
