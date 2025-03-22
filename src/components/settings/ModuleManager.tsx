@@ -19,6 +19,7 @@ import { CategoryDialog } from '@/components/settings/CategoryDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Box, Badge } from 'lucide-react';
 import { Badge as UIBadge } from '@/components/ui/badge';
+import { EditModuleDialog } from '@/components/settings/EditModuleDialog';
 
 export function ModuleManager() {
   const [modules, setModules] = useState<Module[]>([]);
@@ -356,6 +357,21 @@ export function ModuleManager() {
                     </div>
                   </CardTitle>
                   <div className='flex items-center gap-2'>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <EditModuleDialog
+                            module={module}
+                            onModuleUpdate={(data) => handleUpdateModule(module.id, data)}
+                            categories={categories}
+                          />
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Edit module</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+
                     <TooltipProvider>
                       <Tooltip>
                         <TooltipTrigger asChild>

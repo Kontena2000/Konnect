@@ -1,4 +1,3 @@
-
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -19,13 +18,14 @@ import { db, auth } from '@/lib/firebase';
 import { collection, getDocs, addDoc, deleteDoc, doc } from 'firebase/firestore';
 import { sendPasswordResetEmail } from 'firebase/auth';
 import userService, { User } from '@/services/user';
-import { Trash2, Loader2, RefreshCw } from 'lucide-react';
+import { Trash2, Loader2, RefreshCw, Save } from 'lucide-react';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { useToast } from '@/hooks/use-toast';
 import { ThemeEditor } from '@/components/settings/ThemeEditor';
 import { ModuleManager } from '@/components/settings/ModuleManager';
 import { Module } from '@/types/module';
 import { FirebaseMonitor } from '@/components/settings/FirebaseMonitor';
+import gridPreferencesService, { GridPreferences } from '@/services/grid-preferences';
 
 export default function SettingsPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -35,6 +35,9 @@ export default function SettingsPage() {
   const [addingUser, setAddingUser] = useState(false);
   const [gridWeight, setGridWeight] = useState("1");
   const [gridColor, setGridColor] = useState("#808080");
+  const [gridSize, setGridSize] = useState<'small' | 'medium' | 'large'>('medium');
+  const [isSavingPreferences, setIsSavingPreferences] = useState(false);
+  const { user } = useAuth();
   const { toast } = useToast();
 
   const loadUsers = useCallback(async () => {
@@ -132,6 +135,34 @@ export default function SettingsPage() {
     }
   };
 
+  const handleSaveGridPreferences = async () => {
+    if (!user) return;
+    
+    setIsSavingPreferences(true);
+    try {
+      const preferences: Omit<GridPreferences, 'userId'> = {
+        size: gridSize,
+        weight: gridWeight,
+        color: gridColor
+      };
+      
+      await gridPreferencesService.savePreferences(preferences, user);
+      
+      toast({
+        title: 'Success',
+        description: 'Grid preferences saved successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save grid preferences'
+      });
+    } finally {
+      setIsSavingPreferences(false);
+    }
+  };
+
   return (
     <AppLayout>
       <div className='container py-8 space-y-6'>
@@ -155,17 +186,17 @@ export default function SettingsPage() {
               <CardHeader>
                 <CardTitle>Grid Preferences</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
+              <CardContent className='space-y-4'>
+                <div className='space-y-2'>
                   <Label>Grid Size</Label>
-                  <Select defaultValue="medium">
+                  <Select value={gridSize} onValueChange={setGridSize}>
                     <SelectTrigger>
-                      <SelectValue placeholder="Select grid size" />
+                      <SelectValue placeholder='Select grid size' />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="small">Small (0.5m)</SelectItem>
-                      <SelectItem value="medium">Medium (1m)</SelectItem>
-                      <SelectItem value="large">Large (2m)</SelectItem>
+                      <SelectItem value='small'>Small (0.5m)</SelectItem>
+                      <SelectItem value='medium'>Medium (1m)</SelectItem>
+                      <SelectItem value='large'>Large (2m)</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
@@ -197,7 +228,24 @@ export default function SettingsPage() {
                     />
                   </div>
                 </div>
-                <Button>Save Preferences</Button>
+                <Button 
+                  onClick={handleSaveGridPreferences}
+                  disabled={isSavingPreferences}
+                  className='relative'
+                >
+                  {isSavingPreferences ? (
+                    <>
+                      <Loader2 className='h-4 w-4 mr-2 animate-spin' />
+                      Saving...
+                    </>
+                  ) : (
+                    <>
+                      <Save className='h-4 w-4 mr-2' />
+                      Save Preferences
+                    </>
+                  )}
+                  <span className={`absolute inset-0 bg-primary/10 rounded-md transition-transform duration-300 ${isSavingPreferences ? 'scale-95' : 'scale-0'}`} />
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>
@@ -224,11 +272,19 @@ export default function SettingsPage() {
               </CardHeader>
               <CardContent>
                 <div className='space-y-4'>
-                  <div className='flex items-center gap-4'>
+                  <form 
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      handleAddUser();
+                    }} 
+                    className='flex items-center gap-4'
+                  >
                     <Input 
                       placeholder='Email address' 
+                      type='email'
                       value={newUserEmail}
                       onChange={(e) => setNewUserEmail(e.target.value)}
+                      required
                     />
                     <Select 
                       value={newUserRole}
@@ -243,7 +299,7 @@ export default function SettingsPage() {
                         <SelectItem value='viewer'>Viewer</SelectItem>
                       </SelectContent>
                     </Select>
-                    <Button onClick={handleAddUser} disabled={addingUser || !newUserEmail}>
+                    <Button type='submit' disabled={addingUser || !newUserEmail}>
                       {addingUser ? (
                         <>
                           <Loader2 className='h-4 w-4 mr-2 animate-spin' />
@@ -253,8 +309,7 @@ export default function SettingsPage() {
                         'Add User'
                       )}
                     </Button>
-                  </div>
-
+                  </form>
                   <div className='border rounded-lg'>
                     <div className='grid grid-cols-4 gap-4 p-4 font-medium border-b'>
                       <div>Email</div>
