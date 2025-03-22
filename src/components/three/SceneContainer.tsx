@@ -12,6 +12,7 @@ import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
 import { Button } from '@/components/ui/button';
 import { SceneContent } from './SceneContent';
+import { useToast } from '@/hooks/use-toast';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -60,6 +61,7 @@ export function SceneContainer({
   onTransformStart,
   onTransformEnd
 }: SceneContainerProps) {
+  const { toast } = useToast();
   const { setNodeRef, isOver } = useDroppable({
     id: 'scene',
   });
@@ -153,23 +155,22 @@ export function SceneContainer({
     if (readOnly || !onDropPoint || !draggedModuleRef.current) return;
     event.preventDefault();
     
-    // Use the actual preview position instead of [0,0,0]
     const moduleHeight = draggedModuleRef.current.dimensions.height;
-    const properY = moduleHeight / 2; // Place bottom at ground level
+    const properY = moduleHeight / 2;
     
-    // Use the actual preview position for X and Z
     const snappedPosition: [number, number, number] = [
       previewPosition[0],
       properY,
       previewPosition[2]
     ];
     
-    // Check for collisions before placement
+    // Check for collisions with a small buffer zone
+    const BUFFER = 0.01; // 1cm buffer
     const previewBox = new Box3();
     const previewSize = new Vector3(
-      draggedModuleRef.current.dimensions.length,
-      draggedModuleRef.current.dimensions.height,
-      draggedModuleRef.current.dimensions.width
+      draggedModuleRef.current.dimensions.length + BUFFER,
+      draggedModuleRef.current.dimensions.height + BUFFER,
+      draggedModuleRef.current.dimensions.width + BUFFER
     );
     const previewPos = new Vector3(...snappedPosition);
     previewBox.setFromCenterAndSize(previewPos, previewSize);
@@ -177,12 +178,12 @@ export function SceneContainer({
     let hasCollision = false;
     modules.forEach(existingModule => {
       const existingBox = new Box3();
-      const existingPos = new Vector3(...existingModule.position);
       const existingSize = new Vector3(
-        existingModule.dimensions.length,
-        existingModule.dimensions.height,
-        existingModule.dimensions.width
+        existingModule.dimensions.length + BUFFER,
+        existingModule.dimensions.height + BUFFER,
+        existingModule.dimensions.width + BUFFER
       );
+      const existingPos = new Vector3(...existingModule.position);
       existingBox.setFromCenterAndSize(existingPos, existingSize);
       
       if (previewBox.intersectsBox(existingBox)) {
@@ -193,7 +194,6 @@ export function SceneContainer({
     if (!hasCollision) {
       onDropPoint(snappedPosition);
     } else {
-      // Show feedback that placement is not allowed
       toast({
         variant: 'destructive',
         title: 'Cannot place module',
@@ -203,7 +203,7 @@ export function SceneContainer({
     
     setIsDraggingOver(false);
     setMousePosition(null);
-  }, [readOnly, onDropPoint, previewPosition, modules, draggedModuleRef]);
+  }, [readOnly, onDropPoint, previewPosition, modules, draggedModuleRef, toast]);
 
   const handleKeyDown = useCallback((event: KeyboardEvent) => {
     if (readOnly) return;
@@ -242,66 +242,41 @@ export function SceneContainer({
       currentModule.dimensions.width
     );
     
-    // Create preview material with collision feedback
     const material = new THREE.MeshStandardMaterial({
       color: currentModule.color,
       transparent: true,
-      opacity: 0.6,
-      wireframe: false
+      opacity: 0.5,
+      side: THREE.DoubleSide,
+      shadowSide: THREE.FrontSide
     });
     
     const mesh = new THREE.Mesh(geometry, material);
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     
-    // Check for collisions and update preview appearance
-    const checkCollisions = () => {
-      if (!mesh || !draggedModuleRef.current) return;
-      
-      const previewBox = new Box3();
-      const previewSize = new Vector3(
-        draggedModuleRef.current.dimensions.length,
-        draggedModuleRef.current.dimensions.height,
-        draggedModuleRef.current.dimensions.width
-      );
-      const previewPos = new Vector3(...previewPosition);
-      previewBox.setFromCenterAndSize(previewPos, previewSize);
-      
-      let hasCollision = false;
-      modules.forEach(existingModule => {
-        const existingBox = new Box3();
-        const existingPos = new Vector3(...existingModule.position);
-        const existingSize = new Vector3(
-          existingModule.dimensions.length,
-          existingModule.dimensions.height,
-          existingModule.dimensions.width
-        );
-        existingBox.setFromCenterAndSize(existingPos, existingSize);
-        
-        if (previewBox.intersectsBox(existingBox)) {
-          hasCollision = true;
-        }
-      });
-      
-      if (material) {
-        material.color.set(hasCollision ? '#ff0000' : currentModule.color);
-        material.opacity = hasCollision ? 0.7 : 0.6;
+    // Update shadow map every frame during drag
+    const animate = () => {
+      if (mesh && isDraggingOver) {
+        mesh.traverse((child) => {
+          if (child instanceof THREE.Mesh) {
+            child.castShadow = true;
+            child.receiveShadow = true;
+          }
+        });
+        requestAnimationFrame(animate);
       }
     };
-    
-    // Update collision check on position changes
-    const intervalId = setInterval(checkCollisions, 100);
+    animate();
     
     setPreviewHeight(currentModule.dimensions.height);
     setPreviewMesh(mesh);
     
     return () => {
-      clearInterval(intervalId);
       geometry.dispose();
       material.dispose();
       setPreviewMesh(null);
     };
-  }, [isDraggingOver, previewPosition, modules]);
+  }, [isDraggingOver, draggedModuleRef.current]);
 
   const handleModuleDragStart = useCallback((draggedModule: Module) => {
     draggedModuleRef.current = draggedModule;

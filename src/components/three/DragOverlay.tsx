@@ -7,21 +7,6 @@ export interface DragOverlayProps {
 }
 
 export function ModuleDragOverlay({ template }: DragOverlayProps) {
-  if (!template) return null;
-
-  return (
-    <DragOverlay dropAnimation={null}>
-      <div 
-        style={{
-          width: "100px",
-          height: "100px",
-          pointerEvents: "none",
-          transform: "translate(-50%, -50%)",
-          backgroundColor: template.color,
-          opacity: 0.5,
-          borderRadius: "4px"
-        }}
-      />
-    </DragOverlay>
-  );
+  // Return null to hide the default drag overlay since we're showing the 3D preview
+  return null;
 }
