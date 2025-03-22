@@ -192,12 +192,17 @@ export default function LayoutEditorPage() {
   };
 
   const handleUndo = useCallback(() => {
-    if (undoStack.length > 1) {
-      const currentState: EditorState = { modules, connections };
-      const previousState = undoStack[undoStack.length - 2];
+    if (undoStack.length > 0) {
+      // Take the most recent state from the undo stack
+      const previousState = undoStack[undoStack.length - 1];
       
-      setRedoStack(prev => [...prev, currentState]);
+      // Add current state to redo stack
+      setRedoStack(prev => [...prev, { modules, connections }]);
+      
+      // Remove the used state from undo stack
       setUndoStack(prev => prev.slice(0, -1));
+      
+      // Apply the previous state
       setModules(previousState.modules);
       setConnections(previousState.connections);
     }
@@ -211,7 +216,7 @@ export default function LayoutEditorPage() {
       // Add current state to undo stack
       setUndoStack(prev => [...prev, { modules, connections }]);
       
-      // Remove only the used state from redo stack
+      // Remove the used state from redo stack
       setRedoStack(prev => prev.slice(0, -1));
       
       // Apply the state
