@@ -1,6 +1,6 @@
-
 import { ReactNode, useEffect } from "react";
 import { Sidebar } from "./Sidebar";
+import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/router";
 import authService from "@/services/auth";
@@ -21,10 +21,12 @@ export function AppLayout({ children }: AppLayoutProps) {
   }, [router]);
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className='min-h-screen bg-background'>
       <Sidebar />
-      <main className="flex-1 relative overflow-y-auto">
-        {children}
+      <main className='ml-16 md:ml-64 min-h-screen'>
+        <div className='h-full'>
+          {children}
+        </div>
       </main>
     </div>
   );
