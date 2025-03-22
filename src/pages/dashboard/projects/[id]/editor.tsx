@@ -79,6 +79,7 @@ export default function LayoutEditorPage() {
   const controlsRef = useRef<any>(null);
   const [undoStack, setUndoStack] = useState<EditorState[]>([{ modules: [], connections: [] }]);
   const [redoStack, setRedoStack] = useState<EditorState[]>([]);
+  const [isUndoRedoOperation, setIsUndoRedoOperation] = useState(false);
 
   // Initialize undo stack with initial state
   useEffect(() => {
@@ -193,6 +194,9 @@ export default function LayoutEditorPage() {
 
   const handleUndo = useCallback(() => {
     if (undoStack.length > 0) {
+      // Set flag to prevent state saving in the effect
+      setIsUndoRedoOperation(true);
+      
       // Take the most recent state from the undo stack
       const previousState = undoStack[undoStack.length - 1];
       
@@ -205,11 +209,17 @@ export default function LayoutEditorPage() {
       // Apply the previous state
       setModules(previousState.modules);
       setConnections(previousState.connections);
+      
+      // Reset flag after a short delay to ensure state updates complete
+      setTimeout(() => setIsUndoRedoOperation(false), 0);
     }
   }, [undoStack, modules, connections, setModules, setConnections]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
+      // Set flag to prevent state saving in the effect
+      setIsUndoRedoOperation(true);
+      
       // Take the most recent state from the redo stack
       const nextState = redoStack[redoStack.length - 1];
       
@@ -222,11 +232,17 @@ export default function LayoutEditorPage() {
       // Apply the state
       setModules(nextState.modules);
       setConnections(nextState.connections);
+      
+      // Reset flag after a short delay to ensure state updates complete
+      setTimeout(() => setIsUndoRedoOperation(false), 0);
     }
   }, [redoStack, modules, connections, setModules, setConnections]);
 
   // Save state for undo when modules or connections change
   useEffect(() => {
+    // Skip this effect during undo/redo operations
+    if (isUndoRedoOperation) return;
+    
     const newState: EditorState = { modules, connections };
     const lastState = undoStack[undoStack.length - 1];
     
@@ -238,7 +254,7 @@ export default function LayoutEditorPage() {
       // Clear redo stack when new changes are made
       setRedoStack([]);
     }
-  }, [modules, connections, undoStack]);
+  }, [modules, connections, undoStack, isUndoRedoOperation]);
 
   const handleDragStart = (event: DragStartEvent) => {
     const draggedItem = event.active.data.current as Module;
