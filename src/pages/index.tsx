@@ -22,8 +22,8 @@ export default function Home() {
   return (
     <>
       <Head>
-        <title>Konnect | Subtitle Layout Planner</title>
-        <meta name="description" content="Design and visualize subtitle layouts with Konnect by Kontena" />
+        <title>Konnect | Layout Planner</title>
+        <meta name="description" content="Design and visualize layouts with Konnect by Kontena" />
         <meta name="application-name" content="Konnect" />
         <meta name="author" content="Kontena" />
         <link rel="icon" href="/favicon.ico" />
@@ -33,7 +33,7 @@ export default function Home() {
         <div className="text-center space-y-6 p-8 rounded-lg border bg-card">
           <div className="space-y-2">
             <h1 className="text-4xl font-bold tracking-tighter">Konnect</h1>
-            <p className="text-xl text-muted-foreground">Subtitle Layout Planner</p>
+            <p className="text-xl text-muted-foreground">Layout Planner</p>
           </div>
           
           {loading ? (
