@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -31,6 +30,7 @@ export default function LayoutEditorPage() {
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
+    // Create a new module instance with unique ID
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
@@ -126,27 +126,25 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className="w-full h-full flex overflow-hidden">
-        <div className="flex-1 relative">
-          <SceneContainer
-            modules={modules}
-            selectedModuleId={selectedModuleId}
-            transformMode={transformMode}
-            onModuleSelect={handleModuleSelect}
-            onModuleUpdate={handleModuleUpdate}
-            onModuleDelete={handleModuleDelete}
-            connections={connections}
-            controlsRef={controlsRef}
-            editorPreferences={editorPreferences}
-          />
-          <Toolbox
-            onModuleDragStart={handleModuleDragStart}
-            onSave={() => {}}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            controlsRef={controlsRef}
-          />
-        </div>
+      <div className='h-screen w-full relative overflow-hidden'> {/* Add w-full and overflow-hidden */}
+        <SceneContainer
+          modules={modules}
+          selectedModuleId={selectedModuleId}
+          transformMode={transformMode}
+          onModuleSelect={handleModuleSelect}
+          onModuleUpdate={handleModuleUpdate}
+          onModuleDelete={handleModuleDelete}
+          connections={connections}
+          controlsRef={controlsRef}
+          editorPreferences={editorPreferences}
+        />
+        <Toolbox
+          onModuleDragStart={handleModuleDragStart}
+          onSave={() => {}}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          controlsRef={controlsRef}
+        />
       </div>
     </AppLayout>
   );
