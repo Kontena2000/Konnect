@@ -400,7 +400,7 @@ export function SceneContainer({
         </div>
       )}
 
-      <div className='absolute top-4 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
+      <div className='absolute top-20 right-4 bg-background/80 backdrop-blur-sm p-2 rounded-lg shadow-lg'>
         <div className='flex gap-1'>
           <Button 
             variant='outline' 
