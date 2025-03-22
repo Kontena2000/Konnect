@@ -126,8 +126,8 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='flex min-h-screen w-full -ml-16 md:-ml-[17rem]'>
-        <div className='flex-1 relative'>
+      <div className='flex min-h-screen w-full -ml-16 md:-ml-[17rem] pr-0'>
+        <div className='flex-1 relative w-full'>
           <SceneContainer
             modules={modules}
             selectedModuleId={selectedModuleId}
