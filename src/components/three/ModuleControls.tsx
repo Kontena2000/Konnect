@@ -1,43 +1,74 @@
 
-import { useRef, useEffect } from "react";
-import { TransformControls } from "@react-three/drei";
-import { useThree } from "@react-three/fiber";
-import { Object3D } from "three";
+import { Html, Billboard } from "@react-three/drei";
+import { Camera } from "three";
+import { Mesh } from "three";
 
 interface ModuleControlsProps {
-  object: Object3D;
-  mode?: "translate" | "rotate" | "scale";
-  onTransformChange?: (type: string, value: any) => void;
+  meshRef: React.RefObject<Mesh>;
+  camera: Camera;
+  position: [number, number, number];
+  onRotateLeft: () => void;
+  onRotateRight: () => void;
+  onDelete?: () => void;
 }
 
-export function ModuleControls({ object, mode = "translate", onTransformChange }: ModuleControlsProps) {
-  const { camera, gl } = useThree();
-  const transformRef = useRef<any>();
-
-  useEffect(() => {
-    if (transformRef.current) {
-      const controls = transformRef.current;
-      const callback = (event: any) => {
-        onTransformChange?.(event.type, {
-          position: object.position.toArray(),
-          rotation: object.rotation.toArray(),
-          scale: object.scale.toArray(),
-          dragging: event.value
-        });
-      };
-
-      controls.addEventListener("dragging-changed", callback);
-      return () => controls.removeEventListener("dragging-changed", callback);
-    }
-  }, [object, onTransformChange]);
-
+export function ModuleControls({
+  meshRef,
+  camera,
+  position,
+  onRotateLeft,
+  onRotateRight,
+  onDelete
+}: ModuleControlsProps) {
   return (
-    <TransformControls
-      ref={transformRef}
-      camera={camera}
-      mode={mode}
-      object={object}
-      size={1}
-    />
+    <Billboard
+      follow={true}
+      lockX={false}
+      lockY={false}
+      lockZ={false}
+      position={position}
+    >
+      <Html
+        center
+        style={{
+          transition: "all 0.2s ease",
+          pointerEvents: "auto",
+          transform: `scale(${camera.zoom < 1 ? 1 / camera.zoom : 1})`,
+          opacity: 0.8
+        }}
+      >
+        <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1 select-none">
+          <button
+            className="p-1 hover:bg-accent rounded"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onRotateLeft();
+            }}
+          >
+            ⟲
+          </button>
+          <button
+            className="p-1 hover:bg-accent rounded"
+            onClick={(e: React.MouseEvent) => {
+              e.stopPropagation();
+              onRotateRight();
+            }}
+          >
+            ⟳
+          </button>
+          {onDelete && (
+            <button
+              className="p-1 hover:bg-destructive hover:text-destructive-foreground rounded ml-2"
+              onClick={(e: React.MouseEvent) => {
+                e.stopPropagation();
+                onDelete();
+              }}
+            >
+              ✕
+            </button>
+          )}
+        </div>
+      </Html>
+    </Billboard>
   );
 }
