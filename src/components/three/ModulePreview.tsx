@@ -1,7 +1,16 @@
+
 import React, { useRef, useEffect } from 'react';
 import { useThree } from '@react-three/fiber';
-import { Vector3, Euler } from 'three';
+import { Vector3, Euler, Mesh, Group, Box3, DoubleSide } from 'three';
 import { Billboard, Html } from '@react-three/drei';
+import * as THREE from 'three';
+
+export interface ModulePreviewProps {
+  position: [number, number, number];
+  rotationY: number;
+  previewMesh: Mesh | null;
+  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
+}
 
 export function ModulePreview({
   position,
@@ -9,25 +18,22 @@ export function ModulePreview({
   previewMesh,
   setRotationAngle
 }: ModulePreviewProps) {
-  const groupRef = useRef<THREE.Group>(null);
-  const shadowRef = useRef<THREE.Mesh>(null);
+  const groupRef = useRef<Group>(null);
+  const shadowRef = useRef<Mesh>(null);
   const { camera } = useThree();
   
-  // Update the position and rotation of the preview group
   useEffect(() => {
     if (groupRef.current && previewMesh) {
       groupRef.current.position.set(position[0], position[1], position[2]);
       groupRef.current.rotation.y = rotationY;
       
-      // Update shadow
       if (shadowRef.current) {
-        const boundingBox = new THREE.Box3().setFromObject(previewMesh);
+        const boundingBox = new Box3().setFromObject(previewMesh);
         const size = new Vector3();
         boundingBox.getSize(size);
         
         shadowRef.current.position.set(position[0], 0.01, position[2]);
         
-        // Create shadow rotation that maintains flat orientation while following Y rotation
         const shadowRotation = new Euler(-Math.PI/2, 0, rotationY);
         shadowRef.current.rotation.copy(shadowRotation);
       }
@@ -36,7 +42,7 @@ export function ModulePreview({
 
   if (!previewMesh) return null;
 
-  const boundingBox = new THREE.Box3().setFromObject(previewMesh);
+  const boundingBox = new Box3().setFromObject(previewMesh);
   const size = new Vector3();
   boundingBox.getSize(size);
 
@@ -71,7 +77,7 @@ export function ModulePreview({
               className='p-1 hover:bg-accent rounded'
               onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
-                setRotationAngle(prev => prev - Math.PI/2);
+                setRotationAngle((prev: number) => prev - Math.PI/2);
               }}
             >
               ⟲
@@ -80,7 +86,7 @@ export function ModulePreview({
               className='p-1 hover:bg-accent rounded'
               onClick={(e: React.MouseEvent) => {
                 e.stopPropagation();
-                setRotationAngle(prev => prev + Math.PI/2);
+                setRotationAngle((prev: number) => prev + Math.PI/2);
               }}
             >
               ⟳

@@ -253,9 +253,11 @@ export function SceneContainer({
   }, [handleKeyDown, handleKeyUp, readOnly]);
 
   useEffect(() => {
-    if (!isDraggingOver || !draggedModuleRef.current) return;
+    if (!isDraggingOver) return;
     
     const currentModule = draggedModuleRef.current;
+    if (!currentModule) return;
+    
     const geometry = new THREE.BoxGeometry(
       currentModule.dimensions.length,
       currentModule.dimensions.height,
@@ -274,7 +276,6 @@ export function SceneContainer({
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     
-    // Update shadow direction based on rotation
     mesh.updateMatrixWorld(true);
     mesh.traverse((child) => {
       if (child instanceof THREE.Mesh) {
@@ -291,7 +292,7 @@ export function SceneContainer({
       material.dispose();
       setPreviewMesh(null);
     };
-  }, [isDraggingOver, draggedModuleRef.current]);
+  }, [isDraggingOver]); // Remove draggedModuleRef.current from dependencies
 
   const handleModuleDragStart = useCallback((draggedModule: Module) => {
     draggedModuleRef.current = draggedModule;
