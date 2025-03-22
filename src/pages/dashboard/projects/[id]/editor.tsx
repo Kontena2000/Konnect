@@ -176,29 +176,40 @@ export default function LayoutEditorPage() {
   };
 
   const handleUndo = useCallback(() => {
-    if (undoStack.length > 0) {
-      const previousState = undoStack[undoStack.length - 1];
-      setRedoStack(prev => [...prev, { modules, connections }]);
+    if (undoStack.length > 1) { // Keep at least one state in the stack
+      const currentState = { modules, connections };
+      const previousState = undoStack[undoStack.length - 2]; // Get second to last state
+      
+      setRedoStack(prev => [...prev, currentState]);
       setUndoStack(prev => prev.slice(0, -1));
       setModules(previousState.modules);
       setConnections(previousState.connections);
     }
-  }, [undoStack, modules, connections, setRedoStack, setUndoStack, setModules, setConnections]);
+  }, [undoStack, modules, connections, setModules, setConnections]);
 
   const handleRedo = useCallback(() => {
     if (redoStack.length > 0) {
       const nextState = redoStack[redoStack.length - 1];
-      setUndoStack(prev => [...prev, { modules, connections }]);
+      const currentState = { modules, connections };
+      
+      setUndoStack(prev => [...prev, currentState]);
       setRedoStack(prev => prev.slice(0, -1));
       setModules(nextState.modules);
       setConnections(nextState.connections);
     }
-  }, [redoStack, modules, connections, setUndoStack, setRedoStack, setModules, setConnections]);
+  }, [redoStack, modules, connections, setModules, setConnections]);
 
   // Save state for undo when modules or connections change
   useEffect(() => {
-    if (modules.length > 0 || connections.length > 0) {
-      setUndoStack(prev => [...prev, { modules, connections }]);
+    const newState = { modules, connections };
+    const lastState = undoStack[undoStack.length - 1];
+    
+    // Only save state if it's different from the last one
+    if (!lastState || 
+        JSON.stringify(lastState.modules) !== JSON.stringify(newState.modules) ||
+        JSON.stringify(lastState.connections) !== JSON.stringify(newState.connections)) {
+      setUndoStack(prev => [...prev, newState]);
+      // Clear redo stack when new changes are made
       setRedoStack([]);
     }
   }, [modules, connections]);

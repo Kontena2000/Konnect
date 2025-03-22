@@ -93,20 +93,20 @@ export function SceneContainer({
     onTransformStart?.();
     
     // Lock camera controls
-    if (controlsRef.current) {
+    if (controlsRef?.current) {
       controlsRef.current.enabled = false;
     }
-  }, [onTransformStart]);
+  }, [onTransformStart, controlsRef]);
 
   const handleTransformEnd = useCallback(() => {
     setTransforming(false);
     onTransformEnd?.();
     
     // Re-enable camera controls
-    if (controlsRef.current) {
+    if (controlsRef?.current) {
       controlsRef.current.enabled = true;
     }
-  }, [onTransformEnd]);
+  }, [onTransformEnd, controlsRef]);
 
   const { snapPoints, snapLines } = useMemo(() => {
     const points: Vector3[] = [];
@@ -240,9 +240,11 @@ export function SceneContainer({
   }, [handleKeyDown, handleKeyUp, readOnly]);
 
   useEffect(() => {
-    if (!isDraggingOver || !draggedModuleRef.current) return;
+    if (!isDraggingOver) return;
     
     const currentModule = draggedModuleRef.current;
+    if (!currentModule) return;
+    
     const geometry = new THREE.BoxGeometry(
       currentModule.dimensions.length,
       currentModule.dimensions.height,
@@ -278,7 +280,7 @@ export function SceneContainer({
       material.dispose();
       setPreviewMesh(null);
     };
-  }, [isDraggingOver, draggedModuleRef.current]);
+  }, [isDraggingOver]);
 
   const handleModuleDragStart = useCallback((draggedModule: Module) => {
     draggedModuleRef.current = draggedModule;
