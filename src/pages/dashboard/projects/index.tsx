@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
@@ -110,29 +109,29 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='container mx-auto py-8 px-4 sm:px-6 lg:px-8 max-w-7xl'>
-        <div className='flex justify-between items-center mb-8'>
-          <h1 className='text-3xl font-bold'>Projects</h1>
+      <div className='space-y-8'>
+        <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
+          <h1 className='text-2xl md:text-3xl font-bold tracking-tight'>Projects</h1>
           <Link href='/dashboard/projects/new'>
-            <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+            <Button className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors'>
               <Plus className='h-4 w-4 mr-2' />
               New Project
             </Button>
           </Link>
         </div>
 
-        <div className='flex gap-4 mb-6'>
+        <div className='flex flex-col sm:flex-row gap-4'>
           <div className='relative flex-1'>
-            <Search className='absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4' />
+            <Search className='absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground h-4 w-4' />
             <Input
               placeholder='Search projects...'
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className='pl-10'
+              className='pl-10 w-full'
             />
           </div>
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className='w-[180px]'>
+            <SelectTrigger className='w-full sm:w-[180px]'>
               <SelectValue placeholder='Sort by' />
             </SelectTrigger>
             <SelectContent>
@@ -145,13 +144,13 @@ export default function ProjectsPage() {
 
         {filteredAndSortedProjects.length === 0 && !loading ? (
           <div className='text-center py-12'>
-            <div className='rounded-lg border-2 border-dashed p-12 max-w-2xl mx-auto'>
+            <div className='rounded-lg border-2 border-dashed p-8 md:p-12 max-w-2xl mx-auto'>
               <h3 className='text-lg font-semibold mb-2'>No projects found</h3>
-              <p className='text-muted-foreground mb-4'>
+              <p className='text-muted-foreground mb-6'>
                 {searchQuery ? 'No projects match your search criteria.' : 'Get started by creating your first project.'}
               </p>
               <Link href='/dashboard/projects/new'>
-                <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                <Button className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors'>
                   <Plus className='h-4 w-4 mr-2' />
                   Create Project
                 </Button>
@@ -159,9 +158,9 @@ export default function ProjectsPage() {
             </div>
           </div>
         ) : (
-          <div className='grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
+          <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
             {filteredAndSortedProjects.map((project) => (
-              <Card key={project.id} className='flex flex-col h-full shadow-lg'>
+              <Card key={project.id} className='flex flex-col h-full shadow-sm hover:shadow-md transition-shadow'>
                 <CardHeader className='pb-4'>
                   <div className='flex justify-between items-start'>
                     <div className='space-y-2'>

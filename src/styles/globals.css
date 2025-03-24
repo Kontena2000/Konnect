@@ -1,4 +1,3 @@
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -80,5 +79,25 @@
 @layer components {
   .container {
     @apply mx-auto px-4 md:px-6 lg:px-8 max-w-[2000px] w-full;
+  }
+
+  .card-hover {
+    @apply hover:shadow-md transition-shadow duration-200;
+  }
+
+  .input-focus {
+    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary;
+  }
+
+  .button-base {
+    @apply shadow-sm transition-colors duration-200;
+  }
+
+  .button-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground button-base;
+  }
+
+  .button-secondary {
+    @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground button-base;
   }
 }
