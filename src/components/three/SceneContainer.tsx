@@ -6,7 +6,7 @@ import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
-import { Vector2, Vector3, Box3, Line3 } from "three";
+import { Vector2, Vector3, Box3, Line3, Material, Mesh } from "three";
 import { cn } from "@/lib/utils";
 import { SceneElements } from "./SceneElements";
 import { Html } from '@react-three/drei';
@@ -30,6 +30,29 @@ const getPerformanceMetrics = () => {
   }
 
   return metrics;
+};
+
+// Add safe resource disposal utility
+const disposeObject = (obj: THREE.Object3D | null) => {
+  if (!obj) return;
+  
+  // Dispose geometries
+  if (obj instanceof Mesh && obj.geometry) {
+    obj.geometry.dispose();
+  }
+  
+  // Safely dispose materials
+  if (obj instanceof Mesh) {
+    const materials = Array.isArray(obj.material) ? obj.material : [obj.material];
+    materials.forEach(material => {
+      if (material && typeof material.dispose === 'function') {
+        material.dispose();
+      }
+    });
+  }
+  
+  // Recursively dispose children
+  obj.children.forEach(child => disposeObject(child));
 };
 
 export interface SceneContainerProps {
@@ -201,17 +224,60 @@ export function SceneContainer({
     onTransformEnd?.();
   }, [onTransformEnd]);
 
-  // Optimize expensive computations with cleanup
+  // Enhanced cleanup with safe disposal
   const cleanupRefs = useCallback(() => {
     if (previewMesh) {
-      previewMesh.geometry.dispose();
-      previewMesh.material.dispose();
+      disposeObject(previewMesh);
+      setPreviewMesh(null);
     }
   }, [previewMesh]);
 
+  // Monitor scene performance
+  useEffect(() => {
+    let frameId: number;
+    let lastTime = performance.now();
+    let frames = 0;
+
+    const monitorPerformance = () => {
+      frames++;
+      const currentTime = performance.now();
+      const elapsed = currentTime - lastTime;
+
+      if (elapsed >= 1000) {
+        const fps = Math.round((frames * 1000) / elapsed);
+        const metrics = getPerformanceMetrics();
+        
+        firebaseMonitor.logPerformanceMetric({
+          fps,
+          timestamp: currentTime,
+          memoryUsage: metrics.memory,
+          operationDuration: elapsed
+        });
+
+        frames = 0;
+        lastTime = currentTime;
+      }
+
+      frameId = requestAnimationFrame(monitorPerformance);
+    };
+
+    frameId = requestAnimationFrame(monitorPerformance);
+
+    return () => {
+      if (frameId) {
+        cancelAnimationFrame(frameId);
+      }
+      cleanupRefs();
+    };
+  }, [cleanupRefs]);
+
+  // Cleanup on unmount
   useEffect(() => {
     return () => {
       cleanupRefs();
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
     };
   }, [cleanupRefs]);
 

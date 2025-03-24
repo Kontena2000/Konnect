@@ -19,6 +19,8 @@ export interface PerformanceMetrics {
   memoryUsage: number;
   operationDuration: number;
   timestamp: number;
+  sceneObjects?: number;
+  triangles?: number;
 }
 
 export interface FirebaseStatus {
@@ -44,7 +46,8 @@ class FirebaseMonitor {
     FPS_MIN: 30,
     MEMORY_MAX: 90, // 90% of available memory
     OPERATION_MAX_DURATION: 1000, // 1 second
-    METRICS_HISTORY_LIMIT: 100 // Maximum number of metrics to keep
+    METRICS_HISTORY_LIMIT: 100, // Maximum number of metrics to keep
+    TRIANGLES_WARNING: 100000 // Warning threshold for triangle count
   };
 
   private subscribers: ((status: FirebaseStatus) => void)[] = [];
@@ -209,7 +212,9 @@ class FirebaseMonitor {
       fps: metrics.fps || 0,
       memoryUsage: metrics.memoryUsage || 0,
       operationDuration: metrics.operationDuration || 0,
-      timestamp: Date.now()
+      timestamp: Date.now(),
+      sceneObjects: metrics.sceneObjects,
+      triangles: metrics.triangles
     };
 
     this.status.performanceMetrics.push(currentMetrics);
@@ -227,6 +232,16 @@ class FirebaseMonitor {
         status: 'warning',
         timestamp: Date.now(),
         details: { fps: metrics.fps, message: 'Low frame rate detected' }
+      });
+    }
+
+    if (metrics.triangles && metrics.triangles > this.PERFORMANCE_THRESHOLDS.TRIANGLES_WARNING) {
+      this.logOperation({
+        type: 'settings',
+        action: 'performance_warning',
+        status: 'warning',
+        timestamp: Date.now(),
+        details: { triangles: metrics.triangles, message: 'High polygon count detected' }
       });
     }
 
