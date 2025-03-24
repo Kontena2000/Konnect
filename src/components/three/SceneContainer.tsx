@@ -46,6 +46,17 @@ export function SceneContainer({
   const frameRef = useRef<number>();
   const lastTimeRef = useRef<number>(performance.now());
 
+  // Additional state for SceneContent props
+  const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
+  const [draggedDimensions, setDraggedDimensions] = useState<{ length: number; width: number; height: number; } | null>(null);
+  const [snapPoints, setSnapPoints] = useState<Vector3[]>([]);
+  const [snapLines, setSnapLines] = useState<Line3[]>([]);
+  const [previewMesh, setPreviewMesh] = useState<Mesh | null>(null);
+  const [rotationAngle, setRotationAngle] = useState(0);
+  const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
+  const [isTransforming, setIsTransforming] = useState(false);
+  const [showGuides, setShowGuides] = useState(true);
+
   // Performance monitoring
   const monitorPerformance = useCallback(() => {
     const currentTime = performance.now();
@@ -67,7 +78,6 @@ export function SceneContainer({
     setPerformanceMetrics({ fps, memoryUsage });
     lastTimeRef.current = currentTime;
 
-    // Log metrics if they exceed thresholds
     if (fps < 30 || memoryUsage > 80) {
       firebaseMonitor.logPerformanceMetric({
         fps,
@@ -90,6 +100,18 @@ export function SceneContainer({
     };
   }, [monitorPerformance]);
 
+  const handlePreviewPositionUpdate = useCallback((position: [number, number, number]) => {
+    setPreviewPosition(position);
+  }, []);
+
+  const handleTransformStart = useCallback(() => {
+    setIsTransforming(true);
+  }, []);
+
+  const handleTransformEnd = useCallback(() => {
+    setIsTransforming(false);
+  }, []);
+
   return (
     <div ref={setNodeRef} className="w-full h-full relative">
       <Canvas
@@ -107,6 +129,19 @@ export function SceneContainer({
           connections={connections}
           controlsRef={controlsRef}
           editorPreferences={editorPreferences}
+          mousePosition={mousePosition}
+          draggedDimensions={draggedDimensions}
+          snapPoints={snapPoints}
+          snapLines={snapLines}
+          onPreviewPositionUpdate={handlePreviewPositionUpdate}
+          previewMesh={previewMesh}
+          rotationAngle={rotationAngle}
+          showGuides={showGuides}
+          previewPosition={previewPosition}
+          setRotationAngle={setRotationAngle}
+          isTransforming={isTransforming}
+          onTransformStart={handleTransformStart}
+          onTransformEnd={handleTransformEnd}
         />
       </Canvas>
 
