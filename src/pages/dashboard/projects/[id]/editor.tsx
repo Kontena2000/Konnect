@@ -1,8 +1,10 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
 import { Toolbox } from '@/components/layout/Toolbox';
+import { ConnectionManager } from '@/components/three/ConnectionManager';
 import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
@@ -36,7 +38,6 @@ export default function LayoutEditorPage() {
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
-    // Create a new module instance with unique ID
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
@@ -77,6 +78,18 @@ export default function LayoutEditorPage() {
   const handleModuleDelete = useCallback((moduleId: string) => {
     setModules(prev => prev.filter(module => module.id !== moduleId));
     setSelectedModuleId(undefined);
+  }, []);
+
+  // Handle connection updates
+  const handleConnectionUpdate = useCallback((connectionId: string, updates: Partial<Connection>) => {
+    setConnections(prev => prev.map(connection => 
+      connection.id === connectionId ? { ...connection, ...updates } : connection
+    ));
+  }, []);
+
+  // Handle connection deletion
+  const handleConnectionDelete = useCallback((connectionId: string) => {
+    setConnections(prev => prev.filter(connection => connection.id !== connectionId));
   }, []);
 
   // Undo handler
@@ -172,8 +185,8 @@ export default function LayoutEditorPage() {
   return (
     <AppLayout>
       <ErrorBoundary>
-        <div className='flex min-h-screen w-full'>
-          <div className='flex-1 relative'>
+        <div className="flex min-h-screen w-full">
+          <div className="flex-1 relative">
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -185,6 +198,13 @@ export default function LayoutEditorPage() {
               controlsRef={controlsRef}
               editorPreferences={editorPreferences}
             />
+            <div className="absolute top-4 right-4 w-80">
+              <ConnectionManager
+                connections={memoizedConnections}
+                onUpdateConnection={handleConnectionUpdate}
+                onDeleteConnection={handleConnectionDelete}
+              />
+            </div>
             <Toolbox
               onModuleDragStart={handleModuleDragStart}
               onSave={handleSave}
