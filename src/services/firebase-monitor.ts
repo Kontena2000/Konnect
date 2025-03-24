@@ -43,7 +43,8 @@ class FirebaseMonitor {
   private readonly PERFORMANCE_THRESHOLDS = {
     FPS_MIN: 30,
     MEMORY_MAX: 90, // 90% of available memory
-    OPERATION_MAX_DURATION: 1000 // 1 second
+    OPERATION_MAX_DURATION: 1000, // 1 second
+    METRICS_HISTORY_LIMIT: 100 // Maximum number of metrics to keep
   };
 
   private subscribers: ((status: FirebaseStatus) => void)[] = [];
@@ -213,9 +214,9 @@ class FirebaseMonitor {
 
     this.status.performanceMetrics.push(currentMetrics);
 
-    // Keep only last 100 metrics
-    if (this.status.performanceMetrics.length > 100) {
-      this.status.performanceMetrics.shift();
+    // Keep only last N metrics to prevent memory leaks
+    if (this.status.performanceMetrics.length > this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT) {
+      this.status.performanceMetrics = this.status.performanceMetrics.slice(-this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT);
     }
 
     // Check thresholds and log warnings
@@ -226,6 +227,16 @@ class FirebaseMonitor {
         status: 'warning',
         timestamp: Date.now(),
         details: { fps: metrics.fps, message: 'Low frame rate detected' }
+      });
+    }
+
+    if (metrics.memoryUsage && metrics.memoryUsage > this.PERFORMANCE_THRESHOLDS.MEMORY_MAX) {
+      this.logOperation({
+        type: 'settings',
+        action: 'performance_warning',
+        status: 'warning',
+        timestamp: Date.now(),
+        details: { memoryUsage: metrics.memoryUsage, message: 'High memory usage detected' }
       });
     }
 

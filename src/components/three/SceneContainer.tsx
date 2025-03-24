@@ -17,6 +17,21 @@ import { GridHelper } from './GridHelper';
 import { EditorPreferences } from '@/services/editor-preferences';
 import firebaseMonitor from '@/services/firebase-monitor';
 
+const getPerformanceMetrics = () => {
+  const metrics = {
+    memory: 0,
+    fps: 0
+  };
+
+  // Safe check for Chrome's memory API
+  const performance = window.performance as any;
+  if (performance && performance.memory) {
+    metrics.memory = (performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) * 100;
+  }
+
+  return metrics;
+};
+
 export interface SceneContainerProps {
   modules: Module[];
   selectedModuleId?: string;
@@ -85,7 +100,7 @@ export function SceneContainer({
   const lastFpsCheck = useRef(Date.now());
   const animationFrameId = useRef<number>();
 
-  // Optimized frame rate monitoring
+  // Optimized frame rate monitoring with safe memory checks
   useEffect(() => {
     const checkPerformance = () => {
       const now = Date.now();
@@ -93,11 +108,12 @@ export function SceneContainer({
       
       if (elapsedTime >= 1000) { // Check every second
         const fps = Math.round((frameCount.current / elapsedTime) * 1000);
+        const metrics = getPerformanceMetrics();
         
         firebaseMonitor.logPerformanceMetric({
           fps,
           timestamp: now,
-          memoryUsage: performance.memory?.usedJSHeapSize / performance.memory?.jsHeapSizeLimit * 100 || 0
+          memoryUsage: metrics.memory
         });
         
         frameCount.current = 0;
@@ -110,10 +126,14 @@ export function SceneContainer({
 
     animationFrameId.current = requestAnimationFrame(checkPerformance);
 
+    // Cleanup function to prevent memory leaks
     return () => {
       if (animationFrameId.current) {
         cancelAnimationFrame(animationFrameId.current);
       }
+      // Clear any references
+      frameCount.current = 0;
+      lastFpsCheck.current = 0;
     };
   }, []);
 
@@ -180,6 +200,20 @@ export function SceneContainer({
     setTransforming(false);
     onTransformEnd?.();
   }, [onTransformEnd]);
+
+  // Optimize expensive computations with cleanup
+  const cleanupRefs = useCallback(() => {
+    if (previewMesh) {
+      previewMesh.geometry.dispose();
+      previewMesh.material.dispose();
+    }
+  }, [previewMesh]);
+
+  useEffect(() => {
+    return () => {
+      cleanupRefs();
+    };
+  }, [cleanupRefs]);
 
   return (
     <div 
