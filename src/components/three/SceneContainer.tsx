@@ -41,7 +41,8 @@ export function SceneContainer({
   activeConnection
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: 'scene' });
-  const [performanceMetrics, setPerformanceMetrics] = useState({ fps: 60, memoryUsage: 0 });
+  const [isTransforming, setIsTransforming] = useState(false);
+  const [performanceMetrics, setPerformanceMetrics] = useState({ fps: 60 });
   const frameRef = useRef<number>();
   const lastTimeRef = useRef<number>(performance.now());
 
@@ -51,7 +52,7 @@ export function SceneContainer({
     const deltaTime = currentTime - lastTimeRef.current;
     const fps = Math.round(1000 / deltaTime);
     
-    setPerformanceMetrics({ fps, memoryUsage: 0 }); // Simplified for MVP
+    setPerformanceMetrics({ fps });
     lastTimeRef.current = currentTime;
 
     frameRef.current = requestAnimationFrame(monitorPerformance);
@@ -81,11 +82,10 @@ export function SceneContainer({
           onModuleUpdate={onModuleUpdate}
           onModuleDelete={onModuleDelete}
           connections={connections}
-          controlsRef={controlsRef}
           editorPreferences={editorPreferences}
           readOnly={readOnly}
           showGuides={!readOnly}
-          isTransforming={false}
+          isTransforming={isTransforming}
         />
       </Canvas>
 
