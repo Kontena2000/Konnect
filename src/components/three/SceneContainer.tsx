@@ -24,9 +24,12 @@ const getPerformanceMetrics = () => {
   };
 
   // Safe check for Chrome's memory API
-  const performance = window.performance as any;
-  if (performance && performance.memory) {
-    metrics.memory = (performance.memory.usedJSHeapSize / performance.memory.jsHeapSizeLimit) * 100;
+  if (typeof window !== 'undefined' && 
+      window.performance && 
+      (window.performance as any).memory && 
+      typeof (window.performance as any).memory.usedJSHeapSize === 'number' && 
+      typeof (window.performance as any).memory.jsHeapSizeLimit === 'number') {
+    metrics.memory = ((window.performance as any).memory.usedJSHeapSize / (window.performance as any).memory.jsHeapSizeLimit) * 100;
   }
 
   return metrics;
