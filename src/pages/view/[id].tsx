@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Ruler, Eye, MessageSquare, Camera } from "lucide-react";
 import { SceneContainer } from "@/components/three/SceneContainer";
-import { Layout } from "@/services/layout";
+import { Layout, LayoutData } from "@/services/layout";
 import layoutService from "@/services/layout";
 import { ViewControls } from "@/components/viewer/ViewControls";
 import { ViewMeasurements } from "@/components/viewer/ViewMeasurements";
@@ -25,7 +25,18 @@ export default function ViewerPage() {
       if (id) {
         try {
           const layoutData = await layoutService.getLayout(id as string);
-          setLayout(layoutData);
+          // Convert LayoutData to Layout with required fields
+          const fullLayout: Layout = {
+            id: id as string,
+            projectId: "preview", // This will be updated when we fetch project details
+            name: layoutData.name || "Untitled Layout",
+            description: layoutData.description,
+            modules: layoutData.modules,
+            connections: layoutData.connections,
+            createdAt: new Date(),
+            updatedAt: new Date()
+          };
+          setLayout(fullLayout);
         } catch (error) {
           console.error("Error loading layout:", error);
         } finally {
@@ -38,17 +49,32 @@ export default function ViewerPage() {
   }, [id]);
 
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
+          <p className="text-muted-foreground">Loading layout...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!layout) {
-    return <div>Layout not found</div>;
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold">Layout not found</h2>
+          <p className="text-muted-foreground mt-2">The requested layout could not be found.</p>
+          <Button 
+            className="mt-4"
+            onClick={() => router.push("/dashboard/projects")}
+          >
+            Return to Projects
+          </Button>
+        </div>
+      </div>
+    );
   }
-
-  // No-op handler for onDropPoint in view mode
-  const handleDropPoint = (point: [number, number, number]) => {
-    // This function is intentionally empty since we're in read-only mode
-  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -90,8 +116,19 @@ export default function ViewerPage() {
                 modules={layout.modules}
                 connections={layout.connections}
                 readOnly={true}
-                onDropPoint={handleDropPoint}
+                onDropPoint={() => {}}
                 controlsRef={controlsRef}
+                mousePosition={null}
+                draggedDimensions={null}
+                snapPoints={[]}
+                snapLines={[]}
+                onPreviewPositionUpdate={() => {}}
+                previewMesh={null}
+                rotationAngle={0}
+                showGuides={false}
+                previewPosition={[0, 0, 0]}
+                setRotationAngle={() => {}}
+                isTransforming={false}
               />
             </Card>
 
