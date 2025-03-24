@@ -21,25 +21,35 @@ import firebaseMonitor from '@/services/firebase-monitor';
 interface SceneContainerProps {
   modules: Module[];
   selectedModuleId?: string;
-  transformMode: "translate" | "rotate" | "scale";
-  onModuleSelect: (moduleId: string) => void;
-  onModuleUpdate: (moduleId: string, updates: Partial<Module>) => void;
-  onModuleDelete: (moduleId: string) => void;
+  transformMode?: "translate" | "rotate" | "scale";
+  onModuleSelect?: (moduleId: string) => void;
+  onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
+  onModuleDelete?: (moduleId: string) => void;
   connections: Connection[];
   controlsRef: React.RefObject<any>;
-  editorPreferences: EditorPreferences | null;
+  editorPreferences?: EditorPreferences | null;
+  terrain?: TerrainData;
+  readOnly?: boolean;
+  onDropPoint?: (point: [number, number, number]) => void;
+  gridSnap?: boolean;
+  environmentalElements?: ElementType[];
 }
 
 export function SceneContainer({
   modules,
   selectedModuleId,
-  transformMode,
+  transformMode = "translate",
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
   connections,
   controlsRef,
-  editorPreferences
+  editorPreferences,
+  terrain,
+  readOnly = false,
+  onDropPoint,
+  gridSnap = false,
+  environmentalElements = []
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: 'scene' });
   const [performanceMetrics, setPerformanceMetrics] = useState({ fps: 60, memoryUsage: 0 });
@@ -102,7 +112,8 @@ export function SceneContainer({
 
   const handlePreviewPositionUpdate = useCallback((position: [number, number, number]) => {
     setPreviewPosition(position);
-  }, []);
+    onDropPoint?.(position);
+  }, [onDropPoint]);
 
   const handleTransformStart = useCallback(() => {
     setIsTransforming(true);
@@ -142,6 +153,10 @@ export function SceneContainer({
           isTransforming={isTransforming}
           onTransformStart={handleTransformStart}
           onTransformEnd={handleTransformEnd}
+          terrain={terrain}
+          readOnly={readOnly}
+          gridSnap={gridSnap}
+          environmentalElements={environmentalElements}
         />
       </Canvas>
 
