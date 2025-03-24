@@ -11,6 +11,7 @@ import { SceneContent } from './SceneContent';
 import { useToast } from '@/hooks/use-toast';
 import { EditorPreferences } from '@/services/editor-preferences';
 import firebaseMonitor from '@/services/firebase-monitor';
+import { ConnectionType } from "@/types/connection";
 
 interface SceneContainerProps {
   modules: Module[];
@@ -27,9 +28,9 @@ interface SceneContainerProps {
   onDropPoint?: (point: [number, number, number]) => void;
   gridSnap?: boolean;
   environmentalElements?: ElementType[];
-  onStartConnection?: (moduleId: string, point: Vector3, type: string) => void;
-  onEndConnection?: (moduleId: string, point: Vector3, type: string) => void;
-  activeConnection?: { sourceModuleId: string; sourcePoint: Vector3; type: string } | null;
+  onStartConnection?: (moduleId: string, point: Vector3, type: ConnectionType) => void;
+  onEndConnection?: (moduleId: string, point: Vector3, type: ConnectionType) => void;
+  activeConnection?: { sourceModuleId: string; sourcePoint: Vector3; type: ConnectionType } | null;
 }
 
 export function SceneContainer({
@@ -78,7 +79,7 @@ export function SceneContainer({
       try {
         const memory = (performance as any).memory;
         if (memory) {
-          memoryUsage = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
+          memoryUsage = Math.round((memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100);
         }
       } catch (error) {
         console.warn('Memory metrics not available:', error);
