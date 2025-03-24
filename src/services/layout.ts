@@ -1,3 +1,4 @@
+
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -37,6 +38,13 @@ export interface Layout {
   connections: Connection[];
   createdAt: Date;
   updatedAt: Date;
+}
+
+export interface LayoutData {
+  modules: Module[];
+  connections: Connection[];
+  name?: string;
+  description?: string;
 }
 
 class LayoutError extends Error {
@@ -150,13 +158,13 @@ const layoutService = {
     }
   },
 
-  async getLayout(id: string, user?: AuthUser): Promise<Layout | null> {
+  async getLayout(id: string, user?: AuthUser): Promise<LayoutData> {
     try {
       const layoutRef = doc(db, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
       
       if (!snapshot.exists()) {
-        return null;
+        return { modules: [], connections: [] };
       }
 
       const data = snapshot.data();
@@ -165,13 +173,11 @@ const layoutService = {
         // Special case for ruud@kontena.eu - always has full access
         if (user.email === 'ruud@kontena.eu') {
           return {
-            id: snapshot.id,
-            ...data,
             modules: data.modules || [],
             connections: data.connections || [],
-            createdAt: data.createdAt?.toDate() || new Date(),
-            updatedAt: data.updatedAt?.toDate() || new Date()
-          } as Layout;
+            name: data.name,
+            description: data.description
+          };
         }
 
         const projectRef = doc(db, 'projects', data.projectId);
@@ -188,13 +194,11 @@ const layoutService = {
       }
 
       return {
-        id: snapshot.id,
-        ...data,
         modules: data.modules || [],
         connections: data.connections || [],
-        createdAt: data.createdAt?.toDate() || new Date(),
-        updatedAt: data.updatedAt?.toDate() || new Date()
-      } as Layout;
+        name: data.name,
+        description: data.description
+      };
     } catch (error) {
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to fetch layout', 'FETCH_FAILED', error);
