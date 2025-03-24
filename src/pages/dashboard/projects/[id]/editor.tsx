@@ -11,15 +11,25 @@ import { Module } from '@/types/module';
 import { Connection } from '@/services/layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import firebaseMonitor from '@/services/firebase-monitor';
+import { Vector3 } from "three";
+import { ConnectionType } from "@/types/connection";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditorState {
   modules: Module[];
   connections: Connection[];
 }
 
+interface ActiveConnection {
+  sourceModuleId: string;
+  sourcePoint: Vector3;
+  type: ConnectionType;
+}
+
 export default function LayoutEditorPage() {
   const router = useRouter();
   const { user } = useAuth();
+  const { toast } = useToast();
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
 
@@ -31,10 +41,51 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
+  const [activeConnection, setActiveConnection] = useState<ActiveConnection | null>(null);
 
   // Memoize heavy computations
   const memoizedModules = useMemo(() => modules, [modules]);
   const memoizedConnections = useMemo(() => connections, [connections]);
+
+  // Handle connection start
+  const handleStartConnection = useCallback((moduleId: string, point: Vector3, type: ConnectionType) => {
+    setActiveConnection({
+      sourceModuleId: moduleId,
+      sourcePoint: point,
+      type
+    });
+  }, []);
+
+  // Handle connection end
+  const handleEndConnection = useCallback((targetModuleId: string, targetPoint: Vector3, type: ConnectionType) => {
+    if (!activeConnection) return;
+
+    // Don't connect to same module or different connection types
+    if (targetModuleId === activeConnection.sourceModuleId || type !== activeConnection.type) {
+      setActiveConnection(null);
+      return;
+    }
+
+    // Create new connection
+    const newConnection: Connection = {
+      id: `${activeConnection.sourceModuleId}-${targetModuleId}-${Date.now()}`,
+      sourceModuleId: activeConnection.sourceModuleId,
+      targetModuleId,
+      sourcePoint: activeConnection.sourcePoint,
+      targetPoint,
+      type: activeConnection.type,
+      capacity: 0,
+      currentLoad: 0
+    };
+
+    setConnections(prev => [...prev, newConnection]);
+    setActiveConnection(null);
+
+    toast({
+      title: "Connection Created",
+      description: `Created new ${type} connection between modules`
+    });
+  }, [activeConnection, toast]);
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
@@ -77,6 +128,9 @@ export default function LayoutEditorPage() {
   // Handle module deletion
   const handleModuleDelete = useCallback((moduleId: string) => {
     setModules(prev => prev.filter(module => module.id !== moduleId));
+    setConnections(prev => prev.filter(conn => 
+      conn.sourceModuleId !== moduleId && conn.targetModuleId !== moduleId
+    ));
     setSelectedModuleId(undefined);
   }, []);
 
@@ -197,6 +251,9 @@ export default function LayoutEditorPage() {
               connections={memoizedConnections}
               controlsRef={controlsRef}
               editorPreferences={editorPreferences}
+              onStartConnection={handleStartConnection}
+              onEndConnection={handleEndConnection}
+              activeConnection={activeConnection}
             />
             <div className="absolute top-4 right-4 w-80">
               <ConnectionManager
