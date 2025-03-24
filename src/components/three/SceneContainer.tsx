@@ -1,5 +1,4 @@
 
-{/* Updated SceneContainer.tsx with fixed memory performance monitoring */}
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -19,25 +18,105 @@ import { GridHelper } from './GridHelper';
 import { EditorPreferences } from '@/services/editor-preferences';
 import firebaseMonitor from '@/services/firebase-monitor';
 
-interface PerformanceMetrics {
-  fps: number;
-  memoryUsage: number;
+interface SceneContainerProps {
+  modules: Module[];
+  selectedModuleId?: string;
+  transformMode: "translate" | "rotate" | "scale";
+  onModuleSelect: (moduleId: string) => void;
+  onModuleUpdate: (moduleId: string, updates: Partial<Module>) => void;
+  onModuleDelete: (moduleId: string) => void;
+  connections: Connection[];
+  controlsRef: React.RefObject<any>;
+  editorPreferences: EditorPreferences | null;
 }
 
-const getMemoryUsage = (): number => {
-  try {
-    if (typeof window !== 'undefined' && 
-        window.performance && 
-        'memory' in performance && 
-        typeof (performance as any).memory?.usedJSHeapSize === 'number' && 
-        typeof (performance as any).memory?.jsHeapSizeLimit === 'number') {
-      return ((performance as any).memory.usedJSHeapSize / 
-              (performance as any).memory.jsHeapSizeLimit) * 100;
-    }
-    return 0;
-  } catch {
-    return 0;
-  }
-};
+export function SceneContainer({
+  modules,
+  selectedModuleId,
+  transformMode,
+  onModuleSelect,
+  onModuleUpdate,
+  onModuleDelete,
+  connections,
+  controlsRef,
+  editorPreferences
+}: SceneContainerProps) {
+  const { setNodeRef } = useDroppable({ id: 'scene' });
+  const [performanceMetrics, setPerformanceMetrics] = useState({ fps: 60, memoryUsage: 0 });
+  const frameRef = useRef<number>();
+  const lastTimeRef = useRef<number>(performance.now());
 
-// Rest of the file remains unchanged...
+  // Performance monitoring
+  const monitorPerformance = useCallback(() => {
+    const currentTime = performance.now();
+    const deltaTime = currentTime - lastTimeRef.current;
+    const fps = Math.round(1000 / deltaTime);
+    
+    let memoryUsage = 0;
+    try {
+      if (typeof window !== 'undefined' && 
+          window.performance && 
+          (performance as any).memory) {
+        memoryUsage = ((performance as any).memory.usedJSHeapSize / 
+                       (performance as any).memory.jsHeapSizeLimit) * 100;
+      }
+    } catch (error) {
+      console.error('Error monitoring memory:', error);
+    }
+
+    setPerformanceMetrics({ fps, memoryUsage });
+    lastTimeRef.current = currentTime;
+
+    // Log metrics if they exceed thresholds
+    if (fps < 30 || memoryUsage > 80) {
+      firebaseMonitor.logPerformanceMetric({
+        fps,
+        memoryUsage,
+        operationDuration: deltaTime,
+        timestamp: Date.now(),
+        sceneObjects: modules.length + connections.length
+      });
+    }
+
+    frameRef.current = requestAnimationFrame(monitorPerformance);
+  }, [modules.length, connections.length]);
+
+  useEffect(() => {
+    frameRef.current = requestAnimationFrame(monitorPerformance);
+    return () => {
+      if (frameRef.current) {
+        cancelAnimationFrame(frameRef.current);
+      }
+    };
+  }, [monitorPerformance]);
+
+  return (
+    <div ref={setNodeRef} className="w-full h-full relative">
+      <Canvas
+        shadows
+        camera={{ position: [10, 10, 10], fov: 50 }}
+        gl={{ preserveDrawingBuffer: true }}
+      >
+        <SceneContent
+          modules={modules}
+          selectedModuleId={selectedModuleId}
+          transformMode={transformMode}
+          onModuleSelect={onModuleSelect}
+          onModuleUpdate={onModuleUpdate}
+          onModuleDelete={onModuleDelete}
+          connections={connections}
+          controlsRef={controlsRef}
+          editorPreferences={editorPreferences}
+        />
+      </Canvas>
+
+      {/* Performance Monitor */}
+      <div className="absolute top-4 right-4 bg-background/80 backdrop-blur-sm rounded-lg p-2 text-xs">
+        <div className="flex items-center gap-2">
+          <span>FPS: {performanceMetrics.fps}</span>
+          <span>Memory: {Math.round(performanceMetrics.memoryUsage)}%</span>
+        </div>
+      </div>
+    </div>
+  );
+}
