@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -253,8 +252,8 @@ export default function LayoutEditorPage() {
   return (
     <AppLayout>
       <ErrorBoundary>
-        <div className="flex min-h-screen w-full">
-          <div className="flex-1 relative">
+        <div className='flex min-h-screen w-full'>
+          <div className='flex-1 relative'>
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -269,7 +268,7 @@ export default function LayoutEditorPage() {
               onEndConnection={handleEndConnection}
               activeConnection={activeConnection}
             />
-            <div className="absolute top-4 right-4 w-80">
+            <div className='absolute top-4 right-4 w-80'>
               <ConnectionManager
                 connections={memoizedConnections}
                 onUpdateConnection={handleConnectionUpdate}
@@ -282,6 +281,8 @@ export default function LayoutEditorPage() {
               onUndo={handleUndo}
               onRedo={handleRedo}
               controlsRef={controlsRef}
+              onConnectionTypeSelect={(type) => setActiveConnection(null)}
+              activeConnectionType={activeConnection?.type}
             />
           </div>
         </div>

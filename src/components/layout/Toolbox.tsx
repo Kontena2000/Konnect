@@ -3,7 +3,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid, Power, Network, Snowflake, Droplets, Flame, ShieldCheck } from "lucide-react";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid, Power, Snowflake } from "lucide-react";
 import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
@@ -24,11 +24,7 @@ interface ToolboxProps {
 
 const connectionTypes: { type: ConnectionType; icon: React.ReactNode; label: string; color: string }[] = [
   { type: "power", icon: <Power className="h-5 w-5" />, label: "Power", color: "text-green-500" },
-  { type: "network", icon: <Network className="h-5 w-5" />, label: "Network", color: "text-blue-500" },
-  { type: "cooling", icon: <Snowflake className="h-5 w-5" />, label: "Cooling", color: "text-cyan-500" },
-  { type: "water", icon: <Droplets className="h-5 w-5" />, label: "Water", color: "text-sky-500" },
-  { type: "gas", icon: <Flame className="h-5 w-5" />, label: "Gas", color: "text-amber-500" },
-  { type: "security", icon: <ShieldCheck className="h-5 w-5" />, label: "Security", color: "text-red-500" }
+  { type: "cooling", icon: <Snowflake className="h-5 w-5" />, label: "Cooling", color: "text-cyan-500" }
 ];
 
 export function Toolbox({ 
@@ -41,19 +37,13 @@ export function Toolbox({
   activeConnectionType
 }: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string>("modules");
+  const [expandedSection, setExpandedSection] = useState<string>("connections");
 
   const sections = [
     {
-      id: "modules",
-      title: "Module Library",
-      icon: <Box className="h-5 w-5" />,
-      content: <ModuleLibrary onDragStart={onModuleDragStart} />
-    },
-    {
       id: "connections",
       title: "Connections",
-      icon: <Network className="h-5 w-5" />,
+      icon: <Power className="h-5 w-5" />,
       content: (
         <div className="p-2 space-y-2">
           <div className="grid grid-cols-2 gap-2">
@@ -82,16 +72,10 @@ export function Toolbox({
       )
     },
     {
-      id: "layers",
-      title: "Layers",
-      icon: <Layers className="h-5 w-5" />,
-      content: <div className="p-4 text-sm text-muted-foreground">Layer management coming soon</div>
-    },
-    {
-      id: "settings",
-      title: "Scene Settings",
-      icon: <Settings className="h-5 w-5" />,
-      content: <div className="p-4 text-sm text-muted-foreground">Scene settings coming soon</div>
+      id: "modules",
+      title: "Module Library",
+      icon: <Box className="h-5 w-5" />,
+      content: <ModuleLibrary onDragStart={onModuleDragStart} />
     }
   ];
 
@@ -112,7 +96,6 @@ export function Toolbox({
       )}
       style={{ marginLeft: 'auto' }}
     >
-      {/* Rest of the component remains the same */}
       <div className='flex h-16 items-center justify-between px-4 border-b'>
         {collapsed ? (
           <Button
