@@ -1,4 +1,5 @@
-import { ConnectionType } from "./connection";
+
+import { ConnectionType, ConnectionPoint } from "./connection";
 
 export type ModuleCategory = string;
 
@@ -6,6 +7,17 @@ export interface ModuleDimensions {
   length: number;
   width: number;
   height: number;
+}
+
+export interface ModuleEnergyProperties {
+  powerConsumption: number;
+  powerProduction: number;
+  powerStorage: number;
+  powerStorageCurrent: number;
+  coolingCapacity: number;
+  coolingRequirement: number;
+  powerFormula: string;
+  coolingFormula: string;
 }
 
 export interface Module {
@@ -20,10 +32,8 @@ export interface Module {
   rotation: [number, number, number];
   scale: [number, number, number];
   visibleInEditor?: boolean;
-  connectionPoints?: {
-    position: [number, number, number];
-    type: ConnectionType;
-  }[];
+  connectionPoints: ConnectionPoint[];
+  energy?: ModuleEnergyProperties;
   createdAt?: string;
   updatedAt?: string;
   modelUrl?: string;
@@ -48,7 +58,8 @@ export const defaultModules: Module[] = [
     visibleInEditor: true,
     position: [0, 0, 0],
     rotation: [0, 0, 0],
-    scale: [1, 1, 1]
+    scale: [1, 1, 1],
+    connectionPoints: []
   },
   {
     id: "edge-container",
@@ -68,47 +79,33 @@ export const defaultModules: Module[] = [
     scale: [1, 1, 1],
     connectionPoints: [
       {
-        position: [6, 0, 0],
-        type: "power"
+        id: "edge-container-power-east",
+        moduleId: "edge-container",
+        side: "east",
+        types: ["power"],
+        position: [6.096, 0, 1.219],
+        isInput: true,
+        isOutput: false
       },
       {
-        position: [-6, 0, 0],
-        type: "network"
+        id: "edge-container-water-west",
+        moduleId: "edge-container",
+        side: "west",
+        types: ["water-supply", "water-return"],
+        position: [-6.096, 0, 1.219],
+        isInput: true,
+        isOutput: true
       }
-    ]
-  },
-  {
-    id: "oak-tree",
-    name: "Oak Tree",
-    description: "Large oak tree for environmental planning",
-    category: "environment",
-    type: "vegetation",
-    color: "#166534",
-    dimensions: {
-      length: 5.0,
-      width: 5.0,
-      height: 8.0
-    },
-    visibleInEditor: true,
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1]
-  },
-  {
-    id: "pine-tree",
-    name: "Pine Tree",
-    description: "Tall pine tree for environmental planning",
-    category: "environment",
-    type: "vegetation",
-    color: "#15803d",
-    dimensions: {
-      length: 3.0,
-      width: 3.0,
-      height: 10.0
-    },
-    visibleInEditor: true,
-    position: [0, 0, 0],
-    rotation: [0, 0, 0],
-    scale: [1, 1, 1]
+    ],
+    energy: {
+      powerConsumption: 75,
+      powerProduction: 0,
+      powerStorage: 0,
+      powerStorageCurrent: 0,
+      coolingCapacity: 0,
+      coolingRequirement: 50,
+      powerFormula: "baseConsumption * loadFactor",
+      coolingFormula: "heatOutput * coolingEfficiency"
+    }
   }
 ];

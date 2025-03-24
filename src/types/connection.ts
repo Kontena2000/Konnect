@@ -1,10 +1,16 @@
 
-export type ConnectionType = "power" | "network" | "cooling" | "security" | "cat6a" | "water" | "gas";
+export type ConnectionType = "power" | "water-supply" | "water-return";
+
+export type ConnectionSide = "north" | "east" | "south" | "west";
 
 export interface ConnectionPoint {
+  id: string;
+  moduleId: string;
+  side: ConnectionSide;
+  types: ConnectionType[];
   position: [number, number, number];
-  type: ConnectionType;
-  moduleId?: string;
+  isInput?: boolean;
+  isOutput?: boolean;
 }
 
 export interface Connection {
@@ -12,14 +18,25 @@ export interface Connection {
   name?: string;
   sourceModuleId: string;
   targetModuleId: string;
+  sourcePointId: string;
+  targetPointId: string;
   sourcePoint: [number, number, number];
   targetPoint: [number, number, number];
   type: ConnectionType;
-  capacity?: number;
-  currentLoad?: number;
-  voltage?: string;
-  networkType?: "ethernet" | "fiber" | "wifi";
+  maxCapacity: number;
+  currentFlow: number;
+  voltage?: "230" | "400" | "480";
+  path: [number, number, number][];
   intermediatePoints?: [number, number, number][];
+}
+
+export interface NetworkState {
+  totalPowerProduction: number;
+  totalPowerConsumption: number;
+  totalPowerStorage: number;
+  totalPowerStorageCurrent: number;
+  isBalanced: boolean;
+  overloadedConnectionIds: string[];
 }
 
 export interface ConnectionLineProps {
