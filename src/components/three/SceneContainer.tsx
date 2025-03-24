@@ -17,8 +17,13 @@ import { GridHelper } from './GridHelper';
 import { EditorPreferences } from '@/services/editor-preferences';
 import firebaseMonitor from '@/services/firebase-monitor';
 
-const getPerformanceMetrics = () => {
-  const metrics = {
+interface PerformanceMetrics {
+  memory: number;
+  fps: number;
+}
+
+const getPerformanceMetrics = (): PerformanceMetrics => {
+  const metrics: PerformanceMetrics = {
     memory: 0,
     fps: 0
   };
@@ -26,9 +31,9 @@ const getPerformanceMetrics = () => {
   // Safe check for Chrome's memory API
   if (typeof window !== 'undefined' && 
       window.performance && 
-      (window.performance as any).memory && 
-      typeof (window.performance as any).memory.usedJSHeapSize === 'number' && 
-      typeof (window.performance as any).memory.jsHeapSizeLimit === 'number') {
+      'memory' in window.performance && 
+      typeof (window.performance as any).memory?.usedJSHeapSize === 'number' && 
+      typeof (window.performance as any).memory?.jsHeapSizeLimit === 'number') {
     metrics.memory = ((window.performance as any).memory.usedJSHeapSize / (window.performance as any).memory.jsHeapSizeLimit) * 100;
   }
 
