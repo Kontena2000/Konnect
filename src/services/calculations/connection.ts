@@ -83,20 +83,41 @@ class ConnectionCalculationService {
 
     const distance = this.calculateDistance(params.sourcePoint, params.targetPoint);
     const pressureDrop = this.calculatePressureDrop(distance, params.load);
-    const efficiency = 1 - (pressureDrop / config.pressureDrop);
 
-    const warnings: string[] = [];
-    if (pressureDrop > config.pressureDrop) {
-      warnings.push("High pressure drop detected");
+    // Handle different cooling types
+    if ('pressureDrop' in config) {
+      // Chilled water system
+      const efficiency = 1 - (pressureDrop / config.pressureDrop);
+      const warnings: string[] = [];
+      
+      if (pressureDrop > config.pressureDrop) {
+        warnings.push("High pressure drop detected");
+      }
+
+      return {
+        isValid: efficiency > 0.85,
+        capacity: params.load,
+        loss: pressureDrop,
+        efficiency,
+        warnings
+      };
+    } else {
+      // VRF system
+      const efficiency = this.calculateVRFEfficiency(params.load, config.cop);
+      const warnings: string[] = [];
+
+      if (params.load > config.maxTemp) {
+        warnings.push("Load exceeds maximum VRF temperature");
+      }
+
+      return {
+        isValid: efficiency > 0.75,
+        capacity: params.load * config.cop,
+        loss: params.load * (1 - efficiency),
+        efficiency,
+        warnings
+      };
     }
-
-    return {
-      isValid: efficiency > 0.85, // 85% minimum efficiency
-      capacity: params.load,
-      loss: pressureDrop,
-      efficiency,
-      warnings
-    };
   }
 
   private validateNetworkConnection(params: ConnectionCalculationParams): ConnectionCalculationResult {
@@ -135,7 +156,6 @@ class ConnectionCalculationService {
   }
 
   private calculatePressureDrop(distance: number, flow: number): number {
-    // Simplified pressure drop calculation
     const FRICTION_FACTOR = 0.02;
     const PIPE_DIAMETER = 0.1; // meters
     const FLUID_DENSITY = 1000; // kg/m³ (water)
@@ -143,6 +163,13 @@ class ConnectionCalculationService {
     
     return FRICTION_FACTOR * (distance / PIPE_DIAMETER) * 
            (FLUID_DENSITY * Math.pow(VELOCITY, 2)) / 2;
+  }
+
+  private calculateVRFEfficiency(load: number, cop: number): number {
+    // Simplified VRF efficiency calculation
+    const BASE_EFFICIENCY = 0.85;
+    const LOAD_FACTOR = Math.min(1, load / (cop * 1000)); // Normalize load against capacity
+    return BASE_EFFICIENCY * (1 - (LOAD_FACTOR * 0.15)); // Efficiency decreases with load
   }
 }
 
