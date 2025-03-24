@@ -1,7 +1,7 @@
-
 import { db, auth } from "@/lib/firebase";
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
+import { performance } from 'perf_hooks';
 
 export interface OperationLog {
   type: 'project' | 'module' | 'category' | 'auth' | 'connection' | 'settings';
@@ -14,12 +14,19 @@ export interface OperationLog {
   email?: string;
 }
 
+export interface PerformanceMetric {
+  operation: string;
+  duration: number;
+  timestamp: number;
+}
+
 export interface FirebaseStatus {
   isOnline: boolean;
   connectionState: 'online' | 'offline' | 'unknown';
   authState: 'authenticated' | 'unauthenticated' | 'unknown';
   operationLogs: OperationLog[];
   lastError: string | null;
+  performanceMetrics: PerformanceMetric[];
 }
 
 class FirebaseMonitor {
@@ -28,7 +35,8 @@ class FirebaseMonitor {
     connectionState: 'unknown',
     authState: 'unknown',
     operationLogs: [],
-    lastError: null
+    lastError: null,
+    performanceMetrics: []
   };
 
   private subscribers: ((status: FirebaseStatus) => void)[] = [];
@@ -119,6 +127,35 @@ class FirebaseMonitor {
       this.notifySubscribers();
       throw error;
     }
+  }
+
+  measureOperation<T>(operation: string, fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
+    return fn().finally(() => {
+      const duration = performance.now() - start;
+      this.status.performanceMetrics.push({
+        operation,
+        duration,
+        timestamp: Date.now()
+      });
+      if (duration > 1000) {
+        this.logOperation({
+          type: 'settings',
+          action: 'performance_warning',
+          status: 'warning',
+          timestamp: Date.now(),
+          details: { operation, duration }
+        });
+      }
+    });
+  }
+
+  getPerformanceMetrics(): PerformanceMetric[] {
+    return [...this.status.performanceMetrics];
+  }
+
+  clearPerformanceMetrics(): void {
+    this.status.performanceMetrics = [];
   }
 
   logOperation(log: OperationLog): void {

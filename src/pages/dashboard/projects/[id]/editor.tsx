@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useEffect, useState, useCallback, useRef, useMemo } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -7,6 +7,8 @@ import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
 import { Connection } from '@/services/layout';
+import { ErrorBoundary } from '@/components/ErrorBoundary';
+import firebaseMonitor from '@/services/firebase-monitor';
 
 interface EditorState {
   modules: Module[];
@@ -27,6 +29,10 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
+
+  // Memoize heavy computations
+  const memoizedModules = useMemo(() => modules, [modules]);
+  const memoizedConnections = useMemo(() => connections, [connections]);
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
@@ -97,6 +103,28 @@ export default function LayoutEditorPage() {
     }
   }, [redoStack, modules, connections]);
 
+  // Debounced save
+  const saveTimeout = useRef<NodeJS.Timeout>();
+  const handleSave = useCallback(() => {
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+    }
+    saveTimeout.current = setTimeout(() => {
+      firebaseMonitor.measureOperation('save_layout', async () => {
+        // Implement save logic here
+      });
+    }, 1000);
+  }, [modules, connections]);
+
+  // Cleanup
+  useEffect(() => {
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+      }
+    };
+  }, []);
+
   // Save state for undo when modules or connections change
   useEffect(() => {
     if (isUndoingOrRedoing.current) return;
@@ -126,28 +154,30 @@ export default function LayoutEditorPage() {
 
   return (
     <AppLayout>
-      <div className='flex min-h-screen w-full'>
-        <div className='flex-1 relative'>
-          <SceneContainer
-            modules={modules}
-            selectedModuleId={selectedModuleId}
-            transformMode={transformMode}
-            onModuleSelect={handleModuleSelect}
-            onModuleUpdate={handleModuleUpdate}
-            onModuleDelete={handleModuleDelete}
-            connections={connections}
-            controlsRef={controlsRef}
-            editorPreferences={editorPreferences}
-          />
-          <Toolbox
-            onModuleDragStart={handleModuleDragStart}
-            onSave={() => {}}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            controlsRef={controlsRef}
-          />
+      <ErrorBoundary>
+        <div className='flex min-h-screen w-full'>
+          <div className='flex-1 relative'>
+            <SceneContainer
+              modules={memoizedModules}
+              selectedModuleId={selectedModuleId}
+              transformMode={transformMode}
+              onModuleSelect={handleModuleSelect}
+              onModuleUpdate={handleModuleUpdate}
+              onModuleDelete={handleModuleDelete}
+              connections={memoizedConnections}
+              controlsRef={controlsRef}
+              editorPreferences={editorPreferences}
+            />
+            <Toolbox
+              onModuleDragStart={handleModuleDragStart}
+              onSave={handleSave}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              controlsRef={controlsRef}
+            />
+          </div>
         </div>
-      </div>
+      </ErrorBoundary>
     </AppLayout>
   );
 }

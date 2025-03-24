@@ -1,4 +1,3 @@
-
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -16,6 +15,7 @@ import { SceneContent } from './SceneContent';
 import { useToast } from '@/hooks/use-toast';
 import { GridHelper } from './GridHelper';
 import { EditorPreferences } from '@/services/editor-preferences';
+import firebaseMonitor from '@/services/firebase-monitor';
 
 export interface SceneContainerProps {
   modules: Module[];
@@ -81,6 +81,35 @@ export function SceneContainer({
   const [previewPosition, setPreviewPosition] = useState<[number, number, number]>([0, 0, 0]);
   const [transforming, setTransforming] = useState(false);
   const draggedModuleRef = useRef<Module | null>(null);
+  const frameCount = useRef(0);
+  const lastFpsCheck = useRef(Date.now());
+
+  // Monitor frame rate
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const fps = frameCount.current / ((now - lastFpsCheck.current) / 1000);
+      
+      if (fps < 30) {
+        firebaseMonitor.logOperation({
+          type: 'settings',
+          action: 'performance_warning',
+          status: 'warning',
+          timestamp: now,
+          details: { fps, message: 'Low frame rate detected' }
+        });
+      }
+      
+      frameCount.current = 0;
+      lastFpsCheck.current = now;
+    }, 1000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleFrame = useCallback(() => {
+    frameCount.current++;
+  }, []);
 
   const snapPoints = useMemo(() => {
     return modules.reduce((points: Vector3[], module) => {
@@ -153,6 +182,7 @@ export function SceneContainer({
       onDrop={handleDrop}
     >
       <Canvas 
+        onCreated={handleFrame}
         camera={{ 
           position: [10, 10, 10], 
           zoom: cameraZoom,
