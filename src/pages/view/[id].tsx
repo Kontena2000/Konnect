@@ -5,7 +5,7 @@ import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Ruler, Eye, MessageSquare, Camera } from "lucide-react";
 import { SceneContainer } from "@/components/three/SceneContainer";
-import { Layout, LayoutData } from "@/services/layout";
+import { Layout } from "@/services/layout";
 import layoutService from "@/services/layout";
 import { ViewControls } from "@/components/viewer/ViewControls";
 import { ViewMeasurements } from "@/components/viewer/ViewMeasurements";
@@ -25,10 +25,9 @@ export default function ViewerPage() {
       if (id) {
         try {
           const layoutData = await layoutService.getLayout(id as string);
-          // Convert LayoutData to Layout with required fields
           const fullLayout: Layout = {
             id: id as string,
-            projectId: "preview", // This will be updated when we fetch project details
+            projectId: "preview",
             name: layoutData.name || "Untitled Layout",
             description: layoutData.description,
             modules: layoutData.modules,
@@ -116,19 +115,8 @@ export default function ViewerPage() {
                 modules={layout.modules}
                 connections={layout.connections}
                 readOnly={true}
-                onDropPoint={() => {}}
                 controlsRef={controlsRef}
-                mousePosition={null}
-                draggedDimensions={null}
-                snapPoints={[]}
-                snapLines={[]}
-                onPreviewPositionUpdate={() => {}}
-                previewMesh={null}
-                rotationAngle={0}
-                showGuides={false}
-                previewPosition={[0, 0, 0]}
-                setRotationAngle={() => {}}
-                isTransforming={false}
+                editorPreferences={null}
               />
             </Card>
 
