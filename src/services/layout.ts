@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -229,6 +228,19 @@ const layoutService = {
     } catch (error) {
       console.error('Error fetching project layouts:', error);
       throw new Error('Failed to load project layouts');
+    }
+  },
+
+  async saveLayout(id: string, data: LayoutData): Promise<void> {
+    try {
+      const layoutRef = doc(db, 'layouts', id);
+      await updateDoc(layoutRef, {
+        ...data,
+        updatedAt: serverTimestamp()
+      });
+    } catch (error) {
+      console.error('Error saving layout:', error);
+      throw new LayoutError('Failed to save layout', 'SAVE_FAILED', error);
     }
   }
 };
