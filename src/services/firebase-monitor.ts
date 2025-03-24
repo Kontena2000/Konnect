@@ -1,7 +1,7 @@
+
 import { db, auth } from "@/lib/firebase";
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
-import { performance } from 'perf_hooks';
 
 export interface OperationLog {
   type: 'project' | 'module' | 'category' | 'auth' | 'connection' | 'settings';
@@ -44,10 +44,10 @@ class FirebaseMonitor {
 
   private readonly PERFORMANCE_THRESHOLDS = {
     FPS_MIN: 30,
-    MEMORY_MAX: 90, // 90% of available memory
-    OPERATION_MAX_DURATION: 1000, // 1 second
-    METRICS_HISTORY_LIMIT: 100, // Maximum number of metrics to keep
-    TRIANGLES_WARNING: 100000 // Warning threshold for triangle count
+    MEMORY_MAX: 90,
+    OPERATION_MAX_DURATION: 1000,
+    METRICS_HISTORY_LIMIT: 100,
+    TRIANGLES_WARNING: 100000
   };
 
   private subscribers: ((status: FirebaseStatus) => void)[] = [];
@@ -78,7 +78,6 @@ class FirebaseMonitor {
     const firestore = getFirestore();
     
     try {
-      // Log the test start
       this.logOperation({
         type: 'connection',
         action: 'test_connection',
@@ -86,25 +85,20 @@ class FirebaseMonitor {
         timestamp: Date.now()
       });
 
-      // First test: Disable network
       await disableNetwork(firestore);
       this.status.connectionState = 'offline';
       this.status.isOnline = false;
       this.notifySubscribers();
 
-      // Wait a bit to simulate network transition
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      // Second test: Enable network
       await enableNetwork(firestore);
       this.status.connectionState = 'online';
       this.status.isOnline = true;
 
-      // Third test: Actually try to read from Firestore
       const testCollection = collection(firestore, 'editorPreferences');
       await getDocs(testCollection);
 
-      // Log success
       this.logOperation({
         type: 'connection',
         action: 'test_connection',
@@ -118,8 +112,7 @@ class FirebaseMonitor {
 
       this.notifySubscribers();
     } catch (error) {
-      // Update status and log error
-      this.status.connectionState = 'offline'; // Changed from 'error' to 'offline' to match type
+      this.status.connectionState = 'offline';
       this.status.isOnline = false;
       this.status.lastError = error instanceof Error ? error.message : 'Connection test failed';
       
@@ -141,9 +134,9 @@ class FirebaseMonitor {
   }
 
   measureOperation<T>(operation: string, fn: () => Promise<T>): Promise<T> {
-    const start = performance.now();
+    const start = window.performance.now();
     return fn().finally(() => {
-      const duration = performance.now() - start;
+      const duration = window.performance.now() - start;
       this.status.performanceMetrics.push({
         fps: 0,
         memoryUsage: 0,
@@ -219,12 +212,10 @@ class FirebaseMonitor {
 
     this.status.performanceMetrics.push(currentMetrics);
 
-    // Keep only last N metrics to prevent memory leaks
     if (this.status.performanceMetrics.length > this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT) {
       this.status.performanceMetrics = this.status.performanceMetrics.slice(-this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT);
     }
 
-    // Check thresholds and log warnings
     if (metrics.fps && metrics.fps < this.PERFORMANCE_THRESHOLDS.FPS_MIN) {
       this.logOperation({
         type: 'settings',
