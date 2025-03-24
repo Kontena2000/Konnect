@@ -1,6 +1,6 @@
 
 import { useState } from "react";
-import { Layout, LayoutData } from "@/services/layout";
+import { Layout } from "@/services/layout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -37,9 +37,7 @@ export function LayoutSelector({
         name: newLayoutName,
         description: newLayoutDescription,
         modules: [],
-        connections: [],
-        createdAt: new Date(),
-        updatedAt: new Date()
+        connections: []
       });
 
       // Fetch the complete layout with all fields
@@ -57,6 +55,7 @@ export function LayoutSelector({
         });
       }
     } catch (error) {
+      console.error("Layout creation error:", error);
       toast({
         variant: "destructive",
         title: "Error",
