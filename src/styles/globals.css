@@ -86,11 +86,11 @@
   }
 
   .input-focus {
-    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary;
+    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200;
   }
 
   .button-base {
-    @apply shadow-sm transition-colors duration-200;
+    @apply shadow-sm transition-all duration-200;
   }
 
   .button-primary {
@@ -99,5 +99,21 @@
 
   .button-secondary {
     @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground button-base;
+  }
+
+  .page-container {
+    @apply space-y-8 p-4 md:p-6 lg:p-8;
+  }
+
+  .section-container {
+    @apply space-y-6 p-4 md:p-6;
+  }
+
+  .flex-center {
+    @apply flex items-center justify-center;
+  }
+
+  .flex-between {
+    @apply flex items-center justify-between;
   }
 }
