@@ -25,17 +25,7 @@ export default function ViewerPage() {
       if (id) {
         try {
           const layoutData = await layoutService.getLayout(id as string);
-          const fullLayout: Layout = {
-            id: id as string,
-            projectId: "preview",
-            name: layoutData.name || "Untitled Layout",
-            description: layoutData.description,
-            modules: layoutData.modules,
-            connections: layoutData.connections,
-            createdAt: new Date(),
-            updatedAt: new Date()
-          };
-          setLayout(fullLayout);
+          setLayout(layoutData);
         } catch (error) {
           console.error("Error loading layout:", error);
         } finally {
@@ -48,32 +38,17 @@ export default function ViewerPage() {
   }, [id]);
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center space-y-4">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary"></div>
-          <p className="text-muted-foreground">Loading layout...</p>
-        </div>
-      </div>
-    );
+    return <div>Loading...</div>;
   }
 
   if (!layout) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold">Layout not found</h2>
-          <p className="text-muted-foreground mt-2">The requested layout could not be found.</p>
-          <Button 
-            className="mt-4"
-            onClick={() => router.push("/dashboard/projects")}
-          >
-            Return to Projects
-          </Button>
-        </div>
-      </div>
-    );
+    return <div>Layout not found</div>;
   }
+
+  // No-op handler for onDropPoint in view mode
+  const handleDropPoint = (point: [number, number, number]) => {
+    // This function is intentionally empty since we're in read-only mode
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -115,8 +90,8 @@ export default function ViewerPage() {
                 modules={layout.modules}
                 connections={layout.connections}
                 readOnly={true}
+                onDropPoint={handleDropPoint}
                 controlsRef={controlsRef}
-                editorPreferences={null}
               />
             </Card>
 

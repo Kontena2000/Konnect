@@ -39,13 +39,6 @@ export interface Layout {
   updatedAt: Date;
 }
 
-export interface LayoutData {
-  modules: Module[];
-  connections: Connection[];
-  name?: string;
-  description?: string;
-}
-
 class LayoutError extends Error {
   constructor(
     message: string,
@@ -157,13 +150,13 @@ const layoutService = {
     }
   },
 
-  async getLayout(id: string, user?: AuthUser): Promise<LayoutData> {
+  async getLayout(id: string, user?: AuthUser): Promise<Layout | null> {
     try {
       const layoutRef = doc(db, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
       
       if (!snapshot.exists()) {
-        return { modules: [], connections: [] };
+        return null;
       }
 
       const data = snapshot.data();
@@ -172,11 +165,13 @@ const layoutService = {
         // Special case for ruud@kontena.eu - always has full access
         if (user.email === 'ruud@kontena.eu') {
           return {
+            id: snapshot.id,
+            ...data,
             modules: data.modules || [],
             connections: data.connections || [],
-            name: data.name,
-            description: data.description
-          };
+            createdAt: data.createdAt?.toDate() || new Date(),
+            updatedAt: data.updatedAt?.toDate() || new Date()
+          } as Layout;
         }
 
         const projectRef = doc(db, 'projects', data.projectId);
@@ -193,11 +188,13 @@ const layoutService = {
       }
 
       return {
+        id: snapshot.id,
+        ...data,
         modules: data.modules || [],
         connections: data.connections || [],
-        name: data.name,
-        description: data.description
-      };
+        createdAt: data.createdAt?.toDate() || new Date(),
+        updatedAt: data.updatedAt?.toDate() || new Date()
+      } as Layout;
     } catch (error) {
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to fetch layout', 'FETCH_FAILED', error);
@@ -228,19 +225,6 @@ const layoutService = {
     } catch (error) {
       console.error('Error fetching project layouts:', error);
       throw new Error('Failed to load project layouts');
-    }
-  },
-
-  async saveLayout(id: string, data: LayoutData): Promise<void> {
-    try {
-      const layoutRef = doc(db, 'layouts', id);
-      await updateDoc(layoutRef, {
-        ...data,
-        updatedAt: serverTimestamp()
-      });
-    } catch (error) {
-      console.error('Error saving layout:', error);
-      throw new LayoutError('Failed to save layout', 'SAVE_FAILED', error);
     }
   }
 };

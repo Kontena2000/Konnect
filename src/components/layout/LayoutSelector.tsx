@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Layout } from "@/services/layout";
 import { Button } from "@/components/ui/button";
@@ -6,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus } from "lucide-react";
+import { Plus, Settings } from "lucide-react";
 import layoutService from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 
@@ -40,10 +39,7 @@ export function LayoutSelector({
         connections: []
       });
 
-      // Fetch the complete layout with all fields
-      const layouts = await layoutService.getProjectLayouts(projectId);
-      const newLayout = layouts.find(l => l.id === layoutId);
-      
+      const newLayout = await layoutService.getLayout(layoutId);
       if (newLayout) {
         onLayoutCreate(newLayout);
         setIsCreateOpen(false);
@@ -55,7 +51,6 @@ export function LayoutSelector({
         });
       }
     } catch (error) {
-      console.error("Layout creation error:", error);
       toast({
         variant: "destructive",
         title: "Error",
@@ -65,7 +60,7 @@ export function LayoutSelector({
   };
 
   return (
-    <div className="flex items-center gap-2">
+    <div className='flex items-center gap-2'>
       <Select
         value={currentLayout?.id}
         onValueChange={(value) => {
@@ -73,8 +68,8 @@ export function LayoutSelector({
           if (layout) onLayoutChange(layout);
         }}
       >
-        <SelectTrigger className="w-[200px]">
-          <SelectValue placeholder="Select layout" />
+        <SelectTrigger className='w-[200px]'>
+          <SelectValue placeholder='Select layout' />
         </SelectTrigger>
         <SelectContent>
           {layouts.map((layout) => (
@@ -87,8 +82,8 @@ export function LayoutSelector({
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogTrigger asChild>
-          <Button variant="outline" size="icon">
-            <Plus className="h-4 w-4" />
+          <Button variant='outline' size='icon'>
+            <Plus className='h-4 w-4' />
           </Button>
         </DialogTrigger>
         <DialogContent>
@@ -98,34 +93,34 @@ export function LayoutSelector({
               Create a new layout for your project
             </DialogDescription>
           </DialogHeader>
-          <div className="space-y-4">
+          <div className='space-y-4'>
             <div>
-              <Label htmlFor="name">Name</Label>
+              <Label htmlFor='name'>Name</Label>
               <Input
-                id="name"
+                id='name'
                 value={newLayoutName}
                 onChange={(e) => setNewLayoutName(e.target.value)}
-                placeholder="Layout name"
+                placeholder='Layout name'
               />
             </div>
             <div>
-              <Label htmlFor="description">Description</Label>
+              <Label htmlFor='description'>Description</Label>
               <Input
-                id="description"
+                id='description'
                 value={newLayoutDescription}
                 onChange={(e) => setNewLayoutDescription(e.target.value)}
-                placeholder="Layout description (optional)"
+                placeholder='Layout description (optional)'
               />
             </div>
           </div>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsCreateOpen(false)}>
+            <Button variant='outline' onClick={() => setIsCreateOpen(false)}>
               Cancel
             </Button>
             <Button 
               onClick={handleCreateLayout} 
               disabled={!newLayoutName}
-              className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
+              className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
             >
               Create Layout
             </Button>
