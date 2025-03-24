@@ -22,6 +22,23 @@ interface PerformanceMetrics {
   fps: number;
 }
 
+const getMemoryUsage = (): number => {
+  try {
+    if (typeof window !== 'undefined' && 
+        window.performance && 
+        (window.performance as any).memory) {
+      return ((window.performance as any).memory.usedJSHeapSize / 
+              (window.performance as any).memory.jsHeapSizeLimit) * 100;
+    }
+    return 0;
+  } catch {
+    return 0;
+  }
+};
+
+// Add performance monitoring interval
+const PERFORMANCE_CHECK_INTERVAL = 1000; // Check every second
+
 const getPerformanceMetrics = (): PerformanceMetrics => {
   const metrics: PerformanceMetrics = {
     memory: 0,
@@ -240,44 +257,49 @@ export function SceneContainer({
     }
   }, [previewMesh]);
 
-  // Monitor scene performance
+  // Enhanced performance monitoring
   useEffect(() => {
     let frameId: number;
     let lastTime = performance.now();
     let frames = 0;
+    let checkInterval: NodeJS.Timeout;
 
     const monitorPerformance = () => {
       frames++;
-      const currentTime = performance.now();
-      const elapsed = currentTime - lastTime;
-
-      if (elapsed >= 1000) {
-        const fps = Math.round((frames * 1000) / elapsed);
-        const metrics = getPerformanceMetrics();
-        
-        firebaseMonitor.logPerformanceMetric({
-          fps,
-          timestamp: currentTime,
-          memoryUsage: metrics.memory,
-          operationDuration: elapsed
-        });
-
-        frames = 0;
-        lastTime = currentTime;
-      }
-
       frameId = requestAnimationFrame(monitorPerformance);
     };
 
+    const reportMetrics = () => {
+      const currentTime = performance.now();
+      const elapsed = currentTime - lastTime;
+      const fps = Math.round((frames * 1000) / elapsed);
+      const memoryUsage = getMemoryUsage();
+      
+      firebaseMonitor.logPerformanceMetric({
+        fps,
+        timestamp: currentTime,
+        memoryUsage,
+        operationDuration: elapsed,
+        sceneObjects: modules.length
+      });
+
+      frames = 0;
+      lastTime = currentTime;
+    };
+
     frameId = requestAnimationFrame(monitorPerformance);
+    checkInterval = setInterval(reportMetrics, PERFORMANCE_CHECK_INTERVAL);
 
     return () => {
       if (frameId) {
         cancelAnimationFrame(frameId);
       }
+      if (checkInterval) {
+        clearInterval(checkInterval);
+      }
       cleanupRefs();
     };
-  }, [cleanupRefs]);
+  }, [modules.length, cleanupRefs]);
 
   // Cleanup on unmount
   useEffect(() => {

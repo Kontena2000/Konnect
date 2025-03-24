@@ -1,4 +1,3 @@
-
 import { db, auth } from "@/lib/firebase";
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from "firebase/firestore";
 import { onAuthStateChanged } from "firebase/auth";
@@ -74,6 +73,20 @@ class FirebaseMonitor {
     });
   }
 
+  private getMemoryUsage(): number {
+    try {
+      if (typeof window !== 'undefined' && 
+          window.performance && 
+          (window.performance as any).memory) {
+        return ((window.performance as any).memory.usedJSHeapSize / 
+                (window.performance as any).memory.jsHeapSizeLimit) * 100;
+      }
+      return 0;
+    } catch {
+      return 0;
+    }
+  }
+
   async testConnection(): Promise<void> {
     const firestore = getFirestore();
     
@@ -137,19 +150,26 @@ class FirebaseMonitor {
     const start = window.performance.now();
     return fn().finally(() => {
       const duration = window.performance.now() - start;
+      const memoryUsage = this.getMemoryUsage();
+      
       this.status.performanceMetrics.push({
         fps: 0,
-        memoryUsage: 0,
+        memoryUsage,
         operationDuration: duration,
         timestamp: Date.now()
       });
-      if (duration > 1000) {
+
+      if (duration > this.PERFORMANCE_THRESHOLDS.OPERATION_MAX_DURATION) {
         this.logOperation({
           type: 'settings',
           action: 'performance_warning',
           status: 'warning',
           timestamp: Date.now(),
-          details: { operation, duration }
+          details: { 
+            operation, 
+            duration,
+            memoryUsage
+          }
         });
       }
     });
@@ -201,21 +221,32 @@ class FirebaseMonitor {
   }
 
   logPerformanceMetric(metrics: Partial<PerformanceMetrics>): void {
-    const currentMetrics = {
-      fps: metrics.fps || 0,
-      memoryUsage: metrics.memoryUsage || 0,
-      operationDuration: metrics.operationDuration || 0,
-      timestamp: Date.now(),
-      sceneObjects: metrics.sceneObjects,
-      triangles: metrics.triangles
-    };
+    try {
+      const memoryUsage = this.getMemoryUsage();
+      const currentMetrics = {
+        fps: metrics.fps || 0,
+        memoryUsage: metrics.memoryUsage || memoryUsage,
+        operationDuration: metrics.operationDuration || 0,
+        timestamp: Date.now(),
+        sceneObjects: metrics.sceneObjects,
+        triangles: metrics.triangles
+      };
 
-    this.status.performanceMetrics.push(currentMetrics);
+      // Keep metrics history within limit
+      if (this.status.performanceMetrics.length > this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT) {
+        this.status.performanceMetrics = this.status.performanceMetrics.slice(-this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT);
+      }
 
-    if (this.status.performanceMetrics.length > this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT) {
-      this.status.performanceMetrics = this.status.performanceMetrics.slice(-this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT);
+      this.status.performanceMetrics.push(currentMetrics);
+
+      // Check performance thresholds
+      this.checkPerformanceThresholds(currentMetrics);
+    } catch (error) {
+      console.error('Error logging performance metric:', error);
     }
+  }
 
+  private checkPerformanceThresholds(metrics: PerformanceMetrics): void {
     if (metrics.fps && metrics.fps < this.PERFORMANCE_THRESHOLDS.FPS_MIN) {
       this.logOperation({
         type: 'settings',
@@ -226,17 +257,7 @@ class FirebaseMonitor {
       });
     }
 
-    if (metrics.triangles && metrics.triangles > this.PERFORMANCE_THRESHOLDS.TRIANGLES_WARNING) {
-      this.logOperation({
-        type: 'settings',
-        action: 'performance_warning',
-        status: 'warning',
-        timestamp: Date.now(),
-        details: { triangles: metrics.triangles, message: 'High polygon count detected' }
-      });
-    }
-
-    if (metrics.memoryUsage && metrics.memoryUsage > this.PERFORMANCE_THRESHOLDS.MEMORY_MAX) {
+    if (metrics.memoryUsage > this.PERFORMANCE_THRESHOLDS.MEMORY_MAX) {
       this.logOperation({
         type: 'settings',
         action: 'performance_warning',
@@ -246,7 +267,7 @@ class FirebaseMonitor {
       });
     }
 
-    if (metrics.operationDuration && metrics.operationDuration > this.PERFORMANCE_THRESHOLDS.OPERATION_MAX_DURATION) {
+    if (metrics.operationDuration > this.PERFORMANCE_THRESHOLDS.OPERATION_MAX_DURATION) {
       this.logOperation({
         type: 'settings',
         action: 'performance_warning',
