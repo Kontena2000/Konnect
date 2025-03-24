@@ -4,7 +4,7 @@ import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useCallback, useState, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import * as THREE from "three";
 import { Vector2, Vector3, Box3, Line3 } from "three";
 import { cn } from "@/lib/utils";
@@ -83,34 +83,45 @@ export function SceneContainer({
   const draggedModuleRef = useRef<Module | null>(null);
   const frameCount = useRef(0);
   const lastFpsCheck = useRef(Date.now());
+  const animationFrameId = useRef<number>();
 
-  // Monitor frame rate
+  // Optimized frame rate monitoring
   useEffect(() => {
-    const interval = setInterval(() => {
+    const checkPerformance = () => {
       const now = Date.now();
-      const fps = frameCount.current / ((now - lastFpsCheck.current) / 1000);
+      const elapsedTime = now - lastFpsCheck.current;
       
-      if (fps < 30) {
-        firebaseMonitor.logOperation({
-          type: 'settings',
-          action: 'performance_warning',
-          status: 'warning',
+      if (elapsedTime >= 1000) { // Check every second
+        const fps = Math.round((frameCount.current / elapsedTime) * 1000);
+        
+        firebaseMonitor.logPerformanceMetric({
+          fps,
           timestamp: now,
-          details: { fps, message: 'Low frame rate detected' }
+          memoryUsage: performance.memory?.usedJSHeapSize / performance.memory?.jsHeapSizeLimit * 100 || 0
         });
+        
+        frameCount.current = 0;
+        lastFpsCheck.current = now;
       }
       
-      frameCount.current = 0;
-      lastFpsCheck.current = now;
-    }, 1000);
+      frameCount.current++;
+      animationFrameId.current = requestAnimationFrame(checkPerformance);
+    };
 
-    return () => clearInterval(interval);
+    animationFrameId.current = requestAnimationFrame(checkPerformance);
+
+    return () => {
+      if (animationFrameId.current) {
+        cancelAnimationFrame(animationFrameId.current);
+      }
+    };
   }, []);
 
   const handleFrame = useCallback(() => {
     frameCount.current++;
   }, []);
 
+  // Memoize expensive computations
   const snapPoints = useMemo(() => {
     return modules.reduce((points: Vector3[], module) => {
       const pos = new Vector3(...module.position);

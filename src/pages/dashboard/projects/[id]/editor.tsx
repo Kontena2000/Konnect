@@ -56,9 +56,21 @@ export default function LayoutEditorPage() {
 
   // Handle module updates
   const handleModuleUpdate = useCallback((moduleId: string, updates: Partial<Module>) => {
-    setModules(prev => prev.map(module => 
-      module.id === moduleId ? { ...module, ...updates } : module
-    ));
+    const startTime = performance.now();
+    
+    setModules(prev => {
+      const newModules = prev.map(module => 
+        module.id === moduleId ? { ...module, ...updates } : module
+      );
+      
+      const duration = performance.now() - startTime;
+      firebaseMonitor.logPerformanceMetric({
+        operationDuration: duration,
+        timestamp: Date.now()
+      });
+      
+      return newModules;
+    });
   }, []);
 
   // Handle module deletion
@@ -103,20 +115,25 @@ export default function LayoutEditorPage() {
     }
   }, [redoStack, modules, connections]);
 
-  // Debounced save
+  // Debounced save with performance monitoring
   const saveTimeout = useRef<NodeJS.Timeout>();
   const handleSave = useCallback(() => {
     if (saveTimeout.current) {
       clearTimeout(saveTimeout.current);
     }
+
+    const startTime = performance.now();
     saveTimeout.current = setTimeout(() => {
-      firebaseMonitor.measureOperation('save_layout', async () => {
-        // Implement save logic here
+      // Implement save logic here
+      const duration = performance.now() - startTime;
+      firebaseMonitor.logPerformanceMetric({
+        operationDuration: duration,
+        timestamp: Date.now()
       });
     }, 1000);
-  }, [modules, connections]);
+  }, []);
 
-  // Cleanup
+  // Cleanup timeouts
   useEffect(() => {
     return () => {
       if (saveTimeout.current) {

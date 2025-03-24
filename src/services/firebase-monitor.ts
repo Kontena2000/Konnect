@@ -6,7 +6,7 @@ import { performance } from 'perf_hooks';
 export interface OperationLog {
   type: 'project' | 'module' | 'category' | 'auth' | 'connection' | 'settings';
   action: string;
-  status: 'success' | 'error' | 'pending';
+  status: 'success' | 'error' | 'pending' | 'warning';
   timestamp: number;
   details?: Record<string, unknown>;
   error?: string;
@@ -14,9 +14,10 @@ export interface OperationLog {
   email?: string;
 }
 
-export interface PerformanceMetric {
-  operation: string;
-  duration: number;
+export interface PerformanceMetrics {
+  fps: number;
+  memoryUsage: number;
+  operationDuration: number;
   timestamp: number;
 }
 
@@ -26,7 +27,7 @@ export interface FirebaseStatus {
   authState: 'authenticated' | 'unauthenticated' | 'unknown';
   operationLogs: OperationLog[];
   lastError: string | null;
-  performanceMetrics: PerformanceMetric[];
+  performanceMetrics: PerformanceMetrics[];
 }
 
 class FirebaseMonitor {
@@ -37,6 +38,12 @@ class FirebaseMonitor {
     operationLogs: [],
     lastError: null,
     performanceMetrics: []
+  };
+
+  private readonly PERFORMANCE_THRESHOLDS = {
+    FPS_MIN: 30,
+    MEMORY_MAX: 90, // 90% of available memory
+    OPERATION_MAX_DURATION: 1000 // 1 second
   };
 
   private subscribers: ((status: FirebaseStatus) => void)[] = [];
@@ -134,8 +141,9 @@ class FirebaseMonitor {
     return fn().finally(() => {
       const duration = performance.now() - start;
       this.status.performanceMetrics.push({
-        operation,
-        duration,
+        fps: 0,
+        memoryUsage: 0,
+        operationDuration: duration,
         timestamp: Date.now()
       });
       if (duration > 1000) {
@@ -150,7 +158,7 @@ class FirebaseMonitor {
     });
   }
 
-  getPerformanceMetrics(): PerformanceMetric[] {
+  getPerformanceMetrics(): PerformanceMetrics[] {
     return [...this.status.performanceMetrics];
   }
 
@@ -193,6 +201,43 @@ class FirebaseMonitor {
 
   private notifySubscribers(): void {
     this.subscribers.forEach(callback => callback({ ...this.status }));
+  }
+
+  logPerformanceMetric(metrics: Partial<PerformanceMetrics>): void {
+    const currentMetrics = {
+      fps: metrics.fps || 0,
+      memoryUsage: metrics.memoryUsage || 0,
+      operationDuration: metrics.operationDuration || 0,
+      timestamp: Date.now()
+    };
+
+    this.status.performanceMetrics.push(currentMetrics);
+
+    // Keep only last 100 metrics
+    if (this.status.performanceMetrics.length > 100) {
+      this.status.performanceMetrics.shift();
+    }
+
+    // Check thresholds and log warnings
+    if (metrics.fps && metrics.fps < this.PERFORMANCE_THRESHOLDS.FPS_MIN) {
+      this.logOperation({
+        type: 'settings',
+        action: 'performance_warning',
+        status: 'warning',
+        timestamp: Date.now(),
+        details: { fps: metrics.fps, message: 'Low frame rate detected' }
+      });
+    }
+
+    if (metrics.operationDuration && metrics.operationDuration > this.PERFORMANCE_THRESHOLDS.OPERATION_MAX_DURATION) {
+      this.logOperation({
+        type: 'settings',
+        action: 'performance_warning',
+        status: 'warning',
+        timestamp: Date.now(),
+        details: { duration: metrics.operationDuration, message: 'Operation took too long' }
+      });
+    }
   }
 }
 
