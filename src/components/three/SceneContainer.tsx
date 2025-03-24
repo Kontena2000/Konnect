@@ -3,18 +3,12 @@ import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
 import { Connection } from "@/services/layout";
-import { ConnectionType } from "@/types/connection";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
-import { Vector2, Vector3, Box3, Line3, Material, Mesh } from "three";
-import { cn } from "@/lib/utils";
+import { Vector2, Vector3, Line3, Mesh } from "three";
 import { SceneElements } from "./SceneElements";
-import { Html } from '@react-three/drei';
-import { Button } from '@/components/ui/button';
 import { SceneContent } from './SceneContent';
 import { useToast } from '@/hooks/use-toast';
-import { GridHelper } from './GridHelper';
 import { EditorPreferences } from '@/services/editor-preferences';
 import firebaseMonitor from '@/services/firebase-monitor';
 
@@ -33,6 +27,9 @@ interface SceneContainerProps {
   onDropPoint?: (point: [number, number, number]) => void;
   gridSnap?: boolean;
   environmentalElements?: ElementType[];
+  onStartConnection?: (moduleId: string, point: Vector3, type: string) => void;
+  onEndConnection?: (moduleId: string, point: Vector3, type: string) => void;
+  activeConnection?: { sourceModuleId: string; sourcePoint: Vector3; type: string } | null;
 }
 
 export function SceneContainer({
@@ -49,14 +46,17 @@ export function SceneContainer({
   readOnly = false,
   onDropPoint,
   gridSnap = false,
-  environmentalElements = []
+  environmentalElements = [],
+  onStartConnection,
+  onEndConnection,
+  activeConnection
 }: SceneContainerProps) {
   const { setNodeRef } = useDroppable({ id: 'scene' });
   const [performanceMetrics, setPerformanceMetrics] = useState({ fps: 60, memoryUsage: 0 });
   const frameRef = useRef<number>();
   const lastTimeRef = useRef<number>(performance.now());
 
-  // Additional state for SceneContent props
+  // Scene content state
   const [mousePosition, setMousePosition] = useState<Vector2 | null>(null);
   const [draggedDimensions, setDraggedDimensions] = useState<{ length: number; width: number; height: number; } | null>(null);
   const [snapPoints, setSnapPoints] = useState<Vector3[]>([]);
@@ -67,22 +67,22 @@ export function SceneContainer({
   const [isTransforming, setIsTransforming] = useState(false);
   const [showGuides, setShowGuides] = useState(true);
 
-  // Performance monitoring
+  // Performance monitoring with safe memory check
   const monitorPerformance = useCallback(() => {
     const currentTime = performance.now();
     const deltaTime = currentTime - lastTimeRef.current;
     const fps = Math.round(1000 / deltaTime);
     
     let memoryUsage = 0;
-    try {
-      if (typeof window !== 'undefined' && 
-          window.performance && 
-          (performance as any).memory) {
-        memoryUsage = ((performance as any).memory.usedJSHeapSize / 
-                       (performance as any).memory.jsHeapSizeLimit) * 100;
+    if (typeof window !== 'undefined' && window.performance) {
+      try {
+        const memory = (performance as any).memory;
+        if (memory) {
+          memoryUsage = (memory.usedJSHeapSize / memory.jsHeapSizeLimit) * 100;
+        }
+      } catch (error) {
+        console.warn('Memory metrics not available:', error);
       }
-    } catch (error) {
-      console.error('Error monitoring memory:', error);
     }
 
     setPerformanceMetrics({ fps, memoryUsage });
