@@ -3,13 +3,14 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from "lucide-react";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid, Power, Network, Snowflake, Droplets, Flame, ShieldCheck } from "lucide-react";
 import { ModuleLibrary } from "@/components/three/ModuleLibrary";
 import { cn } from "@/lib/utils";
 import { Module } from "@/types/module";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { toast } from '@/hooks/use-toast';
+import { ConnectionType } from "@/types/connection";
 
 interface ToolboxProps {
   onModuleDragStart: (module: Module) => void;
@@ -17,14 +18,27 @@ interface ToolboxProps {
   onUndo?: () => void;
   onRedo?: () => void;
   controlsRef?: React.RefObject<any>;
+  onConnectionTypeSelect?: (type: ConnectionType | null) => void;
+  activeConnectionType?: ConnectionType | null;
 }
+
+const connectionTypes: { type: ConnectionType; icon: React.ReactNode; label: string; color: string }[] = [
+  { type: "power", icon: <Power className="h-5 w-5" />, label: "Power", color: "text-green-500" },
+  { type: "network", icon: <Network className="h-5 w-5" />, label: "Network", color: "text-blue-500" },
+  { type: "cooling", icon: <Snowflake className="h-5 w-5" />, label: "Cooling", color: "text-cyan-500" },
+  { type: "water", icon: <Droplets className="h-5 w-5" />, label: "Water", color: "text-sky-500" },
+  { type: "gas", icon: <Flame className="h-5 w-5" />, label: "Gas", color: "text-amber-500" },
+  { type: "security", icon: <ShieldCheck className="h-5 w-5" />, label: "Security", color: "text-red-500" }
+];
 
 export function Toolbox({ 
   onModuleDragStart, 
   onSave, 
   onUndo, 
   onRedo,
-  controlsRef
+  controlsRef,
+  onConnectionTypeSelect,
+  activeConnectionType
 }: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("modules");
@@ -35,6 +49,37 @@ export function Toolbox({
       title: "Module Library",
       icon: <Box className="h-5 w-5" />,
       content: <ModuleLibrary onDragStart={onModuleDragStart} />
+    },
+    {
+      id: "connections",
+      title: "Connections",
+      icon: <Network className="h-5 w-5" />,
+      content: (
+        <div className="p-2 space-y-2">
+          <div className="grid grid-cols-2 gap-2">
+            {connectionTypes.map(({ type, icon, label, color }) => (
+              <Button
+                key={type}
+                variant={activeConnectionType === type ? "default" : "outline"}
+                className={cn(
+                  "w-full flex items-center gap-2",
+                  activeConnectionType === type ? "bg-accent" : "",
+                  color
+                )}
+                onClick={() => onConnectionTypeSelect?.(activeConnectionType === type ? null : type)}
+              >
+                {icon}
+                <span className="text-sm">{label}</span>
+              </Button>
+            ))}
+          </div>
+          {activeConnectionType && (
+            <div className="text-sm text-muted-foreground mt-4 p-2 bg-muted rounded-md">
+              Click on connection points to create a {activeConnectionType} connection between modules
+            </div>
+          )}
+        </div>
+      )
     },
     {
       id: "layers",
@@ -67,7 +112,7 @@ export function Toolbox({
       )}
       style={{ marginLeft: 'auto' }}
     >
-      {/* Header */}
+      {/* Rest of the component remains the same */}
       <div className='flex h-16 items-center justify-between px-4 border-b'>
         {collapsed ? (
           <Button
@@ -93,7 +138,6 @@ export function Toolbox({
         )}
       </div>
 
-      {/* Main content area */}
       <div className='flex-1 overflow-hidden'>
         <ScrollArea className='h-full'>
           {collapsed ? (
@@ -146,11 +190,9 @@ export function Toolbox({
         </ScrollArea>
       </div>
 
-      {/* Bottom toolbar */}
       <div className='border-t p-2 bg-background/80 backdrop-blur-sm'>
         <TooltipProvider>
           <div className='space-y-2'>
-            {/* Save button - Always visible and prominent */}
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
@@ -174,7 +216,6 @@ export function Toolbox({
               'grid gap-2',
               collapsed ? 'grid-cols-1' : 'grid-cols-2'
             )}>
-              {/* Undo/Redo group */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
@@ -209,7 +250,6 @@ export function Toolbox({
                 </TooltipContent>
               </Tooltip>
 
-              {/* View controls */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
