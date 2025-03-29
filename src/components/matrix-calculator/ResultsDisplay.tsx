@@ -49,20 +49,12 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
   };
   
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
-        <h2 className="text-2xl font-bold">Configuration Results</h2>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="outline" size="sm" disabled>
-            <Download className="h-4 w-4 mr-2" />
-            Export PDF
-          </Button>
-          <Button variant="outline" size="sm" disabled>
-            <Share2 className="h-4 w-4 mr-2" />
-            Share
-          </Button>
-          <Button size="sm" onClick={handleSave} disabled={saving}>
-            <Save className="h-4 w-4 mr-2" />
+    <div className='space-y-6'>
+      <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4'>
+        <h2 className='text-2xl font-bold'>Configuration Results</h2>
+        <div className='flex flex-wrap gap-2'>
+          <Button size='sm' onClick={handleSave} disabled={saving}>
+            <Save className='h-4 w-4 mr-2' />
             {saving ? 'Saving...' : 'Save Configuration'}
           </Button>
         </div>
