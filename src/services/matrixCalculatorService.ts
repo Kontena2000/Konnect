@@ -137,7 +137,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
     case 'dlc':
       return {
         type: 'dlc',
-        totalCoolingCapacity: cooling.totalCapacity,
+        totalCapacity: cooling.totalCapacity,
         dlcCoolingCapacity: cooling.dlcCoolingCapacity || 0,
         residualCoolingCapacity: cooling.residualCoolingCapacity || 0,
         dlcFlowRate: (cooling.dlcCoolingCapacity || 0) * params.cooling.flowRateFactor,
@@ -148,7 +148,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
     case 'hybrid':
       return {
         type: 'hybrid',
-        totalCoolingCapacity: cooling.totalCapacity,
+        totalCapacity: cooling.totalCapacity,
         dlcPortion: cooling.dlcPortion || 0,
         airPortion: cooling.airPortion || 0,
         dlcFlowRate: (cooling.dlcPortion || 0) * params.cooling.flowRateFactor,
@@ -161,9 +161,9 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
     case 'immersion':
       return {
         type: 'immersion',
-        totalCoolingCapacity: cooling.totalCapacity,
+        totalCapacity: cooling.totalCapacity,
         tanksNeeded: Math.ceil(totalRacks / 4),
-        flowRate: cooling.totalCoolingCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
+        flowRate: cooling.totalCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
         pue: cooling.pueImpact
       };
       
@@ -173,7 +173,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
       
       return {
         type: 'air',
-        totalCoolingCapacity: cooling.totalCapacity,
+        totalCapacity: cooling.totalCapacity,
         rdhxUnits,
         rdhxModel: kwPerRack <= 15 ? 'basic' : kwPerRack <= 30 ? 'standard' : 'highDensity',
         pue: cooling.pueImpact
@@ -358,7 +358,8 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
                         pricing.cooler.bufferTank +
                         pricing.piping.dn110PerMeter * 50; // Less piping than full DLC
       
-      const airPortion = pricing.rdhx.average * Math.ceil(config.cooling.residualCoolingCapacity / 150);
+      // Use airPortion property for hybrid cooling
+      const airPortion = pricing.rdhx.average * Math.ceil((config.cooling.airPortion || 0) / 150);
       
       coolingCost = dlcPortion + airPortion;
     } else if (config.cooling.type === 'immersion') {
