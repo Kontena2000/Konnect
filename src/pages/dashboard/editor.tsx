@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
@@ -8,7 +9,7 @@ import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
 import { Undo2, Redo2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { layoutService } from "@/services/layout";
+import layoutService from "@/services/layout";
 import { Module } from "@/types/module";
 import { Connection } from "@/types/connection";
 
@@ -21,6 +22,8 @@ export default function BlankEditorPage() {
   const [history, setHistory] = useState<Array<{ modules: Module[], connections: Connection[] }>>([]);
   const [historyIndex, setHistoryIndex] = useState(-1);
   const [saving, setSaving] = useState(false);
+  const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>(undefined);
+  const controlsRef = useRef(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -46,7 +49,7 @@ export default function BlankEditorPage() {
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
-  }, [modules, connections]);
+  }, [modules, connections, history, historyIndex]);
 
   const handleUndo = () => {
     if (historyIndex > 0) {
@@ -71,12 +74,13 @@ export default function BlankEditorPage() {
     
     setSaving(true);
     try {
-      await layoutService.saveLayout({
+      await layoutService.createLayout({
         name: "Blank Layout",
         description: "Created from blank editor",
         modules,
         connections,
         userId: user.uid,
+        projectId: "default", // You might want to change this to a real project ID
         createdAt: new Date(),
         updatedAt: new Date()
       });
@@ -97,6 +101,19 @@ export default function BlankEditorPage() {
     }
   };
 
+  const handleModuleDragStart = (module: Module) => {
+    // Handle module drag start logic here
+    console.log("Module drag started:", module);
+  };
+
+  const handleModuleSelect = (moduleId: string) => {
+    setSelectedModuleId(moduleId === selectedModuleId ? undefined : moduleId);
+  };
+
+  const handleModuleUpdate = (moduleId: string, updates: Partial<Module>) => {
+    setModules(prev => prev.map(m => m.id === moduleId ? { ...m, ...updates } : m));
+  };
+
   if (loading) {
     return <div className="flex items-center justify-center h-screen">Loading...</div>;
   }
@@ -109,7 +126,13 @@ export default function BlankEditorPage() {
       </Head>
       
       <div className="flex h-full">
-        <Toolbox />
+        <Toolbox 
+          onModuleDragStart={handleModuleDragStart}
+          onSave={handleSave}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          controlsRef={controlsRef}
+        />
         
         <div className="flex-1 flex flex-col">
           <div className="bg-white border-b p-2 flex items-center justify-between">
@@ -147,9 +170,11 @@ export default function BlankEditorPage() {
           <div className="flex-1 relative">
             <SceneContainer
               modules={modules}
-              setModules={setModules}
+              onModuleSelect={handleModuleSelect}
+              selectedModuleId={selectedModuleId}
+              onModuleUpdate={handleModuleUpdate}
               connections={connections}
-              setConnections={setConnections}
+              controlsRef={controlsRef}
             />
           </div>
         </div>

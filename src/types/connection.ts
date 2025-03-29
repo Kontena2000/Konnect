@@ -1,5 +1,5 @@
 
-export type ConnectionType = "power" | "water-supply" | "water-return";
+export type ConnectionType = "power" | "water-supply" | "water-return" | "network" | "cooling" | "water" | "gas" | "security";
 
 export type ConnectionSide = "north" | "east" | "south" | "west";
 
@@ -9,6 +9,7 @@ export interface ConnectionPoint {
   side: ConnectionSide;
   types: ConnectionType[];
   position: [number, number, number];
+  type?: ConnectionType; // Added for backward compatibility
   isInput?: boolean;
   isOutput?: boolean;
 }
@@ -18,15 +19,18 @@ export interface Connection {
   name?: string;
   sourceModuleId: string;
   targetModuleId: string;
-  sourcePointId: string;
-  targetPointId: string;
+  sourcePointId?: string;
+  targetPointId?: string;
   sourcePoint: [number, number, number];
   targetPoint: [number, number, number];
   type: ConnectionType;
-  maxCapacity: number;
-  currentFlow: number;
+  maxCapacity?: number;
+  currentFlow?: number;
+  capacity?: number; // Added for backward compatibility
+  currentLoad?: number; // Added for backward compatibility
   voltage?: "230" | "400" | "480";
-  path: [number, number, number][];
+  networkType?: "ethernet" | "fiber" | "wifi";
+  path?: [number, number, number][];
   intermediatePoints?: [number, number, number][];
 }
 

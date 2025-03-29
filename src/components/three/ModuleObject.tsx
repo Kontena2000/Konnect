@@ -175,7 +175,7 @@ export function ModuleObject({
         <ConnectionPoint
           key={`${module.id}-connection-${index}`}
           position={point.position}
-          type={point.type}
+          type={point.types?.[0] || point.type || "power"}
           moduleId={module.id}
         />
       ))}
