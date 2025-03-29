@@ -6,6 +6,11 @@ import editorPreferencesService, { EditorPreferences } from "@/services/editor-p
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { LayoutEditorSettings } from "@/components/settings/LayoutEditorSettings";
 import { MatrixCalculatorSettings } from "@/components/settings/MatrixCalculatorSettings";
+import { ModuleManager } from "@/components/settings/ModuleManager";
+import { EditorSettings } from "@/components/settings/EditorSettings";
+import { CalculationSettings } from "@/components/settings/CalculationSettings";
+import { PricingEditor } from "@/components/settings/PricingEditor";
+import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
@@ -45,30 +50,38 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
-          <TabsList className="w-full sm:w-auto">
-            <TabsTrigger value="general">General Settings</TabsTrigger>
-            <TabsTrigger value="layout-editor">Layout Editor</TabsTrigger>
-            <TabsTrigger value="matrix-calculator">Matrix Calculator</TabsTrigger>
+        <Tabs defaultValue={tab || 'general'} value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+          <TabsList className='w-full'>
+            <TabsTrigger value='general'>General</TabsTrigger>
+            <TabsTrigger value='modules'>Modules</TabsTrigger>
+            <TabsTrigger value='editor'>Editor</TabsTrigger>
+            <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
+            {user?.role === 'admin' && <TabsTrigger value='firebase'>Firebase</TabsTrigger>}
           </TabsList>
 
-          <TabsContent value="general">
-            {user && <GeneralSettings userId={user.uid} />}
+          <TabsContent value='general' className='space-y-6'>
+            <GeneralSettings userId={user?.uid || ''} />
           </TabsContent>
 
-          <TabsContent value="layout-editor">
-            {preferences && user && (
-              <LayoutEditorSettings
-                preferences={preferences}
-                onUpdate={setPreferences}
-                userId={user.uid}
-              />
-            )}
+          <TabsContent value='modules' className='space-y-6'>
+            <ModuleManager userId={user?.uid || ''} userRole={user?.role} />
           </TabsContent>
 
-          <TabsContent value="matrix-calculator">
-            {user && <MatrixCalculatorSettings userId={user.uid} />}
+          <TabsContent value='editor' className='space-y-6'>
+            <EditorSettings userId={user?.uid || ''} />
           </TabsContent>
+
+          <TabsContent value='matrix-calculator' className='space-y-6'>
+            <MatrixCalculatorSettings userId={user?.uid || ''} />
+            <CalculationSettings readOnly={user?.role !== 'admin'} />
+            <PricingEditor readOnly={user?.role !== 'admin'} />
+          </TabsContent>
+
+          {user?.role === 'admin' && (
+            <TabsContent value='firebase' className='space-y-6'>
+              <FirebaseMonitor />
+            </TabsContent>
+          )}
         </Tabs>
       </div>
     </AppLayout>
