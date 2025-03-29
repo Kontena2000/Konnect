@@ -210,11 +210,20 @@ function calculatePaybackPeriod(result: any): number {
  * Analyze a configuration and provide recommendations for improvement
  */
 function analyzeConfigurationImpl(config: any): any {
+  // If config is not valid, return a basic analysis
+  if (!config || typeof config !== 'object') {
+    return {
+      recommendations: [],
+      optimizationPotential: 'low',
+      summary: 'No optimization opportunities identified due to incomplete data'
+    };
+  }
+
   const recommendations = [];
   
-  // Check power density
-  if (config.rack.powerDensity > 100) {
-    if (config.cooling.type === 'air-cooled') {
+  // Check power density - with null checks
+  if (config.rack?.powerDensity > 100) {
+    if (config.cooling?.type === 'air-cooled' || config.cooling?.type === 'air') {
       recommendations.push({
         type: 'cooling',
         severity: 'high',
@@ -224,8 +233,8 @@ function analyzeConfigurationImpl(config: any): any {
     }
   }
   
-  // Check PUE
-  if (config.sustainability.pue > 1.3) {
+  // Check PUE - with null checks
+  if (config.sustainability?.pue > 1.3) {
     recommendations.push({
       type: 'efficiency',
       severity: 'medium',
@@ -234,8 +243,8 @@ function analyzeConfigurationImpl(config: any): any {
     });
   }
   
-  // Check redundancy
-  if (config.power.ups.redundancyFactor < 1.2 && config.rack.powerDensity > 75) {
+  // Check redundancy - with null checks
+  if (config.power?.ups?.redundancyFactor < 1.2 && config.rack?.powerDensity > 75) {
     recommendations.push({
       type: 'reliability',
       severity: 'high',
@@ -244,8 +253,8 @@ function analyzeConfigurationImpl(config: any): any {
     });
   }
   
-  // Check generator
-  if (!config.power.generator?.included && config.reliability.tier === 'Tier III') {
+  // Check generator - with null checks
+  if (!config.power?.generator?.included && config.reliability?.tier === 'Tier III') {
     recommendations.push({
       type: 'reliability',
       severity: 'medium',
@@ -254,8 +263,9 @@ function analyzeConfigurationImpl(config: any): any {
     });
   }
   
-  // Check sustainability options
-  if (!config.sustainability.wasteHeatRecovery?.enabled && config.cooling.type === 'dlc') {
+  // Check sustainability options - with null checks
+  if (!config.sustainability?.wasteHeatRecovery?.enabled && 
+      (config.cooling?.type === 'dlc' || config.cooling?.type === 'hybrid')) {
     recommendations.push({
       type: 'sustainability',
       severity: 'medium',
