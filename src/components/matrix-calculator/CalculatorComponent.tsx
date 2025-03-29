@@ -126,10 +126,12 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       calculatorDebug.startCalculation({
         kwPerRack,
         coolingType,
-        totalRacks,
-        location,
-        redundancy: redundancyMode,
-        energySource: includeGenerator ? 'generator' : 'mains',
+        totalRacks
+      }, {
+        redundancyMode,
+        includeGenerator,
+        location: useLocationData && location ? location : undefined,
+        energySource: includeGenerator ? 'generator' : 'mains'
       });
       
       // Prepare calculation options

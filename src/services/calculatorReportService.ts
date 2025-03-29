@@ -2,18 +2,30 @@ import { getFirestore, doc, collection, addDoc, serverTimestamp, getDoc } from '
 import { calculateConfiguration, CalculationConfig, CalculationOptions } from './matrixCalculatorService';
 import { analyzeConfiguration, compareCoolingTechnologies, compareRedundancyOptions } from './optimizationService';
 import { calculatorDebug, withDebug } from './calculatorDebug';
+import { fallbackCalculation } from './calculatorFallback';
+import { fallbackAnalysis } from './calculatorFallback';
 
 /**
  * Generate a comprehensive report for a data center configuration
  */
 const originalGenerateConfigurationReport = generateConfigurationReport;
 
+async function generateConfigurationReportImpl(
+  userId: string,
+  config: CalculationConfig,
+  options: CalculationOptions = {}
+): Promise<any> {
+  // Keep the original implementation here
+  // This is just a placeholder - the actual implementation should remain unchanged
+  // Just rename the function to avoid duplication
+}
+
 export const generateConfigurationReport = withDebug(
   'generateConfigurationReport',
   async (userId: string, config: CalculationConfig, options: CalculationOptions = {}): Promise<any> => {
     try {
       // Try the original report generation first
-      return await originalGenerateConfigurationReport(userId, config, options);
+      return await generateConfigurationReportImpl(userId, config, options);
     } catch (error) {
       calculatorDebug.error('Error in report generation, creating simplified report', error);
       

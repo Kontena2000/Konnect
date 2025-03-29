@@ -197,7 +197,7 @@ function calculatePaybackPeriod(result: any): number {
 /**
  * Analyze a configuration and provide recommendations for improvement
  */
-export function analyzeConfiguration(config: any): any {
+function analyzeConfigurationImpl(config: any): any {
   const recommendations = [];
   
   // Check power density
@@ -260,14 +260,12 @@ export function analyzeConfiguration(config: any): any {
 }
 
 // Wrap the analyzeConfiguration function with debug logging
-const originalAnalyzeConfiguration = analyzeConfiguration;
-
 export const analyzeConfiguration = withDebug(
   'analyzeConfiguration',
   (results: any): any => {
     try {
       // Try the original analysis first
-      return originalAnalyzeConfiguration(results);
+      return analyzeConfigurationImpl(results);
     } catch (error) {
       calculatorDebug.error('Original analysis failed, using fallback', error);
       // If the original analysis fails, use the fallback
@@ -279,7 +277,7 @@ export const analyzeConfiguration = withDebug(
 /**
  * Calculate the impact of different cooling technologies on the same workload
  */
-export async function compareCoolingTechnologies(kwPerRack: number, totalRacks: number): Promise<any> {
+async function compareCoolingTechnologiesImpl(kwPerRack: number, totalRacks: number): Promise<any> {
   const coolingTypes = ['air-cooled', 'dlc', 'hybrid', 'immersion'];
   
   const results = await Promise.all(
@@ -336,18 +334,98 @@ export async function compareCoolingTechnologies(kwPerRack: number, totalRacks: 
 }
 
 // Wrap the compareCoolingTechnologies function with debug logging
-const originalCompareCoolingTechnologies = compareCoolingTechnologies;
-
 export const compareCoolingTechnologies = withDebug(
   'compareCoolingTechnologies',
   async (kwPerRack: number, totalRacks: number): Promise<any> => {
     try {
       // Try the original comparison first
-      return await originalCompareCoolingTechnologies(kwPerRack, totalRacks);
+      return await compareCoolingTechnologiesImpl(kwPerRack, totalRacks);
     } catch (error) {
       calculatorDebug.error('Original cooling comparison failed, using fallback', error);
       // If the original comparison fails, use the fallback
       return fallbackCoolingComparison(kwPerRack, totalRacks);
+    }
+  }
+);
+
+/**
+ * Calculate the impact of different redundancy configurations on reliability and cost
+ */
+async function compareRedundancyOptionsImpl(
+  kwPerRack: number, 
+  coolingType: string, 
+  totalRacks: number
+): Promise<any> {
+  const redundancyOptions = ['N', 'N+1', '2N', '2N+1'];
+  
+  const results = await Promise.all(
+    redundancyOptions.map(async redundancyMode => {
+      try {
+        const options: CalculationOptions = { redundancyMode };
+        const result = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
+        return {
+          redundancyMode,
+          result
+        };
+      } catch (error) {
+        console.error(`Error calculating for ${redundancyMode}`, error);
+        return null;
+      }
+    })
+  );
+  
+  const validResults = results.filter(r => r !== null);
+  
+  // Calculate comparison metrics
+  const comparisonResults = validResults.map(r => {
+    const result = r!.result;
+    return {
+      redundancyMode: r!.redundancyMode,
+      availability: result.reliability.availabilityPercentage,
+      annualDowntime: result.reliability.annualDowntimeMinutes,
+      tier: result.reliability.tier,
+      totalCost: result.cost.totalProjectCost,
+      costIncrease: 0, // Will calculate relative to N
+      costPerAvailabilityPoint: 0 // Will calculate
+    };
+  });
+  
+  // Calculate relative metrics
+  const baselineResult = comparisonResults.find(r => r.redundancyMode === 'N');
+  if (baselineResult) {
+    const baselineCost = baselineResult.totalCost;
+    const baselineAvailability = parseFloat(baselineResult.availability);
+    
+    comparisonResults.forEach(result => {
+      result.costIncrease = result.totalCost - baselineCost;
+      result.costPerAvailabilityPoint = result.costIncrease / 
+        (parseFloat(result.availability) - baselineAvailability);
+    });
+  }
+  
+  return {
+    baseConfiguration: {
+      kwPerRack,
+      coolingType,
+      totalRacks,
+      totalPower: kwPerRack * totalRacks
+    },
+    comparisonResults,
+    recommendation: findBestRedundancyOption(comparisonResults)
+  };
+}
+
+// Wrap the compareRedundancyOptions function with debug logging
+export const compareRedundancyOptions = withDebug(
+  'compareRedundancyOptions',
+  async (kwPerRack: number, coolingType: string, totalRacks: number): Promise<any> => {
+    try {
+      // Try the original comparison first
+      return await compareRedundancyOptionsImpl(kwPerRack, coolingType, totalRacks);
+    } catch (error) {
+      calculatorDebug.error('Original redundancy comparison failed, using fallback', error);
+      // If the original comparison fails, use the fallback
+      return fallbackRedundancyComparison(kwPerRack, coolingType, totalRacks);
     }
   }
 );
@@ -418,90 +496,6 @@ function generateRecommendationReason(coolingType: string, result: any): string 
       return `This cooling type offers the best balance of efficiency, cost, and implementation complexity.`;
   }
 }
-
-/**
- * Calculate the impact of different redundancy configurations on reliability and cost
- */
-export async function compareRedundancyOptions(
-  kwPerRack: number, 
-  coolingType: string, 
-  totalRacks: number
-): Promise<any> {
-  const redundancyOptions = ['N', 'N+1', '2N', '2N+1'];
-  
-  const results = await Promise.all(
-    redundancyOptions.map(async redundancyMode => {
-      try {
-        const options: CalculationOptions = { redundancyMode };
-        const result = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
-        return {
-          redundancyMode,
-          result
-        };
-      } catch (error) {
-        console.error(`Error calculating for ${redundancyMode}`, error);
-        return null;
-      }
-    })
-  );
-  
-  const validResults = results.filter(r => r !== null);
-  
-  // Calculate comparison metrics
-  const comparisonResults = validResults.map(r => {
-    const result = r!.result;
-    return {
-      redundancyMode: r!.redundancyMode,
-      availability: result.reliability.availabilityPercentage,
-      annualDowntime: result.reliability.annualDowntimeMinutes,
-      tier: result.reliability.tier,
-      totalCost: result.cost.totalProjectCost,
-      costIncrease: 0, // Will calculate relative to N
-      costPerAvailabilityPoint: 0 // Will calculate
-    };
-  });
-  
-  // Calculate relative metrics
-  const baselineResult = comparisonResults.find(r => r.redundancyMode === 'N');
-  if (baselineResult) {
-    const baselineCost = baselineResult.totalCost;
-    const baselineAvailability = parseFloat(baselineResult.availability);
-    
-    comparisonResults.forEach(result => {
-      result.costIncrease = result.totalCost - baselineCost;
-      result.costPerAvailabilityPoint = result.costIncrease / 
-        (parseFloat(result.availability) - baselineAvailability);
-    });
-  }
-  
-  return {
-    baseConfiguration: {
-      kwPerRack,
-      coolingType,
-      totalRacks,
-      totalPower: kwPerRack * totalRacks
-    },
-    comparisonResults,
-    recommendation: findBestRedundancyOption(comparisonResults)
-  };
-}
-
-// Wrap the compareRedundancyOptions function with debug logging
-const originalCompareRedundancyOptions = compareRedundancyOptions;
-
-export const compareRedundancyOptions = withDebug(
-  'compareRedundancyOptions',
-  async (kwPerRack: number, coolingType: string, totalRacks: number): Promise<any> => {
-    try {
-      // Try the original comparison first
-      return await originalCompareRedundancyOptions(kwPerRack, coolingType, totalRacks);
-    } catch (error) {
-      calculatorDebug.error('Original redundancy comparison failed, using fallback', error);
-      // If the original comparison fails, use the fallback
-      return fallbackRedundancyComparison(kwPerRack, coolingType, totalRacks);
-    }
-  }
-);
 
 /**
  * Find the best redundancy option based on comparison results

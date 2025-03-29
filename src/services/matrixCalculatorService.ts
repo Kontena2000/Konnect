@@ -196,23 +196,12 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
   }
 }
 
-const originalCalculateConfiguration = calculateConfiguration;
-
-export const calculateConfiguration = withDebug(
-  'calculateConfiguration',
-  async (kwPerRack: number, coolingType: string, totalRacks: number, options: CalculationOptions = {}): Promise<any> => {
-    try {
-      // Try the original calculation first
-      return await originalCalculateConfiguration(kwPerRack, coolingType, totalRacks, options);
-    } catch (error) {
-      calculatorDebug.error('Original calculation failed, using fallback', error);
-      // If the original calculation fails, use the fallback
-      return fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
-    }
-  }
-);
-
-export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28, options: CalculationOptions = {}) {
+async function calculateConfigurationImpl(
+  kwPerRack: number,
+  coolingType: string,
+  totalRacks: number,
+  options: CalculationOptions = {}
+): Promise<any> {
   try {
     const { pricing, params } = await getMemoizedPricingAndParams();
     
@@ -366,6 +355,21 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
     throw new Error('Failed to calculate configuration: ' + (error instanceof Error ? error.message : String(error)));
   }
 }
+
+// Wrap the calculateConfiguration function with debug logging
+export const calculateConfiguration = withDebug(
+  'calculateConfiguration',
+  async (kwPerRack: number, coolingType: string, totalRacks: number, options: CalculationOptions = {}): Promise<any> => {
+    try {
+      // Try the original calculation first
+      return await calculateConfigurationImpl(kwPerRack, coolingType, totalRacks, options);
+    } catch (error) {
+      calculatorDebug.error('Original calculation failed, using fallback', error);
+      // If the original calculation fails, use the fallback
+      return fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
+    }
+  }
+);
 
 // Fix the calculateCost function to handle undefined values
 function calculateCost(config: any, pricing: PricingMatrix, params: CalculationParams) {
@@ -608,7 +612,7 @@ export async function calculateWithLocationFactors(
     const climateFactor = await getClimateFactor(location.latitude, location.longitude);
     
     // Calculate base configuration
-    const baseConfig = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
+    const baseConfig = await calculateConfigurationImpl(kwPerRack, coolingType, totalRacks, options);
     
     // Adjust cooling based on climate
     if (climateFactor) {

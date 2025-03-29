@@ -16,8 +16,8 @@ export async function fallbackCalculation(
   // Basic calculation constants
   const powerFactor = 0.9;
   const coolingEfficiency = coolingType === 'air' ? 0.7 : 0.85;
-  const redundancyFactor = options.redundancy === 'n+1' ? 1.2 : 
-                          options.redundancy === '2n' ? 2 : 1;
+  const redundancyFactor = options.redundancyMode === 'N+1' ? 1.2 : 
+                          options.redundancyMode === '2N' ? 2 : 1;
   
   // Calculate total IT load
   const totalITLoad = kwPerRack * totalRacks;
@@ -37,8 +37,8 @@ export async function fallbackCalculation(
   const costPerRack = totalProjectCost / totalRacks;
   
   // Calculate reliability metrics
-  const availabilityPercentage = options.redundancy === '2n' ? 99.999 :
-                                options.redundancy === 'n+1' ? 99.99 : 99.9;
+  const availabilityPercentage = options.redundancyMode === '2N' ? 99.999 :
+                                options.redundancyMode === 'N+1' ? 99.99 : 99.9;
   const annualDowntimeMinutes = (100 - availabilityPercentage) / 100 * 365 * 24 * 60;
   
   // Return a simplified result structure
@@ -55,7 +55,7 @@ export async function fallbackCalculation(
     },
     power: {
       totalFacilityLoad: totalFacilityLoad,
-      redundancy: options.redundancy || 'n',
+      redundancy: options.redundancyMode || 'N',
       powerFactor: powerFactor
     },
     cost: {
@@ -72,11 +72,11 @@ export async function fallbackCalculation(
       contingency: totalProjectCost * 0.01
     },
     reliability: {
-      tier: options.redundancy === '2n' ? 'IV' : 
-            options.redundancy === 'n+1' ? 'III' : 'II',
+      tier: options.redundancyMode === '2N' ? 'IV' : 
+            options.redundancyMode === 'N+1' ? 'III' : 'II',
       availabilityPercentage: availabilityPercentage,
       annualDowntimeMinutes: annualDowntimeMinutes,
-      redundancyImpact: options.redundancy || 'n'
+      redundancyImpact: options.redundancyMode || 'N'
     },
     sustainability: {
       pue: pue,
