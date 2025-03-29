@@ -625,6 +625,28 @@ function safelyAccessCalculationResults(results: any) {
     }
   }
   
+  // Ensure cooling object exists
+  if (!results.cooling) {
+    results.cooling = {
+      type: 'air',
+      totalCapacity: 0,
+      pipingSize: 'none',
+      pue: 1.4
+    };
+  }
+  
+  // Ensure cooling.pipingSize exists
+  if (results.cooling && typeof results.cooling.pipingSize === 'undefined') {
+    // Set default pipingSize based on cooling type
+    if (results.cooling.type === 'dlc' || results.cooling.type === 'hybrid') {
+      results.cooling.pipingSize = 'dn110';
+    } else if (results.cooling.type === 'immersion') {
+      results.cooling.pipingSize = 'dn110';
+    } else {
+      results.cooling.pipingSize = 'none';
+    }
+  }
+  
   return results;
 }
 

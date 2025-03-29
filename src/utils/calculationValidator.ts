@@ -1,4 +1,3 @@
-
 import { getNestedProperty, ensureObjectStructure, toNumber } from './safeObjectAccess';
 
 /**
@@ -29,6 +28,7 @@ const DEFAULT_CALCULATION_SCHEMA = {
   'power.generator.fuel.runtime': 0,
   'cooling.type': 'air',
   'cooling.totalCapacity': 0,
+  'cooling.pipingSize': 'none', // Add default pipingSize
   'cooling.pue': 1.4,
   'sustainability.pue': 1.4,
   'sustainability.annualEnergyConsumption.total': 0,
