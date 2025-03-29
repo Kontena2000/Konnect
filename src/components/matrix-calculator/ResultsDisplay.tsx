@@ -276,7 +276,7 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
                         </div>
                         <div className="flex justify-between">
                           <span>Piping Size:</span>
-                          <span className="font-medium">{results.cooling.pipingSize.toUpperCase()}</span>
+                          <span className="font-medium">{results.cooling.pipingSize ? results.cooling.pipingSize.toUpperCase() : 'NONE'}</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Cooler Model:</span>

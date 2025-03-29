@@ -189,6 +189,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
         totalCapacity: cooling.totalCapacity,
         tanksNeeded: Math.ceil(totalRacks / 4),
         flowRate: cooling.totalCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
+        pipingSize: 'dn110', // Add pipingSize for immersion cooling
         pue: cooling.pueImpact
       };
       
@@ -201,6 +202,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
         totalCapacity: cooling.totalCapacity,
         rdhxUnits,
         rdhxModel: kwPerRack <= 15 ? 'basic' : kwPerRack <= 30 ? 'standard' : 'highDensity',
+        pipingSize: 'none', // Add default pipingSize for air cooling
         pue: cooling.pueImpact
       };
   }
