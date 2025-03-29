@@ -1,6 +1,13 @@
 import { CalculationConfig, CalculationOptions } from './matrixCalculatorService';
 import { calculatorDebug } from './calculatorDebug';
 
+interface FallbackConfig {
+  kwPerRack: number;
+  coolingType: string;
+  totalRacks: number;
+  options?: CalculationOptions;
+}
+
 /**
  * Fallback calculation function when main calculator fails
  * This provides basic results to ensure the UI can display something
@@ -352,3 +359,158 @@ export async function fallbackRedundancyComparison(
     }
   };
 }
+
+const calculatorFallback = {
+  /**
+   * Get fallback results based on configuration
+   */
+  getResults(config: FallbackConfig) {
+    const { kwPerRack, coolingType, totalRacks, options } = config;
+    
+    // Calculate total power
+    const totalPower = kwPerRack * totalRacks;
+    
+    // Base costs per kW for different cooling types
+    const baseCostPerKw = {
+      air: 12000,
+      dlc: 15000,
+      hybrid: 14000,
+      immersion: 18000
+    };
+    
+    // Get the appropriate cost multiplier based on cooling type
+    const costMultiplier = coolingType === 'air' ? 1 : 
+                          coolingType === 'dlc' ? 1.25 : 
+                          coolingType === 'hybrid' ? 1.15 : 
+                          coolingType === 'immersion' ? 1.35 : 1;
+    
+    // Calculate base infrastructure cost
+    const baseCost = totalPower * (baseCostPerKw[coolingType as keyof typeof baseCostPerKw] || 12000);
+    
+    // Apply redundancy multiplier if specified in options
+    const redundancyMultiplier = 
+      options?.redundancyMode === 'N+1' ? 1.2 :
+      options?.redundancyMode === '2N' ? 1.8 :
+      options?.redundancyMode === '2N+1' ? 2.0 : 1.0;
+    
+    // Apply generator cost if included
+    const generatorCost = options?.includeGenerator ? totalPower * 500 : 0;
+    
+    // Calculate battery cost based on runtime
+    const batteryCost = (options?.batteryRuntime || 10) * totalPower * 200;
+    
+    // Calculate total capital expenditure
+    const capex = baseCost * redundancyMultiplier + generatorCost + batteryCost;
+    
+    // Calculate annual operational costs
+    const annualPowerCost = totalPower * 8760 * 0.12; // $0.12 per kWh
+    const annualCoolingCost = totalPower * 8760 * 0.04 * costMultiplier; // Cooling cost as a function of power
+    const annualMaintenanceCost = capex * 0.05; // 5% of capex for maintenance
+    
+    // Apply sustainability adjustments if enabled
+    const sustainabilityAdjustment = 
+      (options?.sustainabilityOptions?.enableWasteHeatRecovery ? 0.05 : 0) +
+      (options?.sustainabilityOptions?.enableWaterRecycling ? 0.03 : 0);
+    
+    const annualOpex = (annualPowerCost + annualCoolingCost + annualMaintenanceCost) * 
+                      (1 - sustainabilityAdjustment);
+    
+    // Calculate 5-year TCO
+    const tco5Year = capex + (annualOpex * 5);
+    
+    // Calculate PUE based on cooling type and sustainability options
+    const basePue = 
+      coolingType === 'air' ? 1.6 :
+      coolingType === 'dlc' ? 1.2 :
+      coolingType === 'hybrid' ? 1.3 :
+      coolingType === 'immersion' ? 1.1 : 1.5;
+    
+    const pueAdjustment = 
+      (options?.sustainabilityOptions?.enableWasteHeatRecovery ? 0.1 : 0) +
+      (options?.sustainabilityOptions?.enableWaterRecycling ? 0.05 : 0);
+    
+    const pue = Math.max(1.03, basePue - pueAdjustment);
+    
+    // Calculate water usage
+    const waterUsage = 
+      coolingType === 'air' ? totalPower * 4 :
+      coolingType === 'dlc' ? totalPower * 2 :
+      coolingType === 'hybrid' ? totalPower * 3 :
+      coolingType === 'immersion' ? totalPower * 1 : totalPower * 3;
+    
+    const adjustedWaterUsage = options?.sustainabilityOptions?.enableWaterRecycling ? 
+                              waterUsage * 0.6 : waterUsage;
+    
+    // Calculate carbon footprint
+    const renewablePercentage = options?.sustainabilityOptions?.renewableEnergyPercentage || 0;
+    const carbonFootprint = totalPower * 8760 * (0.5 - (renewablePercentage / 200)); // tons of CO2 per year
+    
+    return {
+      rack: {
+        powerDensity: kwPerRack,
+        coolingType: coolingType,
+        totalRacks: totalRacks,
+        totalPower: totalPower
+      },
+      costs: {
+        capex: {
+          total: capex,
+          perRack: capex / totalRacks,
+          perKw: capex / totalPower,
+          breakdown: {
+            infrastructure: baseCost * redundancyMultiplier,
+            generator: generatorCost,
+            battery: batteryCost
+          }
+        },
+        opex: {
+          annual: annualOpex,
+          power: annualPowerCost,
+          cooling: annualCoolingCost,
+          maintenance: annualMaintenanceCost
+        },
+        tco: {
+          annual: capex / 5 + annualOpex,
+          total5Years: tco5Year,
+          total10Years: capex + (annualOpex * 10)
+        }
+      },
+      efficiency: {
+        pue: pue,
+        waterUsage: {
+          annual: adjustedWaterUsage * 365, // liters per year
+          recyclingEnabled: !!options?.sustainabilityOptions?.enableWaterRecycling
+        }
+      },
+      sustainability: {
+        carbonFootprint: {
+          annual: carbonFootprint,
+          renewablePercentage: renewablePercentage
+        },
+        wasteHeatRecovery: {
+          enabled: !!options?.sustainabilityOptions?.enableWasteHeatRecovery,
+          potentialSavings: options?.sustainabilityOptions?.enableWasteHeatRecovery ? 
+                            annualPowerCost * 0.1 : 0
+        }
+      },
+      reliability: {
+        redundancyMode: options?.redundancyMode || 'N',
+        redundancyImpact: `${options?.redundancyMode || 'N'} configuration provides ${
+          options?.redundancyMode === 'N+1' ? 'basic component redundancy' :
+          options?.redundancyMode === '2N' ? 'full system redundancy' :
+          options?.redundancyMode === '2N+1' ? 'full system redundancy plus component redundancy' :
+          'no redundancy'
+        }`,
+        batteryRuntime: options?.batteryRuntime || 10,
+        generatorBackup: !!options?.includeGenerator
+      },
+      _meta: {
+        calculationMethod: 'fallback',
+        timestamp: Date.now(),
+        disclaimer: 'These are estimated values based on fallback calculations and may not reflect actual costs or performance.'
+      }
+    };
+  }
+};
+
+export default calculatorFallback;

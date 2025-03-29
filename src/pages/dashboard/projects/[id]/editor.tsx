@@ -203,7 +203,7 @@ export default function LayoutEditorPage() {
         };
         
         // Check if user has access to this project
-        const projectUserId = projectData.userId;
+        const projectUserId = projectData.userId || '';
         const projectSharedWith = projectData.sharedWith || [];
         
         if (projectUserId !== user.uid && 

@@ -26,6 +26,8 @@ import { calculatorDebug, withDebug } from './calculatorDebug';
 import { fallbackCalculation } from './calculatorFallback';
 import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
 import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 
 // Improved cache implementation
 let cachedPricing: PricingMatrix | null = null;

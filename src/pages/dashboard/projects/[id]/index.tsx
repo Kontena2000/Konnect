@@ -8,6 +8,26 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from "@/components/ui/dialog";
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger
+} from "@/components/ui/alert-dialog";
 import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator } from "lucide-react";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";

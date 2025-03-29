@@ -9,9 +9,8 @@ import { Calculator, Settings } from "lucide-react";
 import { CalculatorComponent } from "@/components/matrix-calculator/CalculatorComponent";
 import { SavedCalculations } from "@/components/SavedCalculations";
 import { db } from '@/lib/firebase';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -41,7 +40,7 @@ export default function MatrixCalculatorPage() {
             };
             
             // Check if user has access to this project
-            const projectUserId = projectData.userId;
+            const projectUserId = projectData.userId || '';
             const projectSharedWith = projectData.sharedWith || [];
             
             if (projectUserId !== user.uid && 
@@ -70,8 +69,8 @@ export default function MatrixCalculatorPage() {
             };
             
             // Check if user has access to this calculation
-            const calcUserId = calculationData.userId;
-            const calcProjectId = calculationData.projectId;
+            const calcUserId = calculationData.userId || '';
+            const calcProjectId = calculationData.projectId || '';
             
             if (calcUserId !== user.uid && user.email !== 'ruud@kontena.eu') {
               // If calculation belongs to a project, check project access
