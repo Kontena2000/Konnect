@@ -75,7 +75,7 @@ export async function fetchClimateData(latitude: number, longitude: number): Pro
         humidity = 50;
     }
     
-    // Return climate data
+    // Return climate data with coordinates in the proper format
     return {
       zone,
       avgTemperature,
@@ -83,6 +83,12 @@ export async function fetchClimateData(latitude: number, longitude: number): Pro
       coordinates: {
         latitude,
         longitude
+      },
+      // Add default energy rates
+      energyRates: {
+        costPerKWh: 0.15,
+        carbonIntensity: 0.5,
+        renewablePct: 20
       }
     };
   } catch (error) {
