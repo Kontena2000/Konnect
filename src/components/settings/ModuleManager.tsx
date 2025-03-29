@@ -23,7 +23,12 @@ import { EditModuleDialog } from '@/components/settings/EditModuleDialog';
 import { ModuleHeader } from './ModuleHeader';
 import { ModuleList } from './ModuleList';
 
-export function ModuleManager() {
+interface ModuleManagerProps {
+  userId?: string;
+  userRole?: string;
+}
+
+export function ModuleManager({ userId = '', userRole }: ModuleManagerProps) {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");

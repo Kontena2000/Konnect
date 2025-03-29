@@ -1,4 +1,3 @@
-
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor } from './climateDataService';
@@ -279,8 +278,10 @@ function calculateCost(config: any, pricing: any, params: any) {
   const batteryCost = pricing.battery.revoTp240Cabinet * config.power.battery.cabinetsNeeded;
   
   // Calculate e-house costs
-  const eHouseSize = params.power.eHouseBaseSqm * config.power.ups.framesNeeded +
-                    params.power.eHouseBatterySqm * config.power.battery.cabinetsNeeded;
+  const eHouseBaseSqm = 20; // Base square meters for e-house per UPS frame
+  const eHouseBatterySqm = 5; // Additional square meters per battery cabinet
+  const eHouseSize = eHouseBaseSqm * config.power.ups.framesNeeded +
+                    eHouseBatterySqm * config.power.battery.cabinetsNeeded;
   const eHouseCost = pricing.eHouse.base + pricing.eHouse.perSqMeter * eHouseSize;
   
   // Calculate total equipment cost
