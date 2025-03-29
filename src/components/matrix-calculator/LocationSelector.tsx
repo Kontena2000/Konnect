@@ -43,7 +43,7 @@ export function LocationSelector({ onLocationSelected }: LocationSelectorProps) 
     }
     
     getClimateData();
-  }, [location, onLocationSelected]); // Added location to dependency array
+  }, [location, onLocationSelected]); // Added location and onLocationSelected to dependency array
   
   // Handle address input
   const handleAddressSearch = async () => {

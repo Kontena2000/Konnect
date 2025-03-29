@@ -48,7 +48,7 @@ export default function BlankEditorPage() {
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
-  }, [modules, connections]);
+  }, [modules, connections, history, historyIndex]);
 
   const handleUndo = () => {
     if (historyIndex > 0) {

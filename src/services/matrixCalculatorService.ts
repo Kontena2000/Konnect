@@ -1,3 +1,4 @@
+
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor } from './climateDataService';
@@ -64,7 +65,7 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
     cooling,
     ups,
     battery
-  }, pricing);
+  }, pricing, params);
   
   return {
     rack: {
@@ -180,8 +181,8 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
       dlcFlowRate: Math.round(dlcFlowRate),
       pipingSize: dlcFlowRate > 500 ? 'dn160' : 'dn110',
       coolerModel: 'tcs310aXht',
-      warning: kwPerRack < params.coolingThresholds.recommendedDlcMin ? 
-        `Power density (${kwPerRack} kW/rack) is below recommended minimum (${params.coolingThresholds.recommendedDlcMin} kW/rack) for DLC.` : ''
+      warning: kwPerRack < params.coolingThresholds?.recommendedDlcMin ? 
+        `Power density (${kwPerRack} kW/rack) is below recommended minimum (${params.coolingThresholds?.recommendedDlcMin} kW/rack) for DLC.` : ''
     };
   } else {
     // Air-cooled
@@ -192,8 +193,8 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
       totalCoolingCapacity: coolingCapacity,
       rdhxUnits: Math.ceil(coolingCapacity / 150), // Each RDHX can handle ~150kW
       rdhxModel: 'average',
-      warning: kwPerRack > params.coolingThresholds.airCooledMax ? 
-        `Power density (${kwPerRack} kW/rack) exceeds maximum recommended (${params.coolingThresholds.airCooledMax} kW/rack) for air cooling.` : ''
+      warning: kwPerRack > params.coolingThresholds?.airCooledMax ? 
+        `Power density (${kwPerRack} kW/rack) exceeds maximum recommended (${params.coolingThresholds?.airCooledMax} kW/rack) for air cooling.` : ''
     };
   }
 }
@@ -251,7 +252,7 @@ function calculateBatteryRequirements(totalLoad: number, params: any) {
   };
 }
 
-function calculateCost(config: any, pricing: any) {
+function calculateCost(config: any, pricing: any, params: any) {
   // Calculate electrical costs
   const busbarCost = calculateBusbarCost(config.busbarSize, pricing);
   const tapOffBoxCost = pricing.tapOffBox[config.cooling.type === 'dlc' ? 
