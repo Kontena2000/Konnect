@@ -563,6 +563,71 @@ async function calculateConfigurationImpl(
   }
 }
 
+// Helper function to ensure calculation results have all required properties
+// This prevents 'undefined is not an object' errors when accessing nested properties
+function safelyAccessCalculationResults(results: any) {
+  // Provide a helper function to safely access nested properties
+  if (!results) return {};
+  
+  // Ensure power object exists
+  if (!results.power) {
+    results.power = {
+      ups: {
+        requiredCapacity: 0,
+        totalITLoad: 0,
+        redundancyFactor: 1.2,
+        moduleSize: 250,
+        totalModulesNeeded: 1,
+        redundantModules: 1,
+        framesNeeded: 1,
+        frameSize: 'frame2Module'
+      },
+      battery: {
+        runtime: 10,
+        energyNeeded: 0,
+        cabinetsNeeded: 1,
+        totalWeight: 1200
+      },
+      generator: {
+        included: false,
+        capacity: 0,
+        model: 'none',
+        fuel: {
+          tankSize: 0,
+          consumption: 0,
+          runtime: 0
+        }
+      }
+    };
+  }
+  
+  // Ensure ups object exists
+  if (!results.power.ups) {
+    results.power.ups = {
+      requiredCapacity: 0,
+      totalITLoad: 0,
+      redundancyFactor: 1.2,
+      moduleSize: 250,
+      totalModulesNeeded: 1,
+      redundantModules: 1,
+      framesNeeded: 1,
+      frameSize: 'frame2Module'
+    };
+  }
+  
+  // Ensure requiredCapacity property exists
+  if (typeof results.power.ups.requiredCapacity !== 'number') {
+    // If rack properties exist, calculate a fallback value
+    if (results.rack && typeof results.rack.powerDensity === 'number' && typeof results.rack.totalRacks === 'number') {
+      results.power.ups.requiredCapacity = results.rack.powerDensity * results.rack.totalRacks * 1.2;
+    } else {
+      results.power.ups.requiredCapacity = 0;
+    }
+  }
+  
+  return results;
+}
+
 // Wrap the calculateConfiguration function with debug logging
 export const calculateConfiguration = withDebug(
   'calculateConfiguration',
