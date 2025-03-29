@@ -262,7 +262,8 @@ export function calculateGeneratorSize(upsCapacity: number, params: CalculationP
 
 // Cooling capacity utility
 export function calculateCoolingCapacity(totalITLoad: number, coolingType: string, params: CalculationParams) {
-  const coolingInfo = COOLING_TYPES[coolingType.toUpperCase()] || COOLING_TYPES.AIR;
+  const coolingTypeKey = coolingType.toUpperCase() as keyof typeof COOLING_TYPES;
+  const coolingInfo = COOLING_TYPES[coolingTypeKey] || COOLING_TYPES.AIR;
   
   switch (coolingType.toLowerCase()) {
     case 'dlc':
@@ -295,7 +296,8 @@ export function calculateCoolingCapacity(totalITLoad: number, coolingType: strin
 
 // Reliability calculation utility
 export function calculateSystemAvailability(redundancyMode: string, hasGenerator: boolean, params: CalculationParams) {
-  const redundancyConfig = REDUNDANCY_CONFIGURATIONS[redundancyMode] || REDUNDANCY_CONFIGURATIONS['N+1'];
+  const redundancyKey = redundancyMode as keyof typeof REDUNDANCY_CONFIGURATIONS;
+  const redundancyConfig = REDUNDANCY_CONFIGURATIONS[redundancyKey] || REDUNDANCY_CONFIGURATIONS['N+1'];
   
   // Default values if not provided in params
   const mtbfUps = params.reliability?.mtbfUps || 250000;
@@ -321,13 +323,13 @@ export function calculateSystemAvailability(redundancyMode: string, hasGenerator
   return {
     availabilityPercentage: (adjustedAvailability * 100).toFixed(4),
     annualDowntimeMinutes: Math.round((1 - adjustedAvailability) * 365 * 24 * 60),
-    tier: adjustedAvailability > 0.9999 ? "Tier IV" :
-          adjustedAvailability > 0.999 ? "Tier III" :
-          adjustedAvailability > 0.99 ? "Tier II" : "Tier I",
+    tier: adjustedAvailability > 0.9999 ? 'Tier IV' :
+          adjustedAvailability > 0.999 ? 'Tier III' :
+          adjustedAvailability > 0.99 ? 'Tier II' : 'Tier I',
     components: {
-      ups: (upsAvailability * 100).toFixed(4) + "%",
-      generator: hasGenerator ? (generatorAvailability * 100).toFixed(4) + "%" : "N/A",
-      cooling: (coolingAvailability * 100).toFixed(4) + "%"
+      ups: (upsAvailability * 100).toFixed(4) + '%',
+      generator: hasGenerator ? (generatorAvailability * 100).toFixed(4) + '%' : 'N/A',
+      cooling: (coolingAvailability * 100).toFixed(4) + '%'
     },
     redundancyImpact: redundancyConfig.description
   };
@@ -348,7 +350,8 @@ export function calculateSustainabilityMetrics(
   const renewableEnergyFraction = params.sustainability?.renewableEnergyFraction || 0.2;
   
   // Get cooling info
-  const coolingInfo = COOLING_TYPES[coolingType.toUpperCase()] || COOLING_TYPES.AIR;
+  const coolingTypeKey = coolingType.toUpperCase() as keyof typeof COOLING_TYPES;
+  const coolingInfo = COOLING_TYPES[coolingTypeKey] || COOLING_TYPES.AIR;
   
   // Calculate annual energy consumption
   const annualITEnergy = totalITLoad * 24 * 365; // kWh per year
