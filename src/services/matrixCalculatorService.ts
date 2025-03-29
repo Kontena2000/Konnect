@@ -119,30 +119,48 @@ export async function calculateWithLocationFactors(config: CalculationConfig, lo
     config.totalRacks
   );
   
-  // Adjust cooling for climate
-  const adjustedCooling = adjustCoolingForClimate(
-    baseConfig.cooling,
-    location.climateData
-  );
+  // Check if location has climate data
+  if (!location || !location.climateData) {
+    console.warn('No climate data available for location-based calculations');
+    return {
+      ...baseConfig,
+      location: location ? {
+        coordinates: location.coordinates,
+        address: location.address
+      } : null
+    };
+  }
   
-  // Calculate energy metrics
-  const energyMetrics = calculateEnergyMetrics(
-    config,
-    location.climateData
-  );
-  
-  return {
-    ...baseConfig,
-    cooling: adjustedCooling,
-    energy: energyMetrics,
-    location: {
-      coordinates: location.coordinates,
-      address: location.address,
-      climateZone: location.climateData.zone,
-      avgTemperature: location.climateData.avgTemperature,
-      humidity: location.climateData.humidity
-    }
-  };
+  try {
+    // Adjust cooling for climate
+    const adjustedCooling = adjustCoolingForClimate(
+      baseConfig.cooling,
+      location.climateData
+    );
+    
+    // Calculate energy metrics
+    const energyMetrics = calculateEnergyMetrics(
+      config,
+      location.climateData
+    );
+    
+    return {
+      ...baseConfig,
+      cooling: adjustedCooling,
+      energy: energyMetrics,
+      location: {
+        coordinates: location.coordinates,
+        address: location.address,
+        climateZone: location.climateData.zone,
+        avgTemperature: location.climateData.avgTemperature,
+        humidity: location.climateData.humidity
+      }
+    };
+  } catch (error) {
+    console.error('Error in location-based calculations:', error);
+    // Fall back to base configuration if location calculations fail
+    return baseConfig;
+  }
 }
 
 // Helper functions
@@ -306,28 +324,37 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
 }
 
 function adjustCoolingForClimate(cooling: any, climateData: any) {
-  const climateFactor = getClimateFactor(climateData, cooling.type);
-  
-  // Create a deep copy of the cooling object
-  const adjustedCooling = JSON.parse(JSON.stringify(cooling));
-  
-  // Apply climate factor to cooling capacities
-  if (cooling.type === 'dlc') {
-    adjustedCooling.dlcCoolingCapacity = Math.round(cooling.dlcCoolingCapacity * climateFactor);
-    adjustedCooling.residualCoolingCapacity = Math.round(cooling.residualCoolingCapacity * climateFactor);
-    adjustedCooling.dlcFlowRate = Math.round(cooling.dlcFlowRate * climateFactor);
-  } else {
-    adjustedCooling.totalCoolingCapacity = Math.round(cooling.totalCoolingCapacity * climateFactor);
-    adjustedCooling.rdhxUnits = Math.ceil(adjustedCooling.totalCoolingCapacity / 150);
+  if (!climateData) {
+    return cooling; // Return unchanged if no climate data
   }
   
-  // Add climate adjustment note
-  adjustedCooling.climateAdjustment = {
-    factor: climateFactor.toFixed(2),
-    note: `Cooling requirements ${climateFactor > 1 ? 'increased' : 'decreased'} by ${Math.abs((climateFactor - 1) * 100).toFixed(0)}% due to ${climateData.zone} climate conditions.`
-  };
-  
-  return adjustedCooling;
+  try {
+    const climateFactor = getClimateFactor(climateData, cooling.type);
+    
+    // Create a deep copy of the cooling object
+    const adjustedCooling = JSON.parse(JSON.stringify(cooling));
+    
+    // Apply climate factor to cooling capacities
+    if (cooling.type === 'dlc') {
+      adjustedCooling.dlcCoolingCapacity = Math.round(cooling.dlcCoolingCapacity * climateFactor);
+      adjustedCooling.residualCoolingCapacity = Math.round(cooling.residualCoolingCapacity * climateFactor);
+      adjustedCooling.dlcFlowRate = Math.round(cooling.dlcFlowRate * climateFactor);
+    } else {
+      adjustedCooling.totalCoolingCapacity = Math.round(cooling.totalCoolingCapacity * climateFactor);
+      adjustedCooling.rdhxUnits = Math.ceil(adjustedCooling.totalCoolingCapacity / 150);
+    }
+    
+    // Add climate adjustment note
+    adjustedCooling.climateAdjustment = {
+      factor: climateFactor.toFixed(2),
+      note: `Cooling requirements ${climateFactor > 1 ? 'increased' : 'decreased'} by ${Math.abs((climateFactor - 1) * 100).toFixed(0)}% due to ${climateData.zone} climate conditions.`
+    };
+    
+    return adjustedCooling;
+  } catch (error) {
+    console.error('Error adjusting cooling for climate:', error);
+    return cooling; // Return original cooling data if adjustment fails
+  }
 }
 
 // Save calculation results

@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
+import { Switch } from '@/components/ui/switch';
 
 interface CalculatorComponentProps {
   userId: string;
@@ -25,6 +26,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [location, setLocation] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [useLocationData, setUseLocationData] = useState(false);
   const { toast } = useToast();
   
   // Load initial results if provided
@@ -47,7 +49,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const generateResults = async () => {
     setLoading(true);
     try {
-      if (location) {
+      if (useLocationData && location && location.climateData) {
         const config = await calculateWithLocationFactors(
           { kwPerRack, coolingType, totalRacks },
           location
@@ -132,7 +134,20 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
             </p>
           </div>
           
-          <LocationSelector onLocationSelected={handleLocationSelected} />
+          <div className='flex items-center space-x-2 py-2'>
+            <Switch 
+              id='useLocation' 
+              checked={useLocationData}
+              onCheckedChange={setUseLocationData}
+            />
+            <Label htmlFor='useLocation' className='cursor-pointer'>
+              Enable Location-Based Calculations <span className='text-xs text-yellow-600 font-medium'>(BETA)</span>
+            </Label>
+          </div>
+          
+          {useLocationData && (
+            <LocationSelector onLocationSelected={handleLocationSelected} />
+          )}
           
           <Button 
             onClick={generateResults}
