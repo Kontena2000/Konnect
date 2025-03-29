@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -7,10 +6,20 @@ import editorPreferencesService, { EditorPreferences } from "@/services/editor-p
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
 import { LayoutEditorSettings } from "@/components/settings/LayoutEditorSettings";
 import { MatrixCalculatorSettings } from "@/components/settings/MatrixCalculatorSettings";
+import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
   const { user } = useAuth();
   const [preferences, setPreferences] = useState<EditorPreferences | null>(null);
+  const router = useRouter();
+  const { tab } = router.query;
+  const [activeTab, setActiveTab] = useState('general');
+
+  useEffect(() => {
+    if (tab && typeof tab === 'string') {
+      setActiveTab(tab);
+    }
+  }, [tab]);
 
   useEffect(() => {
     if (user) {
@@ -36,7 +45,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="general" className="space-y-6">
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
           <TabsList className="w-full sm:w-auto">
             <TabsTrigger value="general">General Settings</TabsTrigger>
             <TabsTrigger value="layout-editor">Layout Editor</TabsTrigger>

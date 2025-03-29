@@ -41,8 +41,7 @@ export function Sidebar() {
     {
       title: "Matrix Calculator",
       icon: <Calculator className="h-5 w-5" />,
-      href: "#",
-      disabled: true,
+      href: "/dashboard/matrix-calculator",
       comingSoon: true
     },
     {
@@ -85,16 +84,30 @@ export function Sidebar() {
           {navigationItems.map((item) => (
             <Link
               key={item.href}
-              href={item.href}
+              href={item.comingSoon ? '#' : item.href}
               className={cn(
-                "flex items-center px-3 py-2 rounded-md text-black transition-colors",
+                "flex items-center px-3 py-2 rounded-md text-black transition-colors relative",
                 "hover:bg-primary/10",
                 router.pathname === item.href && "bg-primary/20",
-                collapsed ? "justify-center" : "space-x-2"
+                collapsed ? "justify-center" : "space-x-2",
+                item.comingSoon && "opacity-70"
               )}
+              onClick={e => item.comingSoon && e.preventDefault()}
             >
               {item.icon}
-              {!collapsed && <span>{item.title}</span>}
+              {!collapsed && (
+                <>
+                  <span>{item.title}</span>
+                  {item.comingSoon && (
+                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
+                      Soon
+                    </span>
+                  )}
+                </>
+              )}
+              {collapsed && item.comingSoon && (
+                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-yellow-400"></span>
+              )}
             </Link>
           ))}
         </nav>
