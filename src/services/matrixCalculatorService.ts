@@ -199,16 +199,14 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
     const { pricing, params } = await getMemoizedPricingAndParams();
     
     // Extract options with defaults
-    const {
-      redundancyMode = params.electrical.redundancyMode,
-      includeGenerator = false,
-      batteryRuntime = params.power.batteryRuntime,
-      sustainabilityOptions = {
-        enableWasteHeatRecovery: false,
-        enableWaterRecycling: false,
-        renewableEnergyPercentage: 20
-      }
-    } = options;
+    const redundancyMode = options.redundancyMode || params.electrical.redundancyMode;
+    const includeGenerator = options.includeGenerator || false;
+    const batteryRuntime = options.batteryRuntime || params.power.batteryRuntime;
+    const sustainabilityOptions = options.sustainabilityOptions || {
+      enableWasteHeatRecovery: false,
+      enableWaterRecycling: false,
+      renewableEnergyPercentage: 20
+    };
     
     // Update params with options
     const updatedParams = {
@@ -571,7 +569,7 @@ export async function calculateWithLocationFactors(
   totalRacks: number, 
   location: { latitude: number; longitude: number; }, 
   options: CalculationOptions = {}
-) {
+): Promise<any> {
   try {
     // Check cache first
     const cacheKey = {
@@ -604,7 +602,7 @@ export async function calculateWithLocationFactors(
       };
       
       // Adjust energy metrics based on climate
-      const energyConfig = {
+      const energyConfig: any = {
         totalLoad: kwPerRack * totalRacks,
         pue: adjustedCooling.pue,
         renewablePercentage: climateFactor.renewableEnergyPotential,

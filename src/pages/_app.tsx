@@ -13,7 +13,7 @@ export default function App({ Component, pageProps }: AppProps) {
     <>
       <Head>
         <title>Konnect | Layout Planner</title>
-        <meta name="description" content="Design and visualize subtitle layouts with Konnect by Kontena" />
+        <meta name="description" content="Design and visualize layouts with Konnect by Kontena" />
         <meta name="application-name" content="Konnect" />
         <meta name="author" content="Kontena" />
       </Head>

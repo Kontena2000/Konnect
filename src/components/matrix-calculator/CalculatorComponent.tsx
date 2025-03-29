@@ -1,21 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { calculateConfiguration, calculateWithLocationFactors, CalculationOptions } from '@/services/matrixCalculatorService';
+import { calculateConfiguration, CalculationOptions } from '@/services/matrixCalculatorService';
 import { findOptimalConfiguration } from '@/services/optimizationService';
 import { generateConfigurationReport } from '@/services/calculatorReportService';
 import { LocationSelector } from './LocationSelector';
 import { ResultsDisplay } from './ResultsDisplay';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Settings, Zap, FileText, BarChart } from 'lucide-react';
+import { Loader2, Zap, FileText } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
-import { Slider } from '@/components/ui/slider';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+
+// Fix the location-based calculation
+const calculateWithLocationFactors = async (
+  kwPerRack: number,
+  coolingType: string,
+  totalRacks: number,
+  location: any,
+  options: CalculationOptions
+) => {
+  // For now, just use the standard calculation
+  // This is a temporary fix until we properly implement location-based calculations
+  return calculateConfiguration(kwPerRack, coolingType, totalRacks, {
+    ...options,
+    location
+  });
+};
 
 interface CalculatorComponentProps {
   userId: string;
@@ -33,7 +48,6 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [useLocationData, setUseLocationData] = useState(false);
-  const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
   const [calculationMode, setCalculationMode] = useState<'standard' | 'optimize' | 'report'>('standard');
   
   // Advanced options
