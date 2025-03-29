@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
 import { DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
@@ -14,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface CalculationSettingsProps {
   readOnly?: boolean;
-  onSave?: (params: any) => void;
+  onSave?: ((params: any) => void) | null;
 }
 
 export function CalculationSettings({ readOnly = false, onSave = null }: CalculationSettingsProps) {
