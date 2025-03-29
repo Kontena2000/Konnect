@@ -29,25 +29,25 @@ export function Sidebar() {
 
   const navigationItems = [
     {
-      title: "Projects",
-      icon: <FolderOpen className="h-5 w-5" />,
-      href: "/dashboard/projects"
+      title: 'Projects',
+      icon: <FolderOpen className='h-5 w-5' />,
+      href: '/dashboard/projects'
     },
     {
-      title: "Layout Editor",
-      icon: <Edit className="h-5 w-5" />,
-      href: "/dashboard/editor"
+      title: 'Layout Editor',
+      icon: <Edit className='h-5 w-5' />,
+      href: '/dashboard/editor'
     },
     {
-      title: "Matrix Calculator",
-      icon: <Calculator className="h-5 w-5" />,
-      href: "/dashboard/matrix-calculator",
-      comingSoon: true
+      title: 'Matrix Calculator',
+      icon: <Calculator className='h-5 w-5' />,
+      href: '/dashboard/matrix-calculator',
+      beta: true
     },
     {
-      title: "Settings",
-      icon: <Settings className="h-5 w-5" />,
-      href: "/dashboard/settings"
+      title: 'Settings',
+      icon: <Settings className='h-5 w-5' />,
+      href: '/dashboard/settings'
     }
   ];
 
@@ -79,34 +79,32 @@ export function Sidebar() {
         )}
       </div>
       
-      <ScrollArea className="h-[calc(100vh-4rem)] px-2">
-        <nav className="space-y-1 py-2">
+      <ScrollArea className='h-[calc(100vh-4rem)] px-2'>
+        <nav className='space-y-1 py-2'>
           {navigationItems.map((item) => (
             <Link
               key={item.href}
-              href={item.comingSoon ? '#' : item.href}
+              href={item.href}
               className={cn(
-                "flex items-center px-3 py-2 rounded-md text-black transition-colors relative",
-                "hover:bg-primary/10",
-                router.pathname === item.href && "bg-primary/20",
-                collapsed ? "justify-center" : "space-x-2",
-                item.comingSoon && "opacity-70"
+                'flex items-center px-3 py-2 rounded-md text-black transition-colors relative',
+                'hover:bg-primary/10',
+                router.pathname === item.href && 'bg-primary/20',
+                collapsed ? 'justify-center' : 'space-x-2'
               )}
-              onClick={e => item.comingSoon && e.preventDefault()}
             >
               {item.icon}
               {!collapsed && (
                 <>
                   <span>{item.title}</span>
-                  {item.comingSoon && (
-                    <span className="ml-2 text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800">
-                      Soon
+                  {item.beta && (
+                    <span className='ml-2 text-xs px-1.5 py-0.5 rounded-full bg-yellow-100 text-yellow-800'>
+                      Beta
                     </span>
                   )}
                 </>
               )}
-              {collapsed && item.comingSoon && (
-                <span className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-yellow-400"></span>
+              {collapsed && item.beta && (
+                <span className='absolute -top-1 -right-1 w-2 h-2 rounded-full bg-yellow-400'></span>
               )}
             </Link>
           ))}
