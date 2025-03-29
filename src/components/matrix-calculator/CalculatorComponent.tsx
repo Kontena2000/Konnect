@@ -1,17 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { calculateConfiguration, calculateWithLocationFactors, CalculationOptions } from '@/services/matrixCalculatorService';
+import { findOptimalConfiguration } from '@/services/optimizationService';
+import { generateConfigurationReport } from '@/services/calculatorReportService';
 import { LocationSelector } from './LocationSelector';
 import { ResultsDisplay } from './ResultsDisplay';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Settings } from 'lucide-react';
+import { Loader2, Settings, Zap, FileText, BarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
+import { Slider } from '@/components/ui/slider';
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 
 interface CalculatorComponentProps {
   userId: string;
@@ -30,6 +34,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [loading, setLoading] = useState(false);
   const [useLocationData, setUseLocationData] = useState(false);
   const [showAdvancedOptions, setShowAdvancedOptions] = useState(false);
+  const [calculationMode, setCalculationMode] = useState<'standard' | 'optimize' | 'report'>('standard');
   
   // Advanced options
   const [redundancyMode, setRedundancyMode] = useState('N+1');
@@ -38,6 +43,12 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [enableWasteHeatRecovery, setEnableWasteHeatRecovery] = useState(false);
   const [enableWaterRecycling, setEnableWaterRecycling] = useState(false);
   const [renewablePercentage, setRenewablePercentage] = useState(20);
+  
+  // Optimization options
+  const [optimizationGoal, setOptimizationGoal] = useState<'cost' | 'efficiency' | 'reliability' | 'sustainability'>('cost');
+  const [minPowerDensity, setMinPowerDensity] = useState(50);
+  const [maxPowerDensity, setMaxPowerDensity] = useState(200);
+  const [preferredCoolingTypes, setPreferredCoolingTypes] = useState<string[]>(['air-cooled', 'dlc', 'hybrid', 'immersion']);
   
   const { toast } = useToast();
   
@@ -105,18 +116,59 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         }
       };
       
+      if (useLocationData && location) {
+        options.location = location;
+      }
+      
       let calculationResults;
       
-      if (useLocationData && location) {
-        calculationResults = await calculateWithLocationFactors(
-          kwPerRack,
-          coolingType,
-          totalRacks,
-          location,
-          options
-        );
-      } else {
-        calculationResults = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
+      switch (calculationMode) {
+        case 'optimize':
+          // Run optimization to find best configuration
+          calculationResults = await findOptimalConfiguration(
+            {
+              minPowerDensity,
+              maxPowerDensity,
+              preferredCoolingTypes,
+              rackCountRange: [Math.max(14, totalRacks - 14), totalRacks + 14]
+            },
+            optimizationGoal
+          );
+          break;
+          
+        case 'report':
+          // Generate comprehensive report
+          calculationResults = await generateConfigurationReport(
+            userId,
+            {
+              kwPerRack,
+              coolingType,
+              totalRacks
+            },
+            options
+          );
+          break;
+          
+        case 'standard':
+        default:
+          // Standard calculation
+          if (useLocationData && location) {
+            calculationResults = await calculateWithLocationFactors(
+              kwPerRack,
+              coolingType,
+              totalRacks,
+              location,
+              options
+            );
+          } else {
+            calculationResults = await calculateConfiguration(
+              kwPerRack,
+              coolingType,
+              totalRacks,
+              options
+            );
+          }
+          break;
       }
       
       setResults(calculationResults);
@@ -165,12 +217,22 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     }
   };
   
+  // Handle cooling type preference change
+  const handleCoolingTypeChange = (type: string, checked: boolean) => {
+    if (checked) {
+      setPreferredCoolingTypes([...preferredCoolingTypes, type]);
+    } else {
+      setPreferredCoolingTypes(preferredCoolingTypes.filter(t => t !== type));
+    }
+  };
+  
   return (
     <div className='space-y-6'>
       <Tabs defaultValue='basic'>
         <TabsList className='mb-4'>
           <TabsTrigger value='basic'>Basic Configuration</TabsTrigger>
           <TabsTrigger value='advanced'>Advanced Options</TabsTrigger>
+          <TabsTrigger value='optimization'>Optimization</TabsTrigger>
         </TabsList>
         
         <TabsContent value='basic'>
@@ -363,23 +425,183 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
             </CardContent>
           </Card>
         </TabsContent>
+        
+        <TabsContent value='optimization'>
+          <Card>
+            <CardHeader>
+              <CardTitle>Optimization Settings</CardTitle>
+              <CardDescription>Let the calculator find the optimal configuration based on your priorities</CardDescription>
+            </CardHeader>
+            <CardContent className='space-y-6'>
+              <div className='space-y-4'>
+                <div>
+                  <Label className='text-base'>Optimization Goal</Label>
+                  <RadioGroup 
+                    value={optimizationGoal} 
+                    onValueChange={(value) => setOptimizationGoal(value as any)}
+                    className='grid grid-cols-2 gap-4 mt-2'
+                  >
+                    <div className='flex items-center space-x-2'>
+                      <RadioGroupItem value='cost' id='cost' />
+                      <Label htmlFor='cost'>Minimize Cost</Label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <RadioGroupItem value='efficiency' id='efficiency' />
+                      <Label htmlFor='efficiency'>Maximize Efficiency</Label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <RadioGroupItem value='reliability' id='reliability' />
+                      <Label htmlFor='reliability'>Maximize Reliability</Label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <RadioGroupItem value='sustainability' id='sustainability' />
+                      <Label htmlFor='sustainability'>Maximize Sustainability</Label>
+                    </div>
+                  </RadioGroup>
+                </div>
+                
+                <div className='space-y-2'>
+                  <Label>Power Density Range (kW/rack)</Label>
+                  <div className='flex items-center gap-4'>
+                    <Select 
+                      value={String(minPowerDensity)} 
+                      onValueChange={(value) => setMinPowerDensity(Number(value))}
+                    >
+                      <SelectTrigger className='w-[120px]'>
+                        <SelectValue placeholder='Min' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='50'>50 kW</SelectItem>
+                        <SelectItem value='75'>75 kW</SelectItem>
+                        <SelectItem value='100'>100 kW</SelectItem>
+                      </SelectContent>
+                    </Select>
+                    <span>to</span>
+                    <Select 
+                      value={String(maxPowerDensity)} 
+                      onValueChange={(value) => setMaxPowerDensity(Number(value))}
+                    >
+                      <SelectTrigger className='w-[120px]'>
+                        <SelectValue placeholder='Max' />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value='100'>100 kW</SelectItem>
+                        <SelectItem value='150'>150 kW</SelectItem>
+                        <SelectItem value='200'>200 kW</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+                
+                <div className='space-y-2'>
+                  <Label>Cooling Types to Consider</Label>
+                  <div className='grid grid-cols-2 gap-2'>
+                    <div className='flex items-center space-x-2'>
+                      <Switch 
+                        id='air-cooled' 
+                        checked={preferredCoolingTypes.includes('air-cooled')}
+                        onCheckedChange={(checked) => handleCoolingTypeChange('air-cooled', checked)}
+                      />
+                      <Label htmlFor='air-cooled'>Air Cooling</Label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <Switch 
+                        id='dlc' 
+                        checked={preferredCoolingTypes.includes('dlc')}
+                        onCheckedChange={(checked) => handleCoolingTypeChange('dlc', checked)}
+                      />
+                      <Label htmlFor='dlc'>Direct Liquid Cooling</Label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <Switch 
+                        id='hybrid' 
+                        checked={preferredCoolingTypes.includes('hybrid')}
+                        onCheckedChange={(checked) => handleCoolingTypeChange('hybrid', checked)}
+                      />
+                      <Label htmlFor='hybrid'>Hybrid Cooling</Label>
+                    </div>
+                    <div className='flex items-center space-x-2'>
+                      <Switch 
+                        id='immersion' 
+                        checked={preferredCoolingTypes.includes('immersion')}
+                        onCheckedChange={(checked) => handleCoolingTypeChange('immersion', checked)}
+                      />
+                      <Label htmlFor='immersion'>Immersion Cooling</Label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
       </Tabs>
       
-      <div className='flex justify-center'>
+      <div className='flex flex-col sm:flex-row gap-4 justify-center'>
         <Button 
-          onClick={generateResults}
+          onClick={() => {
+            setCalculationMode('standard');
+            generateResults();
+          }}
           disabled={loading}
-          className='w-full md:w-auto bg-primary hover:bg-primary/90'
+          className='w-full sm:w-auto bg-primary hover:bg-primary/90'
           type='button'
           size='lg'
         >
-          {loading ? (
+          {loading && calculationMode === 'standard' ? (
             <>
               <Loader2 className='mr-2 h-4 w-4 animate-spin' />
               Calculating...
             </>
           ) : (
             'Generate Pricing Estimate'
+          )}
+        </Button>
+        
+        <Button 
+          onClick={() => {
+            setCalculationMode('optimize');
+            generateResults();
+          }}
+          disabled={loading}
+          className='w-full sm:w-auto bg-yellow-600 hover:bg-yellow-700 text-white'
+          type='button'
+          size='lg'
+          variant='outline'
+        >
+          {loading && calculationMode === 'optimize' ? (
+            <>
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              Optimizing...
+            </>
+          ) : (
+            <>
+              <Zap className='mr-2 h-4 w-4' />
+              Find Optimal Config
+            </>
+          )}
+        </Button>
+        
+        <Button 
+          onClick={() => {
+            setCalculationMode('report');
+            generateResults();
+          }}
+          disabled={loading}
+          className='w-full sm:w-auto'
+          type='button'
+          size='lg'
+          variant='outline'
+        >
+          {loading && calculationMode === 'report' ? (
+            <>
+              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+              Generating Report...
+            </>
+          ) : (
+            <>
+              <FileText className='mr-2 h-4 w-4' />
+              Generate Full Report
+            </>
           )}
         </Button>
       </div>
