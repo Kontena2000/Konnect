@@ -113,28 +113,37 @@ export async function findOptimalConfiguration(
  * Calculate a score for a configuration based on the optimization goal
  */
 function calculateScore(result: any, goal: string): number {
-  switch (goal) {
-    case 'cost':
-      // Lower cost is better
-      return 1000000 / result.cost.totalProjectCost;
-      
-    case 'efficiency':
-      // Lower PUE is better
-      return 10 / result.sustainability.pue;
-      
-    case 'reliability':
-      // Higher availability is better
-      return parseFloat(result.reliability.availabilityPercentage);
-      
-    case 'sustainability':
-      // Calculate sustainability score based on multiple factors
-      const pueScore = 10 / result.sustainability.pue;
-      const carbonScore = 1000 / (result.carbonFootprint.totalAnnualEmissions + 1);
-      const waterScore = result.sustainability.waterUsage.recyclingEnabled ? 2 : 1;
-      return pueScore * 0.4 + carbonScore * 0.4 + waterScore * 0.2;
-      
-    default:
-      return 0;
+  if (!result) return 0;
+  
+  try {
+    switch (goal) {
+      case 'cost':
+        // Lower cost is better
+        return result.cost?.totalProjectCost ? 1000000 / result.cost.totalProjectCost : 0;
+        
+      case 'efficiency':
+        // Lower PUE is better
+        return result.sustainability?.pue ? 10 / result.sustainability.pue : 0;
+        
+      case 'reliability':
+        // Higher availability is better
+        return result.reliability?.availabilityPercentage ? 
+          parseFloat(result.reliability.availabilityPercentage) : 0;
+        
+      case 'sustainability':
+        // Calculate sustainability score based on multiple factors
+        const pueScore = result.sustainability?.pue ? 10 / result.sustainability.pue : 0;
+        const carbonScore = result.carbonFootprint?.totalAnnualEmissions ? 
+          1000 / (result.carbonFootprint.totalAnnualEmissions + 1) : 0;
+        const waterScore = result.sustainability?.waterUsage?.recyclingEnabled ? 2 : 1;
+        return pueScore * 0.4 + carbonScore * 0.4 + waterScore * 0.2;
+        
+      default:
+        return 0;
+    }
+  } catch (error) {
+    console.error('Error calculating score:', error);
+    return 0;
   }
 }
 

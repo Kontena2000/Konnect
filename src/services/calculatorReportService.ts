@@ -8,16 +8,81 @@ import { fallbackAnalysis } from './calculatorFallback';
 /**
  * Generate a comprehensive report for a data center configuration
  */
-const originalGenerateConfigurationReport = generateConfigurationReport;
 
 async function generateConfigurationReportImpl(
   userId: string,
   config: CalculationConfig,
   options: CalculationOptions = {}
 ): Promise<any> {
-  // Keep the original implementation here
-  // This is just a placeholder - the actual implementation should remain unchanged
-  // Just rename the function to avoid duplication
+  try {
+    // Calculate base configuration
+    const baseResults = await calculateConfiguration(
+      config.kwPerRack,
+      config.coolingType,
+      config.totalRacks || 28,
+      options
+    );
+    
+    // Generate analysis
+    const analysis = await analyzeConfiguration(baseResults);
+    
+    // Generate cooling comparison
+    const coolingComparison = await compareCoolingTechnologies(
+      config.kwPerRack,
+      config.totalRacks || 28
+    );
+    
+    // Generate redundancy comparison
+    const redundancyComparison = await compareRedundancyOptions(
+      config.kwPerRack,
+      config.coolingType,
+      config.totalRacks || 28
+    );
+    
+    // Generate executive summary
+    const executiveSummary = generateExecutiveSummary(
+      baseResults,
+      analysis,
+      coolingComparison,
+      redundancyComparison
+    );
+    
+    // Generate financial analysis
+    const financialAnalysis = generateFinancialAnalysis(baseResults);
+    
+    // Generate sustainability analysis
+    const sustainabilityAnalysis = generateSustainabilityAnalysis(baseResults);
+    
+    // Create report
+    const report = {
+      reportId: generateReportId(),
+      userId,
+      createdAt: new Date().toISOString(),
+      configuration: {
+        ...config,
+        options
+      },
+      baseResults,
+      analysis,
+      coolingComparison,
+      redundancyComparison,
+      executiveSummary,
+      financialAnalysis,
+      sustainabilityAnalysis
+    };
+    
+    // Save report to Firestore
+    const reportId = await saveReportToFirestore(userId, report);
+    
+    return {
+      ...report,
+      id: reportId
+    };
+  } catch (error) {
+    console.error('Error generating report:', error);
+    throw new Error('Failed to generate report: ' + 
+      (error instanceof Error ? error.message : String(error)));
+  }
 }
 
 export const generateConfigurationReport = withDebug(

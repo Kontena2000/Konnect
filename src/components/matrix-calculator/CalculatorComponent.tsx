@@ -130,8 +130,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       }, {
         redundancyMode,
         includeGenerator,
-        location: useLocationData && location ? location : undefined,
-        energySource: includeGenerator ? 'generator' : 'mains'
+        location: useLocationData && location ? location : undefined
       });
       
       // Prepare calculation options
