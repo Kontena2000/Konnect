@@ -1,6 +1,8 @@
-import React, { useState, useEffect } from 'react';
-import { getFirestore, doc, getDoc, setDoc } from 'firebase/firestore';
-import { DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
+
+import React, { useState, useEffect, useCallback } from "react";
+import { CalculationParams } from "@/types/calculationParams";
+import { DEFAULT_CALCULATION_PARAMS } from "@/constants/calculatorConstants";
+import { loadCalculationParams, saveCalculationParams } from "@/services/calculationParamsService";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,64 +10,106 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
-import { Loader2, Save, RotateCcw } from "lucide-react";
-import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Save, RotateCcw, AlertTriangle } from "lucide-react";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
 
 interface CalculationSettingsProps {
   readOnly?: boolean;
-  onSave?: ((params: any) => void) | null;
+  onSave?: ((params: CalculationParams) => void) | null;
 }
 
 export function CalculationSettings({ readOnly = false, onSave = null }: CalculationSettingsProps) {
-  const [params, setParams] = useState<any>(null);
+  const [params, setParams] = useState<CalculationParams | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
   
   // Load calculation parameters
-  useEffect(() => {
-    async function loadParams() {
-      try {
-        setLoading(true);
-        const db = getFirestore();
-        const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
-        
-        if (paramsDoc.exists()) {
-          setParams(paramsDoc.data());
-        } else {
-          setParams(DEFAULT_CALCULATION_PARAMS);
-        }
-      } catch (error) {
-        console.error('Error loading calculation parameters:', error);
-      } finally {
-        setLoading(false);
-      }
+  const fetchParams = useCallback(async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const loadedParams = await loadCalculationParams();
+      setParams(loadedParams);
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to load parameters: ${errorMessage}`);
+      console.error("Error loading calculation parameters:", err);
+      
+      // Set default parameters as fallback
+      setParams({ ...DEFAULT_CALCULATION_PARAMS });
+      
+      toast({
+        variant: "destructive",
+        title: "Error Loading Parameters",
+        description: "Using default values as fallback. Please try again later.",
+      });
+    } finally {
+      setLoading(false);
     }
-    
-    loadParams();
+  }, [toast]);
+  
+  useEffect(() => {
+    fetchParams();
+  }, [fetchParams]);
+  
+  // Safe update function for nested state
+  const updateParams = useCallback((section: keyof CalculationParams, field: string, value: any) => {
+    setParams((currentParams) => {
+      if (!currentParams) return null;
+      
+      return {
+        ...currentParams,
+        [section]: {
+          ...currentParams[section],
+          [field]: value
+        }
+      };
+    });
   }, []);
   
   // Save calculation parameters
-  const saveParams = async () => {
-    if (readOnly) return;
+  const handleSave = async () => {
+    if (readOnly || !params) return;
     
     try {
       setSaving(true);
-      const db = getFirestore();
+      setError(null);
       
-      // Save to calculation parameters document
-      await setDoc(doc(db, 'matrix_calculator', 'calculation_params'), params);
+      await saveCalculationParams(params);
       
       if (onSave) {
         onSave(params);
       }
       
-      alert('Calculation parameters saved successfully');
-    } catch (error) {
-      console.error('Error saving calculation parameters:', error);
-      alert('Error saving calculation parameters');
+      toast({
+        title: "Success",
+        description: "Calculation parameters saved successfully",
+      });
+    } catch (err) {
+      const errorMessage = err instanceof Error ? err.message : String(err);
+      setError(`Failed to save parameters: ${errorMessage}`);
+      console.error("Error saving calculation parameters:", err);
+      
+      toast({
+        variant: "destructive",
+        title: "Error Saving Parameters",
+        description: errorMessage,
+      });
     } finally {
       setSaving(false);
     }
+  };
+  
+  // Reset to defaults
+  const handleReset = () => {
+    setParams({ ...DEFAULT_CALCULATION_PARAMS });
+    toast({
+      title: "Reset to Defaults",
+      description: "Parameters have been reset to default values. Click Save to apply changes.",
+    });
   };
   
   if (loading) {
@@ -86,10 +130,17 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
       <Card className="w-full">
         <CardContent className="py-6">
           <Alert variant="destructive">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
             <AlertDescription>
               No calculation parameters available. Please try again later.
             </AlertDescription>
           </Alert>
+          <div className="mt-4 flex justify-end">
+            <Button onClick={fetchParams}>
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -104,6 +155,14 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {error && (
+          <Alert variant="destructive" className="mb-6">
+            <AlertTriangle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         {readOnly && (
           <Alert className="mb-6">
             <AlertDescription>
@@ -127,13 +186,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>Voltage Factor (V)</Label>
                   <Select
                     value={String(params.electrical.voltageFactor)}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      electrical: {
-                        ...params.electrical,
-                        voltageFactor: parseInt(value)
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("electrical", "voltageFactor", parseInt(value))}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -156,13 +209,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={80}
                       max={100}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        electrical: {
-                          ...params.electrical,
-                          powerFactor: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("electrical", "powerFactor", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -176,13 +223,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>Busbars Per Row</Label>
                   <Select
                     value={String(params.electrical.busbarsPerRow)}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      electrical: {
-                        ...params.electrical,
-                        busbarsPerRow: parseInt(value)
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("electrical", "busbarsPerRow", parseInt(value))}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -200,13 +241,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>Redundancy Mode</Label>
                   <Select
                     value={params.electrical.redundancyMode}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      electrical: {
-                        ...params.electrical,
-                        redundancyMode: value
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("electrical", "redundancyMode", value as "N" | "N+1" | "2N")}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -230,13 +265,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>Temperature Delta (°C)</Label>
                   <Select
                     value={String(params.cooling.deltaT)}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      cooling: {
-                        ...params.cooling,
-                        deltaT: parseInt(value)
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("cooling", "deltaT", parseInt(value))}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -256,13 +285,12 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Input
                     type="number"
                     value={params.cooling.flowRateFactor}
-                    onChange={(e) => setParams({
-                      ...params,
-                      cooling: {
-                        ...params.cooling,
-                        flowRateFactor: parseFloat(e.target.value)
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value);
+                      if (!isNaN(value) && value > 0) {
+                        updateParams("cooling", "flowRateFactor", value);
                       }
-                    })}
+                    }}
                     step="0.01"
                     min="0.5"
                     disabled={readOnly}
@@ -279,13 +307,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={10}
                       max={50}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        cooling: {
-                          ...params.cooling,
-                          dlcResidualHeatFraction: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("cooling", "dlcResidualHeatFraction", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -301,13 +323,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={80}
                       max={120}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        cooling: {
-                          ...params.cooling,
-                          chillerEfficiencyFactor: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("cooling", "chillerEfficiencyFactor", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -325,13 +341,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>UPS Module Size (kW)</Label>
                   <Select
                     value={String(params.power.upsModuleSize)}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      power: {
-                        ...params.power,
-                        upsModuleSize: parseInt(value)
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("power", "upsModuleSize", parseInt(value))}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -349,13 +359,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>Max Modules per UPS Frame</Label>
                   <Select
                     value={String(params.power.upsFrameMaxModules)}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      power: {
-                        ...params.power,
-                        upsFrameMaxModules: parseInt(value)
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("power", "upsFrameMaxModules", parseInt(value))}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -376,13 +380,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                   <Label>Battery Runtime (minutes)</Label>
                   <Select
                     value={String(params.power.batteryRuntime)}
-                    onValueChange={(value) => setParams({
-                      ...params,
-                      power: {
-                        ...params.power,
-                        batteryRuntime: parseInt(value)
-                      }
-                    })}
+                    onValueChange={(value) => updateParams("power", "batteryRuntime", parseInt(value))}
                     disabled={readOnly}
                   >
                     <SelectTrigger>
@@ -405,13 +403,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={85}
                       max={100}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        power: {
-                          ...params.power,
-                          batteryEfficiency: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("power", "batteryEfficiency", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -433,13 +425,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={5}
                       max={30}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        costFactors: {
-                          ...params.costFactors,
-                          installationPercentage: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("costFactors", "installationPercentage", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -455,13 +441,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={5}
                       max={20}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        costFactors: {
-                          ...params.costFactors,
-                          engineeringPercentage: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("costFactors", "engineeringPercentage", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -479,13 +459,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
                       min={0}
                       max={15}
                       step={1}
-                      onValueChange={(value) => setParams({
-                        ...params,
-                        costFactors: {
-                          ...params.costFactors,
-                          contingencyPercentage: value[0] / 100
-                        }
-                      })}
+                      onValueChange={(value) => updateParams("costFactors", "contingencyPercentage", value[0] / 100)}
                       disabled={readOnly}
                       className="flex-1"
                     />
@@ -500,14 +474,14 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
         <div className="flex justify-end gap-2 mt-6">
           <Button 
             variant="outline" 
-            onClick={() => setParams(DEFAULT_CALCULATION_PARAMS)}
+            onClick={handleReset}
             disabled={readOnly || saving}
           >
             <RotateCcw className="h-4 w-4 mr-2" />
             Reset to Defaults
           </Button>
           <Button 
-            onClick={saveParams}
+            onClick={handleSave}
             disabled={readOnly || saving}
           >
             {saving ? (
