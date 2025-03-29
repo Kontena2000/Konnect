@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -11,11 +10,10 @@ import { useAuth } from "@/contexts/AuthContext";
 import editorPreferencesService, { EditorPreferences } from "@/services/editor-preferences";
 
 interface EditorSettingsProps {
-  preferences: EditorPreferences;
-  onUpdate: (preferences: EditorPreferences) => void;
+  userId: string;
 }
 
-export function EditorSettings({ preferences, onUpdate }: EditorSettingsProps) {
+export function EditorSettings({ userId }: EditorSettingsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showColorPicker, setShowColorPicker] = useState(false);
@@ -28,7 +26,7 @@ export function EditorSettings({ preferences, onUpdate }: EditorSettingsProps) {
   const handleSave = async () => {
     try {
       if (!user) return;
-      await editorPreferencesService.savePreferences(user.uid, localPreferences);
+      await editorPreferencesService.savePreferences(userId, localPreferences);
       onUpdate(localPreferences);
       toast({
         title: "Settings saved",

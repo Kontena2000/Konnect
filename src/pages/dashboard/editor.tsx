@@ -48,7 +48,8 @@ export default function BlankEditorPage() {
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
-  }, [modules, connections, history, historyIndex]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [modules, connections]);
 
   const handleUndo = () => {
     if (historyIndex > 0) {

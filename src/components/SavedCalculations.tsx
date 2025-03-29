@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, getDocs, deleteDoc, doc } from 'firebase/firestore';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,6 +19,7 @@ export function SavedCalculations({ userId, onLoadCalculation }: SavedCalculatio
     if (!userId) return;
     
     loadCalculations();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userId]);
   
   const loadCalculations = async () => {
