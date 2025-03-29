@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 
 // Types
@@ -191,13 +191,13 @@ export async function initializeCalculatorCollections() {
     // Check if pricing matrix exists, if not create it
     const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
     if (!pricingDoc.exists()) {
-      await doc(db, 'matrix_calculator', 'pricing_matrix').set(DEFAULT_PRICING);
+      await setDoc(doc(db, 'matrix_calculator', 'pricing_matrix'), DEFAULT_PRICING);
     }
     
     // Check if calculation params exist, if not create them
     const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
     if (!paramsDoc.exists()) {
-      await doc(db, 'matrix_calculator', 'calculation_params').set(DEFAULT_CALCULATION_PARAMS);
+      await setDoc(doc(db, 'matrix_calculator', 'calculation_params'), DEFAULT_CALCULATION_PARAMS);
     }
     
     return true;
