@@ -558,3 +558,292 @@ export function adjustForClimate(cooling: any, climateData: any) {
   
   return adjustedCooling;
 }
+
+// Add these new utility functions
+
+// Pipe sizing calculation for DLC systems
+export function calculatePipeSizing(flowRate: number, deltaT: number) {
+  // Calculate pipe diameter based on flow rate and temperature difference
+  // Formula based on standard hydraulic calculations
+  const flowRateM3h = flowRate / 1000; // Convert L/h to m³/h
+  
+  // Calculate minimum pipe cross-sectional area (m²)
+  // Using velocity limit of 2.5 m/s for optimal performance
+  const maxVelocity = 2.5; // m/s
+  const minArea = flowRateM3h / (3600 * maxVelocity);
+  
+  // Calculate minimum diameter (mm)
+  const minDiameter = Math.sqrt(minArea * 4 / Math.PI) * 1000;
+  
+  // Select standard pipe size
+  const standardSizes = [
+    { name: 'DN50', diameter: 50 },
+    { name: 'DN80', diameter: 80 },
+    { name: 'DN100', diameter: 100 },
+    { name: 'DN110', diameter: 110 },
+    { name: 'DN125', diameter: 125 },
+    { name: 'DN150', diameter: 150 },
+    { name: 'DN160', diameter: 160 },
+    { name: 'DN200', diameter: 200 },
+    { name: 'DN250', diameter: 250 }
+  ];
+  
+  let selectedSize = standardSizes[standardSizes.length - 1];
+  for (const size of standardSizes) {
+    if (size.diameter >= minDiameter) {
+      selectedSize = size;
+      break;
+    }
+  }
+  
+  // Calculate actual velocity with selected pipe
+  const actualArea = Math.PI * Math.pow(selectedSize.diameter / 1000, 2) / 4;
+  const actualVelocity = flowRateM3h / (3600 * actualArea);
+  
+  // Calculate pressure drop (kPa per 100m)
+  // Simplified Darcy-Weisbach formula with assumptions for water
+  const roughness = 0.0015; // mm, for plastic pipes
+  const reynoldsNumber = 353000 * actualVelocity * (selectedSize.diameter / 1000);
+  const frictionFactor = 0.25 / Math.pow(Math.log10(roughness / (3.7 * selectedSize.diameter / 1000) + 5.74 / Math.pow(reynoldsNumber, 0.9)), 2);
+  const pressureDrop = frictionFactor * 100 * Math.pow(actualVelocity, 2) / (2 * 9.81 * (selectedSize.diameter / 1000));
+  
+  return {
+    flowRate,
+    recommendedSize: selectedSize.name,
+    diameter: selectedSize.diameter,
+    actualVelocity: Math.round(actualVelocity * 100) / 100,
+    pressureDrop: Math.round(pressureDrop * 10) / 10,
+    warning: actualVelocity > 3 ? 'Flow velocity exceeds recommended maximum (3 m/s)' : ''
+  };
+}
+
+// Generator calculations
+export function calculateGeneratorRequirements(totalLoad: number, includeGenerator: boolean, params: CalculationParams) {
+  if (!includeGenerator) {
+    return { included: false };
+  }
+  
+  const sizingFactor = params.generator?.sizingFactor || 1.2;
+  const fuelConsumptionRate = params.generator?.fuelConsumptionRate || 0.25; // L/kWh
+  const fuelTankRuntime = params.generator?.fuelTankRuntime || 24; // hours
+  const startupReliability = params.generator?.startupReliability || 0.98;
+  const loadFactor = params.generator?.loadFactor || 0.8;
+  const noxEmissionsFactor = params.generator?.noxEmissionsFactor || 3.5; // g/kWh
+  
+  // Calculate generator capacity
+  const generatorCapacity = Math.ceil(totalLoad * sizingFactor);
+  
+  // Round to nearest standard size (500kVA increments)
+  const standardizedCapacity = Math.ceil(generatorCapacity / 500) * 500;
+  
+  // Calculate fuel consumption
+  const hourlyFuelConsumption = standardizedCapacity * loadFactor * fuelConsumptionRate;
+  const fuelTankSize = hourlyFuelConsumption * fuelTankRuntime;
+  
+  // Calculate emissions
+  const hourlyNoxEmissions = standardizedCapacity * loadFactor * noxEmissionsFactor / 1000; // kg/h
+  
+  return {
+    included: true,
+    capacity: standardizedCapacity,
+    loadFactor,
+    startupReliability,
+    fuel: {
+      hourlyConsumption: Math.round(hourlyFuelConsumption * 10) / 10,
+      tankSize: Math.round(fuelTankSize),
+      runtime: fuelTankRuntime
+    },
+    emissions: {
+      noxHourly: Math.round(hourlyNoxEmissions * 100) / 100,
+      noxAnnual: Math.round(hourlyNoxEmissions * 100 * 24) / 100 // Assuming 24h of operation per year for testing
+    }
+  };
+}
+
+// Total Cost of Ownership (TCO) calculation
+export function calculateTCO(
+  capitalCost: number, 
+  annualEnergyConsumption: number, 
+  coolingType: string,
+  includeGenerator: boolean,
+  params: CalculationParams
+) {
+  // Default values if not provided
+  const electricityRate = 0.12; // €/kWh
+  const maintenancePercentage = params.costFactors.maintenancePercentage || 0.03;
+  const operationalPercentage = params.costFactors.operationalPercentage || 0.02;
+  const inflationRate = 0.02;
+  const discountRate = 0.05;
+  const lifespan = 10; // years
+  
+  // Get cooling type info
+  const coolingTypeKey = coolingType.toUpperCase() as keyof typeof COOLING_TYPES;
+  const coolingInfo = COOLING_TYPES[coolingTypeKey] || COOLING_TYPES.AIR;
+  
+  // Calculate annual costs
+  const annualEnergyCost = annualEnergyConsumption * electricityRate;
+  const annualMaintenanceCost = capitalCost * maintenancePercentage;
+  const annualOperationalCost = capitalCost * operationalPercentage;
+  
+  // Adjust maintenance cost based on cooling type
+  const adjustedMaintenanceCost = annualMaintenanceCost * coolingInfo.costFactor;
+  
+  // Add generator maintenance if included
+  const generatorMaintenanceCost = includeGenerator ? 
+    annualMaintenanceCost * 0.15 : 0; // Assume generator maintenance is 15% of total maintenance
+  
+  const totalAnnualCost = annualEnergyCost + adjustedMaintenanceCost + 
+                         annualOperationalCost + generatorMaintenanceCost;
+  
+  // Calculate NPV of all costs over lifespan
+  let npv = capitalCost;
+  for (let year = 1; year <= lifespan; year++) {
+    const inflationFactor = Math.pow(1 + inflationRate, year);
+    const discountFactor = Math.pow(1 + discountRate, year);
+    npv += (totalAnnualCost * inflationFactor) / discountFactor;
+  }
+  
+  // Calculate annualized TCO
+  const annualizedTCO = npv / lifespan;
+  
+  return {
+    capitalCost,
+    annualCosts: {
+      energy: Math.round(annualEnergyCost),
+      maintenance: Math.round(adjustedMaintenanceCost + generatorMaintenanceCost),
+      operational: Math.round(annualOperationalCost),
+      total: Math.round(totalAnnualCost)
+    },
+    totalCostOfOwnership: Math.round(npv),
+    annualizedTCO: Math.round(annualizedTCO),
+    assumptions: {
+      electricityRate,
+      inflationRate,
+      discountRate,
+      lifespan
+    }
+  };
+}
+
+// Thermal load distribution calculation
+export function calculateThermalDistribution(totalLoad: number, coolingType: string, params: CalculationParams) {
+  const coolingTypeKey = coolingType.toUpperCase() as keyof typeof COOLING_TYPES;
+  const coolingInfo = COOLING_TYPES[coolingTypeKey] || COOLING_TYPES.AIR;
+  
+  switch (coolingType.toLowerCase()) {
+    case 'dlc':
+      const dlcPortion = totalLoad * (1 - (params.cooling.dlcResidualHeatFraction || 0.25));
+      const airPortion = totalLoad * (params.cooling.dlcResidualHeatFraction || 0.25);
+      
+      return {
+        type: 'dlc',
+        distribution: {
+          liquid: {
+            percentage: Math.round((1 - (params.cooling.dlcResidualHeatFraction || 0.25)) * 100),
+            load: Math.round(dlcPortion)
+          },
+          air: {
+            percentage: Math.round((params.cooling.dlcResidualHeatFraction || 0.25) * 100),
+            load: Math.round(airPortion)
+          }
+        },
+        pue: coolingInfo.pueImpact,
+        waterUsage: Math.round(totalLoad * coolingInfo.waterUsage * 24) // L/day
+      };
+      
+    case 'hybrid':
+      const hybridRatio = params.cooling.hybridCoolingRatio || 0.7;
+      
+      return {
+        type: 'hybrid',
+        distribution: {
+          liquid: {
+            percentage: Math.round(hybridRatio * 100),
+            load: Math.round(totalLoad * hybridRatio)
+          },
+          air: {
+            percentage: Math.round((1 - hybridRatio) * 100),
+            load: Math.round(totalLoad * (1 - hybridRatio))
+          }
+        },
+        pue: coolingInfo.pueImpact,
+        waterUsage: Math.round(totalLoad * coolingInfo.waterUsage * 24) // L/day
+      };
+      
+    case 'immersion':
+      return {
+        type: 'immersion',
+        distribution: {
+          liquid: {
+            percentage: 100,
+            load: Math.round(totalLoad)
+          },
+          air: {
+            percentage: 0,
+            load: 0
+          }
+        },
+        pue: coolingInfo.pueImpact,
+        waterUsage: Math.round(totalLoad * coolingInfo.waterUsage * 24) // L/day
+      };
+      
+    default: // air-cooled
+      return {
+        type: 'air',
+        distribution: {
+          liquid: {
+            percentage: 0,
+            load: 0
+          },
+          air: {
+            percentage: 100,
+            load: Math.round(totalLoad)
+          }
+        },
+        pue: coolingInfo.pueImpact,
+        waterUsage: Math.round(totalLoad * coolingInfo.waterUsage * 24) // L/day
+      };
+  }
+}
+
+// Enhanced carbon footprint calculation
+export function calculateCarbonFootprint(
+  annualEnergyConsumption: number,
+  includeGenerator: boolean,
+  generatorTestHours: number,
+  generatorCapacity: number,
+  renewablePercentage: number,
+  params: CalculationParams
+) {
+  // Default values if not provided
+  const carbonIntensityGrid = params.sustainability?.carbonIntensityGrid || 0.35; // kg CO2/kWh
+  const carbonIntensityDiesel = params.sustainability?.carbonIntensityDiesel || 0.8; // kg CO2/kWh
+  
+  // Calculate grid emissions with renewable adjustment
+  const gridEnergy = annualEnergyConsumption * (1 - (renewablePercentage / 100));
+  const gridEmissions = gridEnergy * carbonIntensityGrid;
+  
+  // Calculate generator emissions if included
+  let generatorEmissions = 0;
+  if (includeGenerator && generatorCapacity) {
+    const generatorEnergy = generatorCapacity * generatorTestHours * 0.8; // Assume 80% load during testing
+    generatorEmissions = generatorEnergy * carbonIntensityDiesel;
+  }
+  
+  // Calculate total emissions
+  const totalEmissions = gridEmissions + generatorEmissions;
+  
+  // Calculate emissions reduction from renewables
+  const renewableReduction = annualEnergyConsumption * (renewablePercentage / 100) * carbonIntensityGrid;
+  
+  return {
+    totalAnnualEmissions: Math.round(totalEmissions / 1000), // tonnes CO2/year
+    gridEmissions: Math.round(gridEmissions / 1000), // tonnes CO2/year
+    generatorEmissions: Math.round(generatorEmissions / 1000), // tonnes CO2/year
+    emissionsPerMWh: Math.round(totalEmissions / (annualEnergyConsumption / 1000)), // kg CO2/MWh
+    renewableImpact: {
+      percentage: renewablePercentage,
+      emissionsAvoided: Math.round(renewableReduction / 1000) // tonnes CO2/year
+    }
+  };
+}
