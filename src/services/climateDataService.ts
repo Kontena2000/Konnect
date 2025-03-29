@@ -107,6 +107,66 @@ export async function fetchClimateData(latitude: number, longitude: number): Pro
   }
 }
 
+export async function getClimateFactor(latitude: number, longitude: number): Promise<ClimateFactor> {
+  try {
+    // Fetch climate data for the location
+    const climateData = await fetchClimateData(latitude, longitude);
+    
+    // Default values
+    let coolingFactor = 1.0;
+    let renewableEnergyPotential = 0.2;
+    let waterScarcityFactor = 1.0;
+    
+    // Adjust cooling factor based on climate zone
+    switch (climateData.zone) {
+      case 'TROPICAL':
+        coolingFactor = 1.2;
+        renewableEnergyPotential = 0.4; // Good solar potential
+        waterScarcityFactor = 0.8; // Usually abundant water
+        break;
+      case 'ARID':
+        coolingFactor = 1.15;
+        renewableEnergyPotential = 0.5; // Excellent solar potential
+        waterScarcityFactor = 1.5; // Water scarcity concerns
+        break;
+      case 'TEMPERATE':
+        coolingFactor = 1.0;
+        renewableEnergyPotential = 0.3; // Moderate renewable potential
+        waterScarcityFactor = 1.0; // Average water availability
+        break;
+      case 'CONTINENTAL':
+        coolingFactor = 0.95;
+        renewableEnergyPotential = 0.25; // Lower solar but potential wind
+        waterScarcityFactor = 0.9; // Usually good water availability
+        break;
+      case 'POLAR':
+        coolingFactor = 0.9;
+        renewableEnergyPotential = 0.15; // Limited renewable potential
+        waterScarcityFactor = 0.7; // Usually abundant water
+        break;
+    }
+    
+    return {
+      temperature: climateData.avgTemperature,
+      humidity: climateData.humidity,
+      coolingFactor,
+      renewableEnergyPotential,
+      waterScarcityFactor,
+      zone: climateData.zone
+    };
+  } catch (error) {
+    console.error('Error getting climate factor:', error);
+    // Return default values if there's an error
+    return {
+      temperature: 20,
+      humidity: 50,
+      coolingFactor: 1.0,
+      renewableEnergyPotential: 0.2,
+      waterScarcityFactor: 1.0
+    };
+  }
+}
+
 export function getClimateFactor(climateData: any, coolingType: string): number {
   try {
     // Default factor if we can't determine climate
