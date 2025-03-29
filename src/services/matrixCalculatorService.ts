@@ -572,8 +572,7 @@ export async function calculateWithLocationFactors(
       // Adjust energy metrics based on climate
       const energyMetrics = calculateEnergyMetrics(
         kwPerRack * totalRacks,
-        adjustedCooling.pue,
-        climateFactor.renewableEnergyPotential || 0.2
+        adjustedCooling.pue
       );
       
       return {
