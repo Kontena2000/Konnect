@@ -24,6 +24,8 @@ import {
 import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
 import { calculatorDebug, withDebug } from './calculatorDebug';
 import { fallbackCalculation } from './calculatorFallback';
+import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
+import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
 
 // Improved cache implementation
 let cachedPricing: PricingMatrix | null = null;
@@ -90,34 +92,42 @@ export interface CalculationOptions {
   };
 }
 
-// Calculate UPS requirements
+// Replace the calculateUPSRequirements function with this safer version
 function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
+  // Safety check for inputs
+  kwPerRack = typeof kwPerRack === 'number' ? kwPerRack : 0;
+  totalRacks = typeof totalRacks === 'number' ? totalRacks : 0;
+  
   const totalITLoad = kwPerRack * totalRacks;
-  const redundancyFactor = params.electrical.redundancyMode === 'N' ? 1 :
-                          params.electrical.redundancyMode === 'N+1' ? 1.2 :
-                          params.electrical.redundancyMode === '2N' ? 2 : 1.5;
+  
+  // Ensure params and its properties exist
+  const redundancyMode = params?.electrical?.redundancyMode || 'N+1';
+  
+  const redundancyFactor = redundancyMode === 'N' ? 1 :
+                          redundancyMode === 'N+1' ? 1.2 :
+                          redundancyMode === '2N' ? 2 : 1.5;
   
   const requiredCapacity = totalITLoad * redundancyFactor;
-  const moduleSize = params.power.upsModuleSize || 250; // kW
-  const maxModulesPerFrame = params.power.upsFrameMaxModules || 6;
+  const moduleSize = params?.power?.upsModuleSize || 250; // kW
+  const maxModulesPerFrame = params?.power?.upsFrameMaxModules || 6;
   
-  // Calculate number of modules needed
-  const totalModulesNeeded = Math.ceil(requiredCapacity / moduleSize);
-  const framesNeeded = Math.ceil(totalModulesNeeded / maxModulesPerFrame);
+  // Calculate number of modules needed (with safety checks)
+  const totalModulesNeeded = Math.ceil(requiredCapacity / moduleSize) || 1;
+  const framesNeeded = Math.ceil(totalModulesNeeded / maxModulesPerFrame) || 1;
   
   // Determine frame size based on modules per frame
   const frameSize = totalModulesNeeded <= 2 ? 'frame2Module' :
                    totalModulesNeeded <= 4 ? 'frame4Module' : 'frame6Module';
   
   return {
-    totalITLoad,
-    redundancyFactor,
-    requiredCapacity,
-    moduleSize,
-    totalModulesNeeded,
-    redundantModules: totalModulesNeeded,
-    framesNeeded,
-    frameSize
+    totalITLoad: totalITLoad || 0,
+    redundancyFactor: redundancyFactor || 1,
+    requiredCapacity: requiredCapacity || 0, // Ensure this is never undefined
+    moduleSize: moduleSize || 250,
+    totalModulesNeeded: totalModulesNeeded || 1,
+    redundantModules: totalModulesNeeded || 1,
+    framesNeeded: framesNeeded || 1,
+    frameSize: frameSize || 'frame2Module'
   };
 }
 
@@ -558,12 +568,42 @@ export const calculateConfiguration = withDebug(
   'calculateConfiguration',
   async (kwPerRack: number, coolingType: string, totalRacks: number, options: CalculationOptions = {}): Promise<any> => {
     try {
+      // Validate input parameters
+      const validatedInputs = validateCalculationInputs({
+        kwPerRack,
+        coolingType,
+        totalRacks,
+        ...options
+      });
+      
       // Try the original calculation first
-      return await calculateConfigurationImpl(kwPerRack, coolingType, totalRacks, options);
+      const results = await calculateConfigurationImpl(
+        validatedInputs.kwPerRack, 
+        validatedInputs.coolingType, 
+        validatedInputs.totalRacks, 
+        validatedInputs
+      );
+      
+      // Validate and ensure all required properties exist
+      const validatedResults = validateCalculationResults(results, validatedInputs);
+      
+      // Apply additional defensive handling to ensure no undefined properties
+      return safelyAccessCalculationResults(validatedResults);
     } catch (error) {
       calculatorDebug.error('Original calculation failed, using fallback', error);
       // If the original calculation fails, use the fallback
-      return fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
+      const fallbackResults = await fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
+      
+      // Also validate the fallback results
+      const validatedFallback = validateCalculationResults(fallbackResults, {
+        kwPerRack,
+        coolingType,
+        totalRacks,
+        ...options
+      });
+      
+      // Apply additional defensive handling to fallback results
+      return safelyAccessCalculationResults(validatedFallback);
     }
   }
 );
