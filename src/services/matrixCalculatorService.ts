@@ -467,13 +467,11 @@ export async function saveCalculationResult(userId: string, config: CalculationC
   const db = getFirestore();
   
   try {
-    // Extract options
-    const {
-      redundancyMode = 'N+1',
-      includeGenerator = false,
-      sustainabilityOptions = {},
-      location = null
-    } = options;
+    // Extract options with defaults
+    const redundancyMode = options.redundancyMode || 'N+1';
+    const includeGenerator = options.includeGenerator || false;
+    const sustainabilityOptions = options.sustainabilityOptions || {};
+    const location = options.location || null;
     
     const docRef = await addDoc(collection(db, 'matrix_calculator', 'user_configurations', 'configs'), {
       userId,
@@ -530,7 +528,10 @@ export async function compareConfigurations(configIds: string[]): Promise<{
     }
     
     // Use the comparison utility to analyze the configurations
-    const comparison = compareConfigurationsUtil(results.map(r => r.results || {}));
+    const comparison = compareConfigurationsUtil(results.map(r => {
+      if (r.results) return r.results;
+      return {};
+    }));
     
     return {
       success: true,
@@ -563,7 +564,7 @@ export async function calculateWithLocationFactors(
       // Adjust cooling capacity based on climate
       const adjustedCooling = {
         ...baseConfig.cooling,
-        totalCapacity: Math.round(baseConfig.cooling.totalCoolingCapacity * (climateFactor.coolingFactor || 1.0)),
+        totalCapacity: Math.round(baseConfig.cooling.totalCapacity * (climateFactor.coolingFactor || 1.0)),
         pue: baseConfig.cooling.pue * ((climateFactor.temperature || 20) > 25 ? 1.05 : 0.95)
       };
       
