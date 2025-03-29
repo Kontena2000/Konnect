@@ -5,7 +5,6 @@ import { generateConfigurationReport } from '@/services/calculatorReportService'
 import { calculatorDebug } from '@/services/calculatorDebug';
 import { LocationSelector } from './LocationSelector';
 import { ResultsDisplay } from './ResultsDisplay';
-import { SimpleResultsDisplay } from './SimpleResultsDisplay';
 import { CalculatorDebugPanel } from './CalculatorDebugPanel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
@@ -647,19 +646,10 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         </Button>
       </div>
       
-      {/* Display results using both components for comparison */}
-      {results && (
-        <>
-          <SimpleResultsDisplay results={results} />
-          <div className='mt-8 pt-8 border-t'>
-            <h3 className='text-xl font-bold mb-4'>Detailed Results View</h3>
-            <ResultsDisplay results={results} onSave={onSave} userId={userId} />
-          </div>
-        </>
-      )}
+      {results && <ResultsDisplay results={results} onSave={onSave} userId={userId} />}
       
       {/* Add Debug Panel */}
-      <div className='mt-8'>
+      <div className="mt-8">
         <CalculatorDebugPanel />
       </div>
     </div>
