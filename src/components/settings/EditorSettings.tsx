@@ -74,12 +74,17 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
             <Label>Grid Size</Label>
             <Select
               value={String(localPreferences.grid.size)}
-              onValueChange={(value) =>
-                setLocalPreferences(prev => ({
-                  ...prev,
-                  grid: { ...prev.grid, size: Number(value) }
-                }))
-              }
+              onValueChange={(value) => {
+                if (localPreferences) {
+                  setLocalPreferences({
+                    ...localPreferences,
+                    grid: { 
+                      ...localPreferences.grid, 
+                      size: Number(value) 
+                    }
+                  });
+                }
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select grid size" />

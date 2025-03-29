@@ -2,7 +2,7 @@ import { PricingEditor as MatrixPricingEditor } from '@/components/matrix-calcul
 
 interface PricingEditorProps {
   readOnly?: boolean;
-  onSave?: (pricing: any) => void;
+  onSave?: ((pricing: any) => void) | undefined;
 }
 
 export function PricingEditor({ readOnly = false, onSave }: PricingEditorProps) {
