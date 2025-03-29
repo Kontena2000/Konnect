@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -122,11 +121,11 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
           
           {/* Warnings */}
           {(results.electrical.multiplicityWarning || results.cooling.warning) && (
-            <Alert variant="warning" className="mt-6">
-              <AlertTriangle className="h-4 w-4" />
+            <Alert variant='destructive' className='mt-6'>
+              <AlertTriangle className='h-4 w-4' />
               <AlertTitle>Configuration Warnings</AlertTitle>
               <AlertDescription>
-                <ul className="list-disc pl-5 mt-2">
+                <ul className='list-disc pl-5 mt-2'>
                   {results.electrical.multiplicityWarning && (
                     <li>{results.electrical.multiplicityWarning}</li>
                   )}
