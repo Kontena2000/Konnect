@@ -1,7 +1,7 @@
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor, ClimateFactor } from './climateDataService';
-import { calculateEnergyMetrics } from './energyDataService';
+import { calculateEnergyMetrics, calculateWithLocationFactors as calculateEnergyWithLocationFactors } from './energyDataService';
 import { 
   calculateCurrentPerRow, 
   calculateCurrentPerRack, 
@@ -21,8 +21,9 @@ import {
   calculateCoolingCapacity,
   compareConfigurations as compareConfigurationsUtil
 } from './calculatorUtils';
+import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
 
-// Cache
+// Improved cache implementation
 let cachedPricing: PricingMatrix | null = null;
 let cachedParams: CalculationParams | null = null;
 let lastFetchTime = 0;
@@ -56,6 +57,13 @@ export async function getPricingAndParams() {
     return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
   }
 }
+
+// Memoized version of getPricingAndParams
+export const getMemoizedPricingAndParams = memoize(
+  getPricingAndParams,
+  pricingCache,
+  () => 'pricing_and_params'
+);
 
 export interface CalculationConfig {
   kwPerRack: number;
@@ -183,7 +191,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
 
 export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28, options: CalculationOptions = {}) {
   try {
-    const { pricing, params } = await getPricingAndParams();
+    const { pricing, params } = await getMemoizedPricingAndParams();
     
     // Extract options with defaults
     const {
@@ -290,15 +298,15 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
     
     // Calculate carbon footprint
     // Ensure we have a valid number for generator capacity
-    const generatorCapacity = generator && generator.included ? generator.capacity : 0;
+    const generatorCapacity = (generator && generator.included && typeof generator.capacity === 'number') ? generator.capacity : 0;
     // Ensure we have a valid number for renewable percentage
-    const renewablePercentage = sustainabilityOptions.renewableEnergyPercentage || 20;
+    const renewablePercentage = sustainabilityOptions?.renewableEnergyPercentage ?? 20;
     
     const carbonFootprint = calculateCarbonFootprint(
       sustainability.annualEnergyConsumption.total,
       includeGenerator,
       24, // Assume 24 hours of generator testing per year
-      generatorCapacity,
+      generatorCapacity, // Now guaranteed to be a number
       renewablePercentage,
       updatedParams
     );
