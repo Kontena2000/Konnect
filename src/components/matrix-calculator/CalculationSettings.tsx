@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect, useCallback } from "react";
 import { CalculationParams } from "@/types/calculationParams";
 import { DEFAULT_CALCULATION_PARAMS } from "@/constants/calculatorConstants";
@@ -39,7 +38,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
       console.error("Error loading calculation parameters:", err);
       
       // Set default parameters as fallback
-      setParams({ ...DEFAULT_CALCULATION_PARAMS });
+      setParams({ ...DEFAULT_CALCULATION_PARAMS } as CalculationParams);
       
       toast({
         variant: "destructive",
@@ -105,7 +104,7 @@ export function CalculationSettings({ readOnly = false, onSave = null }: Calcula
   
   // Reset to defaults
   const handleReset = () => {
-    setParams({ ...DEFAULT_CALCULATION_PARAMS });
+    setParams({ ...DEFAULT_CALCULATION_PARAMS } as CalculationParams);
     toast({
       title: "Reset to Defaults",
       description: "Parameters have been reset to default values. Click Save to apply changes.",

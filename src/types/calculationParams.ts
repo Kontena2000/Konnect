@@ -1,4 +1,3 @@
-
 import { DEFAULT_CALCULATION_PARAMS } from "@/constants/calculatorConstants";
 
 export interface ElectricalParams {
@@ -20,6 +19,8 @@ export interface PowerParams {
   upsFrameMaxModules: number;
   batteryRuntime: number;
   batteryEfficiency: number;
+  eHouseBaseSqm: number;      // Added missing property
+  eHouseBatterySqm: number;   // Added missing property
 }
 
 export interface CostFactorParams {
@@ -28,11 +29,17 @@ export interface CostFactorParams {
   contingencyPercentage: number;
 }
 
+export interface CoolingThresholds {
+  airCooledMax: number;
+  recommendedDlcMin: number;
+}
+
 export interface CalculationParams {
   electrical: ElectricalParams;
   cooling: CoolingParams;
   power: PowerParams;
   costFactors: CostFactorParams;
+  coolingThresholds: CoolingThresholds; // Added missing property
 }
 
 // Helper function to validate calculation parameters
@@ -129,7 +136,7 @@ export function validateCalculationParams(params: any): { isValid: boolean; erro
 // Helper function to ensure params has the correct structure
 export function ensureParamsStructure(params: any): CalculationParams {
   if (!params) {
-    return { ...DEFAULT_CALCULATION_PARAMS };
+    return { ...DEFAULT_CALCULATION_PARAMS } as CalculationParams;
   }
 
   // Create a deep copy with default values for any missing properties
@@ -151,11 +158,17 @@ export function ensureParamsStructure(params: any): CalculationParams {
       upsFrameMaxModules: params.power?.upsFrameMaxModules ?? DEFAULT_CALCULATION_PARAMS.power.upsFrameMaxModules,
       batteryRuntime: params.power?.batteryRuntime ?? DEFAULT_CALCULATION_PARAMS.power.batteryRuntime,
       batteryEfficiency: params.power?.batteryEfficiency ?? DEFAULT_CALCULATION_PARAMS.power.batteryEfficiency,
+      eHouseBaseSqm: params.power?.eHouseBaseSqm ?? DEFAULT_CALCULATION_PARAMS.power.eHouseBaseSqm,
+      eHouseBatterySqm: params.power?.eHouseBatterySqm ?? DEFAULT_CALCULATION_PARAMS.power.eHouseBatterySqm,
     },
     costFactors: {
       installationPercentage: params.costFactors?.installationPercentage ?? DEFAULT_CALCULATION_PARAMS.costFactors.installationPercentage,
       engineeringPercentage: params.costFactors?.engineeringPercentage ?? DEFAULT_CALCULATION_PARAMS.costFactors.engineeringPercentage,
       contingencyPercentage: params.costFactors?.contingencyPercentage ?? DEFAULT_CALCULATION_PARAMS.costFactors.contingencyPercentage,
+    },
+    coolingThresholds: {
+      airCooledMax: params.coolingThresholds?.airCooledMax ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.airCooledMax,
+      recommendedDlcMin: params.coolingThresholds?.recommendedDlcMin ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.recommendedDlcMin,
     }
   };
 }

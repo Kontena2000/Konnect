@@ -1,4 +1,3 @@
-
 import { getFirestore, doc, getDoc, setDoc } from "firebase/firestore";
 import { CalculationParams, validateCalculationParams, ensureParamsStructure } from "@/types/calculationParams";
 import { DEFAULT_CALCULATION_PARAMS } from "@/constants/calculatorConstants";
@@ -29,7 +28,7 @@ export async function loadCalculationParams(): Promise<CalculationParams> {
         return ensureParamsStructure(data);
       } else {
         // Document doesn't exist, return default params
-        return { ...DEFAULT_CALCULATION_PARAMS };
+        return { ...DEFAULT_CALCULATION_PARAMS } as CalculationParams;
       }
     } catch (error) {
       lastError = error instanceof Error ? error : new Error(String(error));
@@ -48,7 +47,7 @@ export async function loadCalculationParams(): Promise<CalculationParams> {
   }
 
   // Fallback to default params if all else fails
-  return { ...DEFAULT_CALCULATION_PARAMS };
+  return { ...DEFAULT_CALCULATION_PARAMS } as CalculationParams;
 }
 
 /**
