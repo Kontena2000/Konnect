@@ -1,13 +1,12 @@
+
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ModuleManager } from "@/components/settings/ModuleManager";
-import { ThemeEditor } from "@/components/settings/ThemeEditor";
-import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import editorPreferencesService, { EditorPreferences } from "@/services/editor-preferences";
-import { EditorSettings } from '@/components/settings/EditorSettings';
+import { GeneralSettings } from "@/components/settings/GeneralSettings";
+import { LayoutEditorSettings } from "@/components/settings/LayoutEditorSettings";
+import { MatrixCalculatorSettings } from "@/components/settings/MatrixCalculatorSettings";
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -27,51 +26,39 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className='w-full p-4 md:p-6 space-y-6'>
-        <div className='flex items-center justify-between'>
+      <div className="w-full p-4 md:p-6 space-y-6">
+        <div className="flex items-center justify-between">
           <div>
-            <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
-            <p className='text-muted-foreground'>
+            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+            <p className="text-muted-foreground">
               Manage your application settings and preferences
             </p>
           </div>
         </div>
 
-        <Tabs defaultValue='editor' className='space-y-6'>
-          <TabsList className='w-full sm:w-auto'>
-            <TabsTrigger value='editor'>Editor Settings</TabsTrigger>
-            <TabsTrigger value='modules'>Module Manager</TabsTrigger>
-            <TabsTrigger value='theme'>Theme Editor</TabsTrigger>
-            <TabsTrigger value='firebase'>Firebase Monitor</TabsTrigger>
+        <Tabs defaultValue="general" className="space-y-6">
+          <TabsList className="w-full sm:w-auto">
+            <TabsTrigger value="general">General Settings</TabsTrigger>
+            <TabsTrigger value="layout-editor">Layout Editor</TabsTrigger>
+            <TabsTrigger value="matrix-calculator">Matrix Calculator</TabsTrigger>
           </TabsList>
 
-          <TabsContent value="editor">
-            <Card>
-              <CardHeader>
-                <CardTitle>Editor Settings</CardTitle>
-                <CardDescription>Customize your editor experience</CardDescription>
-              </CardHeader>
-              <CardContent>
-                {preferences && (
-                  <EditorSettings
-                    preferences={preferences}
-                    onUpdate={setPreferences}
-                  />
-                )}
-              </CardContent>
-            </Card>
+          <TabsContent value="general">
+            {user && <GeneralSettings userId={user.uid} />}
           </TabsContent>
 
-          <TabsContent value="modules">
-            <ModuleManager />
+          <TabsContent value="layout-editor">
+            {preferences && user && (
+              <LayoutEditorSettings
+                preferences={preferences}
+                onUpdate={setPreferences}
+                userId={user.uid}
+              />
+            )}
           </TabsContent>
 
-          <TabsContent value="theme">
-            <ThemeEditor />
-          </TabsContent>
-
-          <TabsContent value="firebase">
-            <FirebaseMonitor />
+          <TabsContent value="matrix-calculator">
+            {user && <MatrixCalculatorSettings userId={user.uid} />}
           </TabsContent>
         </Tabs>
       </div>
