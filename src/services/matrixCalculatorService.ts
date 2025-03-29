@@ -1,6 +1,6 @@
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
-import { getClimateFactor } from './climateDataService';
+import { getClimateFactor, ClimateFactor } from './climateDataService';
 import { calculateEnergyMetrics } from './energyDataService';
 import { 
   calculateCurrentPerRow, 
@@ -163,7 +163,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
         type: 'immersion',
         totalCoolingCapacity: cooling.totalCapacity,
         tanksNeeded: Math.ceil(totalRacks / 4),
-        flowRate: cooling.totalCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
+        flowRate: cooling.totalCoolingCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
         pue: cooling.pueImpact
       };
       

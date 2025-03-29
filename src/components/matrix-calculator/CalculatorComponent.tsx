@@ -51,10 +51,13 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     try {
       let calculationResults;
       
-      if (useLocationData && location && location.climateData) {
+      if (useLocationData && location) {
         calculationResults = await calculateWithLocationFactors(
-          { kwPerRack, coolingType, totalRacks },
-          location
+          kwPerRack,
+          coolingType,
+          totalRacks,
+          location,
+          {}
         );
       } else {
         calculationResults = await calculateConfiguration(kwPerRack, coolingType, totalRacks);
@@ -62,8 +65,8 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       
       setResults(calculationResults);
       toast({
-        title: "Calculation Complete",
-        description: "Your configuration has been calculated successfully.",
+        title: 'Calculation Complete',
+        description: 'Your configuration has been calculated successfully.',
       });
     } catch (error) {
       console.error('Calculation error:', error);

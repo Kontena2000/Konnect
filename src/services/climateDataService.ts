@@ -1,6 +1,16 @@
 import { getFirestore, doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { CLIMATE_ZONES } from '@/constants/calculatorConstants';
 
+// Add this interface to the top of the file
+export interface ClimateFactor {
+  temperature: number;
+  humidity: number;
+  coolingFactor: number;
+  renewableEnergyPotential: number;
+  waterScarcityFactor?: number;
+  zone?: string;
+}
+
 export interface ClimateData {
   zone: string;
   avgTemperature: number;
