@@ -1,4 +1,4 @@
-import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, setDoc } from 'firebase/firestore';
+import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, setDoc, getDocs, query, where } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 
 // Types
@@ -171,13 +171,19 @@ export async function getUserConfigurations(userId: string) {
   const db = getFirestore();
   
   try {
-    const snapshot = await getDoc(doc(db, 'matrix_calculator', 'user_configurations'));
-    if (!snapshot.exists()) {
-      return [];
-    }
+    // First check if the collection exists
+    const configsCollection = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
+    const querySnapshot = await getDocs(query(configsCollection, where('userId', '==', userId)));
     
-    const configs = snapshot.data().configs || [];
-    return configs.filter((config: UserConfiguration) => config.userId === userId);
+    const configs: UserConfiguration[] = [];
+    querySnapshot.forEach((doc) => {
+      configs.push({
+        id: doc.id,
+        ...doc.data()
+      } as UserConfiguration);
+    });
+    
+    return configs;
   } catch (error) {
     console.error('Error fetching user configurations:', error);
     return [];

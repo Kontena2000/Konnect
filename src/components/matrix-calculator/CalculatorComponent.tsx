@@ -59,6 +59,12 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         const config = await calculateConfiguration(kwPerRack, coolingType, totalRacks);
         setResults(config);
       }
+      
+      // Show success toast
+      toast({
+        title: "Calculation Complete",
+        description: "Your configuration has been calculated successfully.",
+      });
     } catch (error) {
       console.error('Calculation error:', error);
       toast({
@@ -74,6 +80,14 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   // Handle location selection
   const handleLocationSelected = (locationData: any) => {
     setLocation(locationData);
+  };
+  
+  // Handle rack count change
+  const handleRackCountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = parseInt(e.target.value);
+    if (!isNaN(value) && value > 0 && value <= 100) {
+      setTotalRacks(value);
+    }
   };
   
   return (
@@ -125,7 +139,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
               id='totalRacks'
               type='number'
               value={totalRacks}
-              onChange={(e) => setTotalRacks(Number(e.target.value))}
+              onChange={handleRackCountChange}
               min={1}
               max={100}
             />
