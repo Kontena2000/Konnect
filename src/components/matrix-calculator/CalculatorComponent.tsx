@@ -7,6 +7,8 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
 import { Loader2 } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 
 interface CalculatorComponentProps {
   userId: string;
@@ -19,9 +21,11 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   // State for inputs
   const [kwPerRack, setKwPerRack] = useState(75);
   const [coolingType, setCoolingType] = useState('dlc');
+  const [totalRacks, setTotalRacks] = useState(28); // Default: 2 rows x 14 racks
   const [location, setLocation] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
   
   // Load initial results if provided
   useEffect(() => {
@@ -32,6 +36,9 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       if (initialResults.rack) {
         setKwPerRack(initialResults.rack.powerDensity);
         setCoolingType(initialResults.rack.coolingType);
+        if (initialResults.rack.totalRacks) {
+          setTotalRacks(initialResults.rack.totalRacks);
+        }
       }
     }
   }, [initialResults]);
@@ -42,16 +49,21 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     try {
       if (location) {
         const config = await calculateWithLocationFactors(
-          { kwPerRack, coolingType },
+          { kwPerRack, coolingType, totalRacks },
           location
         );
         setResults(config);
       } else {
-        const config = await calculateConfiguration(kwPerRack, coolingType);
+        const config = await calculateConfiguration(kwPerRack, coolingType, totalRacks);
         setResults(config);
       }
     } catch (error) {
       console.error('Calculation error:', error);
+      toast({
+        title: 'Calculation Error',
+        description: 'There was an error generating the results. Please try again.',
+        variant: 'destructive'
+      });
     } finally {
       setLoading(false);
     }
@@ -105,12 +117,28 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
             </div>
           </div>
           
+          <div className='space-y-2'>
+            <Label htmlFor='totalRacks'>Total Number of Racks</Label>
+            <Input
+              id='totalRacks'
+              type='number'
+              value={totalRacks}
+              onChange={(e) => setTotalRacks(Number(e.target.value))}
+              min={1}
+              max={100}
+            />
+            <p className='text-sm text-muted-foreground'>
+              (Default: 28 racks - 2 rows × 14 racks per row)
+            </p>
+          </div>
+          
           <LocationSelector onLocationSelected={handleLocationSelected} />
           
           <Button 
             onClick={generateResults}
             disabled={loading}
-            className='w-full md:w-auto'
+            className='w-full md:w-auto bg-primary hover:bg-primary/90'
+            type='button'
           >
             {loading ? (
               <>
@@ -118,7 +146,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
                 Calculating...
               </>
             ) : (
-              'Generate Results'
+              'Generate Pricing Estimate'
             )}
           </Button>
         </CardContent>
