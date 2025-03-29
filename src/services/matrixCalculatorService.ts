@@ -1,4 +1,3 @@
-
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor } from './climateDataService';
@@ -347,6 +346,3 @@ function adjustCoolingForClimate(cooling: any, climateData: any) {
   
   return adjustedCooling;
 }
-
-// Temporary placeholder for params
-const params = DEFAULT_CALCULATION_PARAMS;

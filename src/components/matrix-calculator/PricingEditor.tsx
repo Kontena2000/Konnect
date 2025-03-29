@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PricingEditorProps {
   readOnly?: boolean;
-  onSave?: ((pricing: any) => void) | undefined;
+  onSave?: (pricing: any) => void;
 }
 
 export function PricingEditor({ readOnly = false, onSave }: PricingEditorProps) {
