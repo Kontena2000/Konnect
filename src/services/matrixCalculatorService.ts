@@ -2,10 +2,20 @@ import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp 
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor } from './climateDataService';
 import { calculateEnergyMetrics } from './energyDataService';
+import { 
+  calculateCurrentPerRow, 
+  calculateCurrentPerRack, 
+  selectBusbarSize, 
+  selectTapOffBoxSize, 
+  selectRPDUSize,
+  calculateBusbarCost,
+  CalculationParams,
+  PricingMatrix
+} from './calculatorUtils';
 
 // Cache
-let cachedPricing: any = null;
-let cachedParams: any = null;
+let cachedPricing: PricingMatrix | null = null;
+let cachedParams: CalculationParams | null = null;
 let lastFetchTime = 0;
 
 export async function getPricingAndParams() {
@@ -20,11 +30,11 @@ export async function getPricingAndParams() {
   try {
     // Fetch pricing
     const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
-    const pricing = pricingDoc.exists() ? pricingDoc.data() : DEFAULT_PRICING;
+    const pricing = pricingDoc.exists() ? pricingDoc.data() as PricingMatrix : DEFAULT_PRICING;
     
     // Fetch parameters
     const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
-    const params = paramsDoc.exists() ? paramsDoc.data() : DEFAULT_CALCULATION_PARAMS;
+    const params = paramsDoc.exists() ? paramsDoc.data() as CalculationParams : DEFAULT_CALCULATION_PARAMS;
     
     // Update cache
     cachedPricing = pricing;
@@ -36,6 +46,12 @@ export async function getPricingAndParams() {
     console.error('Error fetching data:', error);
     return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
   }
+}
+
+export interface CalculationConfig {
+  kwPerRack: number;
+  coolingType: string;
+  totalRacks?: number;
 }
 
 export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28) {
@@ -63,7 +79,12 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
     busbarSize,
     cooling,
     ups,
-    battery
+    battery,
+    electrical: {
+      currentPerRack,
+      tapOffBox,
+      rpdu
+    }
   }, pricing, params);
   
   return {
@@ -79,7 +100,7 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
       tapOffBox,
       rpdu,
       multiplicityWarning: currentPerRow > 2000 ? 
-        "Current exceeds maximum busbar rating (2000A). Multiple busbars required per row." : ""
+        `Current exceeds maximum busbar rating (2000A). Multiple busbars required per row.` : ``
     },
     cooling,
     power: {
@@ -90,11 +111,12 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
   };
 }
 
-export async function calculateWithLocationFactors(config: { kwPerRack: number, coolingType: string }, location: any) {
+export async function calculateWithLocationFactors(config: CalculationConfig, location: any) {
   // Get base configuration
   const baseConfig = await calculateConfiguration(
     config.kwPerRack,
-    config.coolingType
+    config.coolingType,
+    config.totalRacks
   );
   
   // Adjust cooling for climate
@@ -124,43 +146,7 @@ export async function calculateWithLocationFactors(config: { kwPerRack: number, 
 }
 
 // Helper functions
-function calculateCurrentPerRow(kwPerRack: number, params: any) {
-  const racksPerRow = 14; // Standard setup: 2 rows of 14 racks
-  const totalKwPerRow = kwPerRack * racksPerRow;
-  return Math.round(
-    (totalKwPerRow * 1000) / 
-    (params.electrical.voltageFactor * Math.sqrt(3) * params.electrical.powerFactor)
-  );
-}
-
-function selectBusbarSize(current: number) {
-  const ratings = [250, 400, 600, 800, 1000, 1250, 1600, 2000];
-  for (const rating of ratings) {
-    if (rating >= current) return rating;
-  }
-  return 2000; // Max rating
-}
-
-function calculateCurrentPerRack(kwPerRack: number, params: any) {
-  return Math.round(
-    (kwPerRack * 1000) / 
-    (params.electrical.voltageFactor * Math.sqrt(3) * params.electrical.powerFactor)
-  );
-}
-
-function selectTapOffBoxSize(current: number) {
-  if (current <= 63) return 'standard63A';
-  if (current <= 100) return 'custom100A';
-  if (current <= 150) return 'custom150A';
-  if (current <= 200) return 'custom200A';
-  return 'custom250A';
-}
-
-function selectRPDUSize(current: number) {
-  return current <= 80 ? 'standard80A' : 'standard112A';
-}
-
-function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: any) {
+function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: CalculationParams) {
   const totalITLoad = kwPerRack * totalRacks;
   
   // DLC vs air-cooled calculations
@@ -198,7 +184,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
   }
 }
 
-function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: any) {
+function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
   const totalITLoad = kwPerRack * totalRacks;
   
   // Calculate required UPS capacity with N+1 redundancy
@@ -232,7 +218,7 @@ function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params:
   };
 }
 
-function calculateBatteryRequirements(totalLoad: number, params: any) {
+function calculateBatteryRequirements(totalLoad: number, params: CalculationParams) {
   // Calculate battery requirements
   const runtimeMinutes = params.power.batteryRuntime;
   const batteryEfficiency = params.power.batteryEfficiency;
@@ -251,7 +237,7 @@ function calculateBatteryRequirements(totalLoad: number, params: any) {
   };
 }
 
-function calculateCost(config: any, pricing: any, params: any) {
+function calculateCost(config: any, pricing: PricingMatrix, params: CalculationParams) {
   // Calculate electrical costs
   const busbarCost = calculateBusbarCost(config.busbarSize, pricing);
   const tapOffBoxCost = pricing.tapOffBox[config.cooling.type === 'dlc' ? 
@@ -278,9 +264,8 @@ function calculateCost(config: any, pricing: any, params: any) {
   const batteryCost = pricing.battery.revoTp240Cabinet * config.power.battery.cabinetsNeeded;
   
   // Calculate e-house costs
-  // Define fixed values for e-house calculations
-  const eHouseBaseSqm = 20; // Base square meters for e-house per UPS frame
-  const eHouseBatterySqm = 5; // Additional square meters per battery cabinet
+  const eHouseBaseSqm = params.power.eHouseBaseSqm || 20; // Base square meters for e-house per UPS frame
+  const eHouseBatterySqm = params.power.eHouseBatterySqm || 5; // Additional square meters per battery cabinet
   const eHouseSize = eHouseBaseSqm * config.power.ups.framesNeeded +
                     eHouseBatterySqm * config.power.battery.cabinetsNeeded;
   const eHouseCost = pricing.eHouse.base + pricing.eHouse.perSqMeter * eHouseSize;
@@ -320,11 +305,6 @@ function calculateCost(config: any, pricing: any, params: any) {
   };
 }
 
-function calculateBusbarCost(size: number, pricing: any) {
-  const basePrice = size <= 1250 ? pricing.busbar.base1250A : pricing.busbar.base2000A;
-  return basePrice + (pricing.busbar.perMeter * 30); // Estimate 30m of busbar
-}
-
 function adjustCoolingForClimate(cooling: any, climateData: any) {
   const climateFactor = getClimateFactor(climateData, cooling.type);
   
@@ -348,4 +328,28 @@ function adjustCoolingForClimate(cooling: any, climateData: any) {
   };
   
   return adjustedCooling;
+}
+
+// Save calculation results
+export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string) {
+  const db = getFirestore();
+  
+  try {
+    const docRef = await addDoc(collection(db, 'matrix_calculator', 'user_configurations', 'configs'), {
+      userId,
+      name,
+      description: `${config.kwPerRack}kW per rack, ${config.coolingType} cooling, ${config.totalRacks || 28} racks`,
+      kwPerRack: config.kwPerRack,
+      coolingType: config.coolingType,
+      totalRacks: config.totalRacks || 28,
+      results,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+    
+    return { id: docRef.id, success: true };
+  } catch (error) {
+    console.error('Error saving calculation:', error);
+    return { success: false, error };
+  }
 }
