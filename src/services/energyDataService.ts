@@ -3,9 +3,13 @@ import { CLIMATE_ZONES } from '@/constants/calculatorConstants';
 import { ClimateData } from './climateDataService';
 
 export interface EnergyConfig {
-  kwPerRack: number;
-  coolingType: string;
-  totalRacks?: number;
+  totalLoad: number;
+  pue: number;
+  renewablePercentage?: number;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+  };
 }
 
 export interface EnergyMetrics {
@@ -23,48 +27,30 @@ export interface EnergyMetrics {
   };
 }
 
-export function calculateEnergyMetrics(config: EnergyConfig, climateData: ClimateData): EnergyMetrics {
-  const { kwPerRack, coolingType } = config;
+export function calculateEnergyMetrics(totalLoad: number, pue: number, renewablePercentage = 0.2) {
+  const annualITEnergy = totalLoad * 24 * 365; // kWh per year
+  const annualTotalEnergy = annualITEnergy * pue; // kWh per year including cooling overhead
   
-  // Provide default energy rates if not available in climateData
-  const energyRates = climateData.energyRates || {
-    costPerKWh: 0.15,
-    carbonIntensity: 0.5,
-    renewablePct: 20
-  };
-  
-  // Calculate total IT load (kW)
-  const totalRacks = config.totalRacks || 28; // Standard configuration
-  const totalITLoad = kwPerRack * totalRacks;
-  
-  // Calculate PUE based on cooling type and climate
-  const basePUE = coolingType === 'dlc' ? 1.15 : 1.35;
-  
-  // Adjust PUE based on climate
-  const climateFactor = getClimatePUEFactor(climateData, coolingType);
-  const adjustedPUE = basePUE * climateFactor;
-  
-  // Calculate total facility power
-  const totalFacilityPower = totalITLoad * adjustedPUE;
-  
-  // Calculate annual energy consumption (kWh)
-  const hoursPerYear = 8760;
-  const annualEnergyConsumption = totalFacilityPower * hoursPerYear;
-  
-  // Calculate costs and carbon metrics
-  const annualEnergyCost = annualEnergyConsumption * energyRates.costPerKWh;
-  const annualCarbonEmissions = annualEnergyConsumption * energyRates.carbonIntensity;
-  const renewableEnergy = (annualEnergyConsumption * energyRates.renewablePct) / 100;
+  // Calculate carbon footprint
+  const gridEnergy = annualTotalEnergy * (1 - renewablePercentage);
+  const carbonIntensity = 0.35; // kg CO2/kWh - default value
+  const carbonEmissions = gridEnergy * carbonIntensity;
   
   return {
-    pue: adjustedPUE.toFixed(2),
-    totalITLoad,
-    totalFacilityPower: Math.round(totalFacilityPower),
-    annualEnergyConsumption: Math.round(annualEnergyConsumption),
-    annualEnergyCost: Math.round(annualEnergyCost),
-    annualCarbonEmissions: Math.round(annualCarbonEmissions),
-    renewableEnergy: Math.round(renewableEnergy),
-    energyRates
+    annualITEnergy: Math.round(annualITEnergy),
+    annualTotalEnergy: Math.round(annualTotalEnergy),
+    annualOverheadEnergy: Math.round(annualTotalEnergy - annualITEnergy),
+    pue,
+    carbonFootprint: {
+      annual: Math.round(carbonEmissions / 1000), // tonnes CO2/year
+      perKwh: Math.round(carbonEmissions / annualTotalEnergy * 1000) / 1000, // kg CO2/kWh
+      renewablePercentage: renewablePercentage * 100
+    },
+    energyRates: {
+      costPerKWh: 0.15,
+      carbonIntensity: carbonIntensity,
+      renewablePct: renewablePercentage * 100
+    }
   };
 }
 
@@ -87,14 +73,15 @@ function getClimatePUEFactor(climateData: ClimateData, coolingType: string): num
   return factor;
 }
 
-export async function getEnergyRatesByRegion(region: string) {
+export async function getEnergyRatesByRegion(latitude: number, longitude: number) {
   const db = getFirestore();
   
   try {
     // Try to find energy rates for this region in our database
     const energyRatesQuery = query(
       collection(db, 'matrix_calculator', 'energy_rates', 'regions'),
-      where('region', '==', region)
+      where('latitude', '==', Math.round(latitude)),
+      where('longitude', '==', Math.round(longitude))
     );
     
     const querySnapshot = await getDocs(energyRatesQuery);
@@ -105,9 +92,16 @@ export async function getEnergyRatesByRegion(region: string) {
     }
   } catch (error) {
     console.error('Error fetching energy rates from database:', error);
+    // Continue with the fallback method
   }
   
   // Fallback: Return mock data based on region
+  // Determine region based on coordinates
+  let region = 'North America';
+  if (longitude > -30 && longitude < 40) region = 'Europe';
+  else if (longitude > 40 && longitude < 180) region = 'Asia';
+  else if (latitude < 0 && longitude > 100) region = 'Australia';
+  
   const mockRates: {[key: string]: any} = {
     'North America': {
       costPerKWh: 0.12,
@@ -161,7 +155,7 @@ export async function calculateWithLocationFactors(config: EnergyConfig) {
     
     // If no location provided, use default calculation
     if (!location || !location.latitude || !location.longitude) {
-      return calculateEnergyMetrics(config, { energyRates: { costPerKWh: 0.15, carbonIntensity: 0.5, renewablePct: 20 } });
+      return calculateEnergyMetrics(totalLoad, pue, renewablePercentage);
     }
     
     // Get regional energy rates
@@ -194,6 +188,6 @@ export async function calculateWithLocationFactors(config: EnergyConfig) {
   } catch (error) {
     console.error('Error calculating with location factors:', error);
     // Fall back to basic calculation
-    return calculateEnergyMetrics(config, { energyRates: { costPerKWh: 0.15, carbonIntensity: 0.5, renewablePct: 20 } });
+    return calculateEnergyMetrics(totalLoad, pue, renewablePercentage);
   }
 }

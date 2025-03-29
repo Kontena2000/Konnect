@@ -333,6 +333,7 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
   }
 }
 
+// Fix the calculateCost function to handle undefined values
 function calculateCost(config: any, pricing: PricingMatrix, params: CalculationParams) {
   try {
     // Calculate electrical costs
@@ -386,7 +387,7 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
       generatorCost = pricing.generator?.[generatorPriceKey] || 0;
       
       // Add fuel tank cost - ensure fuelTankSize is a number
-      const fuelTankSize = config.power.generator.fuel.tankSize || 0;
+      const fuelTankSize = config.power.generator.fuel?.tankSize || 0;
       generatorCost += fuelTankSize * (pricing.generator?.fuelTankPerLiter || 1);
     }
     
@@ -569,21 +570,11 @@ export async function calculateWithLocationFactors(
         pue: baseConfig.cooling.pue * ((climateFactor.temperature || 20) > 25 ? 1.05 : 0.95)
       };
       
-      // Create energy config object for the energy metrics calculation
-      const energyConfig = {
-        totalLoad: kwPerRack * totalRacks,
-        pue: adjustedCooling.pue,
-        renewablePercentage: climateFactor.renewableEnergyPotential || 0.2,
-        location: {
-          latitude: location.latitude,
-          longitude: location.longitude
-        }
-      };
-      
       // Adjust energy metrics based on climate
       const energyMetrics = calculateEnergyMetrics(
-        energyConfig.totalLoad,
-        energyConfig.pue
+        kwPerRack * totalRacks,
+        adjustedCooling.pue,
+        climateFactor.renewableEnergyPotential || 0.2
       );
       
       return {
