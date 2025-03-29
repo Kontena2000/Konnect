@@ -27,7 +27,7 @@ import { fallbackCalculation } from './calculatorFallback';
 import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
 import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
 
 // Improved cache implementation
 let cachedPricing: PricingMatrix | null = null;
@@ -1036,5 +1036,27 @@ export async function calculateWithLocationFactors(
   } catch (error) {
     console.error('Error calculating with location factors:', error);
     throw new Error('Failed to calculate with location factors: ' + (error instanceof Error ? error.message : String(error)));
+  }
+}
+
+/**
+ * Fetch historical calculation data for comparison
+ */
+export async function fetchHistoricalCalculations(userId: string, limit = 5) {
+  try {
+    const calculationsQuery = query(
+      collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+      where('userId', '==', userId),
+      where('status', '==', 'completed')
+    );
+    
+    const calculationsSnapshot = await getDocs(calculationsQuery);
+    return calculationsSnapshot.docs.map((doc: any) => ({
+      id: doc.id,
+      ...doc.data()
+    })).slice(0, limit);
+  } catch (error) {
+    console.error('Error fetching historical calculations:', error);
+    return [];
   }
 }

@@ -3,7 +3,7 @@ import { calculateConfiguration, CalculationOptions } from '@/services/matrixCal
 import { findOptimalConfiguration } from '@/services/optimizationService';
 import { generateConfigurationReport } from '@/services/calculatorReportService';
 import { calculatorDebug } from '@/services/calculatorDebug';
-import { calculatorFallback } from '@/services/calculatorFallback';
+import calculatorFallback from '@/services/calculatorFallback';
 import { LocationSelector } from './LocationSelector';
 import { ResultsDisplay } from './ResultsDisplay';
 import { CalculatorDebugPanel } from './CalculatorDebugPanel';

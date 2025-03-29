@@ -37,7 +37,7 @@ export default function MatrixCalculatorPage() {
             const projectData = {
               id: projectSnap.id,
               ...projectSnap.data()
-            };
+            } as any; // Cast to any to avoid TypeScript errors
             
             // Check if user has access to this project
             const projectUserId = projectData.userId || '';
@@ -66,7 +66,7 @@ export default function MatrixCalculatorPage() {
             const calculationData = {
               id: calculationSnap.id,
               ...calculationSnap.data()
-            };
+            } as any; // Cast to any to avoid TypeScript errors
             
             // Check if user has access to this calculation
             const calcUserId = calculationData.userId || '';

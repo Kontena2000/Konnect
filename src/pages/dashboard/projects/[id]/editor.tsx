@@ -200,7 +200,7 @@ export default function LayoutEditorPage() {
         const projectData = {
           id: projectSnap.id,
           ...projectSnap.data()
-        };
+        } as any; // Cast to any to avoid TypeScript errors
         
         // Check if user has access to this project
         const projectUserId = projectData.userId || '';
@@ -224,7 +224,7 @@ export default function LayoutEditorPage() {
             const layoutData = {
               id: layoutSnap.id,
               ...layoutSnap.data()
-            };
+            } as any; // Cast to any to avoid TypeScript errors
             
             // Verify this layout belongs to the current project
             if (layoutData.projectId === projectId) {
