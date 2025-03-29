@@ -80,7 +80,12 @@ export interface CalculationOptions {
     enableWaterRecycling?: boolean;
     renewableEnergyPercentage?: number;
   };
-  location?: any;
+  location?: {
+    latitude?: number;
+    longitude?: number;
+    address?: string;
+    climateData?: any;
+  };
 }
 
 // Calculate UPS requirements
