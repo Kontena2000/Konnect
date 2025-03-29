@@ -1,3 +1,4 @@
+
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor } from './climateDataService';
@@ -10,7 +11,16 @@ import {
   selectRPDUSize,
   calculateBusbarCost,
   CalculationParams,
-  PricingMatrix
+  PricingMatrix,
+  calculateSystemAvailability,
+  calculateSustainabilityMetrics,
+  calculateTCO,
+  calculateCarbonFootprint,
+  calculateThermalDistribution,
+  calculatePipeSizing,
+  calculateGeneratorRequirements,
+  calculateCoolingCapacity,
+  compareConfigurations as compareConfigurationsUtil
 } from './calculatorUtils';
 
 // Cache
@@ -54,7 +64,125 @@ export interface CalculationConfig {
   totalRacks?: number;
 }
 
-export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28, options = {}) {
+export interface CalculationOptions {
+  redundancyMode?: string;
+  includeGenerator?: boolean;
+  batteryRuntime?: number;
+  sustainabilityOptions?: {
+    enableWasteHeatRecovery?: boolean;
+    enableWaterRecycling?: boolean;
+    renewableEnergyPercentage?: number;
+  };
+  location?: any;
+}
+
+// Calculate UPS requirements
+function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
+  const totalITLoad = kwPerRack * totalRacks;
+  const redundancyFactor = params.electrical.redundancyMode === 'N' ? 1 :
+                          params.electrical.redundancyMode === 'N+1' ? 1.2 :
+                          params.electrical.redundancyMode === '2N' ? 2 : 1.5;
+  
+  const requiredCapacity = totalITLoad * redundancyFactor;
+  const moduleSize = params.power.upsModuleSize || 250; // kW
+  const maxModulesPerFrame = params.power.upsFrameMaxModules || 6;
+  
+  // Calculate number of modules needed
+  const totalModulesNeeded = Math.ceil(requiredCapacity / moduleSize);
+  const framesNeeded = Math.ceil(totalModulesNeeded / maxModulesPerFrame);
+  
+  // Determine frame size based on modules per frame
+  const frameSize = totalModulesNeeded <= 2 ? 'frame2Module' :
+                   totalModulesNeeded <= 4 ? 'frame4Module' : 'frame6Module';
+  
+  return {
+    totalITLoad,
+    redundancyFactor,
+    requiredCapacity,
+    moduleSize,
+    totalModulesNeeded,
+    redundantModules: totalModulesNeeded,
+    framesNeeded,
+    frameSize
+  };
+}
+
+// Calculate battery requirements
+function calculateBatteryRequirements(totalITLoad: number, params: CalculationParams) {
+  const runtime = params.power.batteryRuntime || 10; // minutes
+  const batteryEfficiency = params.power.batteryEfficiency || 0.95;
+  
+  // Calculate energy needed in kWh
+  const energyNeeded = (totalITLoad * runtime) / (60 * batteryEfficiency);
+  
+  // Assume each cabinet provides 40 kWh of energy
+  const cabinetsNeeded = Math.ceil(energyNeeded / 40);
+  
+  return {
+    runtime,
+    energyNeeded: Math.round(energyNeeded),
+    cabinetsNeeded,
+    totalWeight: cabinetsNeeded * 1200 // kg, assuming 1200kg per cabinet
+  };
+}
+
+// Calculate cooling requirements
+function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: CalculationParams) {
+  const totalITLoad = kwPerRack * totalRacks;
+  
+  // Get cooling capacity based on type
+  const cooling = calculateCoolingCapacity(totalITLoad, coolingType, params);
+  
+  // Add additional details based on cooling type
+  switch (coolingType.toLowerCase()) {
+    case 'dlc':
+      return {
+        type: 'dlc',
+        totalCoolingCapacity: cooling.totalCapacity,
+        dlcCoolingCapacity: cooling.dlcCoolingCapacity,
+        residualCoolingCapacity: cooling.residualCoolingCapacity,
+        dlcFlowRate: cooling.dlcCoolingCapacity * params.cooling.flowRateFactor,
+        pipingSize: cooling.dlcCoolingCapacity > 1000 ? 'dn160' : 'dn110',
+        pue: cooling.pueImpact
+      };
+      
+    case 'hybrid':
+      return {
+        type: 'hybrid',
+        totalCoolingCapacity: cooling.totalCapacity,
+        dlcPortion: cooling.dlcPortion,
+        airPortion: cooling.airPortion,
+        dlcFlowRate: cooling.dlcPortion * params.cooling.flowRateFactor,
+        rdhxUnits: Math.ceil(cooling.airPortion / 150),
+        rdhxModel: 'average',
+        pipingSize: 'dn110',
+        pue: cooling.pueImpact
+      };
+      
+    case 'immersion':
+      return {
+        type: 'immersion',
+        totalCoolingCapacity: cooling.totalCapacity,
+        tanksNeeded: Math.ceil(totalRacks / 4),
+        flowRate: cooling.totalCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
+        pue: cooling.pueImpact
+      };
+      
+    default: // air cooling
+      const rdhxCapacity = 150; // kW per unit
+      const rdhxUnits = Math.ceil(cooling.totalCapacity / rdhxCapacity);
+      
+      return {
+        type: 'air',
+        totalCoolingCapacity: cooling.totalCapacity,
+        rdhxUnits,
+        rdhxModel: kwPerRack <= 15 ? 'basic' : kwPerRack <= 30 ? 'standard' : 'highDensity',
+        pue: cooling.pueImpact
+      };
+  }
+}
+
+export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28, options: CalculationOptions = {}) {
   try {
     const { pricing, params } = await getPricingAndParams();
     
@@ -336,7 +464,7 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
 }
 
 // Enhanced function to save calculation results with more metadata
-export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string, options = {}) {
+export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string, options: CalculationOptions = {}) {
   const db = getFirestore();
   
   try {
@@ -372,13 +500,18 @@ export async function saveCalculationResult(userId: string, config: CalculationC
 }
 
 // New function to compare multiple configurations
-export async function compareConfigurations(configIds: string[]) {
+export async function compareConfigurations(configIds: string[]): Promise<{
+  success: boolean;
+  error?: string;
+  configurations?: any[];
+  comparison?: any;
+}> {
   if (!configIds || configIds.length === 0) {
     return { success: false, error: 'No configuration IDs provided' };
   }
   
   const db = getFirestore();
-  const results = [];
+  const results: any[] = [];
   
   try {
     for (const id of configIds) {
@@ -398,7 +531,7 @@ export async function compareConfigurations(configIds: string[]) {
     }
     
     // Use the comparison utility to analyze the configurations
-    const comparison = compareConfigurations(results.map(r => r.results));
+    const comparison = compareConfigurationsUtil(results.map(r => r.results || {}));
     
     return {
       success: true,
@@ -407,6 +540,52 @@ export async function compareConfigurations(configIds: string[]) {
     };
   } catch (error) {
     console.error('Error comparing configurations:', error);
-    return { success: false, error };
+    return { success: false, error: String(error) };
+  }
+}
+
+// Function to calculate with location factors
+export async function calculateWithLocationFactors(
+  kwPerRack: number, 
+  coolingType: string, 
+  totalRacks: number, 
+  location: { latitude: number; longitude: number; }, 
+  options: CalculationOptions = {}
+) {
+  try {
+    // Get climate factor for the location
+    const climateFactor = await getClimateFactor(location.latitude, location.longitude);
+    
+    // Calculate base configuration
+    const baseConfig = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
+    
+    // Adjust cooling based on climate
+    if (climateFactor) {
+      // Adjust cooling capacity based on climate
+      const adjustedCooling = {
+        ...baseConfig.cooling,
+        totalCoolingCapacity: Math.round(baseConfig.cooling.totalCoolingCapacity * climateFactor.coolingFactor),
+        pue: baseConfig.cooling.pue * (climateFactor.temperature > 25 ? 1.05 : 0.95)
+      };
+      
+      // Adjust energy metrics based on climate
+      const energyMetrics = calculateEnergyMetrics(
+        kwPerRack * totalRacks,
+        adjustedCooling.pue,
+        climateFactor.renewableEnergyPotential || 0.2
+      );
+      
+      return {
+        ...baseConfig,
+        cooling: adjustedCooling,
+        climateFactor,
+        energyMetrics
+      };
+    }
+    
+    return baseConfig;
+  } catch (error) {
+    console.error('Error calculating with location factors:', error);
+    throw new Error('Failed to calculate with location factors: ' + (error instanceof Error ? error.message : String(error)));
   }
 }
