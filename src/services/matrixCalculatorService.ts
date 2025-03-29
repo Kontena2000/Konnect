@@ -289,13 +289,17 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
     );
     
     // Calculate carbon footprint
+    // Ensure we have a valid number for generator capacity
     const generatorCapacity = generator && generator.included ? generator.capacity : 0;
+    // Ensure we have a valid number for renewable percentage
+    const renewablePercentage = sustainabilityOptions.renewableEnergyPercentage || 20;
+    
     const carbonFootprint = calculateCarbonFootprint(
       sustainability.annualEnergyConsumption.total,
       includeGenerator,
       24, // Assume 24 hours of generator testing per year
       generatorCapacity,
-      sustainabilityOptions.renewableEnergyPercentage || 20,
+      renewablePercentage,
       updatedParams
     );
     
