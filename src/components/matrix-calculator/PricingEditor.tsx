@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from 'react';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING } from '@/constants/calculatorConstants';
