@@ -154,3 +154,46 @@ export function calculateCarbonSavings(baseConfig: EnergyMetrics, optimizedConfi
     }
   };
 }
+
+export async function calculateWithLocationFactors(config: EnergyConfig) {
+  try {
+    const { totalLoad, pue, renewablePercentage = 0.2, location } = config;
+    
+    // If no location provided, use default calculation
+    if (!location || !location.latitude || !location.longitude) {
+      return calculateEnergyMetrics(config, { energyRates: { costPerKWh: 0.15, carbonIntensity: 0.5, renewablePct: 20 } });
+    }
+    
+    // Get regional energy rates
+    const energyRates = await getEnergyRatesByRegion(location.latitude, location.longitude);
+    
+    // Calculate with regional rates
+    const annualITEnergy = totalLoad * 24 * 365; // kWh per year
+    const annualTotalEnergy = annualITEnergy * pue; // kWh per year including cooling overhead
+    
+    // Calculate carbon footprint with regional carbon intensity
+    const gridEnergy = annualTotalEnergy * (1 - renewablePercentage);
+    const carbonEmissions = gridEnergy * (energyRates.carbonIntensity || 0.35);
+    
+    return {
+      annualITEnergy: Math.round(annualITEnergy),
+      annualTotalEnergy: Math.round(annualTotalEnergy),
+      annualOverheadEnergy: Math.round(annualTotalEnergy - annualITEnergy),
+      pue,
+      carbonFootprint: {
+        annual: Math.round(carbonEmissions / 1000), // tonnes CO2/year
+        perKwh: Math.round(carbonEmissions / annualTotalEnergy * 1000) / 1000, // kg CO2/kWh
+        renewablePercentage: renewablePercentage * 100
+      },
+      energyRates: {
+        costPerKWh: energyRates.costPerKWh,
+        carbonIntensity: energyRates.carbonIntensity,
+        renewablePct: energyRates.renewablePct
+      }
+    };
+  } catch (error) {
+    console.error('Error calculating with location factors:', error);
+    // Fall back to basic calculation
+    return calculateEnergyMetrics(config, { energyRates: { costPerKWh: 0.15, carbonIntensity: 0.5, renewablePct: 20 } });
+  }
+}
