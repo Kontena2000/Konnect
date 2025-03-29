@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
-import { Settings, Share, Trash2, Edit, Save, Loader2 } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator } from "lucide-react";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -43,6 +43,7 @@ export default function ProjectDetailsPage() {
   
   const [project, setProject] = useState<Project | null>(null);
   const [layouts, setLayouts] = useState<Layout[]>([]);
+  const [calculations, setCalculations] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [editMode, setEditMode] = useState(false);
@@ -82,6 +83,22 @@ export default function ProjectDetailsPage() {
         
         const projectLayouts = await layoutService.getProjectLayouts(id as string);
         setLayouts(projectLayouts);
+
+        // Fetch calculations for this project
+        try {
+          const calculationsQuery = query(
+            collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+            where('projectId', '==', id)
+          );
+          const calculationsSnapshot = await getDocs(calculationsQuery);
+          const calculationsData = calculationsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setCalculations(calculationsData);
+        } catch (error) {
+          console.error('Error fetching calculations:', error);
+        }
       } catch (error) {
         console.error("Error loading project:", error);
         toast({
@@ -344,134 +361,161 @@ export default function ProjectDetailsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue="details">
+        <Tabs defaultValue="layouts">
           <TabsList>
-            <TabsTrigger value="details">Details</TabsTrigger>
             <TabsTrigger value="layouts">Layouts</TabsTrigger>
+            <TabsTrigger value="calculations">Calculations</TabsTrigger>
+            <TabsTrigger value="details">Project Details</TabsTrigger>
           </TabsList>
           
-          <TabsContent value="details" className="mt-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <CardTitle>Project Details</CardTitle>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setEditMode(!editMode)}
-                  >
-                    {editMode ? (
-                      <Save className="h-4 w-4 mr-2" />
-                    ) : (
-                      <Edit className="h-4 w-4 mr-2" />
-                    )}
-                    {editMode ? "Save" : "Edit"}
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent>
-                {editMode ? (
-                  <div className="space-y-4">
-                    <div className="grid gap-2">
-                      <Label htmlFor="name">Project Name</Label>
-                      <Input
-                        id="name"
-                        name="name"
-                        value={formData.name}
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="grid gap-2">
-                      <Label htmlFor="description">Description</Label>
-                      <Textarea
-                        id="description"
-                        name="description"
-                        value={formData.description}
-                        onChange={handleInputChange}
-                        rows={4}
-                      />
-                    </div>
-                    <div className="flex justify-end">
-                      <Button
-                        onClick={handleSaveProject}
-                        disabled={saving}
-                      >
-                        {saving && <Loader2 className="h-4 w-4 mr-2 animate-spin" />}
-                        Save Changes
-                      </Button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">Project Name</h3>
-                      <p>{project.name}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">Description</h3>
-                      <p>{project.description || "No description"}</p>
-                    </div>
-                    <div>
-                      <h3 className="font-medium text-sm text-muted-foreground">Plot Dimensions</h3>
-                      <p>
-                        {project.plotWidth && project.plotLength
-                          ? `${project.plotWidth}m × ${project.plotLength}m`
-                          : "Not specified"}
-                      </p>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-          </TabsContent>
-          
-          <TabsContent value="layouts" className="mt-6">
-            <div className="flex justify-between items-center mb-4">
-              <h2 className="text-xl font-semibold">Layouts</h2>
-              <Button 
-                className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
-                onClick={createNewLayout}
-              >
-                Create New Layout
-              </Button>
-            </div>
-            
-            <div className="grid gap-6 sm:grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+          <TabsContent value="layouts" className="space-y-4">
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
               {layouts.length > 0 ? (
                 layouts.map((layout) => (
-                  <Card key={layout.id} className="flex flex-col">
-                    <CardHeader>
+                  <Card key={layout.id}>
+                    <CardHeader className='pb-2'>
                       <CardTitle>{layout.name}</CardTitle>
+                      <CardDescription>
+                        {layout.description || 'No description'}
+                      </CardDescription>
                     </CardHeader>
-                    <CardContent className="flex-1">
-                      <p className="text-sm text-muted-foreground mb-4">
-                        {layout.description || "No description"}
+                    <CardContent>
+                      <p className='text-sm'>
+                        {layout.modules?.length || 0} modules, {layout.connections?.length || 0} connections
                       </p>
-                      <p className="text-sm text-muted-foreground">
-                        Last updated: {layout.updatedAt.toLocaleString()}
+                      <p className='text-xs text-muted-foreground'>
+                        Last updated: {layout.updatedAt ? new Date(layout.updatedAt.seconds * 1000).toLocaleString() : 'Unknown'}
                       </p>
                     </CardContent>
-                    <div className="p-4 pt-0">
-                      <Link href={`/dashboard/projects/${id}/editor?layout=${layout.id}`}>
-                        <Button className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black">
-                          Open Layout
-                        </Button>
-                      </Link>
-                    </div>
+                    <CardFooter className='flex justify-end gap-2'>
+                      <Button 
+                        variant='outline' 
+                        size='sm'
+                        onClick={() => handleEditLayout(layout.id)}
+                      >
+                        <Edit className='mr-2 h-4 w-4' />
+                        Edit
+                      </Button>
+                    </CardFooter>
                   </Card>
                 ))
               ) : (
-                <div className="col-span-full text-center py-12">
-                  <p className="text-muted-foreground">No layouts created yet.</p>
+                <div className='col-span-full text-center py-8'>
+                  <p className='text-muted-foreground'>No layouts found for this project</p>
                   <Button 
-                    className="mt-4 bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
-                    onClick={createNewLayout}
+                    variant='outline' 
+                    className='mt-4'
+                    onClick={() => router.push(`/dashboard/projects/${project.id}/editor`)}
                   >
-                    Create Your First Layout
+                    <LayoutGrid className='mr-2 h-4 w-4' />
+                    Create Layout
                   </Button>
                 </div>
               )}
             </div>
+          </TabsContent>
+          
+          <TabsContent value="calculations" className="space-y-4">
+            <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+              {calculations.length > 0 ? (
+                calculations.map((calculation) => (
+                  <Card key={calculation.id}>
+                    <CardHeader className='pb-2'>
+                      <CardTitle>{calculation.name || 'Unnamed Calculation'}</CardTitle>
+                      <CardDescription>
+                        {calculation.description || `${calculation.kwPerRack}kW per rack, ${calculation.totalRacks} racks`}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent>
+                      <div className='space-y-1'>
+                        <p className='text-sm'>
+                          <span className='font-medium'>Cooling:</span> {calculation.coolingType || 'Unknown'}
+                        </p>
+                        <p className='text-sm'>
+                          <span className='font-medium'>Power:</span> {calculation.kwPerRack || 0} kW/rack
+                        </p>
+                        {calculation.results?.costs?.tco?.total5Years && (
+                          <p className='text-sm'>
+                            <span className='font-medium'>5-Year TCO:</span> ${(calculation.results.costs.tco.total5Years / 1000000).toFixed(2)}M
+                          </p>
+                        )}
+                      </div>
+                      <p className='text-xs text-muted-foreground mt-2'>
+                        Created: {calculation.createdAt ? new Date(calculation.createdAt.seconds * 1000).toLocaleString() : 'Unknown'}
+                      </p>
+                    </CardContent>
+                    <CardFooter className='flex justify-end gap-2'>
+                      <Button 
+                        variant='outline' 
+                        size='sm'
+                        onClick={() => handleEditCalculation(calculation.id)}
+                      >
+                        <Edit className='mr-2 h-4 w-4' />
+                        View
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))
+              ) : (
+                <div className='col-span-full text-center py-8'>
+                  <p className='text-muted-foreground'>No calculations found for this project</p>
+                  <Button 
+                    variant='outline' 
+                    className='mt-4'
+                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
+                  >
+                    <Calculator className='mr-2 h-4 w-4' />
+                    Create Calculation
+                  </Button>
+                </div>
+              )}
+            </div>
+          </TabsContent>
+          
+          <TabsContent value="details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Information</CardTitle>
+              </CardHeader>
+              <CardContent className='space-y-4'>
+                <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                  <div>
+                    <h3 className='text-sm font-medium'>Project Name</h3>
+                    <p>{project.name}</p>
+                  </div>
+                  <div>
+                    <h3 className='text-sm font-medium'>Created</h3>
+                    <p>{project.createdAt ? new Date(project.createdAt.seconds * 1000).toLocaleString() : 'Unknown'}</p>
+                  </div>
+                  <div className='md:col-span-2'>
+                    <h3 className='text-sm font-medium'>Description</h3>
+                    <p>{project.description || 'No description'}</p>
+                  </div>
+                  {project.client && (
+                    <>
+                      <div>
+                        <h3 className='text-sm font-medium'>Client Name</h3>
+                        <p>{project.client.name || 'Not specified'}</p>
+                      </div>
+                      <div>
+                        <h3 className='text-sm font-medium'>Client Contact</h3>
+                        <p>{project.client.contact || 'Not specified'}</p>
+                      </div>
+                    </>
+                  )}
+                  {project.sharedWith && project.sharedWith.length > 0 && (
+                    <div className='md:col-span-2'>
+                      <h3 className='text-sm font-medium'>Shared With</h3>
+                      <ul className='list-disc list-inside'>
+                        {project.sharedWith.map((email: string) => (
+                          <li key={email}>{email}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
       </div>

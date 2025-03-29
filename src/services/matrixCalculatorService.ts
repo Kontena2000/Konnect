@@ -889,7 +889,7 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
 }
 
 // Enhanced function to save calculation results with more metadata
-export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string, options: CalculationOptions = {}) {
+export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string, options: CalculationOptions = {}, projectId?: string) {
   const db = getFirestore();
   
   try {
@@ -898,6 +898,24 @@ export async function saveCalculationResult(userId: string, config: CalculationC
     const includeGenerator = options.includeGenerator || false;
     const sustainabilityOptions = options.sustainabilityOptions || {};
     const location = options.location || null;
+    
+    // If projectId is provided, validate project access
+    if (projectId) {
+      const projectRef = doc(db, 'projects', projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new Error('Project not found');
+      }
+      
+      // Special case for ruud@kontena.eu - always has full access
+      if (userId !== 'ruud@kontena.eu') {
+        const project = projectSnap.data();
+        if (project.userId !== userId && !project.sharedWith?.includes(userId)) {
+          throw new Error('Unauthorized access to project');
+        }
+      }
+    }
     
     const docRef = await addDoc(collection(db, 'matrix_calculator', 'user_configurations', 'configs'), {
       userId,
@@ -910,6 +928,7 @@ export async function saveCalculationResult(userId: string, config: CalculationC
       includeGenerator,
       sustainabilityOptions,
       location,
+      projectId, // Add projectId to the saved calculation
       results,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -922,51 +941,27 @@ export async function saveCalculationResult(userId: string, config: CalculationC
   }
 }
 
-// New function to compare multiple configurations
-export async function compareConfigurations(configIds: string[]): Promise<{
-  success: boolean;
-  error?: string;
-  configurations?: any[];
-  comparison?: any;
-}> {
-  if (!configIds || configIds.length === 0) {
-    return { success: false, error: 'No configuration IDs provided' };
-  }
-  
+// New function to get calculations for a specific project
+export async function getProjectCalculations(projectId: string): Promise<any[]> {
   const db = getFirestore();
-  const results: any[] = [];
   
   try {
-    for (const id of configIds) {
-      const docRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', id);
-      const docSnap = await getDoc(docRef);
-      
-      if (docSnap.exists()) {
-        results.push({
-          id,
-          ...docSnap.data()
-        });
-      }
-    }
+    const querySnapshot = await getDocs(
+      query(
+        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+        where('projectId', '==', projectId)
+      )
+    );
     
-    if (results.length === 0) {
-      return { success: false, error: 'No configurations found' };
-    }
-    
-    // Use the comparison utility to analyze the configurations
-    const comparison = compareConfigurationsUtil(results.map(r => {
-      if (r.results) return r.results;
-      return {};
+    const calculations = querySnapshot.docs.map(doc => ({
+      id: doc.id,
+      ...doc.data()
     }));
     
-    return {
-      success: true,
-      configurations: results,
-      comparison
-    };
+    return calculations;
   } catch (error) {
-    console.error('Error comparing configurations:', error);
-    return { success: false, error: String(error) };
+    console.error('Error fetching project calculations:', error);
+    return [];
   }
 }
 

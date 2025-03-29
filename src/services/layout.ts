@@ -226,6 +226,50 @@ const layoutService = {
       console.error('Error fetching project layouts:', error);
       throw new Error('Failed to load project layouts');
     }
+  },
+
+  async saveLayoutToProject(layoutData: Partial<Layout>, projectId: string, user: AuthUser): Promise<string> {
+    try {
+      // Validate project access
+      const projectRef = doc(db, 'projects', projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new LayoutError('Project not found', 'PROJECT_NOT_FOUND');
+      }
+
+      // Special case for ruud@kontena.eu - always has full access
+      if (user.email !== 'ruud@kontena.eu') {
+        const project = projectSnap.data();
+        if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+          throw new LayoutError('Unauthorized access to project', 'UNAUTHORIZED');
+        }
+      }
+
+      // Create the layout with the specified project
+      const newLayout = {
+        ...layoutData,
+        projectId,
+        name: layoutData.name || 'Untitled Layout',
+        modules: layoutData.modules || [],
+        connections: layoutData.connections || []
+      };
+
+      if (!validateLayout(newLayout)) {
+        throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
+      }
+
+      const layoutRef = await addDoc(collection(db, 'layouts'), {
+        ...newLayout,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+
+      return layoutRef.id;
+    } catch (error) {
+      if (error instanceof LayoutError) throw error;
+      throw new LayoutError('Failed to save layout to project', 'SAVE_FAILED', error);
+    }
   }
 };
 

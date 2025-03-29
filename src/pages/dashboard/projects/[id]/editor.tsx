@@ -9,6 +9,13 @@ import { Module } from '@/types/module';
 import { Connection } from '@/services/layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import firebaseMonitor from '@/services/firebase-monitor';
+import { db } from '@/lib/firebase';
+import { doc, getDoc } from 'firebase/firestore';
+import { Skeleton } from '@/components/ui/skeleton';
+import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
+import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
+import layoutService from '@/services/layout';
 
 interface EditorState {
   modules: Module[];
@@ -17,7 +24,12 @@ interface EditorState {
 
 export default function LayoutEditorPage() {
   const router = useRouter();
+  const { id: projectId, layoutId } = router.query;
+  const [project, setProject] = useState<any>(null);
+  const [layout, setLayout] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
 
@@ -169,6 +181,96 @@ export default function LayoutEditorPage() {
     }
   }, [user]);
 
+  useEffect(() => {
+    const fetchData = async () => {
+      if (!projectId || !user) return;
+      
+      try {
+        setLoading(true);
+        
+        // Fetch project data
+        const projectRef = doc(db, 'projects', projectId as string);
+        const projectSnap = await getDoc(projectRef);
+        
+        if (!projectSnap.exists()) {
+          setError('Project not found');
+          return;
+        }
+        
+        const projectData = {
+          id: projectSnap.id,
+          ...projectSnap.data()
+        };
+        
+        // Check if user has access to this project
+        if (projectData.userId !== user.uid && 
+            (!projectData.sharedWith || !projectData.sharedWith.includes(user.email)) && 
+            user.email !== 'ruud@kontena.eu') {
+          setError('You do not have access to this project');
+          return;
+        }
+        
+        setProject(projectData);
+        
+        // If layoutId is provided, fetch the layout
+        if (layoutId) {
+          const layoutRef = doc(db, 'layouts', layoutId as string);
+          const layoutSnap = await getDoc(layoutRef);
+          
+          if (layoutSnap.exists()) {
+            const layoutData = {
+              id: layoutSnap.id,
+              ...layoutSnap.data()
+            };
+            
+            // Verify this layout belongs to the current project
+            if (layoutData.projectId === projectId) {
+              setLayout(layoutData);
+            } else {
+              setError('Layout does not belong to this project');
+            }
+          } else {
+            setError('Layout not found');
+          }
+        }
+      } catch (err) {
+        console.error('Error fetching data:', err);
+        setError('Failed to load project data');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    fetchData();
+  }, [projectId, layoutId, user]);
+  
+  if (loading) {
+    return (
+      <div className='container mx-auto p-4 space-y-4'>
+        <Skeleton className='h-8 w-64' />
+        <Skeleton className='h-[600px] w-full' />
+      </div>
+    );
+  }
+  
+  if (error) {
+    return (
+      <div className='container mx-auto p-4'>
+        <div className='bg-destructive/10 p-4 rounded-md'>
+          <h2 className='text-lg font-medium text-destructive'>Error</h2>
+          <p>{error}</p>
+          <Button 
+            variant='outline' 
+            className='mt-4'
+            onClick={() => router.push('/dashboard/projects')}
+          >
+            Back to Projects
+          </Button>
+        </div>
+      </div>
+    );
+  }
+  
   return (
     <AppLayout>
       <ErrorBoundary>
@@ -195,6 +297,41 @@ export default function LayoutEditorPage() {
           </div>
         </div>
       </ErrorBoundary>
+      <div className='flex flex-col h-screen'>
+        <div className='flex items-center justify-between p-4 border-b'>
+          <div>
+            <h1 className='text-xl font-bold'>
+              {project?.name} - {layout ? `Editing: ${layout.name}` : 'New Layout'}
+            </h1>
+            <p className='text-sm text-muted-foreground'>
+              {project?.description}
+            </p>
+          </div>
+          <div className='flex gap-2'>
+            <SaveLayoutDialog
+              layoutData={{
+                ...layout,
+                projectId: projectId as string,
+              }}
+              onSaveComplete={(layoutId) => {
+                // Redirect to the saved layout
+                router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
+              }}
+              trigger={
+                <Button>
+                  <Save className='mr-2 h-4 w-4' />
+                  Save Layout
+                </Button>
+              }
+            />
+          </div>
+        </div>
+        
+        {/* Layout Editor Component */}
+        <div className='flex-1 overflow-hidden'>
+          {/* Your existing editor component */}
+        </div>
+      </div>
     </AppLayout>
   );
 }

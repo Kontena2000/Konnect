@@ -3,9 +3,11 @@ import { calculateConfiguration, CalculationOptions } from '@/services/matrixCal
 import { findOptimalConfiguration } from '@/services/optimizationService';
 import { generateConfigurationReport } from '@/services/calculatorReportService';
 import { calculatorDebug } from '@/services/calculatorDebug';
+import { calculatorFallback } from '@/services/calculatorFallback';
 import { LocationSelector } from './LocationSelector';
 import { ResultsDisplay } from './ResultsDisplay';
 import { CalculatorDebugPanel } from './CalculatorDebugPanel';
+import { SaveCalculationDialog } from './SaveCalculationDialog';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -159,46 +161,57 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       // Log which calculation mode we're using
       calculatorDebug.log(`Using calculation mode: ${calculationMode}`);
       
-      switch (calculationMode) {
-        case 'optimize':
-          // Run optimization to find best configuration
-          calculationResults = await findOptimalConfiguration(
-            {
-              minPowerDensity,
-              maxPowerDensity,
-              preferredCoolingTypes,
-              rackCountRange: [Math.max(14, totalRacks - 14), totalRacks + 14]
-            },
-            optimizationGoal
-          );
-          break;
-          
-        case 'report':
-          // Generate comprehensive report
-          calculationResults = await generateConfigurationReport(
-            userId,
-            {
+      try {
+        switch (calculationMode) {
+          case 'optimize':
+            // Run optimization to find best configuration
+            calculationResults = await findOptimalConfiguration(
+              {
+                minPowerDensity,
+                maxPowerDensity,
+                preferredCoolingTypes,
+                rackCountRange: [Math.max(14, totalRacks - 14), totalRacks + 14]
+              },
+              optimizationGoal
+            );
+            break;
+            
+          case 'report':
+            // Generate comprehensive report
+            calculationResults = await generateConfigurationReport(
+              userId,
+              {
+                kwPerRack,
+                coolingType,
+                totalRacks
+              },
+              options
+            );
+            break;
+            
+          case 'standard':
+          default:
+            // Standard calculation - this is the most direct path
+            calculationResults = await calculateConfiguration(
               kwPerRack,
               coolingType,
-              totalRacks
-            },
-            options
-          );
-          break;
-          
-        case 'standard':
-        default:
-          // Standard calculation - this is the most direct path
-          calculationResults = await calculateConfiguration(
-            kwPerRack,
-            coolingType,
-            totalRacks,
-            options
-          );
-          
-          // Log the results for debugging
-          calculatorDebug.log('Standard calculation results:', calculationResults);
-          break;
+              totalRacks,
+              options
+            );
+            
+            // Log the results for debugging
+            calculatorDebug.log('Standard calculation results:', calculationResults);
+            break;
+        }
+      } catch (calculationError) {
+        // If the calculation fails, use fallback data
+        calculatorDebug.warn('Calculation failed, using fallback data', calculationError);
+        calculationResults = calculatorFallback.getResults({
+          kwPerRack,
+          coolingType,
+          totalRacks,
+          options
+        });
       }
       
       // Ensure we have valid results before setting state
@@ -218,11 +231,27 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       calculatorDebug.error('Calculation failed', error);
       setError(errorMessage);
       
-      toast({
-        title: 'Calculation Error',
-        description: errorMessage,
-        variant: 'destructive'
+      // Use fallback data as a last resort
+      const fallbackResults = calculatorFallback.getResults({
+        kwPerRack,
+        coolingType,
+        totalRacks
       });
+      
+      if (fallbackResults) {
+        setResults(fallbackResults);
+        toast({
+          title: 'Using Estimated Data',
+          description: 'We encountered an issue with the calculation service. Showing estimated results instead.',
+          variant: 'warning'
+        });
+      } else {
+        toast({
+          title: 'Calculation Error',
+          description: errorMessage,
+          variant: 'destructive'
+        });
+      }
     } finally {
       setLoading(false);
     }
@@ -264,6 +293,15 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     } else {
       setPreferredCoolingTypes(preferredCoolingTypes.filter(t => t !== type));
     }
+  };
+  
+  // Get calculation config for saving
+  const getCalculationConfig = () => {
+    return {
+      kwPerRack,
+      coolingType,
+      totalRacks
+    };
   };
   
   return (
@@ -646,10 +684,51 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         </Button>
       </div>
       
-      {results && <ResultsDisplay results={results} onSave={onSave} userId={userId} />}
+      {results && (
+        <>
+          <ResultsDisplay results={results} onSave={onSave} userId={userId} />
+          
+          <div className='flex justify-center mt-6'>
+            <SaveCalculationDialog
+              config={getCalculationConfig()}
+              results={results}
+              options={{
+                redundancyMode,
+                includeGenerator,
+                batteryRuntime,
+                sustainabilityOptions: {
+                  enableWasteHeatRecovery,
+                  enableWaterRecycling,
+                  renewableEnergyPercentage: renewablePercentage
+                },
+                location: useLocationData && location ? location : undefined
+              }}
+              onSaveComplete={(calculationId, projectId) => {
+                toast({
+                  title: 'Calculation Saved',
+                  description: `Calculation has been saved to project successfully.`,
+                });
+                
+                if (onSave) {
+                  onSave({
+                    id: calculationId,
+                    projectId,
+                    ...results
+                  });
+                }
+              }}
+              trigger={
+                <Button variant='outline' size='lg' className='w-full sm:w-auto'>
+                  Save Calculation to Project
+                </Button>
+              }
+            />
+          </div>
+        </>
+      )}
       
       {/* Add Debug Panel */}
-      <div className="mt-8">
+      <div className='mt-8'>
         <CalculatorDebugPanel />
       </div>
     </div>
