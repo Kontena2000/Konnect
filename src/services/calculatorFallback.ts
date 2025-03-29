@@ -41,84 +41,203 @@ export async function fallbackCalculation(
                                 options.redundancyMode === 'N+1' ? 99.99 : 99.9;
   const annualDowntimeMinutes = (100 - availabilityPercentage) / 100 * 365 * 24 * 60;
   
+  // Determine cooling-specific properties
+  let coolingDetails = {};
+  
+  switch (coolingType.toLowerCase()) {
+    case 'dlc':
+      coolingDetails = {
+        type: 'dlc',
+        totalCapacity: totalITLoad * 1.1,
+        dlcCoolingCapacity: totalITLoad * 0.75,
+        residualCoolingCapacity: totalITLoad * 0.25,
+        dlcFlowRate: totalITLoad * 0.75 * 0.25, // 0.25 L/min per kW
+        pipingSize: 'dn110'
+      };
+      break;
+    case 'hybrid':
+      coolingDetails = {
+        type: 'hybrid',
+        totalCapacity: totalITLoad * 1.1,
+        dlcPortion: totalITLoad * 0.6,
+        airPortion: totalITLoad * 0.4,
+        dlcFlowRate: totalITLoad * 0.6 * 0.25, // 0.25 L/min per kW
+        rdhxUnits: Math.ceil(totalITLoad * 0.4 / 150),
+        rdhxModel: 'average',
+        pipingSize: 'dn110'
+      };
+      break;
+    case 'immersion':
+      coolingDetails = {
+        type: 'immersion',
+        totalCapacity: totalITLoad * 1.05,
+        tanksNeeded: Math.ceil(totalRacks / 4),
+        flowRate: totalITLoad * 1.05 * 0.25 * 0.8, // 0.25 L/min per kW, 80% of heat removed by fluid
+        pipingSize: 'dn110'
+      };
+      break;
+    default: // air-cooled
+      coolingDetails = {
+        type: 'air',
+        totalCapacity: totalITLoad * 1.1,
+        rdhxUnits: Math.ceil(totalITLoad * 1.1 / 150),
+        rdhxModel: kwPerRack <= 15 ? 'basic' : kwPerRack <= 30 ? 'standard' : 'highDensity',
+        pipingSize: 'none'
+      };
+  }
+  
   // Return a simplified result structure
   return {
     rack: {
       powerDensity: kwPerRack,
+      coolingType: coolingType,
       totalRacks: totalRacks,
       totalITLoad: totalITLoad
     },
     cooling: {
-      type: coolingType,
+      ...coolingDetails,
       efficiency: coolingEfficiency,
-      load: coolingLoad
+      load: coolingLoad,
+      pue: pue
+    },
+    electrical: {
+      currentPerRow: Math.round(totalITLoad * 14 * 1000 / (400 * Math.sqrt(3) * powerFactor)),
+      busbarSize: 'busbar800A',
+      currentPerRack: Math.round(kwPerRack * 1000 / (400 * Math.sqrt(3) * powerFactor)),
+      tapOffBox: 'standard63A',
+      rpdu: 'standard16A',
+      multiplicityWarning: ''
     },
     power: {
+      ups: {
+        totalITLoad: totalITLoad,
+        redundancyFactor: redundancyFactor,
+        requiredCapacity: totalITLoad * redundancyFactor,
+        moduleSize: 250,
+        totalModulesNeeded: Math.ceil(totalITLoad * redundancyFactor / 250),
+        redundantModules: Math.ceil(totalITLoad * redundancyFactor / 250),
+        framesNeeded: Math.ceil(Math.ceil(totalITLoad * redundancyFactor / 250) / 6),
+        frameSize: Math.ceil(totalITLoad * redundancyFactor / 250) <= 2 ? 'frame2Module' :
+                  Math.ceil(totalITLoad * redundancyFactor / 250) <= 4 ? 'frame4Module' : 'frame6Module',
+        redundancyMode: options.redundancyMode || 'N+1'
+      },
+      battery: {
+        runtime: options.batteryRuntime || 10,
+        runtimeMinutes: options.batteryRuntime || 10,
+        energyNeeded: Math.round(totalITLoad * (options.batteryRuntime || 10) / 60),
+        energyRequired: Math.round(totalITLoad * (options.batteryRuntime || 10) / 60),
+        cabinetsNeeded: Math.ceil(Math.round(totalITLoad * (options.batteryRuntime || 10) / 60) / 40),
+        totalWeight: Math.ceil(Math.round(totalITLoad * (options.batteryRuntime || 10) / 60) / 40) * 1200
+      },
+      generator: {
+        included: options.includeGenerator || false,
+        capacity: options.includeGenerator ? Math.ceil(totalITLoad * redundancyFactor * 1.25 / 800) * 800 : 0,
+        model: options.includeGenerator ? 
+          (Math.ceil(totalITLoad * redundancyFactor * 1.25 / 800) * 800 <= 1000 ? '1000kVA' : 
+           Math.ceil(totalITLoad * redundancyFactor * 1.25 / 800) * 800 <= 2000 ? '2000kVA' : '3000kVA') : 'none',
+        fuel: {
+          tankSize: options.includeGenerator ? Math.ceil(totalITLoad * redundancyFactor * 1.25 / 800) * 800 * 0.2 * 8 : 0,
+          consumption: options.includeGenerator ? Math.ceil(totalITLoad * redundancyFactor * 1.25 / 800) * 800 * 0.2 : 0,
+          runtime: options.includeGenerator ? 8 : 0
+        }
+      },
       totalFacilityLoad: totalFacilityLoad,
-      redundancy: options.redundancyMode || 'N',
       powerFactor: powerFactor
     },
     cost: {
       totalProjectCost: totalProjectCost,
       costPerRack: costPerRack,
       costPerKw: costPerKw,
-      electrical: { total: totalProjectCost * 0.4 },
+      electrical: { 
+        busbar: totalProjectCost * 0.1, 
+        tapOffBox: totalProjectCost * 0.1, 
+        rpdu: totalProjectCost * 0.1, 
+        total: totalProjectCost * 0.3 
+      },
       cooling: totalProjectCost * 0.3,
-      power: { total: totalProjectCost * 0.2 },
+      power: { 
+        ups: totalProjectCost * 0.1, 
+        battery: totalProjectCost * 0.05, 
+        generator: options.includeGenerator ? totalProjectCost * 0.05 : 0, 
+        total: options.includeGenerator ? totalProjectCost * 0.2 : totalProjectCost * 0.15 
+      },
       infrastructure: totalProjectCost * 0.05,
       sustainability: totalProjectCost * 0.02,
-      installation: totalProjectCost * 0.01,
-      engineering: totalProjectCost * 0.01,
-      contingency: totalProjectCost * 0.01
+      equipmentTotal: totalProjectCost * 0.8,
+      installation: totalProjectCost * 0.1,
+      engineering: totalProjectCost * 0.05,
+      contingency: totalProjectCost * 0.05
     },
     reliability: {
-      tier: options.redundancyMode === '2N' ? 'IV' : 
-            options.redundancyMode === 'N+1' ? 'III' : 'II',
-      availabilityPercentage: availabilityPercentage,
+      tier: options.redundancyMode === '2N' ? 'Tier IV' : 
+            options.redundancyMode === 'N+1' ? 'Tier III' : 'Tier II',
+      availabilityPercentage: availabilityPercentage.toString(),
       annualDowntimeMinutes: annualDowntimeMinutes,
-      redundancyImpact: options.redundancyMode || 'N'
+      redundancyImpact: options.redundancyMode === '2N' ? 'Full redundancy (two complete systems)' :
+                       options.redundancyMode === 'N+1' ? 'One redundant component' : 'No redundancy',
+      mtbf: 8760,
+      mttr: 4
     },
     sustainability: {
       pue: pue,
+      wue: 0.5,
       annualEnergyConsumption: {
-        total: totalFacilityLoad * 8760, // kWh per year
         it: totalITLoad * 8760,
+        cooling: (totalFacilityLoad - totalITLoad) * 8760 * 0.7,
+        power: (totalFacilityLoad - totalITLoad) * 8760 * 0.3,
+        total: totalFacilityLoad * 8760,
         overhead: (totalFacilityLoad - totalITLoad) * 8760
       },
       waterUsage: {
-        annual: coolingType === 'water' ? totalITLoad * 2000 : totalITLoad * 500, // Liters per year
-        recyclingEnabled: false,
-        recyclingRate: 0
+        hourly: totalITLoad * (coolingType === 'dlc' ? 1.2 : coolingType === 'hybrid' ? 0.9 : coolingType === 'immersion' ? 0.3 : 0.5),
+        annual: totalITLoad * (coolingType === 'dlc' ? 1.2 : coolingType === 'hybrid' ? 0.9 : coolingType === 'immersion' ? 0.3 : 0.5) * 24 * 365 / 1000,
+        recyclingEnabled: options.sustainabilityOptions?.enableWaterRecycling || false,
+        recyclingRate: options.sustainabilityOptions?.enableWaterRecycling ? 0.6 : 0
+      },
+      carbonFootprint: {
+        annual: Math.round(totalFacilityLoad * 8760 * 0.35 * (1 - (options.sustainabilityOptions?.renewableEnergyPercentage || 20) / 100) / 1000),
+        perKwh: 0.35 * (1 - (options.sustainabilityOptions?.renewableEnergyPercentage || 20) / 100),
+        renewablePercentage: options.sustainabilityOptions?.renewableEnergyPercentage || 20
       },
       wasteHeatRecovery: {
-        enabled: false,
-        recoveredHeat: 0,
-        potentialSavings: totalITLoad * 0.2 * 8760 * 0.15 // 20% recoverable, $0.15/kWh
+        enabled: options.sustainabilityOptions?.enableWasteHeatRecovery || false,
+        recoveredHeat: options.sustainabilityOptions?.enableWasteHeatRecovery ? Math.round(totalFacilityLoad * 8760 * 0.4) : 0,
+        potentialSavings: options.sustainabilityOptions?.enableWasteHeatRecovery ? Math.round(totalFacilityLoad * 8760 * 0.4 * 0.05) : 0
       }
     },
     carbonFootprint: {
-      totalAnnualEmissions: totalFacilityLoad * 8760 * 0.5, // 0.5 kg CO2 per kWh
-      emissionsPerMWh: 500, // kg CO2 per MWh
+      totalAnnualEmissions: Math.round(totalFacilityLoad * 8760 * 0.35 * (1 - (options.sustainabilityOptions?.renewableEnergyPercentage || 20) / 100) / 1000),
+      gridEmissions: Math.round(totalFacilityLoad * 8760 * 0.35 * (1 - (options.sustainabilityOptions?.renewableEnergyPercentage || 20) / 100) / 1000),
+      generatorEmissions: options.includeGenerator ? Math.round(Math.ceil(totalITLoad * redundancyFactor * 1.25 / 800) * 800 * 24 * 0.8 * 0.8 / 1000) : 0,
+      emissionsPerMWh: 350 * (1 - (options.sustainabilityOptions?.renewableEnergyPercentage || 20) / 100),
       renewableImpact: {
-        percentage: 0,
-        emissionsAvoided: 0
+        percentage: options.sustainabilityOptions?.renewableEnergyPercentage || 20,
+        emissionsAvoided: Math.round(totalFacilityLoad * 8760 * 0.35 * (options.sustainabilityOptions?.renewableEnergyPercentage || 20) / 100 / 1000)
       }
     },
     tco: {
       annualCosts: {
-        energy: totalFacilityLoad * 8760 * 0.15, // $0.15/kWh
-        maintenance: totalProjectCost * 0.03, // 3% of capex per year
-        operational: totalProjectCost * 0.02, // 2% of capex per year
-        total: totalFacilityLoad * 8760 * 0.15 + totalProjectCost * 0.05
+        energy: totalFacilityLoad * 8760 * 0.12,
+        maintenance: totalProjectCost * 0.03,
+        operational: totalProjectCost * 0.02,
+        total: totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05
       },
-      totalCostOfOwnership: totalProjectCost + (totalFacilityLoad * 8760 * 0.15 + totalProjectCost * 0.05) * 10, // 10 year TCO
-      annualizedTCO: totalProjectCost / 10 + (totalFacilityLoad * 8760 * 0.15 + totalProjectCost * 0.05),
+      totalCostOfOwnership: totalProjectCost + (totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05) * 10,
+      annualizedTCO: totalProjectCost / 10 + (totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05),
       assumptions: {
-        energyCost: 0.15, // $/kWh
-        maintenanceRate: 0.03, // 3% of capex
-        operationalRate: 0.02, // 2% of capex
-        lifespan: 10 // years
-      }
+        electricityRate: 0.12,
+        maintenanceRate: 0.03,
+        operationalRate: 0.02,
+        lifespan: 10
+      },
+      capex: totalProjectCost,
+      opex: {
+        energy: totalFacilityLoad * 8760 * 0.12,
+        maintenance: totalProjectCost * 0.03,
+        operational: totalProjectCost * 0.02
+      },
+      total5Year: totalProjectCost + (totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05) * 5,
+      total10Year: totalProjectCost + (totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05) * 10
     }
   };
 }

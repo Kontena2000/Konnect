@@ -123,13 +123,21 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     setError(null);
     
     try {
-      calculatorDebug.startCalculation({
+      calculatorDebug.log('Starting calculation with config:', {
         kwPerRack,
         coolingType,
         totalRacks
-      }, {
+      });
+      
+      calculatorDebug.log('Options:', {
         redundancyMode,
         includeGenerator,
+        batteryRuntime,
+        sustainabilityOptions: {
+          enableWasteHeatRecovery,
+          enableWaterRecycling,
+          renewableEnergyPercentage: renewablePercentage
+        },
         location: useLocationData && location ? location : undefined
       });
       
@@ -147,6 +155,9 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       };
       
       let calculationResults;
+      
+      // Log which calculation mode we're using
+      calculatorDebug.log(`Using calculation mode: ${calculationMode}`);
       
       switch (calculationMode) {
         case 'optimize':
@@ -177,26 +188,36 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
           
         case 'standard':
         default:
-          // Standard calculation
+          // Standard calculation - this is the most direct path
           calculationResults = await calculateConfiguration(
             kwPerRack,
             coolingType,
             totalRacks,
             options
           );
+          
+          // Log the results for debugging
+          calculatorDebug.log('Standard calculation results:', calculationResults);
           break;
       }
       
-      setResults(calculationResults);
-      calculatorDebug.endCalculation(true, calculationResults);
-      toast({
-        title: 'Calculation Complete',
-        description: 'Your configuration has been calculated successfully.',
-      });
+      // Ensure we have valid results before setting state
+      if (calculationResults) {
+        setResults(calculationResults);
+        calculatorDebug.log('Calculation completed successfully', calculationResults);
+        
+        toast({
+          title: 'Calculation Complete',
+          description: 'Your configuration has been calculated successfully.',
+        });
+      } else {
+        throw new Error('Calculation returned no results');
+      }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
       calculatorDebug.error('Calculation failed', error);
       setError(errorMessage);
+      
       toast({
         title: 'Calculation Error',
         description: errorMessage,

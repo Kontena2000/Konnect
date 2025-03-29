@@ -100,13 +100,13 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
               <h3 className="font-medium">Cooling Solution</h3>
               <div className="text-xl font-medium">
                 {results.cooling.type === 'dlc' ? 
-                  `${results.cooling.dlcCoolingCapacity} kW DLC + ${results.cooling.residualCoolingCapacity} kW Air` : 
-                  `${results.cooling.totalCoolingCapacity} kW Air Cooling`}
+                  `${results.cooling.dlcCoolingCapacity || 0} kW DLC + ${results.cooling.residualCoolingCapacity || 0} kW Air` : 
+                  `${results.cooling.totalCoolingCapacity || 0} kW Air Cooling`}
               </div>
               <div className="text-sm text-muted-foreground">
                 {results.cooling.type === 'dlc' ? 
-                  `${results.cooling.dlcFlowRate} L/min Flow Rate` : 
-                  `${results.cooling.rdhxUnits} RDHX Units`}
+                  `${results.cooling.dlcFlowRate || 0} L/min Flow Rate` : 
+                  `${results.cooling.rdhxUnits || 0} RDHX Units`}
               </div>
             </div>
           </div>
@@ -243,24 +243,24 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
                       </div>
                       <div className="flex justify-between">
                         <span>Total Cooling Capacity:</span>
-                        <span className="font-medium">{results.cooling.totalCoolingCapacity} kW</span>
+                        <span className="font-medium">{results.cooling.totalCoolingCapacity || 0} kW</span>
                       </div>
                       
                       {results.cooling.type === 'dlc' ? (
                         <>
                           <div className="flex justify-between">
                             <span>DLC Cooling Capacity:</span>
-                            <span className="font-medium">{results.cooling.dlcCoolingCapacity} kW</span>
+                            <span className="font-medium">{results.cooling.dlcCoolingCapacity || 0} kW</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Residual Air Cooling:</span>
-                            <span className="font-medium">{results.cooling.residualCoolingCapacity} kW</span>
+                            <span className="font-medium">{results.cooling.residualCoolingCapacity || 0} kW</span>
                           </div>
                         </>
                       ) : (
                         <div className="flex justify-between">
                           <span>RDHX Units:</span>
-                          <span className="font-medium">{results.cooling.rdhxUnits}</span>
+                          <span className="font-medium">{results.cooling.rdhxUnits || 0}</span>
                         </div>
                       )}
                     </div>
@@ -272,7 +272,7 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
                       <div className="mt-2 space-y-2">
                         <div className="flex justify-between">
                           <span>Flow Rate:</span>
-                          <span className="font-medium">{results.cooling.dlcFlowRate} L/min</span>
+                          <span className="font-medium">{results.cooling.dlcFlowRate || 0} L/min</span>
                         </div>
                         <div className="flex justify-between">
                           <span>Piping Size:</span>

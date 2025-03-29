@@ -657,6 +657,9 @@ export const calculateConfiguration = withDebug(
   'calculateConfiguration',
   async (kwPerRack: number, coolingType: string, totalRacks: number, options: CalculationOptions = {}): Promise<any> => {
     try {
+      // Log input parameters
+      calculatorDebug.log('Calculate Configuration - Input Parameters:', { kwPerRack, coolingType, totalRacks, options });
+      
       // Validate input parameters
       const validatedInputs = validateCalculationInputs({
         kwPerRack,
@@ -664,6 +667,8 @@ export const calculateConfiguration = withDebug(
         totalRacks,
         ...options
       });
+      
+      calculatorDebug.log('Calculate Configuration - Validated Inputs:', validatedInputs);
       
       // Try the original calculation first
       const results = await calculateConfigurationImpl(
@@ -673,15 +678,25 @@ export const calculateConfiguration = withDebug(
         validatedInputs
       );
       
+      calculatorDebug.log('Calculate Configuration - Raw Results:', results);
+      
       // Validate and ensure all required properties exist
       const validatedResults = validateCalculationResults(results, validatedInputs);
       
+      calculatorDebug.log('Calculate Configuration - Validated Results:', validatedResults);
+      
       // Apply additional defensive handling to ensure no undefined properties
-      return safelyAccessCalculationResults(validatedResults);
+      const safeResults = safelyAccessCalculationResults(validatedResults);
+      
+      calculatorDebug.log('Calculate Configuration - Safe Results:', safeResults);
+      
+      return safeResults;
     } catch (error) {
       calculatorDebug.error('Original calculation failed, using fallback', error);
       // If the original calculation fails, use the fallback
       const fallbackResults = await fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
+      
+      calculatorDebug.log('Calculate Configuration - Fallback Results:', fallbackResults);
       
       // Also validate the fallback results
       const validatedFallback = validateCalculationResults(fallbackResults, {
@@ -692,7 +707,11 @@ export const calculateConfiguration = withDebug(
       });
       
       // Apply additional defensive handling to fallback results
-      return safelyAccessCalculationResults(validatedFallback);
+      const safeFallbackResults = safelyAccessCalculationResults(validatedFallback);
+      
+      calculatorDebug.log('Calculate Configuration - Safe Fallback Results:', safeFallbackResults);
+      
+      return safeFallbackResults;
     }
   }
 );
