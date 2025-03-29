@@ -17,17 +17,30 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [localPreferences, setLocalPreferences] = useState<EditorPreferences>(preferences);
+  const [localPreferences, setLocalPreferences] = useState<EditorPreferences | null>(null);
 
   useEffect(() => {
-    setLocalPreferences(preferences);
-  }, [preferences]);
+    // Load preferences when component mounts
+    if (userId) {
+      editorPreferencesService.getPreferences(userId)
+        .then(prefs => {
+          setLocalPreferences(prefs);
+        })
+        .catch(error => {
+          console.error("Failed to load editor preferences:", error);
+          toast({
+            title: "Error",
+            description: "Failed to load preferences.",
+            variant: "destructive",
+          });
+        });
+    }
+  }, [userId, toast]);
 
   const handleSave = async () => {
     try {
-      if (!user) return;
+      if (!user || !localPreferences) return;
       await editorPreferencesService.savePreferences(userId, localPreferences);
-      onUpdate(localPreferences);
       toast({
         title: "Settings saved",
         description: "Your editor preferences have been updated.",
@@ -40,6 +53,14 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
       });
     }
   };
+
+  if (!localPreferences) {
+    return (
+      <div className="flex items-center justify-center p-6">
+        Loading preferences...
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
