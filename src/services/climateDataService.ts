@@ -5,11 +5,16 @@ export interface ClimateData {
   zone: string;
   avgTemperature: number;
   humidity: number;
-  extremeWeatherRisk: string;
-  energyRates: {
+  extremeWeatherRisk?: string;
+  energyRates?: {
     costPerKWh: number;
     carbonIntensity: number;
     renewablePct: number;
+  };
+  // Add coordinates to the interface
+  coordinates?: {
+    latitude: number;
+    longitude: number;
   };
 }
 
@@ -75,8 +80,10 @@ export async function fetchClimateData(latitude: number, longitude: number): Pro
       zone,
       avgTemperature,
       humidity,
-      latitude,
-      longitude
+      coordinates: {
+        latitude,
+        longitude
+      }
     };
   } catch (error) {
     console.error('Error fetching climate data:', error);
