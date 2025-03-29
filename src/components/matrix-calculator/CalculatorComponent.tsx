@@ -205,7 +205,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         }
       } catch (calculationError) {
         // If the calculation fails, use fallback data
-        calculatorDebug.warn('Calculation failed, using fallback data', calculationError);
+        calculatorDebug.error('Calculation failed, using fallback data', calculationError);
         calculationResults = calculatorFallback.getResults({
           kwPerRack,
           coolingType,
@@ -243,7 +243,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         toast({
           title: 'Using Estimated Data',
           description: 'We encountered an issue with the calculation service. Showing estimated results instead.',
-          variant: 'warning'
+          variant: 'destructive'
         });
       } else {
         toast({

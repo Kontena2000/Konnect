@@ -11,6 +11,7 @@ import { SavedCalculations } from "@/components/SavedCalculations";
 import { db } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { collection, query, where, getDocs } from 'firebase/firestore';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -40,8 +41,11 @@ export default function MatrixCalculatorPage() {
             };
             
             // Check if user has access to this project
-            if (projectData.userId !== user.uid && 
-                (!projectData.sharedWith || !projectData.sharedWith.includes(user.email)) && 
+            const projectUserId = projectData.userId;
+            const projectSharedWith = projectData.sharedWith || [];
+            
+            if (projectUserId !== user.uid && 
+                (!projectSharedWith.includes(user.email)) && 
                 user.email !== 'ruud@kontena.eu') {
               setError('You do not have access to this project');
               return;
@@ -66,17 +70,21 @@ export default function MatrixCalculatorPage() {
             };
             
             // Check if user has access to this calculation
-            if (calculationData.userId !== user.uid && user.email !== 'ruud@kontena.eu') {
+            const calcUserId = calculationData.userId;
+            const calcProjectId = calculationData.projectId;
+            
+            if (calcUserId !== user.uid && user.email !== 'ruud@kontena.eu') {
               // If calculation belongs to a project, check project access
-              if (calculationData.projectId) {
-                const calcProjectRef = doc(db, 'projects', calculationData.projectId);
+              if (calcProjectId) {
+                const calcProjectRef = doc(db, 'projects', calcProjectId);
                 const calcProjectSnap = await getDoc(calcProjectRef);
                 
                 if (calcProjectSnap.exists()) {
                   const calcProjectData = calcProjectSnap.data();
+                  const projectSharedWith = calcProjectData.sharedWith || [];
                   
                   if (calcProjectData.userId !== user.uid && 
-                      (!calcProjectData.sharedWith || !calcProjectData.sharedWith.includes(user.email))) {
+                      (!projectSharedWith.includes(user.email))) {
                     setError('You do not have access to this calculation');
                     return;
                   }
@@ -91,8 +99,8 @@ export default function MatrixCalculatorPage() {
             
             // If calculation belongs to a project and no projectId was provided,
             // fetch the project data
-            if (calculationData.projectId && !projectId) {
-              const calcProjectRef = doc(db, 'projects', calculationData.projectId);
+            if (calcProjectId && !projectId) {
+              const calcProjectRef = doc(db, 'projects', calcProjectId);
               const calcProjectSnap = await getDoc(calcProjectRef);
               
               if (calcProjectSnap.exists()) {
@@ -123,6 +131,10 @@ export default function MatrixCalculatorPage() {
     if (savedCalculation.projectId) {
       router.push(`/dashboard/projects/${savedCalculation.projectId}?tab=calculations`);
     }
+  };
+  
+  const handleLoadCalculation = (calculationId: string) => {
+    router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
 
   if (loading) {

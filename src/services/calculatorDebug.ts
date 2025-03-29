@@ -15,6 +15,15 @@ export const calculatorDebug = {
     }
   },
   
+  warn(message: string, data?: any): void {
+    if (!this.enabled) return;
+    
+    console.warn(`[Calculator Warning] ${message}`);
+    if (data) {
+      console.warn(data);
+    }
+  },
+  
   error(message: string, error: any): void {
     if (!this.enabled) return;
     

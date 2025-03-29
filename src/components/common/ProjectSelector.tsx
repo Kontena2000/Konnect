@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -7,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useRouter } from "next/router";
 import { db } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
 interface Project {
   id: string;
@@ -51,7 +50,7 @@ export function ProjectSelector({
         const userProjectsSnapshot = await getDocs(userProjectsQuery);
         
         // Query projects shared with the user (if user has email)
-        let sharedProjectsSnapshot = { docs: [] };
+        const sharedProjectsDocs: QueryDocumentSnapshot<DocumentData>[] = [];
         if (user.email) {
           const sharedProjectsQuery = query(
             collection(db, "projects"),
@@ -59,13 +58,14 @@ export function ProjectSelector({
             orderBy("createdAt", "desc")
           );
           
-          sharedProjectsSnapshot = await getDocs(sharedProjectsQuery);
+          const sharedProjectsSnapshot = await getDocs(sharedProjectsQuery);
+          sharedProjectsSnapshot.docs.forEach(doc => sharedProjectsDocs.push(doc));
         }
         
         // Combine both sets of projects
         const projectsList = [
           ...userProjectsSnapshot.docs,
-          ...sharedProjectsSnapshot.docs
+          ...sharedProjectsDocs
         ].map(doc => ({
           id: doc.id,
           ...doc.data()

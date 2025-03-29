@@ -13,27 +13,8 @@ import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import Link from "next/link";
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from "@/components/ui/dialog";
-import { 
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger
-} from "@/components/ui/alert-dialog";
+import { db } from "@/lib/firebase";
+import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -222,6 +203,14 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  const handleEditLayout = (layoutId: string) => {
+    router.push(`/dashboard/projects/${id}/editor?layoutId=${layoutId}`);
+  };
+  
+  const handleEditCalculation = (calculationId: string) => {
+    router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -384,7 +373,7 @@ export default function ProjectDetailsPage() {
                         {layout.modules?.length || 0} modules, {layout.connections?.length || 0} connections
                       </p>
                       <p className='text-xs text-muted-foreground'>
-                        Last updated: {layout.updatedAt ? new Date(layout.updatedAt.seconds * 1000).toLocaleString() : 'Unknown'}
+                        Last updated: {layout.updatedAt ? new Date((layout.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
                       </p>
                     </CardContent>
                     <CardFooter className='flex justify-end gap-2'>
@@ -441,7 +430,7 @@ export default function ProjectDetailsPage() {
                         )}
                       </div>
                       <p className='text-xs text-muted-foreground mt-2'>
-                        Created: {calculation.createdAt ? new Date(calculation.createdAt.seconds * 1000).toLocaleString() : 'Unknown'}
+                        Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
                       </p>
                     </CardContent>
                     <CardFooter className='flex justify-end gap-2'>
@@ -485,21 +474,21 @@ export default function ProjectDetailsPage() {
                   </div>
                   <div>
                     <h3 className='text-sm font-medium'>Created</h3>
-                    <p>{project.createdAt ? new Date(project.createdAt.seconds * 1000).toLocaleString() : 'Unknown'}</p>
+                    <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
                   </div>
                   <div className='md:col-span-2'>
                     <h3 className='text-sm font-medium'>Description</h3>
                     <p>{project.description || 'No description'}</p>
                   </div>
-                  {project.client && (
+                  {(project as any).client && (
                     <>
                       <div>
                         <h3 className='text-sm font-medium'>Client Name</h3>
-                        <p>{project.client.name || 'Not specified'}</p>
+                        <p>{(project as any).client.name || 'Not specified'}</p>
                       </div>
                       <div>
                         <h3 className='text-sm font-medium'>Client Contact</h3>
-                        <p>{project.client.contact || 'Not specified'}</p>
+                        <p>{(project as any).client.contact || 'Not specified'}</p>
                       </div>
                     </>
                   )}

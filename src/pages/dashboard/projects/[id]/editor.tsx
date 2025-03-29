@@ -203,8 +203,11 @@ export default function LayoutEditorPage() {
         };
         
         // Check if user has access to this project
-        if (projectData.userId !== user.uid && 
-            (!projectData.sharedWith || !projectData.sharedWith.includes(user.email)) && 
+        const projectUserId = projectData.userId;
+        const projectSharedWith = projectData.sharedWith || [];
+        
+        if (projectUserId !== user.uid && 
+            (!projectSharedWith.includes(user.email)) && 
             user.email !== 'ruud@kontena.eu') {
           setError('You do not have access to this project');
           return;
@@ -226,6 +229,15 @@ export default function LayoutEditorPage() {
             // Verify this layout belongs to the current project
             if (layoutData.projectId === projectId) {
               setLayout(layoutData);
+              
+              // Set modules and connections from layout data
+              if (layoutData.modules) {
+                setModules(layoutData.modules);
+              }
+              
+              if (layoutData.connections) {
+                setConnections(layoutData.connections);
+              }
             } else {
               setError('Layout does not belong to this project');
             }
@@ -310,8 +322,12 @@ export default function LayoutEditorPage() {
           <div className='flex gap-2'>
             <SaveLayoutDialog
               layoutData={{
-                ...layout,
+                id: layout?.id,
                 projectId: projectId as string,
+                name: layout?.name,
+                description: layout?.description,
+                modules: modules,
+                connections: connections
               }}
               onSaveComplete={(layoutId) => {
                 // Redirect to the saved layout
