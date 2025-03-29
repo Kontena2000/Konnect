@@ -132,7 +132,8 @@ export async function calculateConfiguration(kwPerRack: number, coolingType: str
         currentPerRack,
         tapOffBox,
         rpdu
-      }
+      },
+      sustainabilityOptions
     }, pricing, updatedParams);
     
     // Calculate system availability
@@ -334,232 +335,19 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
   }
 }
 
-// Helper functions
-function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: CalculationParams) {
-  const totalITLoad = kwPerRack * totalRacks;
-  
-  // DLC vs air-cooled calculations
-  if (coolingType === 'dlc') {
-    // Direct Liquid Cooling
-    const dlcCoolingCapacity = totalITLoad * (1 - params.cooling.dlcResidualHeatFraction);
-    const residualCoolingCapacity = totalITLoad * params.cooling.dlcResidualHeatFraction;
-    
-    // Calculate flow rates
-    const dlcFlowRate = dlcCoolingCapacity * params.cooling.flowRateFactor;
-    
-    return {
-      type: 'dlc',
-      totalCoolingCapacity: totalITLoad,
-      dlcCoolingCapacity,
-      residualCoolingCapacity,
-      dlcFlowRate: Math.round(dlcFlowRate),
-      pipingSize: dlcFlowRate > 500 ? 'dn160' : 'dn110',
-      coolerModel: 'tcs310aXht',
-      warning: kwPerRack < params.coolingThresholds?.recommendedDlcMin ? 
-        `Power density (${kwPerRack} kW/rack) is below recommended minimum (${params.coolingThresholds?.recommendedDlcMin} kW/rack) for DLC.` : ''
-    };
-  } else {
-    // Air-cooled
-    const coolingCapacity = totalITLoad * 1.1; // 10% safety margin
-    
-    return {
-      type: 'air-cooled',
-      totalCoolingCapacity: coolingCapacity,
-      rdhxUnits: Math.ceil(coolingCapacity / 150), // Each RDHX can handle ~150kW
-      rdhxModel: 'average',
-      warning: kwPerRack > params.coolingThresholds?.airCooledMax ? 
-        `Power density (${kwPerRack} kW/rack) exceeds maximum recommended (${params.coolingThresholds?.airCooledMax} kW/rack) for air cooling.` : ''
-    };
-  }
-}
-
-function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
-  const totalITLoad = kwPerRack * totalRacks;
-  
-  // Calculate required UPS capacity with N+1 redundancy
-  const requiredCapacity = totalITLoad * 1.2; // 20% headroom
-  const moduleSize = params.power.upsModuleSize;
-  const modulesNeeded = Math.ceil(requiredCapacity / moduleSize);
-  const redundantModules = params.electrical.redundancyMode === 'N+1' ? 
-    modulesNeeded + 1 : 
-    params.electrical.redundancyMode === '2N' ? 
-      modulesNeeded * 2 : 
-      modulesNeeded;
-  
-  // Determine UPS frame size
-  const modulesPerFrame = params.power.upsFrameMaxModules;
-  const framesNeeded = Math.ceil(redundantModules / modulesPerFrame);
-  
-  let frameSize;
-  if (redundantModules <= 4) frameSize = 'frame1000kw';
-  else if (redundantModules <= 6) frameSize = 'frame1500kw';
-  else frameSize = 'frame2000kw';
-  
-  return {
-    totalITLoad,
-    requiredCapacity: Math.round(requiredCapacity),
-    moduleSize,
-    modulesNeeded,
-    redundantModules,
-    framesNeeded,
-    frameSize,
-    redundancyMode: params.electrical.redundancyMode
-  };
-}
-
-function calculateBatteryRequirements(totalLoad: number, params: CalculationParams) {
-  // Calculate battery requirements
-  const runtimeMinutes = params.power.batteryRuntime;
-  const batteryEfficiency = params.power.batteryEfficiency;
-  
-  // Convert to kWh
-  const energyRequired = (totalLoad * runtimeMinutes) / 60 / batteryEfficiency;
-  
-  // Each cabinet is ~240kWh
-  const cabinetsNeeded = Math.ceil(energyRequired / 240);
-  
-  return {
-    runtimeMinutes,
-    energyRequired: Math.round(energyRequired),
-    cabinetsNeeded,
-    cabinetModel: 'revoTp240Cabinet'
-  };
-}
-
-function calculateCost(config: any, pricing: PricingMatrix, params: CalculationParams) {
-  try {
-    // Calculate electrical costs
-    const busbarCost = calculateBusbarCost(config.busbarSize, pricing);
-    const tapOffBoxCost = pricing.tapOffBox[config.cooling.type === 'dlc' ? 
-      'custom250A' : config.electrical.tapOffBox] * config.totalRacks;
-    const rpduCost = pricing.rpdu[config.electrical.rpdu] * config.totalRacks;
-    
-    // Calculate cooling costs
-    let coolingCost = 0;
-    if (config.cooling.type === 'dlc') {
-      coolingCost = pricing.cooler.tcs310aXht + 
-                   pricing.cooler.grundfosPump + 
-                   pricing.cooler.bufferTank +
-                   (config.cooling.pipingSize === 'dn160' ? 
-                    pricing.piping.dn160PerMeter : pricing.piping.dn110PerMeter) * 100 + // Estimate 100m of piping
-                   (config.cooling.pipingSize === 'dn160' ? 
-                    pricing.piping.valveDn160 : pricing.piping.valveDn110) * 10; // Estimate 10 valves
-    } else if (config.cooling.type === 'hybrid') {
-      // For hybrid, calculate both DLC and air cooling components
-      const dlcPortion = pricing.cooler.tcs310aXht * 0.7 + // Scale down for partial coverage
-                        pricing.cooler.grundfosPump + 
-                        pricing.cooler.bufferTank +
-                        pricing.piping.dn110PerMeter * 50; // Less piping than full DLC
-      
-      const airPortion = pricing.rdhx.average * Math.ceil(config.cooling.residualCoolingCapacity / 150);
-      
-      coolingCost = dlcPortion + airPortion;
-    } else if (config.cooling.type === 'immersion') {
-      // Immersion cooling is typically more expensive
-      coolingCost = pricing.cooler.immersionTank * Math.ceil(config.totalRacks / 4) + // Each tank handles ~4 racks
-                   pricing.cooler.immersionCDU + 
-                   pricing.piping.dn110PerMeter * 50;
-    } else {
-      coolingCost = pricing.rdhx[config.cooling.rdhxModel] * config.cooling.rdhxUnits;
-    }
-    
-    // Calculate power costs
-    const upsCost = pricing.ups[config.power.ups.frameSize] * config.power.ups.framesNeeded +
-                   pricing.ups.module250kw * config.power.ups.redundantModules;
-    const batteryCost = pricing.battery.revoTp240Cabinet * config.power.battery.cabinetsNeeded;
-    
-    // Calculate generator costs if included
-    let generatorCost = 0;
-    if (config.power.generator && config.power.generator.included) {
-      const generatorCapacity = config.power.generator.capacity;
-      const generatorPriceKey = generatorCapacity <= 1000 ? 'generator1000kva' :
-                               generatorCapacity <= 2000 ? 'generator2000kva' : 'generator3000kva';
-      
-      generatorCost = pricing.generator?.[generatorPriceKey] || 0;
-      
-      // Add fuel tank cost
-      const fuelTankSize = config.power.generator.fuel.tankSize;
-      generatorCost += fuelTankSize * (pricing.generator?.fuelTankPerLiter || 1);
-    }
-    
-    // Calculate e-house costs
-    const eHouseBaseSqm = params.power.eHouseBaseSqm || 20; // Base square meters for e-house per UPS frame
-    const eHouseBatterySqm = params.power.eHouseBatterySqm || 5; // Additional square meters per battery cabinet
-    const eHouseGeneratorSqm = config.power.generator?.included ? 30 : 0; // Space for generator if included
-    
-    const eHouseSize = eHouseBaseSqm * config.power.ups.framesNeeded +
-                      eHouseBatterySqm * config.power.battery.cabinetsNeeded +
-                      eHouseGeneratorSqm;
-    
-    const eHouseCost = pricing.eHouse.base + pricing.eHouse.perSqMeter * eHouseSize;
-    
-    // Calculate sustainability options costs
-    let sustainabilityCost = 0;
-    if (pricing.sustainability) {
-      if (config.sustainabilityOptions?.enableWasteHeatRecovery) {
-        sustainabilityCost += pricing.sustainability.heatRecoverySystem || 0;
-      }
-      
-      if (config.sustainabilityOptions?.enableWaterRecycling) {
-        sustainabilityCost += pricing.sustainability.waterRecyclingSystem || 0;
-      }
-      
-      // Add renewable energy costs if specified
-      const renewablePercentage = config.sustainabilityOptions?.renewableEnergyPercentage || 0;
-      if (renewablePercentage > 0) {
-        // Estimate solar capacity needed based on IT load and percentage
-        const solarCapacity = (config.kwPerRack * config.totalRacks * renewablePercentage / 100) * 1.5; // 1.5x oversizing
-        sustainabilityCost += solarCapacity * (pricing.sustainability.solarPanelPerKw || 0);
-      }
-    }
-    
-    // Calculate total equipment cost
-    const equipmentCost = busbarCost + tapOffBoxCost + rpduCost + coolingCost + 
-                         upsCost + batteryCost + generatorCost + eHouseCost + sustainabilityCost;
-    
-    // Add installation and engineering costs
-    const installationCost = equipmentCost * params.costFactors.installationPercentage;
-    const engineeringCost = equipmentCost * params.costFactors.engineeringPercentage;
-    const contingencyCost = equipmentCost * params.costFactors.contingencyPercentage;
-    
-    // Calculate total project cost
-    const totalCost = equipmentCost + installationCost + engineeringCost + contingencyCost;
-    
-    return {
-      electrical: {
-        busbar: Math.round(busbarCost),
-        tapOffBox: Math.round(tapOffBoxCost),
-        rpdu: Math.round(rpduCost),
-        total: Math.round(busbarCost + tapOffBoxCost + rpduCost)
-      },
-      cooling: Math.round(coolingCost),
-      power: {
-        ups: Math.round(upsCost),
-        battery: Math.round(batteryCost),
-        generator: Math.round(generatorCost),
-        total: Math.round(upsCost + batteryCost + generatorCost)
-      },
-      infrastructure: Math.round(eHouseCost),
-      sustainability: Math.round(sustainabilityCost),
-      equipmentTotal: Math.round(equipmentCost),
-      installation: Math.round(installationCost),
-      engineering: Math.round(engineeringCost),
-      contingency: Math.round(contingencyCost),
-      totalProjectCost: Math.round(totalCost),
-      costPerRack: Math.round(totalCost / config.totalRacks),
-      costPerKw: Math.round(totalCost / (config.kwPerRack * config.totalRacks))
-    };
-  } catch (error) {
-    console.error('Error calculating costs:', error);
-    throw new Error('Cost calculation failed');
-  }
-}
-
-// Save calculation results
-export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string) {
+// Enhanced function to save calculation results with more metadata
+export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string, options = {}) {
   const db = getFirestore();
   
   try {
+    // Extract options
+    const {
+      redundancyMode = 'N+1',
+      includeGenerator = false,
+      sustainabilityOptions = {},
+      location = null
+    } = options;
+    
     const docRef = await addDoc(collection(db, 'matrix_calculator', 'user_configurations', 'configs'), {
       userId,
       name,
@@ -567,6 +355,10 @@ export async function saveCalculationResult(userId: string, config: CalculationC
       kwPerRack: config.kwPerRack,
       coolingType: config.coolingType,
       totalRacks: config.totalRacks || 28,
+      redundancyMode,
+      includeGenerator,
+      sustainabilityOptions,
+      location,
       results,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
@@ -575,6 +367,46 @@ export async function saveCalculationResult(userId: string, config: CalculationC
     return { id: docRef.id, success: true };
   } catch (error) {
     console.error('Error saving calculation:', error);
+    return { success: false, error };
+  }
+}
+
+// New function to compare multiple configurations
+export async function compareConfigurations(configIds: string[]) {
+  if (!configIds || configIds.length === 0) {
+    return { success: false, error: 'No configuration IDs provided' };
+  }
+  
+  const db = getFirestore();
+  const results = [];
+  
+  try {
+    for (const id of configIds) {
+      const docRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', id);
+      const docSnap = await getDoc(docRef);
+      
+      if (docSnap.exists()) {
+        results.push({
+          id,
+          ...docSnap.data()
+        });
+      }
+    }
+    
+    if (results.length === 0) {
+      return { success: false, error: 'No configurations found' };
+    }
+    
+    // Use the comparison utility to analyze the configurations
+    const comparison = compareConfigurations(results.map(r => r.results));
+    
+    return {
+      success: true,
+      configurations: results,
+      comparison
+    };
+  } catch (error) {
+    console.error('Error comparing configurations:', error);
     return { success: false, error };
   }
 }
