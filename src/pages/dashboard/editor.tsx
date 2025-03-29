@@ -34,7 +34,9 @@ export default function BlankEditorPage() {
   useEffect(() => {
     if (modules.length > 0 || connections.length > 0) {
       // Don't save if we're in the middle of an undo/redo operation
-      if (historyIndex >= 0 && JSON.stringify(history[historyIndex].modules) === JSON.stringify(modules) &&
+      if (historyIndex >= 0 && 
+          history.length > 0 &&
+          JSON.stringify(history[historyIndex].modules) === JSON.stringify(modules) &&
           JSON.stringify(history[historyIndex].connections) === JSON.stringify(connections)) {
         return;
       }
@@ -48,8 +50,7 @@ export default function BlankEditorPage() {
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [modules, connections]);
+  }, [modules, connections, history, historyIndex]); // Include history and historyIndex in dependencies
 
   const handleUndo = () => {
     if (historyIndex > 0) {

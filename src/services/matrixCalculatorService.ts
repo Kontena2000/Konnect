@@ -278,6 +278,7 @@ function calculateCost(config: any, pricing: any, params: any) {
   const batteryCost = pricing.battery.revoTp240Cabinet * config.power.battery.cabinetsNeeded;
   
   // Calculate e-house costs
+  // Define fixed values for e-house calculations
   const eHouseBaseSqm = 20; // Base square meters for e-house per UPS frame
   const eHouseBatterySqm = 5; // Additional square meters per battery cabinet
   const eHouseSize = eHouseBaseSqm * config.power.ups.framesNeeded +

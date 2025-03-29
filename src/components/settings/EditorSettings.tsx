@@ -40,7 +40,9 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
   const handleSave = async () => {
     try {
       if (!user || !localPreferences) return;
+      
       await editorPreferencesService.savePreferences(userId, localPreferences);
+      
       toast({
         title: "Settings saved",
         description: "Your editor preferences have been updated.",
@@ -75,15 +77,13 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
             <Select
               value={String(localPreferences.grid.size)}
               onValueChange={(value) => {
-                if (localPreferences) {
-                  setLocalPreferences({
-                    ...localPreferences,
-                    grid: { 
-                      ...localPreferences.grid, 
-                      size: Number(value) 
-                    }
-                  });
-                }
+                setLocalPreferences({
+                  ...localPreferences,
+                  grid: {
+                    ...localPreferences.grid,
+                    size: Number(value)
+                  }
+                });
               }}
             >
               <SelectTrigger>
@@ -101,12 +101,15 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
             <Label>Grid Line Weight</Label>
             <Select
               value={localPreferences.grid.weight}
-              onValueChange={(value: "0.5" | "1" | "2") =>
-                setLocalPreferences(prev => ({
-                  ...prev,
-                  grid: { ...prev.grid, weight: value }
-                }))
-              }
+              onValueChange={(value: "0.5" | "1" | "2") => {
+                setLocalPreferences({
+                  ...localPreferences,
+                  grid: {
+                    ...localPreferences.grid,
+                    weight: value
+                  }
+                });
+              }}
             >
               <SelectTrigger>
                 <SelectValue placeholder="Select line weight" />
@@ -131,12 +134,15 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
                 <div className="absolute mt-2 z-50">
                   <HexColorPicker
                     color={localPreferences.grid.color}
-                    onChange={(color) =>
-                      setLocalPreferences(prev => ({
-                        ...prev,
-                        grid: { ...prev.grid, color }
-                      }))
-                    }
+                    onChange={(color) => {
+                      setLocalPreferences({
+                        ...localPreferences,
+                        grid: {
+                          ...localPreferences.grid,
+                          color
+                        }
+                      });
+                    }}
                   />
                 </div>
               )}
@@ -156,12 +162,15 @@ export function EditorSettings({ userId }: EditorSettingsProps) {
             <div className="flex flex-col gap-2">
               <Slider
                 value={[localPreferences.objects.transparency * 100]}
-                onValueChange={(value) =>
-                  setLocalPreferences(prev => ({
-                    ...prev,
-                    objects: { ...prev.objects, transparency: value[0] / 100 }
-                  }))
-                }
+                onValueChange={(value) => {
+                  setLocalPreferences({
+                    ...localPreferences,
+                    objects: {
+                      ...localPreferences.objects,
+                      transparency: value[0] / 100
+                    }
+                  });
+                }}
                 max={100}
                 step={1}
               />
