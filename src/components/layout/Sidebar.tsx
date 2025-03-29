@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
@@ -11,7 +10,9 @@ import {
   Settings, 
   LogOut,
   ChevronLeft,
-  ChevronRight
+  ChevronRight,
+  Edit,
+  Calculator
 } from "lucide-react";
 import authService from "@/services/auth";
 import { useIsMobile } from "@/hooks/use-mobile";
@@ -31,6 +32,18 @@ export function Sidebar() {
       title: "Projects",
       icon: <FolderOpen className="h-5 w-5" />,
       href: "/dashboard/projects"
+    },
+    {
+      title: "Layout Editor",
+      icon: <Edit className="h-5 w-5" />,
+      href: "/dashboard/editor"
+    },
+    {
+      title: "Matrix Calculator",
+      icon: <Calculator className="h-5 w-5" />,
+      href: "#",
+      disabled: true,
+      comingSoon: true
     },
     {
       title: "Settings",
