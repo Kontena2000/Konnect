@@ -25,7 +25,13 @@ export interface EnergyMetrics {
 
 export function calculateEnergyMetrics(config: EnergyConfig, climateData: ClimateData): EnergyMetrics {
   const { kwPerRack, coolingType } = config;
-  const { energyRates } = climateData;
+  
+  // Provide default energy rates if not available in climateData
+  const energyRates = climateData.energyRates || {
+    costPerKWh: 0.15,
+    carbonIntensity: 0.5,
+    renewablePct: 20
+  };
   
   // Calculate total IT load (kW)
   const totalRacks = config.totalRacks || 28; // Standard configuration
