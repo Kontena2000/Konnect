@@ -167,7 +167,8 @@ export async function getClimateFactor(latitude: number, longitude: number): Pro
   }
 }
 
-export function getClimateFactor(climateData: any, coolingType: string): number {
+// Add a new function for getting climate factor by climate data and cooling type
+export function getClimateFactorByCoolingType(climateData: any, coolingType: string): number {
   try {
     // Default factor if we can't determine climate
     if (!climateData || !climateData.zone) {

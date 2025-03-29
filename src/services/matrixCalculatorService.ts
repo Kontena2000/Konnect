@@ -553,7 +553,7 @@ export async function calculateWithLocationFactors(
 ) {
   try {
     // Get climate factor for the location
-    const climateFactor = await getClimateFactor(location.latitude, location.longitude) as ClimateFactor;
+    const climateFactor = await getClimateFactor(location.latitude, location.longitude);
     
     // Calculate base configuration
     const baseConfig = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
@@ -563,7 +563,7 @@ export async function calculateWithLocationFactors(
       // Adjust cooling capacity based on climate
       const adjustedCooling = {
         ...baseConfig.cooling,
-        totalCoolingCapacity: Math.round(baseConfig.cooling.totalCoolingCapacity * (climateFactor.coolingFactor || 1.0)),
+        totalCapacity: Math.round(baseConfig.cooling.totalCoolingCapacity * (climateFactor.coolingFactor || 1.0)),
         pue: baseConfig.cooling.pue * ((climateFactor.temperature || 20) > 25 ? 1.05 : 0.95)
       };
       
