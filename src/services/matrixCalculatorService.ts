@@ -1,4 +1,3 @@
-
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor } from './climateDataService';
@@ -139,10 +138,10 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
       return {
         type: 'dlc',
         totalCoolingCapacity: cooling.totalCapacity,
-        dlcCoolingCapacity: cooling.dlcCoolingCapacity,
-        residualCoolingCapacity: cooling.residualCoolingCapacity,
-        dlcFlowRate: cooling.dlcCoolingCapacity * params.cooling.flowRateFactor,
-        pipingSize: cooling.dlcCoolingCapacity > 1000 ? 'dn160' : 'dn110',
+        dlcCoolingCapacity: cooling.dlcCoolingCapacity || 0,
+        residualCoolingCapacity: cooling.residualCoolingCapacity || 0,
+        dlcFlowRate: (cooling.dlcCoolingCapacity || 0) * params.cooling.flowRateFactor,
+        pipingSize: (cooling.dlcCoolingCapacity || 0) > 1000 ? 'dn160' : 'dn110',
         pue: cooling.pueImpact
       };
       
@@ -150,10 +149,10 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
       return {
         type: 'hybrid',
         totalCoolingCapacity: cooling.totalCapacity,
-        dlcPortion: cooling.dlcPortion,
-        airPortion: cooling.airPortion,
-        dlcFlowRate: cooling.dlcPortion * params.cooling.flowRateFactor,
-        rdhxUnits: Math.ceil(cooling.airPortion / 150),
+        dlcPortion: cooling.dlcPortion || 0,
+        airPortion: cooling.airPortion || 0,
+        dlcFlowRate: (cooling.dlcPortion || 0) * params.cooling.flowRateFactor,
+        rdhxUnits: Math.ceil((cooling.airPortion || 0) / 150),
         rdhxModel: 'average',
         pipingSize: 'dn110',
         pue: cooling.pueImpact
@@ -560,12 +559,12 @@ export async function calculateWithLocationFactors(
     const baseConfig = await calculateConfiguration(kwPerRack, coolingType, totalRacks, options);
     
     // Adjust cooling based on climate
-    if (climateFactor) {
+    if (climateFactor && typeof climateFactor === 'object') {
       // Adjust cooling capacity based on climate
       const adjustedCooling = {
         ...baseConfig.cooling,
-        totalCoolingCapacity: Math.round(baseConfig.cooling.totalCoolingCapacity * climateFactor.coolingFactor),
-        pue: baseConfig.cooling.pue * (climateFactor.temperature > 25 ? 1.05 : 0.95)
+        totalCoolingCapacity: Math.round(baseConfig.cooling.totalCoolingCapacity * (climateFactor.coolingFactor || 1.0)),
+        pue: baseConfig.cooling.pue * ((climateFactor.temperature || 20) > 25 ? 1.05 : 0.95)
       };
       
       // Adjust energy metrics based on climate

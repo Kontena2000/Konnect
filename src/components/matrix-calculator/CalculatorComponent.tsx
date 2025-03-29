@@ -49,18 +49,18 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const generateResults = async () => {
     setLoading(true);
     try {
+      let calculationResults;
+      
       if (useLocationData && location && location.climateData) {
-        const config = await calculateWithLocationFactors(
+        calculationResults = await calculateWithLocationFactors(
           { kwPerRack, coolingType, totalRacks },
           location
         );
-        setResults(config);
       } else {
-        const config = await calculateConfiguration(kwPerRack, coolingType, totalRacks);
-        setResults(config);
+        calculationResults = await calculateConfiguration(kwPerRack, coolingType, totalRacks);
       }
       
-      // Show success toast
+      setResults(calculationResults);
       toast({
         title: "Calculation Complete",
         description: "Your configuration has been calculated successfully.",
