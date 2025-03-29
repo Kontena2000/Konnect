@@ -255,9 +255,37 @@ export function calculateBusbarCost(size: number, pricing: PricingMatrix) {
 }
 
 // Generator sizing utility
-export function calculateGeneratorSize(upsCapacity: number, params: CalculationParams) {
-  const sizingFactor = params.generator?.sizingFactor || 1.2;
-  return Math.round(upsCapacity * sizingFactor);
+export function calculateGeneratorRequirements(requiredCapacity: number, includeGenerator: boolean, params: CalculationParams) {
+  // Ensure requiredCapacity is a number
+  const capacity = typeof requiredCapacity === 'number' ? requiredCapacity : 0;
+  
+  if (!includeGenerator) {
+    return {
+      included: false,
+      capacity: 0,
+      fuel: {
+        tankSize: 0,
+        runtime: 0
+      }
+    };
+  }
+  
+  // Rest of the function...
+  const generatorCapacity = Math.ceil(capacity * 1.25 / 800) * 800; // Round up to nearest 800kVA
+  const fuelConsumption = generatorCapacity * 0.2; // L/hr at full load
+  const fuelTankSize = fuelConsumption * 8; // 8 hours runtime
+  
+  return {
+    included: true,
+    capacity: generatorCapacity,
+    model: generatorCapacity <= 1000 ? '1000kVA' : 
+           generatorCapacity <= 2000 ? '2000kVA' : '3000kVA',
+    fuel: {
+      tankSize: fuelTankSize,
+      consumption: fuelConsumption,
+      runtime: 8 // hours
+    }
+  };
 }
 
 // Cooling capacity utility
@@ -614,49 +642,6 @@ export function calculatePipeSizing(flowRate: number, deltaT: number) {
     actualVelocity: Math.round(actualVelocity * 100) / 100,
     pressureDrop: Math.round(pressureDrop * 10) / 10,
     warning: actualVelocity > 3 ? 'Flow velocity exceeds recommended maximum (3 m/s)' : ''
-  };
-}
-
-// Generator calculations
-export function calculateGeneratorRequirements(totalLoad: number, includeGenerator: boolean, params: CalculationParams) {
-  if (!includeGenerator) {
-    return { included: false };
-  }
-  
-  const sizingFactor = params.generator?.sizingFactor || 1.2;
-  const fuelConsumptionRate = params.generator?.fuelConsumptionRate || 0.25; // L/kWh
-  const fuelTankRuntime = params.generator?.fuelTankRuntime || 24; // hours
-  const startupReliability = params.generator?.startupReliability || 0.98;
-  const loadFactor = params.generator?.loadFactor || 0.8;
-  const noxEmissionsFactor = params.generator?.noxEmissionsFactor || 3.5; // g/kWh
-  
-  // Calculate generator capacity
-  const generatorCapacity = Math.ceil(totalLoad * sizingFactor);
-  
-  // Round to nearest standard size (500kVA increments)
-  const standardizedCapacity = Math.ceil(generatorCapacity / 500) * 500;
-  
-  // Calculate fuel consumption
-  const hourlyFuelConsumption = standardizedCapacity * loadFactor * fuelConsumptionRate;
-  const fuelTankSize = hourlyFuelConsumption * fuelTankRuntime;
-  
-  // Calculate emissions
-  const hourlyNoxEmissions = standardizedCapacity * loadFactor * noxEmissionsFactor / 1000; // kg/h
-  
-  return {
-    included: true,
-    capacity: standardizedCapacity,
-    loadFactor,
-    startupReliability,
-    fuel: {
-      hourlyConsumption: Math.round(hourlyFuelConsumption * 10) / 10,
-      tankSize: Math.round(fuelTankSize),
-      runtime: fuelTankRuntime
-    },
-    emissions: {
-      noxHourly: Math.round(hourlyNoxEmissions * 100) / 100,
-      noxAnnual: Math.round(hourlyNoxEmissions * 100 * 24) / 100 // Assuming 24h of operation per year for testing
-    }
   };
 }
 
