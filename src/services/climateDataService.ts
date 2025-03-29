@@ -23,79 +23,107 @@ export interface Location {
 }
 
 export async function fetchClimateData(latitude: number, longitude: number): Promise<ClimateData> {
-  // First check if we have this location in our database
-  const db = getFirestore();
-  
   try {
-    // Try to find climate data for this location in our database
-    const climateDataQuery = query(
-      collection(db, 'matrix_calculator', 'climate_data', 'locations'),
-      where('latitude', '==', Math.round(latitude)),
-      where('longitude', '==', Math.round(longitude))
-    );
+    // For demo purposes, return mock data based on latitude
+    // In a real app, this would call an API
     
-    const querySnapshot = await getDocs(climateDataQuery);
-    
-    if (!querySnapshot.empty) {
-      // We found climate data in our database
-      const data = querySnapshot.docs[0].data();
-      return data as ClimateData;
+    // Determine climate zone based on latitude
+    let zone;
+    if (Math.abs(latitude) < 23.5) {
+      zone = 'TROPICAL';
+    } else if (Math.abs(latitude) < 35) {
+      zone = 'ARID';
+    } else if (Math.abs(latitude) < 50) {
+      zone = 'TEMPERATE';
+    } else if (Math.abs(latitude) < 66.5) {
+      zone = 'CONTINENTAL';
+    } else {
+      zone = 'POLAR';
     }
+    
+    // Generate some reasonable values based on the zone
+    let avgTemperature, humidity;
+    
+    switch (zone) {
+      case 'TROPICAL':
+        avgTemperature = 28 + (Math.random() * 4 - 2);
+        humidity = 75 + (Math.random() * 10);
+        break;
+      case 'ARID':
+        avgTemperature = 25 + (Math.random() * 8 - 4);
+        humidity = 30 + (Math.random() * 20);
+        break;
+      case 'TEMPERATE':
+        avgTemperature = 15 + (Math.random() * 6 - 3);
+        humidity = 50 + (Math.random() * 20);
+        break;
+      case 'CONTINENTAL':
+        avgTemperature = 5 + (Math.random() * 10 - 5);
+        humidity = 40 + (Math.random() * 20);
+        break;
+      case 'POLAR':
+        avgTemperature = -10 + (Math.random() * 10);
+        humidity = 30 + (Math.random() * 20);
+        break;
+      default:
+        avgTemperature = 15;
+        humidity = 50;
+    }
+    
+    // Return climate data
+    return {
+      zone,
+      avgTemperature,
+      humidity,
+      latitude,
+      longitude
+    };
   } catch (error) {
-    console.error('Error fetching climate data from database:', error);
-    // Continue with the fallback method
+    console.error('Error fetching climate data:', error);
+    throw new Error('Failed to fetch climate data');
   }
-  
-  // Fallback: Determine climate zone based on latitude
-  let zone;
-  const absLat = Math.abs(latitude);
-  
-  if (absLat < 23.5) {
-    zone = 'Tropical';
-  } else if (absLat < 35) {
-    zone = 'Arid';
-  } else if (absLat < 50) {
-    zone = 'Temperate';
-  } else if (absLat < 70) {
-    zone = 'Continental';
-  } else {
-    zone = 'Polar';
-  }
-  
-  // Generate mock temperature and humidity
-  // In reality, this would come from weather API
-  const avgTemperature = 22 - (absLat / 4); // Rough estimate
-  const humidity = Math.max(30, Math.min(90, 70 - absLat / 2));
-  
-  // Get regional energy rates
-  const energyRates = await getRegionalEnergyRates(latitude, longitude);
-  
-  return {
-    zone,
-    avgTemperature,
-    humidity,
-    extremeWeatherRisk: absLat > 50 || absLat < 15 ? 'High' : 'Low',
-    energyRates
-  };
 }
 
-export function getClimateFactor(climateData: ClimateData, coolingType: string): number {
-  // Calculate climate impact factor for cooling requirements
-  let factor = 1.0;
-  
-  // Adjust for temperature
-  if (climateData.avgTemperature > 30) {
-    factor *= 1.2; // Hot climate needs more cooling
-  } else if (climateData.avgTemperature < 10) {
-    factor *= 0.9; // Cold climate needs less cooling
+export function getClimateFactor(climateData: any, coolingType: string): number {
+  try {
+    // Default factor if we can't determine climate
+    if (!climateData || !climateData.zone) {
+      return 1.0;
+    }
+    
+    // Get base cooling factor from climate zone
+    let baseFactor = 1.0;
+    switch (climateData.zone) {
+      case 'TROPICAL':
+        baseFactor = 1.2;
+        break;
+      case 'ARID':
+        baseFactor = 1.15;
+        break;
+      case 'TEMPERATE':
+        baseFactor = 1.0;
+        break;
+      case 'CONTINENTAL':
+        baseFactor = 0.95;
+        break;
+      case 'POLAR':
+        baseFactor = 0.9;
+        break;
+      default:
+        baseFactor = 1.0;
+    }
+    
+    // Adjust based on cooling type
+    if (coolingType === 'dlc') {
+      // DLC is less affected by climate
+      return 1.0 + ((baseFactor - 1.0) * 0.5);
+    }
+    
+    return baseFactor;
+  } catch (error) {
+    console.error('Error calculating climate factor:', error);
+    return 1.0; // Default to no adjustment on error
   }
-  
-  // Adjust for humidity (affects air-cooled more than DLC)
-  if (coolingType === 'air-cooled' && climateData.humidity > 70) {
-    factor *= 1.15; // High humidity impacts air cooling efficiency
-  }
-  
-  return factor;
 }
 
 async function getRegionalEnergyRates(latitude: number, longitude: number) {

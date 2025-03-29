@@ -55,60 +55,65 @@ export interface CalculationConfig {
 }
 
 export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28) {
-  const { pricing, params } = await getPricingAndParams();
-  
-  // Calculate electrical requirements
-  const currentPerRow = calculateCurrentPerRow(kwPerRack, params);
-  const busbarSize = selectBusbarSize(currentPerRow);
-  const currentPerRack = calculateCurrentPerRack(kwPerRack, params);
-  const tapOffBox = selectTapOffBoxSize(currentPerRack);
-  const rpdu = selectRPDUSize(currentPerRack);
-  
-  // Calculate cooling requirements
-  const cooling = calculateCoolingRequirements(kwPerRack, coolingType, totalRacks, params);
-  
-  // Calculate UPS and battery
-  const ups = calculateUPSRequirements(kwPerRack, totalRacks, params);
-  const battery = calculateBatteryRequirements(ups.totalITLoad, params);
-  
-  // Calculate costs
-  const cost = calculateCost({
-    kwPerRack,
-    coolingType,
-    totalRacks,
-    busbarSize,
-    cooling,
-    ups,
-    battery,
-    electrical: {
-      currentPerRack,
-      tapOffBox,
-      rpdu
-    }
-  }, pricing, params);
-  
-  return {
-    rack: {
-      powerDensity: kwPerRack,
-      coolingType: coolingType,
-      totalRacks: totalRacks
-    },
-    electrical: {
-      currentPerRow,
+  try {
+    const { pricing, params } = await getPricingAndParams();
+    
+    // Calculate electrical requirements
+    const currentPerRow = calculateCurrentPerRow(kwPerRack, params);
+    const busbarSize = selectBusbarSize(currentPerRow);
+    const currentPerRack = calculateCurrentPerRack(kwPerRack, params);
+    const tapOffBox = selectTapOffBoxSize(currentPerRack);
+    const rpdu = selectRPDUSize(currentPerRack);
+    
+    // Calculate cooling requirements
+    const cooling = calculateCoolingRequirements(kwPerRack, coolingType, totalRacks, params);
+    
+    // Calculate UPS and battery
+    const ups = calculateUPSRequirements(kwPerRack, totalRacks, params);
+    const battery = calculateBatteryRequirements(ups.totalITLoad, params);
+    
+    // Calculate costs
+    const cost = calculateCost({
+      kwPerRack,
+      coolingType,
+      totalRacks,
       busbarSize,
-      currentPerRack,
-      tapOffBox,
-      rpdu,
-      multiplicityWarning: currentPerRow > 2000 ? 
-        `Current exceeds maximum busbar rating (2000A). Multiple busbars required per row.` : ``
-    },
-    cooling,
-    power: {
+      cooling,
       ups,
-      battery
-    },
-    cost
-  };
+      battery,
+      electrical: {
+        currentPerRack,
+        tapOffBox,
+        rpdu
+      }
+    }, pricing, params);
+    
+    return {
+      rack: {
+        powerDensity: kwPerRack,
+        coolingType: coolingType,
+        totalRacks: totalRacks
+      },
+      electrical: {
+        currentPerRow,
+        busbarSize,
+        currentPerRack,
+        tapOffBox,
+        rpdu,
+        multiplicityWarning: currentPerRow > 2000 ? 
+          `Current exceeds maximum busbar rating (2000A). Multiple busbars required per row.` : ``
+      },
+      cooling,
+      power: {
+        ups,
+        battery
+      },
+      cost
+    };
+  } catch (error) {
+    console.error('Error in calculation:', error);
+    throw new Error('Failed to calculate configuration: ' + (error instanceof Error ? error.message : String(error)));
+  }
 }
 
 export async function calculateWithLocationFactors(config: CalculationConfig, location: any) {
@@ -256,71 +261,76 @@ function calculateBatteryRequirements(totalLoad: number, params: CalculationPara
 }
 
 function calculateCost(config: any, pricing: PricingMatrix, params: CalculationParams) {
-  // Calculate electrical costs
-  const busbarCost = calculateBusbarCost(config.busbarSize, pricing);
-  const tapOffBoxCost = pricing.tapOffBox[config.cooling.type === 'dlc' ? 
-    'custom250A' : config.electrical.tapOffBox] * config.totalRacks;
-  const rpduCost = pricing.rpdu[config.electrical.rpdu] * config.totalRacks;
-  
-  // Calculate cooling costs
-  let coolingCost = 0;
-  if (config.cooling.type === 'dlc') {
-    coolingCost = pricing.cooler.tcs310aXht + 
-                 pricing.cooler.grundfosPump + 
-                 pricing.cooler.bufferTank +
-                 (config.cooling.pipingSize === 'dn160' ? 
-                  pricing.piping.dn160PerMeter : pricing.piping.dn110PerMeter) * 100 + // Estimate 100m of piping
-                 (config.cooling.pipingSize === 'dn160' ? 
-                  pricing.piping.valveDn160 : pricing.piping.valveDn110) * 10; // Estimate 10 valves
-  } else {
-    coolingCost = pricing.rdhx[config.cooling.rdhxModel] * config.cooling.rdhxUnits;
+  try {
+    // Calculate electrical costs
+    const busbarCost = calculateBusbarCost(config.busbarSize, pricing);
+    const tapOffBoxCost = pricing.tapOffBox[config.cooling.type === 'dlc' ? 
+      'custom250A' : config.electrical.tapOffBox] * config.totalRacks;
+    const rpduCost = pricing.rpdu[config.electrical.rpdu] * config.totalRacks;
+    
+    // Calculate cooling costs
+    let coolingCost = 0;
+    if (config.cooling.type === 'dlc') {
+      coolingCost = pricing.cooler.tcs310aXht + 
+                   pricing.cooler.grundfosPump + 
+                   pricing.cooler.bufferTank +
+                   (config.cooling.pipingSize === 'dn160' ? 
+                    pricing.piping.dn160PerMeter : pricing.piping.dn110PerMeter) * 100 + // Estimate 100m of piping
+                   (config.cooling.pipingSize === 'dn160' ? 
+                    pricing.piping.valveDn160 : pricing.piping.valveDn110) * 10; // Estimate 10 valves
+    } else {
+      coolingCost = pricing.rdhx[config.cooling.rdhxModel] * config.cooling.rdhxUnits;
+    }
+    
+    // Calculate power costs
+    const upsCost = pricing.ups[config.power.ups.frameSize] * config.power.ups.framesNeeded +
+                   pricing.ups.module250kw * config.power.ups.redundantModules;
+    const batteryCost = pricing.battery.revoTp240Cabinet * config.power.battery.cabinetsNeeded;
+    
+    // Calculate e-house costs
+    const eHouseBaseSqm = params.power.eHouseBaseSqm || 20; // Base square meters for e-house per UPS frame
+    const eHouseBatterySqm = params.power.eHouseBatterySqm || 5; // Additional square meters per battery cabinet
+    const eHouseSize = eHouseBaseSqm * config.power.ups.framesNeeded +
+                      eHouseBatterySqm * config.power.battery.cabinetsNeeded;
+    const eHouseCost = pricing.eHouse.base + pricing.eHouse.perSqMeter * eHouseSize;
+    
+    // Calculate total equipment cost
+    const equipmentCost = busbarCost + tapOffBoxCost + rpduCost + coolingCost + upsCost + batteryCost + eHouseCost;
+    
+    // Add installation and engineering costs
+    const installationCost = equipmentCost * params.costFactors.installationPercentage;
+    const engineeringCost = equipmentCost * params.costFactors.engineeringPercentage;
+    const contingencyCost = equipmentCost * params.costFactors.contingencyPercentage;
+    
+    // Calculate total project cost
+    const totalCost = equipmentCost + installationCost + engineeringCost + contingencyCost;
+    
+    return {
+      electrical: {
+        busbar: Math.round(busbarCost),
+        tapOffBox: Math.round(tapOffBoxCost),
+        rpdu: Math.round(rpduCost),
+        total: Math.round(busbarCost + tapOffBoxCost + rpduCost)
+      },
+      cooling: Math.round(coolingCost),
+      power: {
+        ups: Math.round(upsCost),
+        battery: Math.round(batteryCost),
+        total: Math.round(upsCost + batteryCost)
+      },
+      infrastructure: Math.round(eHouseCost),
+      equipmentTotal: Math.round(equipmentCost),
+      installation: Math.round(installationCost),
+      engineering: Math.round(engineeringCost),
+      contingency: Math.round(contingencyCost),
+      totalProjectCost: Math.round(totalCost),
+      costPerRack: Math.round(totalCost / config.totalRacks),
+      costPerKw: Math.round(totalCost / (config.kwPerRack * config.totalRacks))
+    };
+  } catch (error) {
+    console.error('Error calculating costs:', error);
+    throw new Error('Cost calculation failed');
   }
-  
-  // Calculate power costs
-  const upsCost = pricing.ups[config.power.ups.frameSize] * config.power.ups.framesNeeded +
-                 pricing.ups.module250kw * config.power.ups.redundantModules;
-  const batteryCost = pricing.battery.revoTp240Cabinet * config.power.battery.cabinetsNeeded;
-  
-  // Calculate e-house costs
-  const eHouseBaseSqm = params.power.eHouseBaseSqm || 20; // Base square meters for e-house per UPS frame
-  const eHouseBatterySqm = params.power.eHouseBatterySqm || 5; // Additional square meters per battery cabinet
-  const eHouseSize = eHouseBaseSqm * config.power.ups.framesNeeded +
-                    eHouseBatterySqm * config.power.battery.cabinetsNeeded;
-  const eHouseCost = pricing.eHouse.base + pricing.eHouse.perSqMeter * eHouseSize;
-  
-  // Calculate total equipment cost
-  const equipmentCost = busbarCost + tapOffBoxCost + rpduCost + coolingCost + upsCost + batteryCost + eHouseCost;
-  
-  // Add installation and engineering costs
-  const installationCost = equipmentCost * params.costFactors.installationPercentage;
-  const engineeringCost = equipmentCost * params.costFactors.engineeringPercentage;
-  const contingencyCost = equipmentCost * params.costFactors.contingencyPercentage;
-  
-  // Calculate total project cost
-  const totalCost = equipmentCost + installationCost + engineeringCost + contingencyCost;
-  
-  return {
-    electrical: {
-      busbar: Math.round(busbarCost),
-      tapOffBox: Math.round(tapOffBoxCost),
-      rpdu: Math.round(rpduCost),
-      total: Math.round(busbarCost + tapOffBoxCost + rpduCost)
-    },
-    cooling: Math.round(coolingCost),
-    power: {
-      ups: Math.round(upsCost),
-      battery: Math.round(batteryCost),
-      total: Math.round(upsCost + batteryCost)
-    },
-    infrastructure: Math.round(eHouseCost),
-    equipmentTotal: Math.round(equipmentCost),
-    installation: Math.round(installationCost),
-    engineering: Math.round(engineeringCost),
-    contingency: Math.round(contingencyCost),
-    totalProjectCost: Math.round(totalCost),
-    costPerRack: Math.round(totalCost / config.totalRacks),
-    costPerKw: Math.round(totalCost / (config.kwPerRack * config.totalRacks))
-  };
 }
 
 function adjustCoolingForClimate(cooling: any, climateData: any) {

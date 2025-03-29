@@ -189,15 +189,17 @@ export async function initializeCalculatorCollections() {
   
   try {
     // Check if pricing matrix exists, if not create it
-    const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
+    const pricingDocRef = doc(db, 'matrix_calculator', 'pricing_matrix');
+    const pricingDoc = await getDoc(pricingDocRef);
     if (!pricingDoc.exists()) {
-      await setDoc(doc(db, 'matrix_calculator', 'pricing_matrix'), DEFAULT_PRICING);
+      await setDoc(pricingDocRef, DEFAULT_PRICING);
     }
     
     // Check if calculation params exist, if not create them
-    const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
+    const paramsDocRef = doc(db, 'matrix_calculator', 'calculation_params');
+    const paramsDoc = await getDoc(paramsDocRef);
     if (!paramsDoc.exists()) {
-      await setDoc(doc(db, 'matrix_calculator', 'calculation_params'), DEFAULT_CALCULATION_PARAMS);
+      await setDoc(paramsDocRef, DEFAULT_CALCULATION_PARAMS);
     }
     
     return true;
