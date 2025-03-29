@@ -78,8 +78,7 @@ export default function BlankEditorPage() {
         description: 'Created from blank editor',
         modules,
         connections,
-        projectId: 'default', // You might want to change this to a real project ID
-        userId: user.uid
+        projectId: 'default' // You might want to change this to a real project ID
       });
       
       toast({
