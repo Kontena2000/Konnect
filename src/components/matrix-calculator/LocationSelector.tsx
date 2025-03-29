@@ -13,7 +13,7 @@ interface LocationSelectorProps {
 
 export function LocationSelector({ onLocationSelected }: LocationSelectorProps) {
   const [location, setLocation] = useState({
-    coordinates: { lat: 37.7749, lng: -122.4194 }, // Default - San Francisco
+    coordinates: { latitude: 37.7749, longitude: -122.4194 }, // Default - San Francisco
     address: '',
     altitude: 0
   });
@@ -28,8 +28,8 @@ export function LocationSelector({ onLocationSelected }: LocationSelectorProps) 
       setError(null);
       try {
         const data = await fetchClimateData(
-          location.coordinates.lat,
-          location.coordinates.lng
+          location.coordinates.latitude,
+          location.coordinates.longitude
         );
         setClimateData(data);
         
@@ -60,7 +60,8 @@ export function LocationSelector({ onLocationSelected }: LocationSelectorProps) 
     // For now, just an example updating coordinates
     setLocation({
       ...location,
-      coordinates: { lat: 40.7128, lng: -74.0060 } // New York
+      coordinates: { latitude: 40.7128, longitude: -74.0060 }, // New York
+      address: location.address || 'New York'
     });
   };
   
