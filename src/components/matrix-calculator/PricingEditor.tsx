@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING } from '@/constants/calculatorConstants';
@@ -12,10 +11,10 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface PricingEditorProps {
   readOnly?: boolean;
-  onSave?: (pricing: any) => void;
+  onSave?: ((pricing: any) => void) | undefined;
 }
 
-export function PricingEditor({ readOnly = false, onSave = null }: PricingEditorProps) {
+export function PricingEditor({ readOnly = false, onSave }: PricingEditorProps) {
   const [pricing, setPricing] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { fetchClimateData } from '@/services/climateDataService';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -44,7 +43,7 @@ export function LocationSelector({ onLocationSelected }: LocationSelectorProps) 
     }
     
     getClimateData();
-  }, [location.coordinates, onLocationSelected]);
+  }, [location, onLocationSelected]); // Added location to dependency array
   
   // Handle address input
   const handleAddressSearch = async () => {
