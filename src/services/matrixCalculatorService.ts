@@ -251,7 +251,7 @@ async function calculateConfigurationImpl(
     
     // Calculate generator if included
     const generator = calculateGeneratorRequirements(
-      ups.requiredCapacity,
+      ups.requiredCapacity || totalRacks * kwPerRack * 1.2, // Provide fallback value if requiredCapacity is undefined
       includeGenerator,
       updatedParams
     );
