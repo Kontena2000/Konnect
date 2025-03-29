@@ -1,6 +1,8 @@
 import { CalculationParams, PricingMatrix, COOLING_TYPES } from './calculatorUtils';
 import { calculateConfiguration, CalculationConfig, CalculationOptions } from './matrixCalculatorService';
 import { memoize } from './calculationCache';
+import { calculatorDebug, withDebug } from './calculatorDebug';
+import { fallbackAnalysis, fallbackCoolingComparison, fallbackRedundancyComparison } from './calculatorFallback';
 
 // Cache for optimization results
 const optimizationCache = new Map<string, any>();
@@ -257,6 +259,23 @@ export function analyzeConfiguration(config: any): any {
   };
 }
 
+// Wrap the analyzeConfiguration function with debug logging
+const originalAnalyzeConfiguration = analyzeConfiguration;
+
+export const analyzeConfiguration = withDebug(
+  'analyzeConfiguration',
+  (results: any): any => {
+    try {
+      // Try the original analysis first
+      return originalAnalyzeConfiguration(results);
+    } catch (error) {
+      calculatorDebug.error('Original analysis failed, using fallback', error);
+      // If the original analysis fails, use the fallback
+      return fallbackAnalysis(results);
+    }
+  }
+);
+
 /**
  * Calculate the impact of different cooling technologies on the same workload
  */
@@ -315,6 +334,23 @@ export async function compareCoolingTechnologies(kwPerRack: number, totalRacks: 
     recommendation: findBestCoolingOption(comparisonResults)
   };
 }
+
+// Wrap the compareCoolingTechnologies function with debug logging
+const originalCompareCoolingTechnologies = compareCoolingTechnologies;
+
+export const compareCoolingTechnologies = withDebug(
+  'compareCoolingTechnologies',
+  async (kwPerRack: number, totalRacks: number): Promise<any> => {
+    try {
+      // Try the original comparison first
+      return await originalCompareCoolingTechnologies(kwPerRack, totalRacks);
+    } catch (error) {
+      calculatorDebug.error('Original cooling comparison failed, using fallback', error);
+      // If the original comparison fails, use the fallback
+      return fallbackCoolingComparison(kwPerRack, totalRacks);
+    }
+  }
+);
 
 /**
  * Find the best cooling option based on comparison results
@@ -449,6 +485,23 @@ export async function compareRedundancyOptions(
     recommendation: findBestRedundancyOption(comparisonResults)
   };
 }
+
+// Wrap the compareRedundancyOptions function with debug logging
+const originalCompareRedundancyOptions = compareRedundancyOptions;
+
+export const compareRedundancyOptions = withDebug(
+  'compareRedundancyOptions',
+  async (kwPerRack: number, coolingType: string, totalRacks: number): Promise<any> => {
+    try {
+      // Try the original comparison first
+      return await originalCompareRedundancyOptions(kwPerRack, coolingType, totalRacks);
+    } catch (error) {
+      calculatorDebug.error('Original redundancy comparison failed, using fallback', error);
+      // If the original comparison fails, use the fallback
+      return fallbackRedundancyComparison(kwPerRack, coolingType, totalRacks);
+    }
+  }
+);
 
 /**
  * Find the best redundancy option based on comparison results

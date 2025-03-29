@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { calculateConfiguration, CalculationOptions } from '@/services/matrixCalculatorService';
 import { findOptimalConfiguration } from '@/services/optimizationService';
 import { generateConfigurationReport } from '@/services/calculatorReportService';
+import { calculatorDebug } from '@/services/calculatorDebug';
 import { LocationSelector } from './LocationSelector';
 import { ResultsDisplay } from './ResultsDisplay';
+import { CalculatorDebugPanel } from './CalculatorDebugPanel';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -47,6 +49,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [location, setLocation] = useState<any>(null);
   const [results, setResults] = useState<any>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [useLocationData, setUseLocationData] = useState(false);
   const [calculationMode, setCalculationMode] = useState<'standard' | 'optimize' | 'report'>('standard');
   
@@ -62,7 +65,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [optimizationGoal, setOptimizationGoal] = useState<'cost' | 'efficiency' | 'reliability' | 'sustainability'>('cost');
   const [minPowerDensity, setMinPowerDensity] = useState(50);
   const [maxPowerDensity, setMaxPowerDensity] = useState(200);
-  const [preferredCoolingTypes, setPreferredCoolingTypes] = useState<string[]>(['air-cooled', 'dlc', 'hybrid', 'immersion']);
+  const [preferredCoolingTypes, setPreferredCoolingTypes] = useState<string[]>(['air', 'dlc', 'hybrid', 'immersion']);
   
   const { toast } = useToast();
   
@@ -117,7 +120,18 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   // Calculate function
   const generateResults = async () => {
     setLoading(true);
+    setError(null);
+    
     try {
+      calculatorDebug.startCalculation({
+        kwPerRack,
+        coolingType,
+        totalRacks,
+        location,
+        redundancy: redundancyMode,
+        energySource: includeGenerator ? 'generator' : 'mains',
+      });
+      
       // Prepare calculation options
       const options: CalculationOptions = {
         redundancyMode,
@@ -127,12 +141,9 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
           enableWasteHeatRecovery,
           enableWaterRecycling,
           renewableEnergyPercentage: renewablePercentage
-        }
+        },
+        location: useLocationData && location ? location : undefined,
       };
-      
-      if (useLocationData && location) {
-        options.location = location;
-      }
       
       let calculationResults;
       
@@ -166,35 +177,28 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
         case 'standard':
         default:
           // Standard calculation
-          if (useLocationData && location) {
-            calculationResults = await calculateWithLocationFactors(
-              kwPerRack,
-              coolingType,
-              totalRacks,
-              location,
-              options
-            );
-          } else {
-            calculationResults = await calculateConfiguration(
-              kwPerRack,
-              coolingType,
-              totalRacks,
-              options
-            );
-          }
+          calculationResults = await calculateConfiguration(
+            kwPerRack,
+            coolingType,
+            totalRacks,
+            options
+          );
           break;
       }
       
       setResults(calculationResults);
+      calculatorDebug.endCalculation(true, calculationResults);
       toast({
         title: 'Calculation Complete',
         description: 'Your configuration has been calculated successfully.',
       });
     } catch (error) {
-      console.error('Calculation error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      calculatorDebug.error('Calculation failed', error);
+      setError(errorMessage);
       toast({
         title: 'Calculation Error',
-        description: 'There was an error generating the results. Please try again.',
+        description: errorMessage,
         variant: 'destructive'
       });
     } finally {
@@ -286,7 +290,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
                       <SelectValue placeholder='Select cooling type' />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value='air-cooled'>Air-cooled</SelectItem>
+                      <SelectItem value='air'>Air-cooled</SelectItem>
                       <SelectItem value='dlc'>Direct Liquid Cooling (DLC)</SelectItem>
                       <SelectItem value='hybrid'>Hybrid Cooling</SelectItem>
                       <SelectItem value='immersion'>Immersion Cooling</SelectItem>
@@ -513,8 +517,8 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
                     <div className='flex items-center space-x-2'>
                       <Switch 
                         id='air-cooled' 
-                        checked={preferredCoolingTypes.includes('air-cooled')}
-                        onCheckedChange={(checked) => handleCoolingTypeChange('air-cooled', checked)}
+                        checked={preferredCoolingTypes.includes('air')}
+                        onCheckedChange={(checked) => handleCoolingTypeChange('air', checked)}
                       />
                       <Label htmlFor='air-cooled'>Air Cooling</Label>
                     </div>
@@ -621,6 +625,11 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       </div>
       
       {results && <ResultsDisplay results={results} onSave={onSave} userId={userId} />}
+      
+      {/* Add Debug Panel */}
+      <div className="mt-8">
+        <CalculatorDebugPanel />
+      </div>
     </div>
   );
 }

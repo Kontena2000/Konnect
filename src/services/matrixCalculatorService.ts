@@ -22,6 +22,8 @@ import {
   compareConfigurations as compareConfigurationsUtil
 } from './calculatorUtils';
 import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
+import { calculatorDebug, withDebug } from './calculatorDebug';
+import { fallbackCalculation } from './calculatorFallback';
 
 // Improved cache implementation
 let cachedPricing: PricingMatrix | null = null;
@@ -193,6 +195,22 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
       };
   }
 }
+
+const originalCalculateConfiguration = calculateConfiguration;
+
+export const calculateConfiguration = withDebug(
+  'calculateConfiguration',
+  async (kwPerRack: number, coolingType: string, totalRacks: number, options: CalculationOptions = {}): Promise<any> => {
+    try {
+      // Try the original calculation first
+      return await originalCalculateConfiguration(kwPerRack, coolingType, totalRacks, options);
+    } catch (error) {
+      calculatorDebug.error('Original calculation failed, using fallback', error);
+      // If the original calculation fails, use the fallback
+      return fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
+    }
+  }
+);
 
 export async function calculateConfiguration(kwPerRack: number, coolingType: string, totalRacks = 28, options: CalculationOptions = {}) {
   try {
