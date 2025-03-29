@@ -1,4 +1,3 @@
-
 import { CalculationParams, PricingMatrix } from './calculatorUtils';
 
 // Cache for expensive calculations
@@ -70,12 +69,13 @@ class CalculationCache<K, V> {
     let oldestKey: string | null = null;
     let oldestTime = Infinity;
     
-    for (const [key, entry] of this.cache.entries()) {
+    // Fix the TypeScript error by using Array.from() to convert Map entries to an array
+    Array.from(this.cache.entries()).forEach(([key, entry]) => {
       if (entry.timestamp < oldestTime) {
         oldestTime = entry.timestamp;
         oldestKey = key;
       }
-    }
+    });
     
     return oldestKey;
   }
@@ -83,11 +83,13 @@ class CalculationCache<K, V> {
   // Clean up expired entries
   cleanup(): void {
     const now = Date.now();
-    for (const [key, entry] of this.cache.entries()) {
+    
+    // Fix the TypeScript error by using Array.from() to convert Map entries to an array
+    Array.from(this.cache.entries()).forEach(([key, entry]) => {
       if (now > entry.expiresAt) {
         this.cache.delete(key);
       }
-    }
+    });
   }
 
   // Clear the entire cache

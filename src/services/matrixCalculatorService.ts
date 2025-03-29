@@ -559,7 +559,7 @@ export async function compareConfigurations(configIds: string[]): Promise<{
   }
 }
 
-// Function to calculate with location factors
+// Implement a more efficient calculateWithLocationFactors function
 export async function calculateWithLocationFactors(
   kwPerRack: number, 
   coolingType: string, 
@@ -568,6 +568,21 @@ export async function calculateWithLocationFactors(
   options: CalculationOptions = {}
 ) {
   try {
+    // Check cache first
+    const cacheKey = {
+      kwPerRack,
+      coolingType,
+      totalRacks,
+      latitude: location.latitude,
+      longitude: location.longitude,
+      options: JSON.stringify(options)
+    };
+    
+    const cachedResult = locationFactorsCache.get(cacheKey);
+    if (cachedResult) {
+      return cachedResult;
+    }
+    
     // Get climate factor for the location
     const climateFactor = await getClimateFactor(location.latitude, location.longitude);
     
@@ -584,18 +599,29 @@ export async function calculateWithLocationFactors(
       };
       
       // Adjust energy metrics based on climate
-      const energyMetrics = calculateEnergyMetrics(
-        kwPerRack * totalRacks,
-        adjustedCooling.pue,
-        climateFactor.renewableEnergyPotential || 0.2
-      );
+      const energyConfig = {
+        totalLoad: kwPerRack * totalRacks,
+        pue: adjustedCooling.pue,
+        renewablePercentage: climateFactor.renewableEnergyPotential,
+        location: {
+          latitude: location.latitude,
+          longitude: location.longitude
+        }
+      };
       
-      return {
+      const energyMetrics = await calculateEnergyWithLocationFactors(energyConfig);
+      
+      const result = {
         ...baseConfig,
         cooling: adjustedCooling,
         climateFactor,
         energyMetrics
       };
+      
+      // Cache the result
+      locationFactorsCache.set(cacheKey, result);
+      
+      return result;
     }
     
     return baseConfig;
