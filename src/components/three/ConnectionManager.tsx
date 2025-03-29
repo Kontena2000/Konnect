@@ -228,7 +228,10 @@ function ConnectionItem({
           <Label>Voltage</Label>
           <Select
             value={connection.voltage || '400'}
-            onValueChange={(value: '230' | '400' | '480') => onUpdate(connection.id, { voltage: value })}
+            onValueChange={(value) => {
+              const typedValue = value as '230' | '400' | '480';
+              onUpdate(connection.id, { voltage: typedValue });
+            }}
           >
             <SelectTrigger>
               <SelectValue placeholder='Select voltage' />

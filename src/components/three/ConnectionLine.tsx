@@ -1,4 +1,3 @@
-
 import { Line, Html } from "@react-three/drei";
 import { Connection } from "@/services/layout";
 import { ConnectionType } from "@/types/connection";
@@ -12,20 +11,20 @@ interface ConnectionLineProps {
 
 const getColorByType = (type: ConnectionType): string => {
   switch (type) {
-    case "power":
-      return "#22c55e"; // Green
-    case "network":
-      return "#3b82f6"; // Blue
-    case "cooling":
-      return "#06b6d4"; // Cyan
-    case "water":
-      return "#0ea5e9"; // Light blue
-    case "gas":
-      return "#f59e0b"; // Amber
-    case "security":
-      return "#ef4444"; // Red
+    case 'power':
+      return '#22c55e'; // Green
+    case 'network':
+      return '#3b82f6'; // Blue
+    case 'cooling':
+      return '#06b6d4'; // Cyan
+    case 'water':
+      return '#0ea5e9'; // Light blue
+    case 'gas':
+      return '#f59e0b'; // Amber
+    case 'security':
+      return '#ef4444'; // Red
     default:
-      return "#94a3b8"; // Slate
+      return '#94a3b8'; // Slate
   }
 };
 
@@ -60,7 +59,7 @@ export function ConnectionLine({ connection, selected = false }: ConnectionLineP
 
   // Get line style based on connection type
   const getDashed = () => {
-    return connection.type === "network";
+    return connection.type === 'network' ? true : false;
   };
 
   const points = connection.intermediatePoints
@@ -73,16 +72,17 @@ export function ConnectionLine({ connection, selected = false }: ConnectionLineP
   // Get appropriate unit based on connection type
   const getUnit = () => {
     switch (connection.type) {
-      case "power":
-      case "cooling":
-        return "kW";
-      case "network":
-        return "Gbps";
-      case "water":
-      case "gas":
-        return "m³/h";
+      case 'power':
+        return 'kW';
+      case 'cooling':
+        return 'kW';
+      case 'network':
+        return 'Gbps';
+      case 'water':
+      case 'gas':
+        return 'm³/h';
       default:
-        return "";
+        return '';
     }
   };
 

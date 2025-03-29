@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -11,6 +12,7 @@ import { ModuleTransform } from "./ModuleTransform";
 import { ModuleAnimation } from "./ModuleAnimation";
 import { useModuleTransform } from "@/hooks/use-module-transform";
 import { EditorPreferences } from "@/services/editor-preferences";
+import { ConnectionType } from "@/types/connection";
 import gsap from "gsap";
 
 interface ModuleObjectProps {
@@ -175,7 +177,7 @@ export function ModuleObject({
         <ConnectionPoint
           key={`${module.id}-connection-${index}`}
           position={point.position}
-          type={point.types?.[0] || (point.type as ConnectionType) || 'power'}
+          type={(point.types?.[0] || point.type || "power") as ConnectionType}
           moduleId={module.id}
         />
       ))}

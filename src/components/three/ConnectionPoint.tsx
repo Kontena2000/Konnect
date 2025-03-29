@@ -1,4 +1,3 @@
-
 import type * as THREE from "three";
 import { useRef, useState } from "react";
 import { Sphere, Html } from "@react-three/drei";

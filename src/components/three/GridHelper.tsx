@@ -20,15 +20,10 @@ export function GridHelper({
   gridColor = "#444444",
   preferences
 }: GridHelperProps) {
-  // Convert grid size to actual dimensions
+  // Get grid size from preferences or use default
   const getGridSize = () => {
     if (!preferences) return size;
-    switch (preferences.size) {
-      case 'small': return 50;
-      case 'medium': return 100;
-      case 'large': return 200;
-      default: return 100;
-    }
+    return preferences.size;
   };
 
   // Convert line weight to actual value

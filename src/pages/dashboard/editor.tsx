@@ -79,8 +79,7 @@ export default function BlankEditorPage() {
         modules,
         connections,
         projectId: 'default', // You might want to change this to a real project ID
-        createdAt: new Date(),
-        updatedAt: new Date()
+        userId: user.uid
       });
       
       toast({

@@ -7,7 +7,7 @@ import { Plus, X, Loader2, Box } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Module } from "@/types/module";
-import { ConnectionType } from "@/types/connection";
+import { ConnectionType, ConnectionPoint } from "@/types/connection";
 import { useToast } from "@/hooks/use-toast";
 import { nanoid } from "nanoid";
 import moduleService from "@/services/module";
@@ -92,13 +92,31 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
 
     try {
       const moduleId = nanoid();
+      
+      // Convert form connection points to proper ConnectionPoint objects
+      const connectionPoints: ConnectionPoint[] = formData.connectionPoints.map((point, index) => ({
+        id: `${moduleId}-conn-${index}`,
+        moduleId: moduleId,
+        side: "north", // Default side
+        types: [point.type],
+        position: point.position,
+        isInput: true,
+        isOutput: false
+      }));
+      
       const newModule: Module = {
         id: moduleId,
         type: "basic",
-        ...formData,
+        name: formData.name,
+        description: formData.description,
+        category: formData.category,
+        color: formData.color,
+        dimensions: formData.dimensions,
         position: [0, 0, 0],
         rotation: [0, 0, 0],
-        scale: [1, 1, 1]
+        scale: [1, 1, 1],
+        connectionPoints: connectionPoints,
+        visibleInEditor: formData.visibleInEditor
       };
 
       await onModuleCreate(newModule);
@@ -120,27 +138,27 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
   };
 
   const handleAddConnectionPoint = () => {
-    setFormData(prev => ({
+    setFormData((prev: FormData) => ({
       ...prev,
       connectionPoints: [
         ...prev.connectionPoints,
         {
           position: [0, 0, 0],
-          type: "cat6a"
+          type: "power"
         }
       ]
     }));
   };
 
   const handleRemoveConnectionPoint = (index: number) => {
-    setFormData(prev => ({
+    setFormData((prev: FormData) => ({
       ...prev,
       connectionPoints: prev.connectionPoints.filter((_, i) => i !== index)
     }));
   };
 
   const handleConnectionPointChange = (index: number, field: "position" | "type", value: any) => {
-    setFormData(prev => ({
+    setFormData((prev: FormData) => ({
       ...prev,
       connectionPoints: prev.connectionPoints.map((point, i) => {
         if (i === index) {
@@ -290,11 +308,11 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
                             <SelectValue />
                           </SelectTrigger>
                           <SelectContent>
-                            <SelectItem value="208v-3phase">208V 3-Phase Power</SelectItem>
-                            <SelectItem value="400v-3phase">400V 3-Phase Power</SelectItem>
-                            <SelectItem value="cat6a">CAT6A Network</SelectItem>
-                            <SelectItem value="om4">OM4 Fiber</SelectItem>
-                            <SelectItem value="chilled-water">Chilled Water</SelectItem>
+                            <SelectItem value="power">Power</SelectItem>
+                            <SelectItem value="network">Network</SelectItem>
+                            <SelectItem value="cooling">Cooling</SelectItem>
+                            <SelectItem value="water">Water</SelectItem>
+                            <SelectItem value="gas">Gas</SelectItem>
                           </SelectContent>
                         </Select>
                       </div>

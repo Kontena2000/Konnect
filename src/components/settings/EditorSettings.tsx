@@ -19,7 +19,7 @@ export function EditorSettings({ preferences, onUpdate }: EditorSettingsProps) {
   const { user } = useAuth();
   const { toast } = useToast();
   const [showColorPicker, setShowColorPicker] = useState(false);
-  const [localPreferences, setLocalPreferences] = useState(preferences);
+  const [localPreferences, setLocalPreferences] = useState<EditorPreferences>(preferences);
 
   useEffect(() => {
     setLocalPreferences(preferences);
@@ -28,7 +28,7 @@ export function EditorSettings({ preferences, onUpdate }: EditorSettingsProps) {
   const handleSave = async () => {
     try {
       if (!user) return;
-      await editorPreferencesService.savePreferences(localPreferences, user);
+      await editorPreferencesService.savePreferences(user.uid, localPreferences);
       onUpdate(localPreferences);
       toast({
         title: "Settings saved",
@@ -54,11 +54,11 @@ export function EditorSettings({ preferences, onUpdate }: EditorSettingsProps) {
           <div className="space-y-2">
             <Label>Grid Size</Label>
             <Select
-              value={localPreferences.grid.size}
-              onValueChange={(value: "small" | "medium" | "large") =>
+              value={String(localPreferences.grid.size)}
+              onValueChange={(value) =>
                 setLocalPreferences(prev => ({
                   ...prev,
-                  grid: { ...prev.grid, size: value }
+                  grid: { ...prev.grid, size: Number(value) }
                 }))
               }
             >
@@ -66,9 +66,9 @@ export function EditorSettings({ preferences, onUpdate }: EditorSettingsProps) {
                 <SelectValue placeholder="Select grid size" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="small">Small</SelectItem>
-                <SelectItem value="medium">Medium</SelectItem>
-                <SelectItem value="large">Large</SelectItem>
+                <SelectItem value="50">Small</SelectItem>
+                <SelectItem value="100">Medium</SelectItem>
+                <SelectItem value="200">Large</SelectItem>
               </SelectContent>
             </Select>
           </div>
