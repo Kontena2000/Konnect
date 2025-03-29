@@ -1,6 +1,70 @@
-
 import { getFirestore, doc, getDoc, collection, addDoc, serverTimestamp, setDoc, getDocs, query, where } from 'firebase/firestore';
-import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS, REDUNDANCY_CONFIGURATIONS, COOLING_TYPES } from '@/constants/calculatorConstants';
+import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
+
+// Define constants locally to avoid import errors
+export const REDUNDANCY_CONFIGURATIONS = {
+  'N': {
+    description: 'No redundancy',
+    capacityFactor: 1.0,
+    reliabilityFactor: 0.98,
+    costFactor: 1.0
+  },
+  'N+1': {
+    description: 'One redundant component',
+    capacityFactor: 1.2,
+    reliabilityFactor: 0.995,
+    costFactor: 1.2
+  },
+  '2N': {
+    description: 'Full redundancy (two complete systems)',
+    capacityFactor: 2.0,
+    reliabilityFactor: 0.9998,
+    costFactor: 1.9
+  },
+  '2N+1': {
+    description: 'Full redundancy plus one component',
+    capacityFactor: 2.2,
+    reliabilityFactor: 0.99995,
+    costFactor: 2.1
+  },
+  '3N': {
+    description: 'Triple redundancy',
+    capacityFactor: 3.0,
+    reliabilityFactor: 0.99999,
+    costFactor: 2.8
+  }
+};
+
+export const COOLING_TYPES = {
+  'AIR': {
+    name: 'Air Cooling',
+    maxDensity: 75,
+    pueImpact: 1.4,
+    waterUsage: 0.5,
+    costFactor: 1.0
+  },
+  'DLC': {
+    name: 'Direct Liquid Cooling',
+    maxDensity: 200,
+    pueImpact: 1.15,
+    waterUsage: 1.2,
+    costFactor: 1.5
+  },
+  'HYBRID': {
+    name: 'Hybrid Cooling',
+    maxDensity: 150,
+    pueImpact: 1.25,
+    waterUsage: 0.9,
+    costFactor: 1.3
+  },
+  'IMMERSION': {
+    name: 'Immersion Cooling',
+    maxDensity: 250,
+    pueImpact: 1.08,
+    waterUsage: 0.3,
+    costFactor: 2.0
+  }
+};
 
 // Types
 export interface CalculationParams {
