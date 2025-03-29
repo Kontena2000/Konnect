@@ -66,10 +66,13 @@ export async function findOptimalConfiguration(
   const results = await Promise.all(
     configurationsToEvaluate.map(async config => {
       try {
+        // Ensure totalRacks is a number with a default value of 28 if undefined
+        const totalRacks = config.totalRacks || 28;
+        
         const result = await calculateConfiguration(
           config.kwPerRack, 
           config.coolingType, 
-          config.totalRacks
+          totalRacks  // Now guaranteed to be a number
         );
         
         return {
@@ -79,7 +82,7 @@ export async function findOptimalConfiguration(
           score: calculateScore(result, optimizationGoal)
         };
       } catch (error) {
-        console.error(`Error calculating configuration: ${config.kwPerRack}kW, ${config.coolingType}, ${config.totalRacks} racks`, error);
+        console.error(`Error calculating configuration: ${config.kwPerRack}kW, ${config.coolingType}, ${config.totalRacks || 28} racks`, error);
         return null;
       }
     })
