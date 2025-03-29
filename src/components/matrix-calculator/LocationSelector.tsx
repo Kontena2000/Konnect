@@ -43,7 +43,8 @@ export function LocationSelector({ onLocationSelected }: LocationSelectorProps) 
     }
     
     getClimateData();
-  }, [location, onLocationSelected]); // Added location and onLocationSelected to dependency array
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.coordinates]); // Only depend on coordinates changing
   
   // Handle address input
   const handleAddressSearch = async () => {

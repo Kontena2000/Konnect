@@ -50,7 +50,7 @@ export default function SettingsPage() {
           </div>
         </div>
 
-        <Tabs defaultValue={tab || 'general'} value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+        <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
           <TabsList className='w-full'>
             <TabsTrigger value='general'>General</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
