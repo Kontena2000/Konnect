@@ -37,9 +37,9 @@ export function SaveLayoutDialog({
   trigger 
 }: SaveLayoutDialogProps) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState(layoutData.name || "");
-  const [description, setDescription] = useState(layoutData.description || "");
-  const [selectedProjectId, setSelectedProjectId] = useState<string>(layoutData.projectId || "");
+  const [name, setName] = useState(layoutData.name || '');
+  const [description, setDescription] = useState(layoutData.description || '');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>(layoutData.projectId || '');
   const [saving, setSaving] = useState(false);
   
   const { toast } = useToast();
@@ -48,18 +48,18 @@ export function SaveLayoutDialog({
   const handleSave = async () => {
     if (!user) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "You must be logged in to save layouts"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to save layouts'
       });
       return;
     }
     
     if (!selectedProjectId) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please select a project to save to"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please select a project to save to'
       });
       return;
     }
@@ -71,7 +71,7 @@ export function SaveLayoutDialog({
       const saveData = {
         ...layoutData,
         projectId: selectedProjectId,
-        name: name || "Untitled Layout",
+        name: name || 'Untitled Layout',
         description: description || `Created on ${new Date().toLocaleDateString()}`,
         modules: layoutData.modules || [],
         connections: layoutData.connections || []
@@ -81,16 +81,16 @@ export function SaveLayoutDialog({
       let layoutId;
       if (layoutData.id) {
         // Update existing layout
-        await layoutService.updateLayout(layoutData.id, saveData);
+        await layoutService.updateLayout(layoutData.id, saveData, user.uid);
         layoutId = layoutData.id;
       } else {
         // Create new layout
-        layoutId = await layoutService.createLayout(saveData);
+        layoutId = await layoutService.createLayout(saveData, user.uid);
       }
       
       toast({
-        title: "Success",
-        description: "Layout saved successfully"
+        title: 'Success',
+        description: 'Layout saved successfully'
       });
       
       if (onSaveComplete && layoutId) {
@@ -100,11 +100,11 @@ export function SaveLayoutDialog({
       setOpen(false);
       
     } catch (error) {
-      console.error("Error saving layout:", error);
+      console.error('Error saving layout:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to save layout"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to save layout'
       });
     } finally {
       setSaving(false);
