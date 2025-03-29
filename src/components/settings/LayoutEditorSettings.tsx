@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -34,15 +33,15 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
       onUpdate(localPreferences);
       
       toast({
-        title: "Settings saved",
-        description: "Your editor preferences have been updated successfully.",
+        title: 'Settings saved',
+        description: 'Your editor preferences have been updated successfully.',
       });
     } catch (error) {
-      console.error("Failed to save preferences:", error);
+      console.error('Failed to save preferences:', error);
       toast({
-        title: "Error saving settings",
-        description: "There was a problem saving your preferences.",
-        variant: "destructive",
+        title: 'Error saving settings',
+        description: 'There was a problem saving your preferences.',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);
@@ -70,53 +69,53 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
   };
 
   return (
-    <div className="space-y-6">
+    <div className='space-y-6'>
       <Card>
         <CardHeader>
           <CardTitle>Layout Editor Settings</CardTitle>
           <CardDescription>Customize your layout editor experience</CardDescription>
         </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="space-y-4">
-            <div className="space-y-2">
+        <CardContent className='space-y-6'>
+          <div className='space-y-4'>
+            <div className='space-y-2'>
               <Label>Grid Size</Label>
-              <div className="flex items-center gap-4">
+              <div className='flex items-center gap-4'>
                 <Slider
                   value={[localPreferences.grid.size]}
                   min={10}
                   max={100}
                   step={5}
                   onValueChange={handleGridSizeChange}
-                  className="flex-1"
+                  className='flex-1'
                 />
-                <span className="w-12 text-center">{localPreferences.grid.size}</span>
+                <span className='w-12 text-center'>{localPreferences.grid.size}</span>
               </div>
             </div>
 
-            <div className="space-y-2">
+            <div className='space-y-2'>
               <Label>Grid Divisions</Label>
-              <div className="flex items-center gap-4">
+              <div className='flex items-center gap-4'>
                 <Slider
                   value={[localPreferences.grid.divisions]}
                   min={1}
                   max={10}
                   step={1}
                   onValueChange={handleGridDivisionsChange}
-                  className="flex-1"
+                  className='flex-1'
                 />
-                <span className="w-12 text-center">{localPreferences.grid.divisions}</span>
+                <span className='w-12 text-center'>{localPreferences.grid.divisions}</span>
               </div>
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="showGrid">Show Grid</Label>
-                <p className="text-sm text-muted-foreground">
+            <div className='flex items-center justify-between'>
+              <div className='space-y-0.5'>
+                <Label htmlFor='showGrid'>Show Grid</Label>
+                <p className='text-sm text-muted-foreground'>
                   Display grid in the editor
                 </p>
               </div>
               <Switch
-                id="showGrid"
+                id='showGrid'
                 checked={localPreferences.grid.visible}
                 onCheckedChange={(checked) => 
                   setLocalPreferences(prev => ({
@@ -130,15 +129,15 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="showAxes">Show Axes</Label>
-                <p className="text-sm text-muted-foreground">
+            <div className='flex items-center justify-between'>
+              <div className='space-y-0.5'>
+                <Label htmlFor='showAxes'>Show Axes</Label>
+                <p className='text-sm text-muted-foreground'>
                   Display X, Y, Z axes in the editor
                 </p>
               </div>
               <Switch
-                id="showAxes"
+                id='showAxes'
                 checked={localPreferences.grid.showAxes}
                 onCheckedChange={(checked) => 
                   setLocalPreferences(prev => ({
@@ -152,15 +151,15 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="snapToGrid">Snap to Grid</Label>
-                <p className="text-sm text-muted-foreground">
+            <div className='flex items-center justify-between'>
+              <div className='space-y-0.5'>
+                <Label htmlFor='snapToGrid'>Snap to Grid</Label>
+                <p className='text-sm text-muted-foreground'>
                   Automatically align modules to grid
                 </p>
               </div>
               <Switch
-                id="snapToGrid"
+                id='snapToGrid'
                 checked={localPreferences.grid.snap}
                 onCheckedChange={(checked) => 
                   setLocalPreferences(prev => ({
@@ -174,15 +173,15 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
               />
             </div>
 
-            <div className="flex items-center justify-between">
-              <div className="space-y-0.5">
-                <Label htmlFor="autoSave">Auto Save</Label>
-                <p className="text-sm text-muted-foreground">
+            <div className='flex items-center justify-between'>
+              <div className='space-y-0.5'>
+                <Label htmlFor='autoSave'>Auto Save</Label>
+                <p className='text-sm text-muted-foreground'>
                   Automatically save layout changes
                 </p>
               </div>
               <Switch
-                id="autoSave"
+                id='autoSave'
                 checked={localPreferences.autoSave}
                 onCheckedChange={(checked) => 
                   setLocalPreferences(prev => ({
@@ -197,19 +196,19 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
           <Button 
             onClick={handleSavePreferences} 
             disabled={saving}
-            className="w-full md:w-auto"
+            className='w-full md:w-auto'
           >
-            {saving ? "Saving..." : "Save Settings"}
+            {saving ? 'Saving...' : 'Save Settings'}
           </Button>
         </CardContent>
       </Card>
 
-      <Tabs defaultValue="modules">
+      <Tabs defaultValue='modules'>
         <TabsList>
-          <TabsTrigger value="modules">Module Manager</TabsTrigger>
+          <TabsTrigger value='modules'>Module Manager</TabsTrigger>
         </TabsList>
         
-        <TabsContent value="modules">
+        <TabsContent value='modules'>
           <ModuleManager />
         </TabsContent>
       </Tabs>

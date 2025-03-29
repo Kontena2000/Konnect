@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import Head from "next/head";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -75,26 +74,25 @@ export default function BlankEditorPage() {
     setSaving(true);
     try {
       await layoutService.createLayout({
-        name: "Blank Layout",
-        description: "Created from blank editor",
+        name: 'Blank Layout',
+        description: 'Created from blank editor',
         modules,
         connections,
-        userId: user.uid,
-        projectId: "default", // You might want to change this to a real project ID
+        projectId: 'default', // You might want to change this to a real project ID
         createdAt: new Date(),
         updatedAt: new Date()
       });
       
       toast({
-        title: "Layout saved",
-        description: "Your layout has been saved successfully.",
+        title: 'Layout saved',
+        description: 'Your layout has been saved successfully.',
       });
     } catch (error) {
-      console.error("Error saving layout:", error);
+      console.error('Error saving layout:', error);
       toast({
-        title: "Error saving layout",
-        description: "There was a problem saving your layout.",
-        variant: "destructive",
+        title: 'Error saving layout',
+        description: 'There was a problem saving your layout.',
+        variant: 'destructive',
       });
     } finally {
       setSaving(false);

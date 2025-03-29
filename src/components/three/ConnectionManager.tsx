@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -228,16 +227,16 @@ function ConnectionItem({
         <div className='space-y-2'>
           <Label>Voltage</Label>
           <Select
-            value={connection.voltage || "400"}
-            onValueChange={(value) => onUpdate(connection.id, { voltage: value })}
+            value={connection.voltage || '400'}
+            onValueChange={(value: '230' | '400' | '480') => onUpdate(connection.id, { voltage: value })}
           >
             <SelectTrigger>
-              <SelectValue placeholder="Select voltage" />
+              <SelectValue placeholder='Select voltage' />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="230">230V</SelectItem>
-              <SelectItem value="400">400V</SelectItem>
-              <SelectItem value="480">480V</SelectItem>
+              <SelectItem value='230'>230V</SelectItem>
+              <SelectItem value='400'>400V</SelectItem>
+              <SelectItem value='480'>480V</SelectItem>
             </SelectContent>
           </Select>
         </div>

@@ -6,18 +6,23 @@ import firebaseMonitor from "./firebase-monitor";
 
 export interface EditorPreferences {
   grid: {
-    size: "small" | "medium" | "large";
+    size: number;
     weight: "0.5" | "1" | "2";
     color: string;
+    visible: boolean;
+    showAxes: boolean;
+    snap: boolean;
+    divisions: number;
   };
   objects: {
     transparency: number;
   };
+  autoSave: boolean;
   userId: string;
 }
 
 const editorPreferencesService = {
-  async getPreferences(userId: string): Promise<EditorPreferences | null> {
+  async getPreferences(userId: string): Promise<EditorPreferences> {
     try {
       firebaseMonitor.logOperation({
         type: "settings",
@@ -34,13 +39,18 @@ const editorPreferencesService = {
         // Return default preferences
         return {
           grid: {
-            size: "medium",
+            size: 50,
             weight: "1",
-            color: "#888888"
+            color: "#888888",
+            visible: true,
+            showAxes: true,
+            snap: true,
+            divisions: 5
           },
           objects: {
             transparency: 0.85
           },
+          autoSave: true,
           userId
         };
       }
@@ -69,11 +79,11 @@ const editorPreferencesService = {
     }
   },
 
-  async savePreferences(preferences: Omit<EditorPreferences, "userId">, user: AuthUser): Promise<void> {
+  async savePreferences(userId: string, preferences: EditorPreferences): Promise<void> {
     try {
       const prefsWithUser = {
         ...preferences,
-        userId: user.uid
+        userId
       };
 
       firebaseMonitor.logOperation({
@@ -81,10 +91,10 @@ const editorPreferencesService = {
         action: "save_editor_preferences",
         status: "pending",
         timestamp: Date.now(),
-        details: { userId: user.uid, preferences: prefsWithUser }
+        details: { userId, preferences: prefsWithUser }
       });
 
-      const prefsRef = doc(db, "editorPreferences", user.uid);
+      const prefsRef = doc(db, "editorPreferences", userId);
       const snapshot = await getDoc(prefsRef);
 
       if (snapshot.exists()) {
@@ -98,7 +108,7 @@ const editorPreferencesService = {
         action: "save_editor_preferences",
         status: "success",
         timestamp: Date.now(),
-        details: { userId: user.uid, preferences: prefsWithUser }
+        details: { userId, preferences: prefsWithUser }
       });
     } catch (error) {
       firebaseMonitor.logOperation({
@@ -107,7 +117,7 @@ const editorPreferencesService = {
         status: "error",
         timestamp: Date.now(),
         error: error instanceof Error ? error.message : "Unknown error",
-        details: { userId: user.uid, preferences }
+        details: { userId, preferences }
       });
       throw error;
     }
