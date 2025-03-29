@@ -188,6 +188,6 @@ export async function calculateWithLocationFactors(config: EnergyConfig) {
   } catch (error) {
     console.error('Error calculating with location factors:', error);
     // Fall back to basic calculation
-    return calculateEnergyMetrics(totalLoad, pue, renewablePercentage);
+    return calculateEnergyMetrics(config.totalLoad, config.pue, config.renewablePercentage);
   }
 }

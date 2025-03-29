@@ -131,6 +131,8 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
                 <SelectContent>
                   <SelectItem value='air-cooled'>Air-cooled</SelectItem>
                   <SelectItem value='dlc'>Direct Liquid Cooling (DLC)</SelectItem>
+                  <SelectItem value='hybrid'>Hybrid Cooling</SelectItem>
+                  <SelectItem value='immersion'>Immersion Cooling</SelectItem>
                 </SelectContent>
               </Select>
             </div>
