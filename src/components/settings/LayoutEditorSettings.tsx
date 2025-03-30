@@ -19,11 +19,6 @@ interface LayoutEditorSettingsProps {
 
 export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEditorSettingsProps) {
   const { user } = useAuth();
-
-  if (!user) {
-    return null;
-  }
-
   const { toast } = useToast();
   const [localPreferences, setLocalPreferences] = useState<EditorPreferences>(preferences);
   const [saving, setSaving] = useState(false);
@@ -31,6 +26,10 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
   useEffect(() => {
     setLocalPreferences(preferences);
   }, [preferences]);
+
+  if (!user) {
+    return null;
+  }
 
   const handleSavePreferences = async () => {
     setSaving(true);
