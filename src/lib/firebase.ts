@@ -1,3 +1,4 @@
+
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
@@ -7,13 +8,13 @@ let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 let auth: Auth | null = null;
 
-// Define the initialization function so it can be called again if needed
-function initializeFirebase(): boolean {
+// Immediately invoke initialization function
+(function initializeFirebase() {
   try {
     // Skip initialization on server side
     if (typeof window === 'undefined') {
       console.log('Skipping Firebase initialization on server side');
-      return false;
+      return;
     }
 
     // Check if Firebase is already initialized
@@ -23,11 +24,10 @@ function initializeFirebase(): boolean {
         db = getFirestore(app);
         auth = getAuth(app);
         console.log('Firebase services retrieved from existing app');
-        return true;
       } catch (error) {
         console.error('Error getting Firebase services from existing app:', error);
-        return false;
       }
+      return;
     }
 
     // Initialize Firebase with config
@@ -54,7 +54,7 @@ function initializeFirebase(): boolean {
     // Check if required config values are present
     if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.authDomain) {
       console.error('Missing required Firebase configuration');
-      return false;
+      return;
     }
 
     // Initialize Firebase
@@ -69,28 +69,21 @@ function initializeFirebase(): boolean {
     auth = getAuth(app);
 
     // Enable persistence for Firestore
-    try {
+    if (typeof window !== 'undefined' && db) {
       enableIndexedDbPersistence(db).catch((err) => {
         if (err.code === 'failed-precondition') {
           console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
         } else if (err.code === 'unimplemented') {
-          console.warn('The current browser doesn\'t support persistence.');
+          console.warn('The current browser doesn\\'t support persistence.');
         }
       });
-    } catch (persistenceError) {
-      console.warn('Error enabling persistence:', persistenceError);
     }
 
     console.log('Firebase initialized successfully');
-    return true;
   } catch (error) {
     console.error('Error initializing Firebase:', error);
-    return false;
   }
-}
-
-// Call the initialization function immediately
-initializeFirebase();
+})();
 
 /**
  * Safely access Firestore by ensuring Firebase is initialized
@@ -105,9 +98,6 @@ export function getFirestoreSafely(): Firestore | null {
       } catch (error) {
         console.error('Error getting Firestore:', error);
       }
-    } else {
-      // Try to initialize Firebase again
-      initializeFirebase();
     }
   }
   return db;
@@ -126,9 +116,6 @@ export function getAuthSafely(): Auth | null {
       } catch (error) {
         console.error('Error getting Auth:', error);
       }
-    } else {
-      // Try to initialize Firebase again
-      initializeFirebase();
     }
   }
   return auth;
@@ -156,37 +143,8 @@ export function initializeFirebaseSafely(): boolean {
   }
   
   // Otherwise, re-run the initialization
-  return initializeFirebase();
-}
-
-/**
- * Function for components that need Firebase instances
- * Returns the initialized Firebase instances
- */
-export function initializeFirebaseIfNeeded(): { 
-  app: FirebaseApp | null; 
-  db: Firestore | null; 
-  auth: Auth | null;
-  error?: string;
-} {
-  try {
-    if (!isFirebaseInitialized()) {
-      initializeFirebase();
-    }
-    
-    return { 
-      app, 
-      db, 
-      auth 
-    };
-  } catch (error) {
-    return { 
-      app: null, 
-      db: null, 
-      auth: null, 
-      error: error instanceof Error ? error.message : 'Unknown error initializing Firebase'
-    };
-  }
+  initializeFirebase();
+  return app !== null && db !== null && auth !== null;
 }
 
 // Export the Firebase instances
