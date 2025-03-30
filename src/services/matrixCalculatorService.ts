@@ -1,4 +1,3 @@
-
 import { getFirestore, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor, ClimateFactor } from './climateDataService';
@@ -659,6 +658,7 @@ export const calculateConfiguration = withDebug(
   async (kwPerRack: number, coolingType: string, totalRacks: number, options: CalculationOptions = {}): Promise<any> => {
     try {
       // Log input parameters
+      console.log('Calculate Configuration - Input Parameters:', { kwPerRack, coolingType, totalRacks, options });
       calculatorDebug.log('Calculate Configuration - Input Parameters:', { kwPerRack, coolingType, totalRacks, options });
       
       // Validate input parameters
@@ -679,6 +679,7 @@ export const calculateConfiguration = withDebug(
         validatedInputs
       );
       
+      console.log('Calculate Configuration - Raw Results:', results);
       calculatorDebug.log('Calculate Configuration - Raw Results:', results);
       
       // Validate and ensure all required properties exist
@@ -689,10 +690,12 @@ export const calculateConfiguration = withDebug(
       // Apply additional defensive handling to ensure no undefined properties
       const safeResults = safelyAccessCalculationResults(validatedResults);
       
+      console.log('Calculate Configuration - Safe Results:', safeResults);
       calculatorDebug.log('Calculate Configuration - Safe Results:', safeResults);
       
       return safeResults;
     } catch (error) {
+      console.error('Original calculation failed, using fallback', error);
       calculatorDebug.error('Original calculation failed, using fallback', error);
       // If the original calculation fails, use the fallback
       const fallbackResults = await fallbackCalculation(kwPerRack, coolingType, totalRacks, options);

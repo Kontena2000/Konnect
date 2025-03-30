@@ -11,7 +11,11 @@ export const calculatorDebug = {
     
     console.log(`[Calculator Debug] ${message}`);
     if (data) {
-      console.log(JSON.stringify(data, null, 2));
+      try {
+        console.log(JSON.stringify(data, null, 2));
+      } catch (error) {
+        console.log('Data could not be stringified:', data);
+      }
     }
   },
   

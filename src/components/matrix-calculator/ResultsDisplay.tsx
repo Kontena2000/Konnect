@@ -15,6 +15,9 @@ interface ResultsDisplayProps {
 export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps) {
   const [saving, setSaving] = useState(false);
   
+  // Add debugging to see what results we're getting
+  console.log('ResultsDisplay received results:', results);
+  
   const handleSave = async () => {
     setSaving(true);
     try {
@@ -41,6 +44,10 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
   };
   
   const formatCurrency = (value: number) => {
+    if (typeof value !== 'number') {
+      console.warn('formatCurrency received non-number value:', value);
+      return '$0';
+    }
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
       currency: 'USD',
@@ -48,6 +55,17 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
     }).format(value);
   };
   
+  // Safety check for results
+  if (!results || !results.rack) {
+    console.error('Invalid results object:', results);
+    return (
+      <div className='p-4 border border-red-300 bg-red-50 rounded-md'>
+        <h2 className='text-lg font-medium text-red-800'>Error: Invalid calculation results</h2>
+        <p className='text-red-600'>The calculation did not return valid results. Please try again.</p>
+      </div>
+    );
+  }
+
   return (
     <div className='space-y-6'>
       <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4'>
@@ -65,7 +83,9 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
         <CardHeader>
           <CardTitle>Configuration Summary</CardTitle>
           <CardDescription>
-            {results.rack.powerDensity}kW per rack, {results.rack.coolingType === 'dlc' ? 'Direct Liquid Cooling' : 'Air-Cooled'}, {results.rack.totalRacks} racks
+            {results.rack?.powerDensity || 0}kW per rack, 
+            {results.rack?.coolingType === 'dlc' ? 'Direct Liquid Cooling' : 'Air-Cooled'}, 
+            {results.rack?.totalRacks || 0} racks
           </CardDescription>
         </CardHeader>
         <CardContent>

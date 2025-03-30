@@ -125,6 +125,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     setError(null);
     
     try {
+      console.log('Starting calculation with inputs:', { kwPerRack, coolingType, totalRacks });
       calculatorDebug.log('Starting calculation with config:', {
         kwPerRack,
         coolingType,
@@ -159,6 +160,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       let calculationResults;
       
       // Log which calculation mode we're using
+      console.log(`Using calculation mode: ${calculationMode}`);
       calculatorDebug.log(`Using calculation mode: ${calculationMode}`);
       
       try {
@@ -192,6 +194,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
           case 'standard':
           default:
             // Standard calculation - this is the most direct path
+            console.log('Calling calculateConfiguration with:', { kwPerRack, coolingType, totalRacks, options });
             calculationResults = await calculateConfiguration(
               kwPerRack,
               coolingType,
@@ -200,11 +203,13 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
             );
             
             // Log the results for debugging
+            console.log('Standard calculation results:', calculationResults);
             calculatorDebug.log('Standard calculation results:', calculationResults);
             break;
         }
       } catch (calculationError) {
         // If the calculation fails, use fallback data
+        console.error('Calculation failed, using fallback data', calculationError);
         calculatorDebug.error('Calculation failed, using fallback data', calculationError);
         calculationResults = calculatorFallback.getResults({
           kwPerRack,
@@ -216,6 +221,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       
       // Ensure we have valid results before setting state
       if (calculationResults) {
+        console.log('Setting results:', calculationResults);
         setResults(calculationResults);
         calculatorDebug.log('Calculation completed successfully', calculationResults);
         
@@ -228,6 +234,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       }
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+      console.error('Calculation failed:', error);
       calculatorDebug.error('Calculation failed', error);
       setError(errorMessage);
       
@@ -239,6 +246,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       });
       
       if (fallbackResults) {
+        console.log('Using fallback results:', fallbackResults);
         setResults(fallbackResults);
         toast({
           title: 'Using Estimated Data',
