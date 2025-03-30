@@ -1,10 +1,9 @@
-
-import { Search } from "lucide-react";
-import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
-import { Button } from "@/components/ui/button";
-import { Loader2 } from "lucide-react";
+import React from 'react';
+import { Search } from 'lucide-react';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Button } from '@/components/ui/button';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 interface ModuleSearchProps {
   searchTerm: string;
@@ -34,35 +33,44 @@ export function ModuleSearch({
   setCategoryToDelete
 }: ModuleSearchProps) {
   return (
-    <div className="flex items-center gap-4 flex-1">
-      <div className="relative flex-1">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+    <div className="flex flex-col sm:flex-row gap-3 w-full max-w-md">
+      <div className="relative flex-grow">
+        <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
         <Input
+          type="search"
           placeholder="Search modules..."
+          className="pl-8"
           value={searchTerm}
           onChange={(e) => onSearchChange(e.target.value)}
-          className="pl-10"
         />
       </div>
+      
       <Select value={categoryFilter} onValueChange={onCategoryChange}>
-        <SelectTrigger className="w-[200px]">
+        <SelectTrigger className="w-[180px]">
           <SelectValue placeholder="Filter by category" />
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">All Categories</SelectItem>
-          {categories.map(category => (
+          {categories.map((category) => (
             <SelectItem key={category.id} value={category.id}>
               {category.name}
+              <Button
+                variant="ghost"
+                size="sm"
+                className="ml-2 p-0 h-4 w-4"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setCategoryToDelete(category.id);
+                }}
+              >
+                ×
+              </Button>
             </SelectItem>
           ))}
         </SelectContent>
       </Select>
-
-      {/* Delete Category Dialog */}
-      <AlertDialog 
-        open={categoryToDelete !== null}
-        onOpenChange={(open) => !open && setCategoryToDelete(null)}
-      >
+      
+      <AlertDialog open={!!categoryToDelete} onOpenChange={(open) => !open && setCategoryToDelete(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>Delete Category</AlertDialogTitle>
@@ -76,14 +84,7 @@ export function ModuleSearch({
               onClick={() => categoryToDelete && onDeleteCategory(categoryToDelete)}
               disabled={isDeletingCategory}
             >
-              {isDeletingCategory ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Deleting...
-                </>
-              ) : (
-                'Delete'
-              )}
+              {isDeletingCategory ? 'Deleting...' : 'Delete'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
