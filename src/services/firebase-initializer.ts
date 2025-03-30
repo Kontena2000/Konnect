@@ -1,5 +1,5 @@
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
-import { getFirestore, Firestore } from 'firebase/firestore';
+import { getFirestore, Firestore, enableIndexedDbPersistence } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
 import { calculatorDebug } from './calculatorDebug';
 
@@ -14,6 +14,12 @@ export function initializeFirebaseIfNeeded(): {
   error?: string;
 } {
   try {
+    // Skip initialization on server side to prevent errors
+    if (typeof window === 'undefined') {
+      console.log('Skipping Firebase initialization on server side');
+      return { app: null, db: null, auth: null, error: 'Server-side rendering' };
+    }
+
     // Check if Firebase is already initialized
     if (getApps().length > 0) {
       const app = getApps()[0];
@@ -46,6 +52,16 @@ export function initializeFirebaseIfNeeded(): {
       measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
     };
 
+    // Log environment variables availability (without exposing values)
+    console.log('Firebase environment variables check:', {
+      apiKey: !!process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: !!process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: !!process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: !!process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: !!process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: !!process.env.NEXT_PUBLIC_FIREBASE_APP_ID
+    });
+
     // Check if required config values are present
     if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.authDomain) {
       console.error('Missing required Firebase configuration');
@@ -69,6 +85,19 @@ export function initializeFirebaseIfNeeded(): {
     const db = getFirestore(app);
     const auth = getAuth(app);
 
+    // Enable persistence for Firestore
+    try {
+      enableIndexedDbPersistence(db).catch((err) => {
+        if (err.code === 'failed-precondition') {
+          console.warn('Multiple tabs open, persistence can only be enabled in one tab at a time.');
+        } else if (err.code === 'unimplemented') {
+          console.warn('The current browser doesn\\'t support persistence.');
+        }
+      });
+    } catch (persistenceError) {
+      console.warn('Error enabling persistence:', persistenceError);
+    }
+
     console.log('Firebase initialized successfully');
     calculatorDebug.log('Firebase initialized successfully');
     return { app, db, auth };
@@ -89,7 +118,7 @@ export function initializeFirebaseIfNeeded(): {
  */
 export function getFirestoreSafely(): Firestore | null {
   const { db, error } = initializeFirebaseIfNeeded();
-  if (error) {
+  if (error && error !== 'Server-side rendering') {
     console.error('Error getting Firestore:', error);
     calculatorDebug.error('Error getting Firestore', error);
   }
@@ -101,7 +130,7 @@ export function getFirestoreSafely(): Firestore | null {
  */
 export function getAuthSafely(): Auth | null {
   const { auth, error } = initializeFirebaseIfNeeded();
-  if (error) {
+  if (error && error !== 'Server-side rendering') {
     console.error('Error getting Auth:', error);
     calculatorDebug.error('Error getting Auth', error);
   }
@@ -113,6 +142,11 @@ export function getAuthSafely(): Auth | null {
  * This is a wrapper around initializeFirebaseIfNeeded for components
  */
 export function initializeFirebaseSafely(): boolean {
+  // Skip on server side
+  if (typeof window === 'undefined') {
+    return false;
+  }
+  
   const result = initializeFirebaseIfNeeded();
   return result.app !== null && !result.error;
 }
@@ -126,6 +160,16 @@ export function checkFirebaseServices(): {
   authAvailable: boolean;
   error?: string;
 } {
+  // Skip on server side
+  if (typeof window === 'undefined') {
+    return {
+      initialized: false,
+      firestoreAvailable: false,
+      authAvailable: false,
+      error: 'Server-side rendering'
+    };
+  }
+  
   const { app, db, auth, error } = initializeFirebaseIfNeeded();
   
   return {
