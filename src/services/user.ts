@@ -12,7 +12,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
-import { getFirestoreSafely } from "./firebase-init";
+import { getFirestoreSafely } from "@/lib/firebase";
 
 export interface User {
   id: string;
