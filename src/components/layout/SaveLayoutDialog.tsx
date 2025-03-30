@@ -17,7 +17,8 @@ import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { ProjectSelector } from "@/components/common/ProjectSelector";
-import layoutService from "@/services/layout";
+import layoutService, { Layout } from "@/services/layout";
+import { AuthUser } from "@/services/auth";
 
 interface SaveLayoutDialogProps {
   layoutData: {
@@ -81,12 +82,12 @@ export function SaveLayoutDialog({
       // Save or update layout
       let layoutId;
       if (layoutData.id) {
-        // Update existing layout - pass the actual user object from auth context
-        await layoutService.updateLayout(layoutData.id, saveData, user);
+        // Update existing layout - pass the user object as AuthUser
+        await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
         layoutId = layoutData.id;
       } else {
         // Create new layout - doesn't need user object
-        layoutId = await layoutService.createLayout(saveData);
+        layoutId = await layoutService.createLayout(saveData as Omit<Layout, "id" | "createdAt" | "updatedAt">);
       }
       
       toast({
