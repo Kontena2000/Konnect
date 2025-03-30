@@ -110,8 +110,8 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
     <div className='space-y-6'>
       <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
         <ModuleSearch 
-          value={searchQuery} 
-          onChange={setSearchQuery} 
+          searchTerm={searchQuery} 
+          onSearchChange={setSearchQuery} 
         />
         <div className='flex gap-2'>
           <Button onClick={() => setShowCategoryDialog(true)}>
