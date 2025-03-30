@@ -35,7 +35,66 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [categories, setCategories] = useState<ModuleCategory[]>([]);
+  const [categoryFilter, setCategoryFilter] = useState('all');
+  const [isAddingCategory, setIsAddingCategory] = useState(false);
+  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
+  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
   const { toast } = useToast();
+
+  const loadCategories = useCallback(async () => {
+    try {
+      const fetchedCategories = await moduleService.getCategories();
+      setCategories(fetchedCategories);
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to load categories'
+      });
+    }
+  }, [toast]);
+
+  const handleCreateCategory = async (data: { id: string; name: string }) => {
+    setIsAddingCategory(true);
+    try {
+      await moduleService.createCategory(data);
+      await loadCategories();
+      toast({
+        title: 'Success',
+        description: 'Category created successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create category'
+      });
+    } finally {
+      setIsAddingCategory(false);
+    }
+  };
+
+  const handleDeleteCategory = async (id: string) => {
+    setIsDeletingCategory(true);
+    try {
+      await moduleService.deleteCategory(id);
+      await loadCategories();
+      toast({
+        title: 'Success',
+        description: 'Category deleted successfully'
+      });
+    } catch (error) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete category'
+      });
+    } finally {
+      setIsDeletingCategory(false);
+      setCategoryToDelete(null);
+    }
+  };
 
   const loadModules = useCallback(async () => {
     try {
@@ -62,18 +121,6 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
       });
     } finally {
       setLoading(false);
-    }
-  }, [toast]);
-
-  const loadCategories = useCallback(async () => {
-    try {
-      const fetchedCategories = await moduleService.getCategories();
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to load categories'
-      });
     }
   }, [toast]);
 
@@ -110,8 +157,17 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
     <div className='space-y-6'>
       <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
         <ModuleSearch 
-          searchTerm={searchQuery} 
-          onSearchChange={setSearchQuery} 
+          searchTerm={searchQuery}
+          onSearchChange={setSearchQuery}
+          categoryFilter={categoryFilter}
+          onCategoryChange={setCategoryFilter}
+          categories={categories}
+          onCreateCategory={handleCreateCategory}
+          isAddingCategory={isAddingCategory}
+          onDeleteCategory={handleDeleteCategory}
+          isDeletingCategory={isDeletingCategory}
+          categoryToDelete={categoryToDelete}
+          setCategoryToDelete={setCategoryToDelete}
         />
         <div className='flex gap-2'>
           <Button onClick={() => setShowCategoryDialog(true)}>
