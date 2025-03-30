@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getFirestoreSafely } from '@/services/firebase-init';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
+import { initializeFirebaseIfNeeded } from '@/services/firebase-init';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -82,6 +83,21 @@ export function CalculatorComponent({
   const [preferredCoolingTypes, setPreferredCoolingTypes] = useState<string[]>(['air', 'dlc', 'hybrid', 'immersion']);
   
   const { toast } = useToast();
+  
+  // Initialize Firebase when component mounts
+  useEffect(() => {
+    // Initialize Firebase when component mounts
+    console.log('Initializing Firebase in Matrix Calculator...');
+    const { app, db, error } = initializeFirebaseIfNeeded();
+    
+    if (error) {
+      console.error('Firebase initialization failed in Matrix Calculator:', error);
+      calculatorDebug.error('Firebase initialization failed', error);
+    } else if (app && db) {
+      console.log('Firebase initialized successfully in Matrix Calculator');
+      calculatorDebug.log('Firebase initialized successfully');
+    }
+  }, []);
   
   // Load initial results if provided
   useEffect(() => {
