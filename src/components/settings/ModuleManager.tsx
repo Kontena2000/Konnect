@@ -35,7 +35,7 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
-  const [categories, setCategories] = useState<ModuleCategory[]>([]);
+  const [categories, setCategories] = useState<{ id: string; name: string }[]>([]);
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [isAddingCategory, setIsAddingCategory] = useState(false);
   const [isDeletingCategory, setIsDeletingCategory] = useState(false);
@@ -98,7 +98,6 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
 
   const loadModules = useCallback(async () => {
     try {
-      // Get auth instance safely
       const safeAuth = getAuthSafely();
       if (!safeAuth?.currentUser) {
         toast({
@@ -110,7 +109,7 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
       }
 
       setLoading(true);
-      const loadedModules = await moduleService.getAllModules(); // Changed from getModules to getAllModules
+      const loadedModules = await moduleService.getAllModules();
       setModules(loadedModules);
     } catch (error) {
       console.error('Error loading modules:', error);
@@ -196,22 +195,7 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
       <CategoryDialog
         open={showCategoryDialog}
         onOpenChange={setShowCategoryDialog}
-        onSubmit={async (data) => {
-          try {
-            await moduleService.createCategory(data);
-            await loadCategories();
-            toast({
-              title: 'Success',
-              description: 'Category created successfully'
-            });
-          } catch (error) {
-            toast({
-              variant: 'destructive',
-              title: 'Error',
-              description: 'Failed to create category'
-            });
-          }
-        }}
+        onSubmit={handleCreateCategory}
       />
     </div>
   );
