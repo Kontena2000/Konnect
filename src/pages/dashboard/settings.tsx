@@ -35,18 +35,18 @@ export default function SettingsPage() {
           setPreferences(prefs);
         })
         .catch(error => {
-          console.error("Failed to load editor preferences:", error);
+          console.error('Failed to load editor preferences:', error);
         });
     }
   }, [user]);
 
   return (
     <AppLayout>
-      <div className="w-full p-4 md:p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className='w-full p-4 md:p-6 space-y-6'>
+        <div className='flex items-center justify-between'>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-            <p className="text-muted-foreground">
+            <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
+            <p className='text-muted-foreground'>
               Manage your application settings and preferences
             </p>
           </div>
@@ -56,10 +56,8 @@ export default function SettingsPage() {
           <TabsList className='w-full'>
             <TabsTrigger value='general'>General</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
-            <TabsTrigger value='editor'>Editor</TabsTrigger>
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
-            {user?.role === 'admin' && <TabsTrigger value='firebase'>Firebase</TabsTrigger>}
-            {user?.role === 'admin' && <TabsTrigger value='user-management'>User Management</TabsTrigger>}
+            {user?.role === 'admin' && <TabsTrigger value='users'>Users</TabsTrigger>}
             {user?.role === 'admin' && <TabsTrigger value='debug'>Debug</TabsTrigger>}
           </TabsList>
 
@@ -71,10 +69,6 @@ export default function SettingsPage() {
             <ModuleManager userId={user?.uid || ''} userRole={user?.role} />
           </TabsContent>
 
-          <TabsContent value='editor' className='space-y-6'>
-            <EditorSettings userId={user?.uid || ''} />
-          </TabsContent>
-
           <TabsContent value='matrix-calculator' className='space-y-6'>
             <MatrixCalculatorSettings userId={user?.uid || ''} />
             <CalculationSettings readOnly={user?.role !== 'admin'} />
@@ -82,13 +76,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           {user?.role === 'admin' && (
-            <TabsContent value='firebase' className='space-y-6'>
-              <FirebaseMonitor />
-            </TabsContent>
-          )}
-
-          {user?.role === 'admin' && (
-            <TabsContent value='user-management' className='space-y-6'>
+            <TabsContent value='users' className='space-y-6'>
               <UserManagement />
             </TabsContent>
           )}
