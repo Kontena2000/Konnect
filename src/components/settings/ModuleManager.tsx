@@ -51,7 +51,7 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
       }
 
       setLoading(true);
-      const loadedModules = await moduleService.getModules();
+      const loadedModules = await moduleService.getAllModules(); // Changed from getModules to getAllModules
       setModules(loadedModules);
     } catch (error) {
       console.error('Error loading modules:', error);
