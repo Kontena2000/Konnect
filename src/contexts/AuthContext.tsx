@@ -1,6 +1,6 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
-import { auth, initializeFirebaseSafely, getAuthSafely } from '@/lib/firebase';
+import { auth, getAuthSafely, initializeFirebaseSafely } from '@/lib/firebase';
 import type { AuthUser, UserRole } from '@/services/auth';
 import userService from '@/services/user';
 import { useRouter } from 'next/router';
