@@ -36,7 +36,7 @@ export function Sidebar({ className }: { className?: string }) {
       href: '/dashboard/projects'
     },
     {
-      title: 'Editor',
+      title: 'Layout Editor',
       icon: <Edit className='h-5 w-5' />,
       href: '/dashboard/editor'
     },
