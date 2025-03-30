@@ -284,16 +284,15 @@ export function SceneContainer({
   return (
     <div 
       ref={setNodeRef} 
-      className={cn(
-        'w-full h-full relative',
-        !readOnly && isOver && 'cursor-none'
-      )}
+      className='w-full h-full'
       onDragOver={handleDragOver}
       onDragLeave={handleDragLeave}
       onDrop={handleDrop}
+      style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 0 }}
     >
       <Canvas 
         onCreated={handleFrame}
+        style={{ width: '100%', height: '100%' }}
         camera={{ 
           position: [10, 10, 10], 
           zoom: cameraZoom,
@@ -343,14 +342,10 @@ export function SceneContainer({
       </Canvas>
 
       {!readOnly && isDraggingOver && (
-        <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-lg space-y-2'>
+        <div className='absolute bottom-4 right-4 bg-background/80 backdrop-blur-sm p-3 rounded-lg shadow-lg space-y-2 z-10'>
           <div className='flex items-center gap-2'>
             <kbd className='px-2 py-1 bg-muted rounded text-xs'>R</kbd>
             <span className='text-sm'>Rotate module</span>
-          </div>
-          <div className='flex items-center gap-2'>
-            <kbd className='px-2 py-1 bg-muted rounded text-xs'>Shift</kbd>
-            <span className='text-sm'>Show alignment guides</span>
           </div>
           <div className='flex items-center gap-2 mt-2'>
             <span className='text-xs text-muted-foreground'>Position: {previewPosition[0].toFixed(1)}, {previewPosition[2].toFixed(1)}</span>
