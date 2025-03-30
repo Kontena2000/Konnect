@@ -5,6 +5,7 @@ import type { AuthUser, UserRole } from "@/services/auth";
 import userService from "@/services/user";
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
+import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -22,11 +23,32 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<AuthUser | null>(null);
   const [role, setRole] = useState<UserRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [initError, setInitError] = useState<string | null>(null);
   const router = useRouter();
   const { toast } = useToast();
 
   useEffect(() => {
     let mounted = true;
+
+    // Check Firebase initialization on component mount
+    try {
+      const isInitialized = checkFirebaseInitialization();
+      if (!isInitialized) {
+        console.error("Firebase not initialized in AuthContext");
+        setInitError("Firebase initialization failed");
+        setLoading(false);
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking Firebase initialization:", error);
+      if (error instanceof Error) {
+        setInitError(`Firebase error: ${error.message}`);
+      } else {
+        setInitError("Unknown Firebase initialization error");
+      }
+      setLoading(false);
+      return;
+    }
 
     const unsubscribe = onAuthStateChanged(auth, async (user) => {
       try {
@@ -94,6 +116,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       unsubscribe();
     };
   }, [router, toast]);
+
+  // Display Firebase initialization error if it occurs
+  if (initError) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-background">
+        <p>{initError}</p>
+      </div>
+    );
+  }
 
   return (
     <AuthContext.Provider value={{ user, loading, role }}>

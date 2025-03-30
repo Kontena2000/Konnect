@@ -7,6 +7,7 @@ import {
   User
 } from "firebase/auth";
 import userService from "./user";
+import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
 
 export type UserRole = "admin" | "editor" | "viewer";
 
@@ -26,48 +27,35 @@ export class AuthError extends Error {
 
 const authService = {
   async register(email: string, password: string, role: UserRole = "editor"): Promise<UserCredential> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       
       // Add user to Firestore
       await userService.addUser(email, role);
       
       return userCredential;
-    } catch (error: any) {
-      console.error("Registration error:", error);
-      throw new AuthError(
-        error.message || "Failed to register user",
-        error.code
-      );
-    }
+    }, `Failed to register user with email: ${email}`);
   },
 
   async login(email: string, password: string): Promise<UserCredential> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       return await signInWithEmailAndPassword(auth, email, password);
-    } catch (error: any) {
-      console.error("Login error:", error);
-      throw new AuthError(
-        error.message || "Failed to login",
-        error.code
-      );
-    }
+    }, `Failed to login with email: ${email}`);
   },
 
   async signOut(): Promise<void> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       await firebaseSignOut(auth);
-    } catch (error: any) {
-      console.error("Sign out error:", error);
-      throw new AuthError(
-        error.message || "Failed to sign out",
-        error.code
-      );
-    }
+    }, "Failed to sign out");
   },
 
   getCurrentUser(): AuthUser | null {
-    return auth.currentUser as AuthUser | null;
+    try {
+      return auth.currentUser as AuthUser | null;
+    } catch (error) {
+      console.error("Error getting current user:", error);
+      return null;
+    }
   },
 
   async initializeDefaultUsers(): Promise<void> {

@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -12,6 +11,7 @@ import {
   where,
   serverTimestamp
 } from "firebase/firestore";
+import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
 
 export interface User {
   id: string;
@@ -22,7 +22,7 @@ export interface User {
 
 const userService = {
   async getUsers(): Promise<User[]> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const usersRef = collection(db, "users");
       const q = query(usersRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
@@ -36,14 +36,11 @@ const userService = {
           createdAt: data.createdAt?.toDate() || new Date()
         };
       });
-    } catch (error) {
-      console.error("Error fetching users:", error);
-      throw new Error("Failed to fetch users");
-    }
+    }, "Failed to fetch users");
   },
 
   async getUserByEmail(email: string): Promise<User | null> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const usersRef = collection(db, "users");
       const q = query(usersRef, where("email", "==", email));
       const snapshot = await getDocs(q);
@@ -60,14 +57,11 @@ const userService = {
         role: data.role,
         createdAt: data.createdAt?.toDate() || new Date()
       };
-    } catch (error) {
-      console.error("Error fetching user by email:", error);
-      throw new Error("Failed to fetch user");
-    }
+    }, `Failed to fetch user by email: ${email}`);
   },
 
   async addUser(email: string, role: User["role"]): Promise<User> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const existingUser = await this.getUserByEmail(email);
       if (existingUser) {
         return existingUser;
@@ -81,19 +75,24 @@ const userService = {
       });
 
       // Set custom claims via API
-      const response = await fetch('/api/auth/set-custom-claims', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email,
-          role
-        })
-      });
+      try {
+        const response = await fetch('/api/auth/set-custom-claims', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            email,
+            role
+          })
+        });
 
-      if (!response.ok) {
-        console.error('Failed to set custom claims');
+        if (!response.ok) {
+          console.warn('Failed to set custom claims, but user was created');
+        }
+      } catch (apiError) {
+        console.warn('API error when setting custom claims:', apiError);
+        // Continue anyway since the user was created in Firestore
       }
 
       return {
@@ -102,14 +101,11 @@ const userService = {
         role,
         createdAt: new Date()
       };
-    } catch (error) {
-      console.error("Error adding user:", error);
-      throw new Error("Failed to add user");
-    }
+    }, `Failed to add user with email: ${email}`);
   },
 
   async updateUserRole(userId: string, role: User["role"]): Promise<void> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const userRef = doc(db, "users", userId);
       await updateDoc(userRef, { 
         role,
@@ -117,34 +113,33 @@ const userService = {
       });
 
       // Update custom claims via API
-      const response = await fetch('/api/auth/set-custom-claims', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          uid: userId,
-          role
-        })
-      });
+      try {
+        const response = await fetch('/api/auth/set-custom-claims', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            uid: userId,
+            role
+          })
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to update custom claims');
+        if (!response.ok) {
+          console.warn('Failed to update custom claims, but user role was updated in Firestore');
+        }
+      } catch (apiError) {
+        console.warn('API error when updating custom claims:', apiError);
+        // Continue anyway since the user role was updated in Firestore
       }
-    } catch (error) {
-      console.error("Error updating user role:", error);
-      throw new Error("Failed to update user role");
-    }
+    }, `Failed to update role for user: ${userId}`);
   },
 
   async deleteUser(userId: string): Promise<void> {
-    try {
+    return withFirebaseErrorHandling(async () => {
       const userRef = doc(db, "users", userId);
       await deleteDoc(userRef);
-    } catch (error) {
-      console.error("Error deleting user:", error);
-      throw new Error("Failed to delete user");
-    }
+    }, `Failed to delete user: ${userId}`);
   }
 };
 
