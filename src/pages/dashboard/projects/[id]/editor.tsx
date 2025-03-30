@@ -285,31 +285,7 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout>
-      <ErrorBoundary>
-        <div className='flex min-h-screen w-full'>
-          <div className='flex-1 relative'>
-            <SceneContainer
-              modules={memoizedModules}
-              selectedModuleId={selectedModuleId}
-              transformMode={transformMode}
-              onModuleSelect={handleModuleSelect}
-              onModuleUpdate={handleModuleUpdate}
-              onModuleDelete={handleModuleDelete}
-              connections={memoizedConnections}
-              controlsRef={controlsRef}
-              editorPreferences={editorPreferences}
-            />
-            <Toolbox
-              onModuleDragStart={handleModuleDragStart}
-              onSave={handleSave}
-              onUndo={handleUndo}
-              onRedo={handleRedo}
-              controlsRef={controlsRef}
-            />
-          </div>
-        </div>
-      </ErrorBoundary>
-      <div className='flex flex-col h-screen'>
+      <div className='flex flex-col h-screen w-full overflow-hidden'>
         <div className='flex items-center justify-between p-4 border-b'>
           <div>
             <h1 className='text-xl font-bold'>
@@ -343,9 +319,27 @@ export default function LayoutEditorPage() {
           </div>
         </div>
         
-        {/* Layout Editor Component */}
-        <div className='flex-1 overflow-hidden'>
-          {/* Your existing editor component */}
+        <div className='flex-1 relative'>
+          <ErrorBoundary>
+            <SceneContainer
+              modules={memoizedModules}
+              selectedModuleId={selectedModuleId}
+              transformMode={transformMode}
+              onModuleSelect={handleModuleSelect}
+              onModuleUpdate={handleModuleUpdate}
+              onModuleDelete={handleModuleDelete}
+              connections={memoizedConnections}
+              controlsRef={controlsRef}
+              editorPreferences={editorPreferences}
+            />
+            <Toolbox
+              onModuleDragStart={handleModuleDragStart}
+              onSave={handleSave}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              controlsRef={controlsRef}
+            />
+          </ErrorBoundary>
         </div>
       </div>
     </AppLayout>

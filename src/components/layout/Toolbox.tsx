@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -60,13 +59,7 @@ export function Toolbox({
   };
 
   return (
-    <div 
-      className={cn(
-        'fixed top-0 right-0 h-screen bg-background border-l transition-all duration-200 z-50 flex flex-col',
-        collapsed ? 'w-16' : 'w-80'
-      )}
-      style={{ marginLeft: 'auto' }}
-    >
+    <div className='absolute top-4 left-4 z-10 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg overflow-hidden'>
       {/* Header */}
       <div className='flex h-16 items-center justify-between px-4 border-b'>
         {collapsed ? (
