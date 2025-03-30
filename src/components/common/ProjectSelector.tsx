@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useRouter } from "next/router";
-import { db } from "@/lib/firebase";
+import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
 interface Project {
@@ -30,6 +30,7 @@ export function ProjectSelector({
 }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
 
@@ -39,10 +40,17 @@ export function ProjectSelector({
 
       try {
         setLoading(true);
+        setError(null);
+        
+        // Get Firestore instance safely
+        const db = getFirestoreSafely();
+        if (!db) {
+          throw new Error('Firestore is not available');
+        }
         
         // Query projects owned by the user
         const userProjectsQuery = query(
-          collection(db || getFirestore(), "projects"),
+          collection(db, "projects"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc")
         );
@@ -79,6 +87,7 @@ export function ProjectSelector({
         }
       } catch (error) {
         console.error("Error fetching projects:", error);
+        setError(error instanceof Error ? error.message : 'Failed to fetch projects');
       } finally {
         setLoading(false);
       }
@@ -93,6 +102,10 @@ export function ProjectSelector({
 
   if (loading) {
     return <Skeleton className={`h-10 w-full ${className}`} />;
+  }
+
+  if (error) {
+    return <div className='text-sm text-red-500'>{error}</div>;
   }
 
   return (
