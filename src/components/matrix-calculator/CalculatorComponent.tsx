@@ -21,6 +21,7 @@ import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getFirestoreSafely } from '@/services/firebase-initializer';
 import { FirebaseDebugger } from './FirebaseDebugger';
+import { saveCalculationResult } from '@/services/calculationService';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -362,20 +363,20 @@ export function CalculatorComponent({
       const result = await saveCalculationResult(
         userId,
         {
-          kwPerRack: parseFloat(kwPerRack),
+          kwPerRack,
           coolingType,
-          totalRacks: parseInt(totalRacks)
+          totalRacks
         },
         results,
         calculationName,
         {
           redundancyMode,
           includeGenerator,
-          batteryRuntime: parseInt(batteryRuntime),
+          batteryRuntime,
           sustainabilityOptions: {
             enableWasteHeatRecovery,
             enableWaterRecycling,
-            renewableEnergyPercentage: parseInt(renewablePercentage)
+            renewableEnergyPercentage: renewablePercentage
           },
           location: location ? {
             latitude: location.latitude,
