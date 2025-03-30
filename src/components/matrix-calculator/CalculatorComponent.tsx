@@ -19,6 +19,8 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
+import { getFirestoreSafely } from '@/services/firebase-initializer';
+import { FirebaseDebugger } from './FirebaseDebugger';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -43,7 +45,12 @@ interface CalculatorComponentProps {
   initialResults?: any;
 }
 
-export function CalculatorComponent({ userId, userRole, onSave, initialResults }: CalculatorComponentProps) {
+export function CalculatorComponent({ 
+  userId, 
+  userRole = 'user',
+  initialResults = null,
+  onSave
+}: CalculatorComponentProps) {
   // State for inputs
   const [kwPerRack, setKwPerRack] = useState(75);
   const [coolingType, setCoolingType] = useState('dlc');
@@ -54,6 +61,10 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [error, setError] = useState<string | null>(null);
   const [useLocationData, setUseLocationData] = useState(false);
   const [calculationMode, setCalculationMode] = useState<'standard' | 'optimize' | 'report'>('standard');
+  const [calculationName, setCalculationName] = useState('');
+  const [showSaveDialog, setShowSaveDialog] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [projectId, setProjectId] = useState<string | null>(null);
   
   // Advanced options
   const [redundancyMode, setRedundancyMode] = useState('N+1');
@@ -321,6 +332,95 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
     }
   };
   
+  // Handle save calculation
+  const handleSaveCalculation = async () => {
+    if (!calculationName) {
+      toast({
+        title: 'Error',
+        description: 'Please enter a name for your calculation',
+        variant: 'destructive'
+      });
+      return;
+    }
+
+    setSaving(true);
+
+    try {
+      // Use getFirestoreSafely instead of direct db access
+      const safeDb = getFirestoreSafely();
+      
+      if (!safeDb) {
+        toast({
+          title: 'Error',
+          description: 'Firebase is not available. Calculations cannot be saved at this time.',
+          variant: 'destructive'
+        });
+        setSaving(false);
+        return;
+      }
+
+      const result = await saveCalculationResult(
+        userId,
+        {
+          kwPerRack: parseFloat(kwPerRack),
+          coolingType,
+          totalRacks: parseInt(totalRacks)
+        },
+        results,
+        calculationName,
+        {
+          redundancyMode,
+          includeGenerator,
+          batteryRuntime: parseInt(batteryRuntime),
+          sustainabilityOptions: {
+            enableWasteHeatRecovery,
+            enableWaterRecycling,
+            renewableEnergyPercentage: parseInt(renewablePercentage)
+          },
+          location: location ? {
+            latitude: location.latitude,
+            longitude: location.longitude,
+            address: location.address
+          } : undefined
+        },
+        projectId
+      );
+
+      if (result.success) {
+        toast({
+          title: 'Success',
+          description: 'Calculation saved successfully'
+        });
+        
+        if (onSave) {
+          onSave({
+            id: result.id,
+            name: calculationName,
+            projectId
+          });
+        }
+        
+        setCalculationName('');
+        setShowSaveDialog(false);
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Failed to save calculation',
+          variant: 'destructive'
+        });
+      }
+    } catch (error) {
+      console.error('Error saving calculation:', error);
+      toast({
+        title: 'Error',
+        description: 'An error occurred while saving the calculation',
+        variant: 'destructive'
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
   // Get calculation config for saving
   const getCalculationConfig = () => {
     return {
