@@ -7,13 +7,13 @@ let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 let auth: Auth | null = null;
 
-// Immediately invoke initialization function
-(function initializeFirebase() {
+// Define the initialization function so it can be called again if needed
+function initializeFirebase(): boolean {
   try {
     // Skip initialization on server side
     if (typeof window === 'undefined') {
       console.log('Skipping Firebase initialization on server side');
-      return;
+      return false;
     }
 
     // Check if Firebase is already initialized
@@ -23,10 +23,11 @@ let auth: Auth | null = null;
         db = getFirestore(app);
         auth = getAuth(app);
         console.log('Firebase services retrieved from existing app');
+        return true;
       } catch (error) {
         console.error('Error getting Firebase services from existing app:', error);
+        return false;
       }
-      return;
     }
 
     // Initialize Firebase with config
@@ -53,7 +54,7 @@ let auth: Auth | null = null;
     // Check if required config values are present
     if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.authDomain) {
       console.error('Missing required Firebase configuration');
-      return;
+      return false;
     }
 
     // Initialize Firebase
@@ -79,10 +80,15 @@ let auth: Auth | null = null;
     }
 
     console.log('Firebase initialized successfully');
+    return true;
   } catch (error) {
     console.error('Error initializing Firebase:', error);
+    return false;
   }
-})();
+}
+
+// Call the initialization function immediately
+initializeFirebase();
 
 /**
  * Safely access Firestore by ensuring Firebase is initialized
@@ -97,6 +103,9 @@ export function getFirestoreSafely(): Firestore | null {
       } catch (error) {
         console.error('Error getting Firestore:', error);
       }
+    } else {
+      // Try to initialize Firebase again
+      initializeFirebase();
     }
   }
   return db;
@@ -115,6 +124,9 @@ export function getAuthSafely(): Auth | null {
       } catch (error) {
         console.error('Error getting Auth:', error);
       }
+    } else {
+      // Try to initialize Firebase again
+      initializeFirebase();
     }
   }
   return auth;
@@ -130,20 +142,67 @@ export function isFirebaseInitialized(): boolean {
 /**
  * Force Firebase initialization - useful for components that need to ensure Firebase is ready
  */
-export function initializeFirebaseSafely(): boolean {
+export function initializeFirebaseSafely(): { 
+  app: FirebaseApp | null;
+  db: Firestore | null;
+  auth: Auth | null;
+  error?: string;
+} {
   // Skip on server side
   if (typeof window === 'undefined') {
-    return false;
+    return { app: null, db: null, auth: null, error: 'Server-side rendering' };
   }
   
-  // If already initialized, return true
+  // If already initialized, return existing instances
   if (app && db && auth) {
-    return true;
+    return { app, db, auth };
   }
   
   // Otherwise, re-run the initialization
-  initializeFirebase();
-  return app !== null && db !== null && auth !== null;
+  try {
+    if (!app) {
+      const firebaseConfig = {
+        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+        measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID
+      };
+      app = initializeApp(firebaseConfig);
+    }
+    
+    if (!db) {
+      db = getFirestore(app);
+    }
+    
+    if (!auth) {
+      auth = getAuth(app);
+    }
+    
+    return { app, db, auth };
+  } catch (error) {
+    console.error('Error in initializeFirebaseSafely:', error);
+    return { 
+      app: null, 
+      db: null, 
+      auth: null, 
+      error: error instanceof Error ? error.message : 'Unknown error initializing Firebase'
+    };
+  }
+}
+
+/**
+ * Alias for initializeFirebaseSafely for backward compatibility
+ */
+export function initializeFirebaseIfNeeded(): { 
+  app: FirebaseApp | null;
+  db: Firestore | null;
+  auth: Auth | null;
+  error?: string;
+} {
+  return initializeFirebaseSafely();
 }
 
 // Export the Firebase instances
