@@ -13,7 +13,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase";
+import { db, getFirestoreSafely } from "@/lib/firebase";
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
@@ -72,6 +72,12 @@ export function SaveCalculationDialog({
       console.log('Saving calculation with config:', config);
       console.log('Results to save:', results);
       
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      if (!safeDb) {
+        throw new Error('Firestore is not available');
+      }
+
       // Create calculation document
       const calculationData = {
         name: name || `${config.kwPerRack}kW ${config.coolingType} configuration`,
@@ -86,7 +92,7 @@ export function SaveCalculationDialog({
       };
       
       const docRef = await addDoc(
-        collection(db, "matrix_calculator", "user_configurations", "configs"), 
+        collection(safeDb, "matrix_calculator", "user_configurations", "configs"), 
         calculationData
       );
       

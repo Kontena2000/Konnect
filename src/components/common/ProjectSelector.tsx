@@ -5,7 +5,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { PlusCircle } from "lucide-react";
 import { useRouter } from "next/router";
-import { getFirestoreSafely } from "@/lib/firebase";
+import { db, getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs, orderBy, QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 
 interface Project {
@@ -43,14 +43,14 @@ export function ProjectSelector({
         setError(null);
         
         // Get Firestore instance safely
-        const db = getFirestoreSafely();
-        if (!db) {
+        const safeDb = getFirestoreSafely() || db;
+        if (!safeDb) {
           throw new Error('Firestore is not available');
         }
         
         // Query projects owned by the user
         const userProjectsQuery = query(
-          collection(db, "projects"),
+          collection(safeDb, "projects"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc")
         );
@@ -61,7 +61,7 @@ export function ProjectSelector({
         const sharedProjectsDocs: QueryDocumentSnapshot<DocumentData>[] = [];
         if (user.email) {
           const sharedProjectsQuery = query(
-            collection(db, "projects"),
+            collection(safeDb, "projects"),
             where("sharedWith", "array-contains", user.email),
             orderBy("createdAt", "desc")
           );
