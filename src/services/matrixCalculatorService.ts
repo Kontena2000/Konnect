@@ -42,13 +42,44 @@ export async function getPricingAndParams() {
   }
   
   try {
-    // Fetch pricing
-    const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
-    const pricing = pricingDoc.exists() ? pricingDoc.data() as PricingMatrix : DEFAULT_PRICING;
+    // Check if Firebase is initialized
+    if (!db) {
+      console.error('Firebase Firestore is not initialized, using default values');
+      calculatorDebug.error('Firebase Firestore is not initialized', 'Using default values');
+      return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
+    }
     
-    // Fetch parameters
-    const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
-    const params = paramsDoc.exists() ? paramsDoc.data() as CalculationParams : DEFAULT_CALCULATION_PARAMS;
+    // Fetch pricing with better error handling
+    let pricing = DEFAULT_PRICING;
+    try {
+      const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
+      if (pricingDoc.exists()) {
+        pricing = pricingDoc.data() as PricingMatrix;
+        console.log('Successfully fetched pricing matrix from Firestore');
+      } else {
+        console.log('Pricing matrix not found in Firestore, using default values');
+      }
+    } catch (pricingError) {
+      console.error('Error fetching pricing matrix:', pricingError);
+      calculatorDebug.error('Error fetching pricing matrix', pricingError);
+      // Continue with default pricing
+    }
+    
+    // Fetch parameters with better error handling
+    let params = DEFAULT_CALCULATION_PARAMS;
+    try {
+      const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
+      if (paramsDoc.exists()) {
+        params = paramsDoc.data() as CalculationParams;
+        console.log('Successfully fetched calculation parameters from Firestore');
+      } else {
+        console.log('Calculation parameters not found in Firestore, using default values');
+      }
+    } catch (paramsError) {
+      console.error('Error fetching calculation parameters:', paramsError);
+      calculatorDebug.error('Error fetching calculation parameters', paramsError);
+      // Continue with default params
+    }
     
     // Update cache
     cachedPricing = pricing;
@@ -57,7 +88,8 @@ export async function getPricingAndParams() {
     
     return { pricing, params };
   } catch (error) {
-    console.error('Error fetching data:', error);
+    console.error('Error fetching data from Firestore:', error);
+    calculatorDebug.error('Error fetching data from Firestore', error);
     return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
   }
 }
