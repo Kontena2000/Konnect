@@ -221,6 +221,24 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
       
       // Ensure we have valid results before setting state
       if (calculationResults) {
+        // Add default cost structure if missing
+        if (!calculationResults.cost) {
+          calculationResults.cost = {
+            totalProjectCost: 0,
+            costPerRack: 0,
+            costPerKw: 0,
+            electrical: { busbar: 0, tapOffBox: 0, rpdu: 0, total: 0 },
+            cooling: 0,
+            power: { ups: 0, battery: 0, generator: 0, total: 0 },
+            infrastructure: 0,
+            sustainability: 0,
+            equipmentTotal: 0,
+            installation: 0,
+            engineering: 0,
+            contingency: 0
+          };
+        }
+        
         console.log('Setting results:', calculationResults);
         setResults(calculationResults);
         calculatorDebug.log('Calculation completed successfully', calculationResults);
