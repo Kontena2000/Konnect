@@ -6,7 +6,7 @@ import userService from "@/services/user";
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
-import { getAuthSafely, initializeFirebaseSafely } from "@/services/firebase-initializer";
+import { getAuthSafely, initializeFirebaseSafely } from "@/services/firebase-init";
 
 interface AuthContextType {
   user: AuthUser | null;
