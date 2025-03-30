@@ -11,6 +11,7 @@ import { EditorSettings } from "@/components/settings/EditorSettings";
 import { CalculationSettings } from "@/components/settings/CalculationSettings";
 import { PricingEditor } from "@/components/settings/PricingEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
+import { UserManagement } from "@/components/settings/UserManagement";
 import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
@@ -57,6 +58,7 @@ export default function SettingsPage() {
             <TabsTrigger value='editor'>Editor</TabsTrigger>
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
             {user?.role === 'admin' && <TabsTrigger value='firebase'>Firebase</TabsTrigger>}
+            {user?.role === 'admin' && <TabsTrigger value='user-management'>User Management</TabsTrigger>}
           </TabsList>
 
           <TabsContent value='general' className='space-y-6'>
@@ -80,6 +82,12 @@ export default function SettingsPage() {
           {user?.role === 'admin' && (
             <TabsContent value='firebase' className='space-y-6'>
               <FirebaseMonitor />
+            </TabsContent>
+          )}
+
+          {user?.role === 'admin' && (
+            <TabsContent value='user-management' className='space-y-6'>
+              <UserManagement />
             </TabsContent>
           )}
         </Tabs>
