@@ -4,14 +4,13 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import editorPreferencesService, { EditorPreferences } from "@/services/editor-preferences";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
-import { LayoutEditorSettings } from "@/components/settings/LayoutEditorSettings";
-import { MatrixCalculatorSettings } from "@/components/settings/MatrixCalculatorSettings";
+import { UserManagement } from "@/components/settings/UserManagement";
 import { ModuleManager } from "@/components/settings/ModuleManager";
 import { EditorSettings } from "@/components/settings/EditorSettings";
+import { MatrixCalculatorSettings } from "@/components/settings/MatrixCalculatorSettings";
 import { CalculationSettings } from "@/components/settings/CalculationSettings";
 import { PricingEditor } from "@/components/settings/PricingEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
-import { UserManagement } from "@/components/settings/UserManagement";
 import { DebugSettings } from "@/components/settings/DebugSettings";
 import { useRouter } from 'next/router';
 
@@ -55,7 +54,7 @@ export default function SettingsPage() {
         <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
           <TabsList className='w-full'>
             <TabsTrigger value='general'>General</TabsTrigger>
-            {user?.role === 'admin' && <TabsTrigger value='users'>Users</TabsTrigger>}
+            <TabsTrigger value='users'>Users</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
             <TabsTrigger value='layout-editor'>Layout Editor</TabsTrigger>
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
@@ -66,11 +65,9 @@ export default function SettingsPage() {
             <GeneralSettings userId={user?.uid || ''} />
           </TabsContent>
 
-          {user?.role === 'admin' && (
-            <TabsContent value='users' className='space-y-6'>
-              <UserManagement />
-            </TabsContent>
-          )}
+          <TabsContent value='users' className='space-y-6'>
+            <UserManagement />
+          </TabsContent>
 
           <TabsContent value='modules' className='space-y-6'>
             <ModuleManager userId={user?.uid || ''} userRole={user?.role} />
