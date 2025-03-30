@@ -1,4 +1,3 @@
-
 import { initializeApp, getApps, FirebaseApp } from 'firebase/app';
 import { getFirestore, Firestore } from 'firebase/firestore';
 import { getAuth, Auth } from 'firebase/auth';
@@ -107,4 +106,32 @@ export function getAuthSafely(): Auth | null {
     calculatorDebug.error('Error getting Auth', error);
   }
   return auth;
+}
+
+/**
+ * Initialize Firebase safely and return initialization status
+ * This is a wrapper around initializeFirebaseIfNeeded for components
+ */
+export function initializeFirebaseSafely(): boolean {
+  const result = initializeFirebaseIfNeeded();
+  return result.app !== null && !result.error;
+}
+
+/**
+ * Check if all Firebase services are available and working
+ */
+export function checkFirebaseServices(): {
+  initialized: boolean;
+  firestoreAvailable: boolean;
+  authAvailable: boolean;
+  error?: string;
+} {
+  const { app, db, auth, error } = initializeFirebaseIfNeeded();
+  
+  return {
+    initialized: app !== null,
+    firestoreAvailable: db !== null,
+    authAvailable: auth !== null,
+    error
+  };
 }
