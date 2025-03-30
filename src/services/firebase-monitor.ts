@@ -1,5 +1,4 @@
-import { db, auth } from "@/lib/firebase";
-import { getFirestoreSafely, getAuthSafely } from '@/services/firebase-init';
+import { db, auth, getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 

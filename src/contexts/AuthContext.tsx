@@ -1,12 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
-import { auth } from "@/lib/firebase";
-import type { AuthUser, UserRole } from "@/services/auth";
-import userService from "@/services/user";
-import { useRouter } from "next/router";
-import { useToast } from "@/hooks/use-toast";
-import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
-import { getAuthSafely, initializeFirebaseSafely } from "@/services/firebase-init";
+import { auth, initializeFirebaseSafely, getAuthSafely } from '@/lib/firebase';
+import type { AuthUser, UserRole } from '@/services/auth';
+import userService from '@/services/user';
+import { useRouter } from 'next/router';
+import { useToast } from '@/hooks/use-toast';
+import { checkFirebaseInitialization } from '@/utils/firebaseDebug';
 
 interface AuthContextType {
   user: AuthUser | null;

@@ -1,6 +1,6 @@
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getFirestoreSafely } from "./firebase-init";
-import { calculatorDebug } from "./calculatorDebug";
+import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { getFirestoreSafely } from '@/lib/firebase';
+import { calculatorDebug } from './calculatorDebug';
 
 /**
  * Save calculation result to Firestore
