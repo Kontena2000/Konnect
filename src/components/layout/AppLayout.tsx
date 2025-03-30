@@ -4,6 +4,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/router";
 import authService from "@/services/auth";
+import { initializeFirebaseSafely } from "@/services/firebase-initializer";
 
 interface AppLayoutProps {
   children: ReactNode;
@@ -14,6 +15,9 @@ export function AppLayout({ children }: AppLayoutProps) {
   const isMobile = useIsMobile();
 
   useEffect(() => {
+    // Try to initialize Firebase first
+    initializeFirebaseSafely();
+    
     const user = authService.getCurrentUser();
     if (!user) {
       router.push('/auth/login');

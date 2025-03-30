@@ -1,7 +1,7 @@
-
 import { checkFirebaseInitialization, withFirebaseErrorHandling } from "@/utils/firebaseDebug";
 import { db } from "@/lib/firebase";
 import { collection, getDocs, query, limit, where, orderBy } from "firebase/firestore";
+import { getFirestoreSafely, initializeFirebaseSafely, checkFirebaseServices } from "./firebase-initializer";
 
 /**
  * Matrix Debug Service
@@ -32,12 +32,21 @@ const matrixDebugService = {
     };
     
     try {
+      // Try to initialize Firebase first
+      initializeFirebaseSafely();
+      
       // Check Firebase initialization
       result.firebaseInitialized = checkFirebaseInitialization();
       
       if (!result.firebaseInitialized) {
         result.errors.push("Firebase is not properly initialized");
         return result;
+      }
+      
+      // Check Firebase services
+      const servicesStatus = checkFirebaseServices();
+      if (servicesStatus.errors.length > 0) {
+        result.errors.push(...servicesStatus.errors);
       }
       
       // Check access to key collections
@@ -77,7 +86,10 @@ const matrixDebugService = {
    */
   async checkCollection(collectionName: string) {
     return await withFirebaseErrorHandling(async () => {
-      const collRef = collection(db, collectionName);
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const collRef = collection(safeDb, collectionName);
       const q = query(collRef, orderBy("createdAt", "desc"), limit(5));
       const snapshot = await getDocs(q);
       
@@ -94,7 +106,10 @@ const matrixDebugService = {
    */
   async testCalculation(calculationId: string) {
     return await withFirebaseErrorHandling(async () => {
-      const calculationsRef = collection(db, "calculations");
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const calculationsRef = collection(safeDb, "calculations");
       const q = query(calculationsRef, where("id", "==", calculationId), limit(1));
       const snapshot = await getDocs(q);
       

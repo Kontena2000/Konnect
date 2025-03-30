@@ -12,6 +12,7 @@ import {
   serverTimestamp
 } from "firebase/firestore";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
+import { getFirestoreSafely } from "./firebase-initializer";
 
 export interface User {
   id: string;
@@ -23,7 +24,10 @@ export interface User {
 const userService = {
   async getUsers(): Promise<User[]> {
     return withFirebaseErrorHandling(async () => {
-      const usersRef = collection(db, "users");
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const usersRef = collection(safeDb, "users");
       const q = query(usersRef, orderBy("createdAt", "desc"));
       const snapshot = await getDocs(q);
       
@@ -41,7 +45,10 @@ const userService = {
 
   async getUserByEmail(email: string): Promise<User | null> {
     return withFirebaseErrorHandling(async () => {
-      const usersRef = collection(db, "users");
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const usersRef = collection(safeDb, "users");
       const q = query(usersRef, where("email", "==", email));
       const snapshot = await getDocs(q);
       
@@ -67,7 +74,10 @@ const userService = {
         return existingUser;
       }
 
-      const usersRef = collection(db, "users");
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const usersRef = collection(safeDb, "users");
       const docRef = await addDoc(usersRef, {
         email,
         role,
@@ -106,7 +116,10 @@ const userService = {
 
   async updateUserRole(userId: string, role: User["role"]): Promise<void> {
     return withFirebaseErrorHandling(async () => {
-      const userRef = doc(db, "users", userId);
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const userRef = doc(safeDb, "users", userId);
       await updateDoc(userRef, { 
         role,
         updatedAt: serverTimestamp()
@@ -137,7 +150,10 @@ const userService = {
 
   async deleteUser(userId: string): Promise<void> {
     return withFirebaseErrorHandling(async () => {
-      const userRef = doc(db, "users", userId);
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely() || db;
+      
+      const userRef = doc(safeDb, "users", userId);
       await deleteDoc(userRef);
     }, `Failed to delete user: ${userId}`);
   }

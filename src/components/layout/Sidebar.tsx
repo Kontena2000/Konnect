@@ -13,7 +13,8 @@ import {
   ChevronRight,
   Edit,
   Calculator,
-  Users
+  Users,
+  Bug
 } from 'lucide-react';
 import authService from '@/services/auth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -46,6 +47,11 @@ export function Sidebar({ className }: { className?: string }) {
       icon: <Calculator className='h-5 w-5' />,
       href: '/dashboard/matrix-calculator',
       beta: true
+    },
+    {
+      title: 'Matrix Debug',
+      icon: <Bug className='h-5 w-5' />,
+      href: '/dashboard/matrix-debug'
     },
     {
       title: 'Settings',

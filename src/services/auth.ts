@@ -8,6 +8,7 @@ import {
 } from "firebase/auth";
 import userService from "./user";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
+import { getAuthSafely } from "./firebase-initializer";
 
 export type UserRole = "admin" | "editor" | "viewer";
 
@@ -28,7 +29,10 @@ export class AuthError extends Error {
 const authService = {
   async register(email: string, password: string, role: UserRole = "editor"): Promise<UserCredential> {
     return withFirebaseErrorHandling(async () => {
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      // Get auth instance safely
+      const safeAuth = getAuthSafely() || auth;
+      
+      const userCredential = await createUserWithEmailAndPassword(safeAuth, email, password);
       
       // Add user to Firestore
       await userService.addUser(email, role);
@@ -39,19 +43,28 @@ const authService = {
 
   async login(email: string, password: string): Promise<UserCredential> {
     return withFirebaseErrorHandling(async () => {
-      return await signInWithEmailAndPassword(auth, email, password);
+      // Get auth instance safely
+      const safeAuth = getAuthSafely() || auth;
+      
+      return await signInWithEmailAndPassword(safeAuth, email, password);
     }, `Failed to login with email: ${email}`);
   },
 
   async signOut(): Promise<void> {
     return withFirebaseErrorHandling(async () => {
-      await firebaseSignOut(auth);
+      // Get auth instance safely
+      const safeAuth = getAuthSafely() || auth;
+      
+      await firebaseSignOut(safeAuth);
     }, "Failed to sign out");
   },
 
   getCurrentUser(): AuthUser | null {
     try {
-      return auth.currentUser as AuthUser | null;
+      // Get auth instance safely
+      const safeAuth = getAuthSafely() || auth;
+      
+      return safeAuth.currentUser as AuthUser | null;
     } catch (error) {
       console.error("Error getting current user:", error);
       return null;

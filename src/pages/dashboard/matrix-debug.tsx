@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useRouter } from "next/router";
 import { useAuth } from "@/contexts/AuthContext";
@@ -9,10 +8,12 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Loader2, AlertTriangle, CheckCircle, XCircle, Info } from "lucide-react";
+import { Loader2, AlertTriangle, CheckCircle, XCircle, Info, Bug } from "lucide-react";
 import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
 import matrixDebugService, { MatrixDebugInfo } from "@/services/matrixDebugService";
-import AppLayout from "@/components/layout/AppLayout";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { FirebaseDebugger } from "@/components/matrix-calculator/FirebaseDebugger";
+import { initializeFirebaseSafely, checkFirebaseServices } from "@/services/firebase-initializer";
 
 export default function MatrixDebugPage() {
   const { user, loading, role } = useAuth();
@@ -31,6 +32,10 @@ export default function MatrixDebugPage() {
     
     // Check Firebase initialization on component mount
     try {
+      // First try to initialize Firebase safely
+      initializeFirebaseSafely();
+      
+      // Then check if it's initialized
       const isInitialized = checkFirebaseInitialization();
       setFirebaseInitialized(isInitialized);
     } catch (error) {

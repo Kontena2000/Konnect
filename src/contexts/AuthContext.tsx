@@ -6,6 +6,7 @@ import userService from "@/services/user";
 import { useRouter } from "next/router";
 import { useToast } from "@/hooks/use-toast";
 import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
+import { getAuthSafely, initializeFirebaseSafely } from "@/services/firebase-initializer";
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -30,6 +31,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let mounted = true;
 
+    // Try to initialize Firebase first
+    try {
+      initializeFirebaseSafely();
+    } catch (error) {
+      console.error("Error initializing Firebase in AuthContext:", error);
+    }
+
     // Check Firebase initialization on component mount
     try {
       const isInitialized = checkFirebaseInitialization();
@@ -50,7 +58,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       return;
     }
 
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
+    // Get auth instance safely
+    const safeAuth = getAuthSafely();
+    if (!safeAuth) {
+      console.error("Failed to get Auth instance in AuthContext");
+      setInitError("Failed to get Auth instance");
+      setLoading(false);
+      return;
+    }
+
+    const unsubscribe = onAuthStateChanged(safeAuth, async (user) => {
       try {
         if (!mounted) return;
 
