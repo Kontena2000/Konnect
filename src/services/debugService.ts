@@ -1,8 +1,6 @@
-
 import { getApps } from "firebase/app";
 import { collection, getDocs, query, limit, where, orderBy } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { getFirestoreSafely } from "@/services/firebase-init";
+import { db, getFirestoreSafely } from "@/lib/firebase";
 
 export type LogLevel = "info" | "log" | "warn" | "error" | "debug";
 export type ModuleTag = "matrix" | "layout" | "firebase" | "auth" | "editor" | "general";
