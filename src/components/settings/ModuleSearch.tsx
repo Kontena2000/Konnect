@@ -1,7 +1,10 @@
+
 import { Search } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { CategoryDialog } from "./CategoryDialog";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
+import { Button } from "@/components/ui/button";
+import { Loader2 } from "lucide-react";
 
 interface ModuleSearchProps {
   searchTerm: string;
@@ -52,12 +55,39 @@ export function ModuleSearch({
               {category.name}
             </SelectItem>
           ))}
-          <CategoryDialog 
-            onCreateCategory={onCreateCategory}
-            isLoading={isAddingCategory}
-          />
         </SelectContent>
       </Select>
+
+      {/* Delete Category Dialog */}
+      <AlertDialog 
+        open={categoryToDelete !== null}
+        onOpenChange={(open) => !open && setCategoryToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Category</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this category? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => categoryToDelete && onDeleteCategory(categoryToDelete)}
+              disabled={isDeletingCategory}
+            >
+              {isDeletingCategory ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                'Delete'
+              )}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
