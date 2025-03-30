@@ -8,7 +8,7 @@ import {
 } from "firebase/auth";
 import userService from "./user";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
-import { getAuthSafely } from "./firebase-initializer";
+import { getAuthSafely } from "@/services/firebase-init";
 
 export type UserRole = "admin" | "editor" | "viewer";
 
