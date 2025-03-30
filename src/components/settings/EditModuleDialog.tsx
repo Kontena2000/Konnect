@@ -1,35 +1,25 @@
-
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Module } from "@/types/module";
 import { Edit2, Loader2 } from "lucide-react";
+import moduleService from "@/services/module";
+import { useToast } from "@/hooks/use-toast";
 
 interface EditModuleDialogProps {
   module: Module;
-  onModuleUpdate: (moduleData: Partial<Module>) => Promise<void>;
-  categories: { id: string; name: string; }[];
+  isOpen: boolean;
+  onClose: () => void;
+  onSubmit: (updatedModule: Module) => Promise<void>;
 }
 
-type ModuleFormData = {
-  name: string;
-  description: string;
-  category: string;
-  color: string;
-  dimensions: {
-    length: number;
-    width: number;
-    height: number;
-  };
-};
-
-export function EditModuleDialog({ module, onModuleUpdate, categories }: EditModuleDialogProps) {
-  const [isOpen, setIsOpen] = useState(false);
+export function EditModuleDialog({ module, isOpen, onClose, onSubmit }: EditModuleDialogProps) {
   const [isUpdating, setIsUpdating] = useState(false);
-  const [formData, setFormData] = useState<ModuleFormData>({
+  const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
+  const [formData, setFormData] = useState({
     name: module.name,
     description: module.description,
     category: module.category,
@@ -40,8 +30,40 @@ export function EditModuleDialog({ module, onModuleUpdate, categories }: EditMod
       height: module.dimensions.height
     }
   });
+  const { toast } = useToast();
 
-  const handleDimensionChange = (key: keyof ModuleFormData["dimensions"], value: string) => {
+  useEffect(() => {
+    const loadCategories = async () => {
+      try {
+        const fetchedCategories = await moduleService.getCategories();
+        setCategories(fetchedCategories);
+      } catch (error) {
+        toast({
+          variant: "destructive",
+          title: "Error",
+          description: "Failed to load categories"
+        });
+      }
+    };
+    
+    if (isOpen) {
+      loadCategories();
+      // Reset form data when dialog opens
+      setFormData({
+        name: module.name,
+        description: module.description,
+        category: module.category,
+        color: module.color,
+        dimensions: {
+          length: module.dimensions.length,
+          width: module.dimensions.width,
+          height: module.dimensions.height
+        }
+      });
+    }
+  }, [isOpen, module, toast]);
+
+  const handleDimensionChange = (key: keyof typeof formData.dimensions, value: string) => {
     const numValue = Math.max(0.1, parseFloat(value) || 0);
     setFormData(prev => ({
       ...prev,
@@ -56,24 +78,25 @@ export function EditModuleDialog({ module, onModuleUpdate, categories }: EditMod
     e.preventDefault();
     setIsUpdating(true);
     try {
-      await onModuleUpdate(formData);
-      setIsOpen(false);
+      const updatedModule: Module = {
+        ...module,
+        ...formData
+      };
+      await onSubmit(updatedModule);
+    } catch (error) {
+      console.error('Error updating module:', error);
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update module"
+      });
     } finally {
       setIsUpdating(false);
     }
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <Edit2 className="h-4 w-4" />
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={(open) => !open && onClose()}>
       <DialogContent className="max-w-2xl">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
@@ -139,7 +162,7 @@ export function EditModuleDialog({ module, onModuleUpdate, categories }: EditMod
             <div>
               <Label>Dimensions (meters)</Label>
               <div className="grid grid-cols-3 gap-2">
-                {(Object.keys(formData.dimensions) as Array<keyof ModuleFormData["dimensions"]>).map((key) => (
+                {(Object.keys(formData.dimensions) as Array<keyof typeof formData.dimensions>).map((key) => (
                   <div key={key}>
                     <Label className="text-xs">{key.charAt(0).toUpperCase() + key.slice(1)}</Label>
                     <Input
