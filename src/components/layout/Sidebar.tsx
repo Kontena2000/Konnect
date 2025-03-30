@@ -12,9 +12,7 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit,
-  Calculator,
-  Users,
-  Bug
+  Calculator
 } from 'lucide-react';
 import authService from '@/services/auth';
 import { useIsMobile } from '@/hooks/use-mobile';
@@ -52,14 +50,7 @@ export function Sidebar({ className }: { className?: string }) {
       title: 'Settings',
       icon: <Settings className='h-5 w-5' />,
       href: '/dashboard/settings'
-    },
-    ...(role === 'admin' ? [
-      {
-        title: 'User Management',
-        icon: <Users className='h-5 w-5' />,
-        href: '/dashboard/users'
-      }
-    ] : [])
+    }
   ];
 
   return (
