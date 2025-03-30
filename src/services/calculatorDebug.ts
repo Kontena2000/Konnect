@@ -218,10 +218,26 @@ export function withDebug<T extends (...args: any[]) => Promise<any>>(
  */
 export function checkFirebaseInitialization(): boolean {
   try {
+    // First check if firebase/app is available
+    const { getApps } = require('firebase/app');
+    
+    // Check if we have any initialized Firebase apps
+    if (getApps().length === 0) {
+      calculatorDebug.error('Firebase initialization failed', 'No Firebase App has been created - call initializeApp() first');
+      return false;
+    }
+    
+    // Now check if Firestore is available
     const { getFirestore } = require('firebase/firestore');
     const db = getFirestore();
+    
+    if (!db) {
+      calculatorDebug.error('Firebase Firestore initialization failed', 'Firestore instance is null or undefined');
+      return false;
+    }
+    
     calculatorDebug.log('Firebase Firestore initialized successfully');
-    return !!db;
+    return true;
   } catch (error) {
     calculatorDebug.error('Firebase Firestore initialization failed', error);
     return false;
