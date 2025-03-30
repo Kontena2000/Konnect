@@ -42,11 +42,11 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className="w-full p-4 md:p-6 space-y-6">
-        <div className="flex items-center justify-between">
+      <div className='w-full p-4 md:p-6 space-y-6'>
+        <div className='flex items-center justify-between'>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
-            <p className="text-muted-foreground">
+            <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
+            <p className='text-muted-foreground'>
               Manage your application settings and preferences
             </p>
           </div>
@@ -55,23 +55,28 @@ export default function SettingsPage() {
         <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
           <TabsList className='w-full'>
             <TabsTrigger value='general'>General</TabsTrigger>
+            {user?.role === 'admin' && <TabsTrigger value='users'>Users</TabsTrigger>}
             <TabsTrigger value='modules'>Modules</TabsTrigger>
-            <TabsTrigger value='editor'>Editor</TabsTrigger>
+            <TabsTrigger value='layout-editor'>Layout Editor</TabsTrigger>
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
-            {user?.role === 'admin' && <TabsTrigger value='firebase'>Firebase</TabsTrigger>}
-            {user?.role === 'admin' && <TabsTrigger value='user-management'>User Management</TabsTrigger>}
-            {user?.role === 'admin' && <TabsTrigger value='debug'>Debug</TabsTrigger>}
+            <TabsTrigger value='debug'>Debug</TabsTrigger>
           </TabsList>
 
           <TabsContent value='general' className='space-y-6'>
             <GeneralSettings userId={user?.uid || ''} />
           </TabsContent>
 
+          {user?.role === 'admin' && (
+            <TabsContent value='users' className='space-y-6'>
+              <UserManagement />
+            </TabsContent>
+          )}
+
           <TabsContent value='modules' className='space-y-6'>
             <ModuleManager userId={user?.uid || ''} userRole={user?.role} />
           </TabsContent>
 
-          <TabsContent value='editor' className='space-y-6'>
+          <TabsContent value='layout-editor' className='space-y-6'>
             <EditorSettings userId={user?.uid || ''} />
           </TabsContent>
 
@@ -81,23 +86,10 @@ export default function SettingsPage() {
             <PricingEditor readOnly={user?.role !== 'admin'} />
           </TabsContent>
 
-          {user?.role === 'admin' && (
-            <TabsContent value='firebase' className='space-y-6'>
-              <FirebaseMonitor />
-            </TabsContent>
-          )}
-
-          {user?.role === 'admin' && (
-            <TabsContent value='user-management' className='space-y-6'>
-              <UserManagement />
-            </TabsContent>
-          )}
-
-          {user?.role === 'admin' && (
-            <TabsContent value='debug' className='space-y-6'>
-              <DebugSettings />
-            </TabsContent>
-          )}
+          <TabsContent value='debug' className='space-y-6'>
+            <FirebaseMonitor />
+            <DebugSettings />
+          </TabsContent>
         </Tabs>
       </div>
     </AppLayout>
