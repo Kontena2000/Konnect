@@ -258,23 +258,22 @@ export default function LayoutEditorPage() {
   
   if (loading) {
     return (
-      <div className='flex items-center justify-center h-screen w-full'>
-        <div className='space-y-4 text-center'>
-          <Skeleton className='h-8 w-64 mx-auto' />
-          <Skeleton className='h-[calc(100vh-120px)] w-[90vw] max-w-5xl' />
-        </div>
+      <div className='container mx-auto p-4 space-y-4'>
+        <Skeleton className='h-8 w-64' />
+        <Skeleton className='h-[600px] w-full' />
       </div>
     );
   }
   
   if (error) {
     return (
-      <div className='flex items-center justify-center h-screen w-full'>
-        <div className='bg-destructive/10 p-6 rounded-md max-w-md'>
-          <h2 className='text-lg font-medium text-destructive mb-2'>Error</h2>
-          <p className='mb-4'>{error}</p>
+      <div className='container mx-auto p-4'>
+        <div className='bg-destructive/10 p-4 rounded-md'>
+          <h2 className='text-lg font-medium text-destructive'>Error</h2>
+          <p>{error}</p>
           <Button 
             variant='outline' 
+            className='mt-4'
             onClick={() => router.push('/dashboard/projects')}
           >
             Back to Projects
@@ -285,65 +284,68 @@ export default function LayoutEditorPage() {
   }
   
   return (
-    <AppLayout fullWidth noPadding>
-      <div className='flex flex-col h-screen w-full overflow-hidden'>
-        <header className='sticky top-0 z-10 bg-background/95 backdrop-blur px-6 py-3 border-b'>
-          <div className='flex items-center justify-between'>
-            <div className='truncate max-w-md'>
-              <h1 className='text-xl font-bold truncate'>
-                {project?.name} - {layout ? `Editing: ${layout.name}` : 'New Layout'}
-              </h1>
-              <p className='text-sm text-muted-foreground truncate'>
-                {project?.description}
-              </p>
-            </div>
-            <div className='flex gap-2 flex-shrink-0'>
-              <SaveLayoutDialog
-                layoutData={{
-                  id: layout?.id,
-                  projectId: projectId as string,
-                  name: layout?.name,
-                  description: layout?.description,
-                  modules: modules,
-                  connections: connections
-                }}
-                onSaveComplete={(layoutId) => {
-                  router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
-                }}
-                trigger={
-                  <Button>
-                    <Save className='mr-2 h-4 w-4' />
-                    Save Layout
-                  </Button>
-                }
-              />
-            </div>
+    <AppLayout>
+      <ErrorBoundary>
+        <div className='flex min-h-screen w-full'>
+          <div className='flex-1 relative'>
+            <SceneContainer
+              modules={memoizedModules}
+              selectedModuleId={selectedModuleId}
+              transformMode={transformMode}
+              onModuleSelect={handleModuleSelect}
+              onModuleUpdate={handleModuleUpdate}
+              onModuleDelete={handleModuleDelete}
+              connections={memoizedConnections}
+              controlsRef={controlsRef}
+              editorPreferences={editorPreferences}
+            />
+            <Toolbox
+              onModuleDragStart={handleModuleDragStart}
+              onSave={handleSave}
+              onUndo={handleUndo}
+              onRedo={handleRedo}
+              controlsRef={controlsRef}
+            />
           </div>
-        </header>
+        </div>
+      </ErrorBoundary>
+      <div className='flex flex-col h-screen'>
+        <div className='flex items-center justify-between p-4 border-b'>
+          <div>
+            <h1 className='text-xl font-bold'>
+              {project?.name} - {layout ? `Editing: ${layout.name}` : 'New Layout'}
+            </h1>
+            <p className='text-sm text-muted-foreground'>
+              {project?.description}
+            </p>
+          </div>
+          <div className='flex gap-2'>
+            <SaveLayoutDialog
+              layoutData={{
+                id: layout?.id,
+                projectId: projectId as string,
+                name: layout?.name,
+                description: layout?.description,
+                modules: modules,
+                connections: connections
+              }}
+              onSaveComplete={(layoutId) => {
+                // Redirect to the saved layout
+                router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
+              }}
+              trigger={
+                <Button>
+                  <Save className='mr-2 h-4 w-4' />
+                  Save Layout
+                </Button>
+              }
+            />
+          </div>
+        </div>
         
-        <div className='flex-1 relative'>
-          <div className='absolute inset-0'>
-            <ErrorBoundary>
-              <SceneContainer
-                modules={memoizedModules}
-                selectedModuleId={selectedModuleId}
-                transformMode={transformMode}
-                onModuleSelect={handleModuleSelect}
-                onModuleUpdate={handleModuleUpdate}
-                onModuleDelete={handleModuleDelete}
-                connections={memoizedConnections}
-                controlsRef={controlsRef}
-                editorPreferences={editorPreferences}
-              />
-              <Toolbox
-                onModuleDragStart={handleModuleDragStart}
-                onSave={handleSave}
-                onUndo={handleUndo}
-                onRedo={handleRedo}
-                controlsRef={controlsRef}
-              />
-            </ErrorBoundary>
-          </div>
+        {/* Layout Editor Component */}
+        <div className='flex-1 overflow-hidden'>
+          {/* Your existing editor component */}
         </div>
       </div>
     </AppLayout>

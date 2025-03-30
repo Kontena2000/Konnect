@@ -8,11 +8,9 @@ import { initializeFirebaseSafely } from '@/lib/firebase';
 
 interface AppLayoutProps {
   children: ReactNode;
-  fullWidth?: boolean;
-  noPadding?: boolean;
 }
 
-export function AppLayout({ children, fullWidth = false, noPadding = false }: AppLayoutProps) {
+export function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
   const isMobile = useIsMobile();
 
@@ -31,13 +29,13 @@ export function AppLayout({ children, fullWidth = false, noPadding = false }: Ap
   }, [router]);
 
   return (
-    <div className='min-h-screen bg-background'>
-      <div className={`
-        ${fullWidth ? 'w-full max-w-none' : 'container mx-auto'} 
-        ${noPadding ? 'p-0' : 'p-4'}
-      `}>
-        {children}
-      </div>
+    <div className='flex min-h-screen w-full overflow-hidden bg-background'>
+      <Sidebar />
+      <main className='flex-1 relative overflow-y-auto w-full pl-16 md:pl-[17rem] py-6'>
+        <div className='container mx-auto px-4 md:px-6 lg:px-8 max-w-[2000px]'>
+          {children}
+        </div>
+      </main>
     </div>
   );
 }
