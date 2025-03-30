@@ -4,7 +4,7 @@ import { cn } from "@/lib/utils";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { useRouter } from "next/router";
 import authService from "@/services/auth";
-import { initializeFirebaseSafely } from "@/services/firebase-init";
+import { initializeFirebaseSafely } from '@/lib/firebase';
 
 interface AppLayoutProps {
   children: ReactNode;

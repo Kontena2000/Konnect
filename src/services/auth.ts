@@ -1,4 +1,4 @@
-import { auth } from "@/lib/firebase";
+import { auth, getAuthSafely } from "@/lib/firebase";
 import { 
   createUserWithEmailAndPassword, 
   signInWithEmailAndPassword, 
@@ -8,7 +8,6 @@ import {
 } from "firebase/auth";
 import userService from "./user";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
-import { getAuthSafely } from "@/services/firebase-init";
 
 export type UserRole = "admin" | "editor" | "viewer";
 

@@ -1,5 +1,5 @@
 import { checkFirebaseInitialization, withFirebaseErrorHandling } from "@/utils/firebaseDebug";
-import { db } from "@/lib/firebase";
+import { db, getFirestoreSafely } from "@/lib/firebase";
 import { collection, getDocs, query, limit, where, orderBy } from "firebase/firestore";
 import { initializeFirebaseSafely } from "@/services/firebase-init";
 
