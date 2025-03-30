@@ -4,6 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import editorPreferencesService, { EditorPreferences } from "@/services/editor-preferences";
 import { GeneralSettings } from "@/components/settings/GeneralSettings";
+import { ThemeEditor } from "@/components/settings/ThemeEditor";
 import { UserManagement } from "@/components/settings/UserManagement";
 import { ModuleManager } from "@/components/settings/ModuleManager";
 import { EditorSettings } from "@/components/settings/EditorSettings";
@@ -54,6 +55,7 @@ export default function SettingsPage() {
         <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
           <TabsList className='w-full'>
             <TabsTrigger value='general'>General</TabsTrigger>
+            <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
             <TabsTrigger value='layout-editor'>Layout Editor</TabsTrigger>
@@ -63,6 +65,10 @@ export default function SettingsPage() {
 
           <TabsContent value='general' className='space-y-6'>
             <GeneralSettings userId={user?.uid || ''} />
+          </TabsContent>
+
+          <TabsContent value='theme' className='space-y-6'>
+            <ThemeEditor />
           </TabsContent>
 
           <TabsContent value='users' className='space-y-6'>
