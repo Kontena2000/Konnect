@@ -7,13 +7,13 @@ let app: FirebaseApp | null = null;
 let db: Firestore | null = null;
 let auth: Auth | null = null;
 
-// Immediately invoke initialization function
-(function initializeFirebase() {
+// Define the initialization function so it can be called again if needed
+function initializeFirebase(): boolean {
   try {
     // Skip initialization on server side
     if (typeof window === 'undefined') {
       console.log('Skipping Firebase initialization on server side');
-      return;
+      return false;
     }
 
     // Check if Firebase is already initialized
@@ -23,10 +23,11 @@ let auth: Auth | null = null;
         db = getFirestore(app);
         auth = getAuth(app);
         console.log('Firebase services retrieved from existing app');
+        return true;
       } catch (error) {
         console.error('Error getting Firebase services from existing app:', error);
+        return false;
       }
-      return;
     }
 
     // Initialize Firebase with config
@@ -53,7 +54,7 @@ let auth: Auth | null = null;
     // Check if required config values are present
     if (!firebaseConfig.apiKey || !firebaseConfig.projectId || !firebaseConfig.authDomain) {
       console.error('Missing required Firebase configuration');
-      return;
+      return false;
     }
 
     // Initialize Firebase
@@ -81,10 +82,15 @@ let auth: Auth | null = null;
     }
 
     console.log('Firebase initialized successfully');
+    return true;
   } catch (error) {
     console.error('Error initializing Firebase:', error);
+    return false;
   }
-})();
+}
+
+// Call the initialization function immediately
+initializeFirebase();
 
 /**
  * Safely access Firestore by ensuring Firebase is initialized
@@ -99,6 +105,9 @@ export function getFirestoreSafely(): Firestore | null {
       } catch (error) {
         console.error('Error getting Firestore:', error);
       }
+    } else {
+      // Try to initialize Firebase again
+      initializeFirebase();
     }
   }
   return db;
@@ -117,6 +126,9 @@ export function getAuthSafely(): Auth | null {
       } catch (error) {
         console.error('Error getting Auth:', error);
       }
+    } else {
+      // Try to initialize Firebase again
+      initializeFirebase();
     }
   }
   return auth;
@@ -144,8 +156,37 @@ export function initializeFirebaseSafely(): boolean {
   }
   
   // Otherwise, re-run the initialization
-  initializeFirebase();
-  return app !== null && db !== null && auth !== null;
+  return initializeFirebase();
+}
+
+/**
+ * Function for components that need Firebase instances
+ * Returns the initialized Firebase instances
+ */
+export function initializeFirebaseIfNeeded(): { 
+  app: FirebaseApp | null; 
+  db: Firestore | null; 
+  auth: Auth | null;
+  error?: string;
+} {
+  try {
+    if (!isFirebaseInitialized()) {
+      initializeFirebase();
+    }
+    
+    return { 
+      app, 
+      db, 
+      auth 
+    };
+  } catch (error) {
+    return { 
+      app: null, 
+      db: null, 
+      auth: null, 
+      error: error instanceof Error ? error.message : 'Unknown error initializing Firebase'
+    };
+  }
 }
 
 // Export the Firebase instances
