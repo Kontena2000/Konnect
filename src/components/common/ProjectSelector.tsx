@@ -42,7 +42,7 @@ export function ProjectSelector({
         
         // Query projects owned by the user
         const userProjectsQuery = query(
-          collection(db, "projects"),
+          collection(db || getFirestore(), "projects"),
           where("userId", "==", user.uid),
           orderBy("createdAt", "desc")
         );
