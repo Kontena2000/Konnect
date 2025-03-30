@@ -1,4 +1,5 @@
-import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+
+import { getFirestore, serverTimestamp } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor, ClimateFactor } from './climateDataService';
 import { calculateEnergyMetrics, calculateWithLocationFactors as calculateEnergyWithLocationFactors } from './energyDataService';
@@ -40,8 +41,6 @@ export async function getPricingAndParams() {
   if (cachedPricing && cachedParams && now - lastFetchTime < 5 * 60 * 1000) {
     return { pricing: cachedPricing, params: cachedParams };
   }
-  
-  const db = getFirestore();
   
   try {
     // Fetch pricing
@@ -892,8 +891,6 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
 
 // Enhanced function to save calculation results with more metadata
 export async function saveCalculationResult(userId: string, config: CalculationConfig, results: any, name: string, options: CalculationOptions = {}, projectId?: string) {
-  const db = getFirestore();
-  
   try {
     // Extract options with defaults
     const redundancyMode = options.redundancyMode || 'N+1';
@@ -945,8 +942,6 @@ export async function saveCalculationResult(userId: string, config: CalculationC
 
 // New function to get calculations for a specific project
 export async function getProjectCalculations(projectId: string): Promise<any[]> {
-  const db = getFirestore();
-  
   try {
     const querySnapshot = await getDocs(
       query(

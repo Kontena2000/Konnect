@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -81,11 +82,11 @@ export function SaveLayoutDialog({
       let layoutId;
       if (layoutData.id) {
         // Update existing layout
-        await layoutService.updateLayout(layoutData.id, saveData, user.uid);
+        await layoutService.updateLayout(layoutData.id, saveData);
         layoutId = layoutData.id;
       } else {
         // Create new layout
-        layoutId = await layoutService.createLayout(saveData, user.uid);
+        layoutId = await layoutService.createLayout(saveData);
       }
       
       toast({
