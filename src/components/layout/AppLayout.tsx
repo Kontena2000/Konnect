@@ -16,7 +16,11 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   useEffect(() => {
     // Try to initialize Firebase first
-    initializeFirebaseSafely();
+    try {
+      initializeFirebaseSafely();
+    } catch (error) {
+      console.error("Error initializing Firebase in AppLayout:", error);
+    }
     
     const user = authService.getCurrentUser();
     if (!user) {
