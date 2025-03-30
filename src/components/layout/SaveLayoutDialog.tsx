@@ -81,11 +81,14 @@ export function SaveLayoutDialog({
       // Save or update layout
       let layoutId;
       if (layoutData.id) {
-        // Update existing layout
-        await layoutService.updateLayout(layoutData.id, saveData);
+        // Update existing layout - needs user object for auth check
+        await layoutService.updateLayout(layoutData.id, saveData, {
+          uid: user.uid,
+          email: user.email || undefined
+        });
         layoutId = layoutData.id;
       } else {
-        // Create new layout
+        // Create new layout - doesn't need user object
         layoutId = await layoutService.createLayout(saveData);
       }
       
