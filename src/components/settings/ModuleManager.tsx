@@ -14,7 +14,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Switch } from "@/components/ui/switch";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { auth } from '@/lib/firebase';
+import { auth, getAuthSafely } from '@/lib/firebase';
 import { CategoryDialog } from '@/components/settings/CategoryDialog';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Box, Badge } from 'lucide-react';
@@ -22,17 +22,19 @@ import { Badge as UIBadge } from '@/components/ui/badge';
 import { EditModuleDialog } from '@/components/settings/EditModuleDialog';
 import { ModuleHeader } from './ModuleHeader';
 import { ModuleList } from './ModuleList';
+import { ModuleSearch } from './ModuleSearch';
 
 interface ModuleManagerProps {
-  userId?: string;
+  userId: string;
   userRole?: string;
 }
 
-export function ModuleManager({ userId = '', userRole }: ModuleManagerProps) {
+export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
   const [modules, setModules] = useState<Module[]>([]);
   const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [showCreateDialog, setShowCreateDialog] = useState(false);
+  const [showCategoryDialog, setShowCategoryDialog] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
   const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
@@ -44,18 +46,20 @@ export function ModuleManager({ userId = '', userRole }: ModuleManagerProps) {
 
   const loadModules = useCallback(async () => {
     try {
-      if (!auth.currentUser) {
+      // Get auth instance safely
+      const safeAuth = getAuthSafely();
+      if (!safeAuth?.currentUser) {
         toast({
           variant: 'destructive',
           title: 'Authentication Required',
-          description: 'You must be logged in to view modules'
+          description: 'Please log in to manage modules.'
         });
-        setLoading(false);
         return;
       }
 
-      const modules = await moduleService.getAllModules();
-      setModules(modules);
+      setLoading(true);
+      const loadedModules = await moduleService.getModules();
+      setModules(loadedModules);
     } catch (error) {
       console.error('Error loading modules:', error);
       toast({
@@ -172,6 +176,7 @@ export function ModuleManager({ userId = '', userRole }: ModuleManagerProps) {
     try {
       await moduleService.createModule(moduleData);
       await loadModules();
+      setShowCreateDialog(false);
       toast({
         title: 'Success',
         description: 'Module created successfully'
@@ -208,6 +213,11 @@ export function ModuleManager({ userId = '', userRole }: ModuleManagerProps) {
     }
   };
 
+  const filteredModules = modules.filter(module =>
+    module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+    module.description?.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
   if (loading) {
     return (
       <div className="flex items-center justify-center h-[600px]">
@@ -218,33 +228,36 @@ export function ModuleManager({ userId = '', userRole }: ModuleManagerProps) {
 
   return (
     <div className='space-y-6'>
-      <ModuleHeader
-        searchTerm={searchTerm}
-        onSearchChange={setSearchTerm}
-        categoryFilter={categoryFilter}
-        onCategoryChange={setCategoryFilter}
-        categories={categories}
-        onCreateCategory={handleCreateCategory}
-        isAddingCategory={isAddingCategory}
-        onDeleteCategory={handleDeleteCategory}
-        isDeletingCategory={isDeletingCategory}
-        categoryToDelete={categoryToDelete}
-        setCategoryToDelete={setCategoryToDelete}
-        onCreateModule={handleCreateModule}
+      <div className='flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between'>
+        <ModuleSearch value={searchQuery} onChange={setSearchQuery} />
+        <div className='flex gap-2'>
+          <Button onClick={() => setShowCategoryDialog(true)}>
+            Add Category
+          </Button>
+          <Button onClick={() => setShowCreateDialog(true)}>
+            <Plus className='h-4 w-4 mr-2' />
+            Add Module
+          </Button>
+        </div>
+      </div>
+
+      <ModuleList 
+        modules={filteredModules} 
+        loading={loading} 
+        onModuleUpdated={loadModules}
+        userRole={userRole}
       />
-      
-      <ModuleList
-        modules={modules}
-        categories={categories}
-        onUpdateModule={handleUpdateModule}
-        onDeleteModule={handleDeleteModule}
-        onDuplicateModule={handleDuplicate}
-        isSaving={isSaving}
-        isDeleting={isDeleting}
-        moduleToDelete={moduleToDelete}
-        setModuleToDelete={setModuleToDelete}
-        searchTerm={searchTerm}
-        categoryFilter={categoryFilter}
+
+      <CreateModuleDialog
+        open={showCreateDialog}
+        onOpenChange={setShowCreateDialog}
+        onSubmit={handleCreateModule}
+      />
+
+      <CategoryDialog
+        open={showCategoryDialog}
+        onOpenChange={setShowCategoryDialog}
+        onSubmit={handleCreateCategory}
       />
     </div>
   );
