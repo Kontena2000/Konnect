@@ -11,6 +11,7 @@ import { SavedCalculations } from "@/components/SavedCalculations";
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugger';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -209,6 +210,7 @@ export default function MatrixCalculatorPage() {
             </>
           )}
         </div>
+        <FirebaseDebugger />
       </div>
     </AppLayout>
   );
