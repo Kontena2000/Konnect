@@ -36,11 +36,6 @@ export function Sidebar({ className }: { className?: string }) {
       href: '/dashboard/projects'
     },
     {
-      title: 'Editor',
-      icon: <Edit className='h-5 w-5' />,
-      href: '/dashboard/editor'
-    },
-    {
       title: 'Matrix Calculator',
       icon: <Calculator className='h-5 w-5' />,
       href: '/dashboard/matrix-calculator',
