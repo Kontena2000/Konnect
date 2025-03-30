@@ -55,24 +55,24 @@ export default function SettingsPage() {
         <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
           <TabsList className='w-full'>
             <TabsTrigger value='general'>General</TabsTrigger>
-            <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='users'>Users</TabsTrigger>
+            <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
             <TabsTrigger value='layout-editor'>Layout Editor</TabsTrigger>
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
-            <TabsTrigger value='debug'>Debug</TabsTrigger>
+            <TabsTrigger value='system'>System</TabsTrigger>
           </TabsList>
 
           <TabsContent value='general' className='space-y-6'>
             <GeneralSettings userId={user?.uid || ''} />
           </TabsContent>
 
-          <TabsContent value='theme' className='space-y-6'>
-            <ThemeEditor />
-          </TabsContent>
-
           <TabsContent value='users' className='space-y-6'>
             <UserManagement />
+          </TabsContent>
+
+          <TabsContent value='theme' className='space-y-6'>
+            <ThemeEditor />
           </TabsContent>
 
           <TabsContent value='modules' className='space-y-6'>
@@ -89,7 +89,7 @@ export default function SettingsPage() {
             <PricingEditor readOnly={user?.role !== 'admin'} />
           </TabsContent>
 
-          <TabsContent value='debug' className='space-y-6'>
+          <TabsContent value='system' className='space-y-6'>
             <FirebaseMonitor />
             <DebugSettings />
           </TabsContent>
