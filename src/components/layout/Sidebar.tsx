@@ -28,7 +28,7 @@ export function Sidebar({ className }: { className?: string }) {
 
   const handleSignOut = async () => {
     await authService.signOut();
-    router.push("/auth/login");
+    router.push('/auth/login');
   };
 
   const navigationItems = [
@@ -47,11 +47,6 @@ export function Sidebar({ className }: { className?: string }) {
       icon: <Calculator className='h-5 w-5' />,
       href: '/dashboard/matrix-calculator',
       beta: true
-    },
-    {
-      title: 'Matrix Debug',
-      icon: <Bug className='h-5 w-5' />,
-      href: '/dashboard/matrix-debug'
     },
     {
       title: 'Settings',
