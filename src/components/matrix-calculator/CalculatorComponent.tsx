@@ -19,10 +19,9 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { getFirestoreSafely } from '@/services/firebase-init';
+import { getFirestoreSafely, initializeFirebaseSafely } from '@/lib/firebase';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
-import { initializeFirebaseIfNeeded } from '@/services/firebase-init';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -88,7 +87,7 @@ export function CalculatorComponent({
   useEffect(() => {
     // Initialize Firebase when component mounts
     console.log('Initializing Firebase in Matrix Calculator...');
-    const { app, db, error } = initializeFirebaseIfNeeded();
+    const { app, db, error } = initializeFirebaseSafely();
     
     if (error) {
       console.error('Firebase initialization failed in Matrix Calculator:', error);
