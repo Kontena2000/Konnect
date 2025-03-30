@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { 
@@ -70,6 +69,8 @@ export function SaveCalculationDialog({
     
     try {
       setSaving(true);
+      console.log('Saving calculation with config:', config);
+      console.log('Results to save:', results);
       
       // Create calculation document
       const calculationData = {

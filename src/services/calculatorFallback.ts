@@ -513,4 +513,86 @@ const calculatorFallback = {
   }
 };
 
+// Add a simple implementation for the getResults function if it doesn't exist
+export const getResults = (config: any) => {
+  const { kwPerRack, coolingType, totalRacks } = config;
+  
+  // Create a basic fallback result with the minimum required structure
+  return {
+    rack: {
+      powerDensity: kwPerRack || 75,
+      coolingType: coolingType || 'dlc',
+      totalRacks: totalRacks || 28
+    },
+    electrical: {
+      currentPerRow: kwPerRack * totalRacks * 2.5,
+      busbarSize: 'busbar800A',
+      currentPerRack: kwPerRack * 2.5,
+      tapOffBox: 'standard63A',
+      rpdu: 'standard16A'
+    },
+    cooling: {
+      type: coolingType || 'dlc',
+      totalCapacity: kwPerRack * totalRacks * 1.1,
+      dlcCoolingCapacity: coolingType === 'dlc' ? kwPerRack * totalRacks * 0.8 : 0,
+      residualCoolingCapacity: coolingType === 'dlc' ? kwPerRack * totalRacks * 0.3 : 0,
+      dlcFlowRate: coolingType === 'dlc' ? kwPerRack * totalRacks * 0.25 : 0,
+      pipingSize: 'dn110',
+      pue: 1.2
+    },
+    power: {
+      ups: {
+        totalITLoad: kwPerRack * totalRacks,
+        redundancyFactor: 1.2,
+        requiredCapacity: kwPerRack * totalRacks * 1.2,
+        moduleSize: 250,
+        totalModulesNeeded: Math.ceil((kwPerRack * totalRacks * 1.2) / 250),
+        redundantModules: Math.ceil((kwPerRack * totalRacks * 1.2) / 250),
+        framesNeeded: Math.ceil(Math.ceil((kwPerRack * totalRacks * 1.2) / 250) / 6),
+        frameSize: 'frame6Module'
+      },
+      battery: {
+        runtime: 10,
+        energyNeeded: Math.round((kwPerRack * totalRacks * 10) / 60),
+        cabinetsNeeded: Math.ceil(Math.round((kwPerRack * totalRacks * 10) / 60) / 40),
+        totalWeight: Math.ceil(Math.round((kwPerRack * totalRacks * 10) / 60) / 40) * 1200
+      },
+      generator: {
+        included: false,
+        capacity: 0,
+        model: 'none',
+        fuel: {
+          tankSize: 0,
+          consumption: 0,
+          runtime: 0
+        }
+      }
+    },
+    cost: {
+      electrical: { 
+        busbar: 50000, 
+        tapOffBox: totalRacks * 2000, 
+        rpdu: totalRacks * 1500, 
+        total: 50000 + (totalRacks * 3500) 
+      },
+      cooling: coolingType === 'dlc' ? 150000 : 100000,
+      power: { 
+        ups: 200000, 
+        battery: 100000, 
+        generator: 0, 
+        total: 300000 
+      },
+      infrastructure: 100000,
+      sustainability: 0,
+      equipmentTotal: 550000 + (totalRacks * 3500),
+      installation: 100000,
+      engineering: 50000,
+      contingency: 70000,
+      totalProjectCost: 770000 + (totalRacks * 3500),
+      costPerRack: Math.round((770000 + (totalRacks * 3500)) / totalRacks),
+      costPerKw: Math.round((770000 + (totalRacks * 3500)) / (kwPerRack * totalRacks))
+    }
+  };
+};
+
 export default calculatorFallback;

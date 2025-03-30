@@ -49,7 +49,7 @@ export function CalculatorComponent({ userId, userRole, onSave, initialResults }
   const [coolingType, setCoolingType] = useState('dlc');
   const [totalRacks, setTotalRacks] = useState(28); // Default: 2 rows x 14 racks
   const [location, setLocation] = useState<any>(null);
-  const [results, setResults] = useState<any>(null);
+  const [results, setResults] = useState<any>(initialResults || null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [useLocationData, setUseLocationData] = useState(false);
