@@ -19,7 +19,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
-import { getFirestoreSafely } from '@/services/firebase-initializer';
+import { getFirestoreSafely } from '@/services/firebase-init';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
 
