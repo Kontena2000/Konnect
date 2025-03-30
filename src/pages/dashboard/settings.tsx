@@ -12,6 +12,7 @@ import { CalculationSettings } from "@/components/settings/CalculationSettings";
 import { PricingEditor } from "@/components/settings/PricingEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import { UserManagement } from "@/components/settings/UserManagement";
+import { DebugSettings } from "@/components/settings/DebugSettings";
 import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
@@ -59,6 +60,7 @@ export default function SettingsPage() {
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
             {user?.role === 'admin' && <TabsTrigger value='firebase'>Firebase</TabsTrigger>}
             {user?.role === 'admin' && <TabsTrigger value='user-management'>User Management</TabsTrigger>}
+            {user?.role === 'admin' && <TabsTrigger value='debug'>Debug</TabsTrigger>}
           </TabsList>
 
           <TabsContent value='general' className='space-y-6'>
@@ -88,6 +90,12 @@ export default function SettingsPage() {
           {user?.role === 'admin' && (
             <TabsContent value='user-management' className='space-y-6'>
               <UserManagement />
+            </TabsContent>
+          )}
+
+          {user?.role === 'admin' && (
+            <TabsContent value='debug' className='space-y-6'>
+              <DebugSettings />
             </TabsContent>
           )}
         </Tabs>
