@@ -71,9 +71,10 @@ export function ModuleList({
 
   const handleDuplicateModule = async (module: Module) => {
     try {
+      // Create a copy of the module with a temporary ID that will be replaced by the backend
       const duplicatedModule = {
         ...module,
-        id: undefined, // Let the backend generate a new ID
+        id: `${module.id}-copy-${Date.now()}`, // Generate a temporary ID
         name: `${module.name} (Copy)`,
       };
       await moduleService.createModule(duplicatedModule);
@@ -113,38 +114,38 @@ export function ModuleList({
 
   return (
     <>
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      <div className='grid gap-4 md:grid-cols-2 lg:grid-cols-3'>
         {modules.map((module) => (
-          <Card key={module.id} className="overflow-hidden">
-            <CardContent className="p-4">
-              <div className="flex flex-col gap-2">
-                <h3 className="text-lg font-medium">{module.name}</h3>
-                <p className="text-sm text-muted-foreground line-clamp-2">
+          <Card key={module.id} className='overflow-hidden'>
+            <CardContent className='p-4'>
+              <div className='flex flex-col gap-2'>
+                <h3 className='text-lg font-medium'>{module.name}</h3>
+                <p className='text-sm text-muted-foreground line-clamp-2'>
                   {module.description || 'No description'}
                 </p>
-                <div className="flex justify-between items-center mt-2">
-                  {module.categoryId && (
-                    <Badge variant="secondary" className="text-xs">
-                      {module.categoryId}
+                <div className='flex justify-between items-center mt-2'>
+                  {module.category && (
+                    <Badge variant='secondary' className='text-xs'>
+                      {module.category}
                     </Badge>
                   )}
-                  <div className="flex gap-1">
+                  <div className='flex gap-1'>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant='ghost'
+                      size='sm'
                       onClick={() => {
                         setModuleToEdit(module);
                         setShowEditDialog(true);
                       }}
                     >
-                      <Edit className="h-4 w-4" />
+                      <Edit className='h-4 w-4' />
                     </Button>
                     <Button
-                      variant="ghost"
-                      size="sm"
+                      variant='ghost'
+                      size='sm'
                       onClick={() => handleDuplicateModule(module)}
                     >
-                      <Copy className="h-4 w-4" />
+                      <Copy className='h-4 w-4' />
                     </Button>
                     <AlertDialog
                       open={moduleToDelete === module.id}
@@ -152,18 +153,18 @@ export function ModuleList({
                     >
                       <AlertDialogTrigger asChild>
                         <Button
-                          variant="ghost"
-                          size="sm"
+                          variant='ghost'
+                          size='sm'
                           onClick={() => setModuleToDelete(module.id)}
                         >
-                          <Trash2 className="h-4 w-4" />
+                          <Trash2 className='h-4 w-4' />
                         </Button>
                       </AlertDialogTrigger>
                       <AlertDialogContent>
                         <AlertDialogHeader>
                           <AlertDialogTitle>Delete Module</AlertDialogTitle>
                           <AlertDialogDescription>
-                            Are you sure you want to delete "{module.name}"? This action cannot be undone.
+                            Are you sure you want to delete '{module.name}'? This action cannot be undone.
                           </AlertDialogDescription>
                         </AlertDialogHeader>
                         <AlertDialogFooter>
@@ -188,8 +189,8 @@ export function ModuleList({
       {moduleToEdit && (
         <EditModuleDialog
           module={moduleToEdit}
-          open={showEditDialog}
-          onOpenChange={setShowEditDialog}
+          isOpen={showEditDialog}
+          onClose={() => setShowEditDialog(false)}
           onSubmit={handleUpdateModule}
         />
       )}
