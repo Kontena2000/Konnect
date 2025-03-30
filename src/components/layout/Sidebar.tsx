@@ -12,15 +12,18 @@ import {
   ChevronLeft,
   ChevronRight,
   Edit,
-  Calculator
-} from "lucide-react";
-import authService from "@/services/auth";
-import { useIsMobile } from "@/hooks/use-mobile";
+  Calculator,
+  Users
+} from 'lucide-react';
+import authService from '@/services/auth';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { useAuth } from '@/contexts/AuthContext';
 
 export function Sidebar() {
   const router = useRouter();
   const isMobile = useIsMobile();
   const [collapsed, setCollapsed] = useState(isMobile);
+  const { role } = useAuth();
 
   const handleSignOut = async () => {
     await authService.signOut();
@@ -48,7 +51,14 @@ export function Sidebar() {
       title: 'Settings',
       icon: <Settings className='h-5 w-5' />,
       href: '/dashboard/settings'
-    }
+    },
+    ...(role === 'admin' ? [
+      {
+        title: 'User Management',
+        icon: <Users className='h-5 w-5' />,
+        href: '/dashboard/users'
+      }
+    ] : [])
   ];
 
   return (

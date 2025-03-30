@@ -137,6 +137,15 @@ export function AuthForm({ mode }: AuthFormProps) {
                 </FormItem>
               )}
             />
+            
+            {mode === "login" && (
+              <div className="text-right">
+                <Link href="/auth/forgot-password" className="text-sm text-primary hover:underline">
+                  Forgot password?
+                </Link>
+              </div>
+            )}
+            
             <Button type="submit" className="w-full" disabled={loading}>
               {loading ? (
                 <>
