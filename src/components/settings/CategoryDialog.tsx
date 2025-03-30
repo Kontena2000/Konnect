@@ -8,19 +8,21 @@ import { useAuth } from '@/contexts/AuthContext';
 import { getIdTokenResult } from 'firebase/auth';
 
 interface CategoryDialogProps {
-  onCreateCategory: (data: { id: string; name: string }) => Promise<void>;
-  isLoading: boolean;
+  onSubmit: (data: { id: string; name: string }) => Promise<void>;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
-export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogProps) {
-  const [open, setOpen] = useState(false);
+export function CategoryDialog({ onSubmit, isOpen, onOpenChange }: CategoryDialogProps) {
   const [name, setName] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
 
   const handleSubmit = async () => {
     try {
       setError(null);
+      setIsLoading(true);
       
       if (!user) {
         console.error('No user logged in');
@@ -28,7 +30,6 @@ export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogPr
         return;
       }
 
-      // Get latest token claims
       const tokenResult = await getIdTokenResult(user, true);
       console.log('User token claims:', tokenResult.claims);
       console.log('Creating category as user:', user.email, 'Role:', tokenResult.claims.role);
@@ -46,25 +47,21 @@ export function CategoryDialog({ onCreateCategory, isLoading }: CategoryDialogPr
 
       const id = trimmedName.toLowerCase().replace(/[^a-z0-9]+/g, '-');
       console.log('Submitting category:', { id, name: trimmedName });
-      await onCreateCategory({ id, name: trimmedName });
+      await onSubmit({ id, name: trimmedName });
       console.log('Category created successfully');
-      setOpen(false);
+      onOpenChange(false);
       setName('');
       setError(null);
     } catch (error) {
       console.error('Error creating category:', error);
       setError(error instanceof Error ? error.message : 'Failed to create category');
+    } finally {
+      setIsLoading(false);
     }
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant='ghost' className='w-full justify-start'>
-          <FolderPlus className='h-4 w-4 mr-2' />
-          Add Category
-        </Button>
-      </DialogTrigger>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Category</DialogTitle>

@@ -71,10 +71,9 @@ export function ModuleList({
 
   const handleDuplicateModule = async (module: Module) => {
     try {
-      // Create a copy of the module with a temporary ID that will be replaced by the backend
-      const duplicatedModule = {
+      const duplicatedModule: Module = {
         ...module,
-        id: `${module.id}-copy-${Date.now()}`, // Generate a temporary ID
+        id: `${module.id}-copy-${Date.now()}`,
         name: `${module.name} (Copy)`,
       };
       await moduleService.createModule(duplicatedModule);

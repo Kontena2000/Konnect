@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -13,7 +12,9 @@ import { nanoid } from "nanoid";
 import moduleService from "@/services/module";
 
 interface CreateModuleDialogProps {
-  onModuleCreate: (module: Module) => Promise<void>;
+  onSubmit: (module: Module) => Promise<void>;
+  isOpen: boolean;
+  onOpenChange: (open: boolean) => void;
 }
 
 interface FormData {
@@ -33,8 +34,7 @@ interface FormData {
   visibleInEditor: boolean;
 }
 
-export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) {
-  const [open, setOpen] = useState(false);
+export function CreateModuleDialog({ onSubmit, isOpen, onOpenChange }: CreateModuleDialogProps) {
   const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -65,10 +65,10 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
         });
       }
     };
-    if (open) {
+    if (isOpen) {
       loadCategories();
     }
-  }, [open, toast]);
+  }, [isOpen, toast]);
 
   const resetForm = () => {
     setFormData({
@@ -119,8 +119,8 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
         visibleInEditor: formData.visibleInEditor
       };
 
-      await onModuleCreate(newModule);
-      setOpen(false);
+      await onSubmit(newModule);
+      onOpenChange(false);
       resetForm();
       toast({
         title: "Success",
@@ -176,7 +176,7 @@ export function CreateModuleDialog({ onModuleCreate }: CreateModuleDialogProps) 
   };
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
+    <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogTrigger asChild>
         <Button>
           <Plus className="h-4 w-4 mr-2" />
