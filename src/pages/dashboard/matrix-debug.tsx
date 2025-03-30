@@ -13,6 +13,7 @@ import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
 import matrixDebugService, { MatrixDebugInfo } from "@/services/matrixDebugService";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { FirebaseDebugger } from "@/components/matrix-calculator/FirebaseDebugger";
+import { initializeFirebaseSafely } from "@/services/firebase-initializer";
 
 export default function MatrixDebugPage() {
   const { user, loading, role } = useAuth();
