@@ -247,11 +247,6 @@ export default function ProjectsPage() {
                         Open Project
                       </Button>
                     </Link>
-                    <Link href={`/dashboard/projects/${project.id}/editor`} className='block'>
-                      <Button className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
-                        Open Editor
-                      </Button>
-                    </Link>
                   </div>
                 </CardContent>
               </Card>
