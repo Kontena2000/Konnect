@@ -9,6 +9,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ModuleManager } from "@/components/settings/ModuleManager";
 import { EditorPreferences } from "@/services/editor-preferences";
 import editorPreferencesService from "@/services/editor-preferences";
+import { useAuth } from '@/contexts/AuthContext';
 
 interface LayoutEditorSettingsProps {
   preferences: EditorPreferences;
@@ -17,6 +18,12 @@ interface LayoutEditorSettingsProps {
 }
 
 export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEditorSettingsProps) {
+  const { user } = useAuth();
+
+  if (!user) {
+    return null;
+  }
+
   const { toast } = useToast();
   const [localPreferences, setLocalPreferences] = useState<EditorPreferences>(preferences);
   const [saving, setSaving] = useState(false);
@@ -209,7 +216,7 @@ export function LayoutEditorSettings({ preferences, onUpdate, userId }: LayoutEd
         </TabsList>
         
         <TabsContent value='modules'>
-          <ModuleManager />
+          <ModuleManager userId={user.uid} userRole={user.role} />
         </TabsContent>
       </Tabs>
     </div>

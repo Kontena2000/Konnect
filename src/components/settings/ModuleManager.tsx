@@ -36,13 +36,6 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
   const [showCategoryDialog, setShowCategoryDialog] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { toast } = useToast();
-  const [moduleToDelete, setModuleToDelete] = useState<string | null>(null);
-  const [isDeleting, setIsDeleting] = useState(false);
-  const [isSaving, setIsSaving] = useState<string | null>(null);
-  const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
-  const [isAddingCategory, setIsAddingCategory] = useState(false);
-  const [categoryToDelete, setCategoryToDelete] = useState<string | null>(null);
-  const [isDeletingCategory, setIsDeletingCategory] = useState(false);
 
   const loadModules = useCallback(async () => {
     try {
@@ -75,7 +68,6 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
   const loadCategories = useCallback(async () => {
     try {
       const fetchedCategories = await moduleService.getCategories();
-      setCategories(fetchedCategories);
     } catch (error) {
       toast({
         variant: 'destructive',
@@ -89,88 +81,6 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
     loadModules();
     loadCategories();
   }, [loadModules, loadCategories]);
-
-  const handleCreateCategory = async (data: { id: string; name: string }) => {
-    setIsAddingCategory(true);
-    try {
-      await moduleService.createCategory(data);
-      await loadCategories();
-      toast({
-        title: 'Success',
-        description: 'Category created successfully'
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to create category'
-      });
-    } finally {
-      setIsAddingCategory(false);
-    }
-  };
-
-  const handleDeleteCategory = async (categoryId: string) => {
-    setIsDeletingCategory(true);
-    try {
-      await moduleService.deleteCategory(categoryId);
-      await loadCategories();
-      toast({
-        title: 'Success',
-        description: 'Category deleted successfully'
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to delete category'
-      });
-    } finally {
-      setIsDeletingCategory(false);
-      setCategoryToDelete(null);
-    }
-  };
-
-  const handleUpdateModule = async (id: string, data: Partial<Module>) => {
-    setIsSaving(id);
-    try {
-      setModules(prev => prev.map(module => 
-        module.id === id ? { ...module, ...data } : module
-      ));
-      
-      await moduleService.updateModule(id, data);
-      toast({
-        title: 'Success',
-        description: 'Module updated successfully'
-      });
-    } catch (error) {
-      await loadModules();
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof ModuleError ? error.message : 'Failed to update module'
-      });
-    } finally {
-      setIsSaving(null);
-    }
-  };
-
-  const handleDuplicate = async (moduleId: string) => {
-    try {
-      await moduleService.duplicateModule(moduleId);
-      await loadModules();
-      toast({
-        title: 'Success',
-        description: 'Module duplicated successfully'
-      });
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to duplicate module'
-      });
-    }
-  };
 
   const handleCreateModule = async (moduleData: Module) => {
     try {
@@ -191,40 +101,10 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
     }
   };
 
-  const handleDeleteModule = async (id: string) => {
-    setIsDeleting(true);
-    try {
-      setModules(prev => prev.filter(module => module.id !== id));
-      await moduleService.deleteModule(id);
-      toast({
-        title: 'Success',
-        description: 'Module deleted successfully'
-      });
-    } catch (error) {
-      await loadModules();
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof ModuleError ? error.message : 'Failed to delete module'
-      });
-    } finally {
-      setIsDeleting(false);
-      setModuleToDelete(null);
-    }
-  };
-
   const filteredModules = modules.filter(module =>
     module.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     module.description?.toLowerCase().includes(searchQuery.toLowerCase())
   );
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[600px]">
-        <Loader2 className="h-8 w-8 animate-spin" />
-      </div>
-    );
-  }
 
   return (
     <div className='space-y-6'>
@@ -257,7 +137,22 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
       <CategoryDialog
         open={showCategoryDialog}
         onOpenChange={setShowCategoryDialog}
-        onSubmit={handleCreateCategory}
+        onSubmit={async (data) => {
+          try {
+            await moduleService.createCategory(data);
+            await loadCategories();
+            toast({
+              title: 'Success',
+              description: 'Category created successfully'
+            });
+          } catch (error) {
+            toast({
+              variant: 'destructive',
+              title: 'Error',
+              description: 'Failed to create category'
+            });
+          }
+        }}
       />
     </div>
   );
