@@ -1,6 +1,5 @@
-
 import { collection, addDoc, serverTimestamp } from "firebase/firestore";
-import { getFirestoreSafely } from "./firebase-initializer";
+import { getFirestoreSafely } from "./firebase-init";
 import { calculatorDebug } from "./calculatorDebug";
 
 /**
