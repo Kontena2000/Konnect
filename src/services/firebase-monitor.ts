@@ -1,4 +1,5 @@
-import { db, auth, getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
+
+import { getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ensureFirebaseInitialized } from '@/utils/firebaseInitializer';
@@ -109,9 +110,16 @@ class FirebaseMonitor {
   }
 
   async testConnection(): Promise<void> {
-    const firestore = getFirestore();
-    
     try {
+      // Ensure Firebase is initialized before proceeding
+      await ensureFirebaseInitialized();
+      const safeDb = getFirestoreSafely();
+      if (!safeDb) {
+        throw new Error('Failed to get Firestore instance');
+      }
+      
+      const firestore = getFirestore();
+      
       this.logOperation({
         type: 'connection',
         action: 'test_connection',
