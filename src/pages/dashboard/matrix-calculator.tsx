@@ -12,7 +12,7 @@ import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugger';
-import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
+import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
 import { useToast } from '@/hooks/use-toast';
 
 export default function MatrixCalculatorPage() {
@@ -32,8 +32,8 @@ export default function MatrixCalculatorPage() {
       try {
         setLoading(true);
         
-        // Ensure Firebase is initialized
-        await waitForFirebaseBootstrap();
+        // Ensure Matrix Calculator is bootstrapped
+        await waitForMatrixCalculatorBootstrap();
         const db = getFirestoreSafely();
         
         if (!db) {
