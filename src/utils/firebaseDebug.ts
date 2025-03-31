@@ -1,5 +1,6 @@
 
 import { getApps } from "firebase/app";
+import { initializeFirebaseServices } from "@/lib/firebase";
 
 /**
  * Firebase Debug Utility
@@ -8,6 +9,14 @@ import { getApps } from "firebase/app";
  * without modifying the core firebase.ts file.
  */
 
+// Maximum number of initialization attempts
+const MAX_INIT_ATTEMPTS = 3;
+// Delay between initialization attempts (ms)
+const INIT_RETRY_DELAY = 500;
+
+/**
+ * Check if Firebase is initialized
+ */
 export const checkFirebaseInitialization = () => {
   const apps = getApps();
   const isInitialized = apps.length > 0;
@@ -43,18 +52,61 @@ export const checkFirebaseInitialization = () => {
 };
 
 /**
- * Safely access Firebase services with error handling
+ * Ensure Firebase is initialized before proceeding
+ * This function will attempt to initialize Firebase if it's not already initialized
+ * and will retry up to MAX_INIT_ATTEMPTS times with a delay between attempts
+ */
+export const ensureFirebaseInitialized = async (): Promise<boolean> => {
+  // Check if Firebase is already initialized
+  if (getApps().length > 0) {
+    return true;
+  }
+
+  console.log("[Firebase] Firebase not initialized, attempting to initialize...");
+  
+  // Try to initialize Firebase
+  for (let attempt = 1; attempt <= MAX_INIT_ATTEMPTS; attempt++) {
+    try {
+      const success = initializeFirebaseServices();
+      if (success) {
+        console.log(`[Firebase] Successfully initialized on attempt ${attempt}`);
+        return true;
+      }
+      
+      console.warn(`[Firebase] Initialization attempt ${attempt} failed, retrying...`);
+      
+      // Wait before retrying
+      if (attempt < MAX_INIT_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, INIT_RETRY_DELAY));
+      }
+    } catch (error) {
+      console.error(`[Firebase] Error during initialization attempt ${attempt}:`, error);
+      
+      // Wait before retrying
+      if (attempt < MAX_INIT_ATTEMPTS) {
+        await new Promise(resolve => setTimeout(resolve, INIT_RETRY_DELAY));
+      }
+    }
+  }
+  
+  console.error(`[Firebase] Failed to initialize after ${MAX_INIT_ATTEMPTS} attempts`);
+  return false;
+};
+
+/**
+ * Safely access Firebase services with error handling and initialization check
  * This helps prevent "No Firebase App has been created" errors
  */
-export const safeFirebaseAccess = <T>(
+export const safeFirebaseAccess = async <T>(
   accessFn: () => T,
   fallback: T,
   errorMessage = "Firebase access error"
-): T => {
+): Promise<T> => {
   try {
-    // First check if Firebase is initialized
-    if (getApps().length === 0) {
-      console.error("Firebase not initialized when attempting to access services");
+    // Ensure Firebase is initialized before accessing services
+    const initialized = await ensureFirebaseInitialized();
+    if (!initialized) {
+      console.error("Firebase could not be initialized when attempting to access services");
       return fallback;
     }
     
@@ -67,32 +119,63 @@ export const safeFirebaseAccess = <T>(
 
 /**
  * Utility to safely execute Firebase operations with proper error handling
+ * and automatic retry on initialization failures
  */
 export const withFirebaseErrorHandling = async <T>(
   operation: () => Promise<T>,
-  errorMessage: string
+  errorMessage: string,
+  maxRetries = 2
 ): Promise<T> => {
-  try {
-    // Check if Firebase is initialized first
-    if (getApps().length === 0) {
-      throw new Error("Firebase not initialized");
-    }
-    
-    return await operation();
-  } catch (error) {
-    console.error(`${errorMessage}:`, error);
-    
-    // Enhanced error information
-    if (error instanceof Error) {
-      // Check for common Firebase errors
-      if (error.message.includes("no Firebase App")) {
-        console.error("Firebase initialization error. Make sure firebase.ts is properly configured.");
-        checkFirebaseInitialization();
+  let lastError: Error | null = null;
+  
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Ensure Firebase is initialized first
+      const initialized = await ensureFirebaseInitialized();
+      if (!initialized) {
+        throw new Error("Firebase could not be initialized");
       }
       
-      throw new Error(`${errorMessage}: ${error.message}`);
+      // Execute the operation
+      return await operation();
+    } catch (error) {
+      lastError = error instanceof Error ? error : new Error(String(error));
+      
+      // Check for Firebase initialization errors
+      if (lastError.message.includes("no Firebase App") || 
+          lastError.message.includes("Firebase not initialized") ||
+          lastError.message.includes("could not be initialized")) {
+        
+        console.error(`[Firebase] Operation failed due to initialization error (attempt ${attempt + 1}/${maxRetries + 1}):`, lastError);
+        
+        // Try to re-initialize Firebase
+        await ensureFirebaseInitialized();
+        
+        // Wait before retrying
+        if (attempt < maxRetries) {
+          await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+      } else {
+        // For other errors, don't retry
+        break;
+      }
     }
-    
-    throw new Error(errorMessage);
   }
+  
+  // If we get here, all retries failed
+  console.error(`${errorMessage} after ${maxRetries + 1} attempts:`, lastError);
+  throw new Error(`${errorMessage}: ${lastError?.message || "Unknown error"}`);
+};
+
+/**
+ * Utility to wrap a Firebase service function with initialization check
+ * This is useful for services that need to ensure Firebase is initialized
+ */
+export const withFirebaseInit = <T extends (...args: any[]) => any>(
+  serviceFn: T
+): ((...args: Parameters<T>) => Promise<ReturnType<T>>) => {
+  return async (...args: Parameters<T>): Promise<ReturnType<T>> => {
+    await ensureFirebaseInitialized();
+    return serviceFn(...args) as ReturnType<T>;
+  };
 };
