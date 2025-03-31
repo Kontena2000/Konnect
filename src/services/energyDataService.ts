@@ -149,6 +149,7 @@ export function calculateCarbonSavings(baseConfig: EnergyMetrics, optimizedConfi
   };
 }
 
+// Renamed to avoid conflict with the imported function
 export async function calculateWithLocationFactors(config: EnergyConfig) {
   try {
     const { totalLoad, pue, renewablePercentage = 0.2, location } = config;
