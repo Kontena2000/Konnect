@@ -87,12 +87,12 @@ export function CalculatorComponent({
   useEffect(() => {
     // Initialize Firebase when component mounts
     console.log('Initializing Firebase in Matrix Calculator...');
-    const result = initializeFirebaseSafely();
+    const success = initializeFirebaseSafely();
     
-    if (result.error) {
-      console.error('Firebase initialization failed in Matrix Calculator:', result.error);
-      calculatorDebug.error('Firebase initialization failed', result.error);
-    } else if (result.app && result.db) {
+    if (!success) {
+      console.error('Firebase initialization failed in Matrix Calculator');
+      calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
+    } else {
       console.log('Firebase initialized successfully in Matrix Calculator');
       calculatorDebug.log('Firebase initialized successfully');
     }
