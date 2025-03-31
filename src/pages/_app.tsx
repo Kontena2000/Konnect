@@ -15,13 +15,25 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const initFirebase = async () => {
       try {
-        await initializeFirebaseOnStartup();
-        console.log('Firebase initialized in _app.tsx');
+        // Use the more robust initialization method
+        const success = await initializeFirebaseOnStartup();
+        
+        if (success) {
+          console.log('[App] Firebase initialized successfully');
+        } else {
+          console.error('[App] Firebase initialization failed');
+          // Try one more time with a delay
+          setTimeout(async () => {
+            const retrySuccess = await initializeFirebaseOnStartup();
+            console.log(`[App] Firebase retry initialization: ${retrySuccess ? 'success' : 'failed'}`);
+          }, 1000);
+        }
       } catch (error) {
-        console.error('Failed to initialize Firebase in _app.tsx:', error);
+        console.error('[App] Error initializing Firebase:', error);
       }
     };
     
+    // Initialize Firebase immediately when the app loads
     initFirebase();
   }, []);
   
