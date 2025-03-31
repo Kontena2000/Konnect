@@ -1,3 +1,4 @@
+
 import { serverTimestamp, getDoc } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { calculatorDebug } from '../calculatorDebug';
@@ -60,6 +61,9 @@ export async function getPricingAndParams() {
           const mode = rawParams.electrical.redundancyMode;
           if (!['N', 'N+1', '2N'].includes(mode)) {
             rawParams.electrical.redundancyMode = 'N+1'; // Default to N+1 if invalid
+          } else {
+            // Explicitly cast to the union type
+            rawParams.electrical.redundancyMode = mode as "N" | "N+1" | "2N";
           }
         }
         
@@ -101,7 +105,7 @@ export function calculateCost(config: any, pricing: PricingMatrix, params: Calcu
     // Add safety checks for all possible undefined inputs
     if (!config) throw new Error('Configuration is undefined');
     if (!pricing) throw new Error('Pricing matrix is undefined');
-    if (!params) throw new Error('Calculation parameters are undefined');
+    if (!params) throw new Error('Calculation parameters is undefined');
     
     // Ensure required config properties exist
     const busbarSize = config.busbarSize || 'busbar800A';

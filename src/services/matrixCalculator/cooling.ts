@@ -1,3 +1,4 @@
+
 import { calculateCoolingCapacity } from '../calculatorUtils';
 import { CalculationParams, CoolingParams } from '@/types/calculationParams';
 import { CoolingResult } from './types';
@@ -15,10 +16,11 @@ export function calculateCooling(
   const totalITLoad = kwPerRack * totalRacks;
   
   // Create a complete CalculationParams object with the provided cooling params
-  const fullParams: CalculationParams = {
+  // Use type assertion to ensure TypeScript recognizes the redundancyMode as the correct union type
+  const fullParams = {
     ...DEFAULT_CALCULATION_PARAMS,
     cooling: params.cooling
-  };
+  } as CalculationParams;
   
   // Get cooling capacity based on type
   const cooling = calculateCoolingCapacity(totalITLoad, coolingType, fullParams);
