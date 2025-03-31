@@ -260,6 +260,12 @@ class FirebaseMonitor {
       this.status.performanceMetrics = this.status.performanceMetrics.slice(-this.PERFORMANCE_THRESHOLDS.METRICS_HISTORY_LIMIT);
     }
 
+    // Only log warnings if we have a valid Firestore instance
+    const safeAuth = getAuthSafely();
+    if (!safeAuth) {
+      return;
+    }
+
     if (metrics.fps && metrics.fps < this.PERFORMANCE_THRESHOLDS.FPS_MIN) {
       this.logOperation({
         type: 'settings',
