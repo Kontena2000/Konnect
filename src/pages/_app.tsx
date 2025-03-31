@@ -6,7 +6,13 @@ import '@/styles/globals.css';
 import type { AppProps } from 'next/app';
 import Head from 'next/head';
 import { useEffect } from 'react';
-import { initializeFirebaseOnStartup } from '@/utils/firebaseInitializer';
+import { bootstrapFirebase } from '@/utils/firebaseBootstrap';
+import { FirebaseErrorBoundary } from '@/components/FirebaseErrorBoundary';
+
+// Start Firebase initialization before React renders
+bootstrapFirebase().catch(err => 
+  console.error("Pre-render Firebase bootstrap failed:", err)
+);
 
 export default function App({ Component, pageProps }: AppProps) {
   const isAuthPage = Component.name === 'LoginPage' || Component.name === 'RegisterPage';
@@ -15,8 +21,8 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     const initFirebase = async () => {
       try {
-        // Use the more robust initialization method
-        const success = await initializeFirebaseOnStartup();
+        // Use the bootstrap utility for initialization
+        const success = await bootstrapFirebase();
         
         if (success) {
           console.log('[App] Firebase initialized successfully');
@@ -24,7 +30,7 @@ export default function App({ Component, pageProps }: AppProps) {
           console.error('[App] Firebase initialization failed');
           // Try one more time with a delay
           setTimeout(async () => {
-            const retrySuccess = await initializeFirebaseOnStartup();
+            const retrySuccess = await bootstrapFirebase();
             console.log(`[App] Firebase retry initialization: ${retrySuccess ? 'success' : 'failed'}`);
           }, 1000);
         }
@@ -52,14 +58,16 @@ export default function App({ Component, pageProps }: AppProps) {
           </TooltipProvider>
         </ThemeProvider>
       ) : (
-        <AuthProvider>
-          <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
-            <TooltipProvider>
-              <Component {...pageProps} />
-              <Toaster />
-            </TooltipProvider>
-          </ThemeProvider>
-        </AuthProvider>
+        <FirebaseErrorBoundary>
+          <AuthProvider>
+            <ThemeProvider defaultTheme='system' themes={['light', 'dark', 'design']}>
+              <TooltipProvider>
+                <Component {...pageProps} />
+                <Toaster />
+              </TooltipProvider>
+            </ThemeProvider>
+          </AuthProvider>
+        </FirebaseErrorBoundary>
       )}
     </>
   );
