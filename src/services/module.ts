@@ -428,7 +428,16 @@ const moduleService = {
   },
 
   async duplicateModule(moduleId: string): Promise<void> {
-    try {
+    return safeFirebaseOperation(async () => {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
@@ -469,17 +478,7 @@ const moduleService = {
         timestamp: Date.now(),
         details: { originalId: moduleId, newId: newModuleId, email: user.email }
       });
-    } catch (error) {
-      console.error('Error duplicating module:', error);
-      firebaseMonitor.logOperation({
-        type: 'module',
-        action: 'duplicate',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    }, 'Error duplicating module');
   },
 
   createModule: moduleOperations.createModule,
