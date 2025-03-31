@@ -10,8 +10,9 @@ import { bootstrapFirebase } from '@/utils/firebaseBootstrap';
 import { FirebaseErrorBoundary } from '@/components/FirebaseErrorBoundary';
 
 // Start Firebase initialization before React renders
+// This is critical to ensure Firebase is ready before any components try to use it
 bootstrapFirebase().catch(err => 
-  console.error("Pre-render Firebase bootstrap failed:", err)
+  console.error('Pre-render Firebase bootstrap failed:', err)
 );
 
 export default function App({ Component, pageProps }: AppProps) {
@@ -28,11 +29,26 @@ export default function App({ Component, pageProps }: AppProps) {
           console.log('[App] Firebase initialized successfully');
         } else {
           console.error('[App] Firebase initialization failed');
-          // Try one more time with a delay
-          setTimeout(async () => {
+          
+          // Try multiple times with increasing delays
+          const retryWithDelay = async (attempt: number) => {
+            if (attempt > 3) return false;
+            
+            const delay = 500 * Math.pow(2, attempt - 1); // Exponential backoff
+            console.log(`[App] Retrying Firebase initialization in ${delay}ms (attempt ${attempt}/3)`);
+            
+            await new Promise(resolve => setTimeout(resolve, delay));
             const retrySuccess = await bootstrapFirebase();
-            console.log(`[App] Firebase retry initialization: ${retrySuccess ? 'success' : 'failed'}`);
-          }, 1000);
+            
+            if (retrySuccess) {
+              console.log(`[App] Firebase retry initialization successful on attempt ${attempt}`);
+              return true;
+            }
+            
+            return retryWithDelay(attempt + 1);
+          };
+          
+          retryWithDelay(1);
         }
       } catch (error) {
         console.error('[App] Error initializing Firebase:', error);
