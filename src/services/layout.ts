@@ -1,4 +1,4 @@
-import { getFirestoreSafely } from "@/lib/firebase";
+import { db, getFirestoreSafely } from "@/lib/firebase";
 import { 
   collection, 
   addDoc, 
@@ -9,7 +9,8 @@ import {
   query, 
   where,
   getDoc,
-  serverTimestamp
+  serverTimestamp,
+  Firestore
 } from "firebase/firestore";
 import { ConnectionType } from '@/types/connection';
 import { debounce } from "lodash";
@@ -69,15 +70,19 @@ const validateConnectionData = (connection: Partial<Connection>): boolean => {
   return true;
 };
 
+// Helper function to ensure Firestore is available
+const ensureFirestore = (): Firestore => {
+  const firestore = db || getFirestoreSafely();
+  if (!firestore) {
+    throw new LayoutError('Firestore is not available', 'FIRESTORE_UNAVAILABLE');
+  }
+  return firestore;
+};
+
 export const debouncedSave = debounce(async (layoutId: string, data: Partial<Layout>): Promise<void> => {
   try {
-    // Get Firestore safely
-    const db = getFirestoreSafely();
-    if (!db) {
-      throw new Error('Firestore not available');
-    }
-    
-    const layoutRef = doc(db, 'layouts', layoutId);
+    const firestore = ensureFirestore();
+    const layoutRef = doc(firestore, 'layouts', layoutId);
     await updateDoc(layoutRef, {
       ...data,
       updatedAt: serverTimestamp()
@@ -95,13 +100,8 @@ const layoutService = {
     }
 
     try {
-      // Get Firestore safely
-      const db = getFirestoreSafely();
-      if (!db) {
-        throw new Error('Firestore not available');
-      }
-      
-      const layoutRef = await addDoc(collection(db, 'layouts'), {
+      const firestore = ensureFirestore();
+      const layoutRef = await addDoc(collection(firestore, 'layouts'), {
         ...data,
         modules: data.modules || [],
         connections: data.connections || [],
@@ -116,13 +116,8 @@ const layoutService = {
 
   async updateLayout(id: string, data: Partial<Layout>, user: AuthUser): Promise<void> {
     try {
-      // Get Firestore safely
-      const db = getFirestoreSafely();
-      if (!db) {
-        throw new Error('Firestore not available');
-      }
-      
-      const layoutRef = doc(db, 'layouts', id);
+      const firestore = ensureFirestore();
+      const layoutRef = doc(firestore, 'layouts', id);
       const currentLayout = await getDoc(layoutRef);
       
       if (!currentLayout.exists()) {
@@ -130,7 +125,7 @@ const layoutService = {
       }
 
       const layout = currentLayout.data();
-      const projectRef = doc(db, 'projects', layout.projectId);
+      const projectRef = doc(firestore, 'projects', layout.projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
@@ -170,13 +165,8 @@ const layoutService = {
 
   async getLayout(id: string, user?: AuthUser): Promise<Layout | null> {
     try {
-      // Get Firestore safely
-      const db = getFirestoreSafely();
-      if (!db) {
-        throw new Error('Firestore not available');
-      }
-      
-      const layoutRef = doc(db, 'layouts', id);
+      const firestore = ensureFirestore();
+      const layoutRef = doc(firestore, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
       
       if (!snapshot.exists()) {
@@ -198,7 +188,7 @@ const layoutService = {
           } as Layout;
         }
 
-        const projectRef = doc(db, 'projects', data.projectId);
+        const projectRef = doc(firestore, 'projects', data.projectId);
         const projectSnap = await getDoc(projectRef);
         
         if (!projectSnap.exists()) {
@@ -227,14 +217,9 @@ const layoutService = {
 
   async getProjectLayouts(projectId: string): Promise<Layout[]> {
     try {
-      // Get Firestore safely
-      const db = getFirestoreSafely();
-      if (!db) {
-        throw new Error('Firestore not available');
-      }
-      
+      const firestore = ensureFirestore();
       const layoutsQuery = query(
-        collection(db, 'layouts'),
+        collection(firestore, 'layouts'),
         where('projectId', '==', projectId)
       );
       
@@ -260,14 +245,8 @@ const layoutService = {
 
   async saveLayoutToProject(layoutData: Partial<Layout>, projectId: string, user: AuthUser): Promise<string> {
     try {
-      // Get Firestore safely
-      const db = getFirestoreSafely();
-      if (!db) {
-        throw new Error('Firestore not available');
-      }
-      
-      // Validate project access
-      const projectRef = doc(db, 'projects', projectId);
+      const firestore = ensureFirestore();
+      const projectRef = doc(firestore, 'projects', projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
@@ -282,7 +261,6 @@ const layoutService = {
         }
       }
 
-      // Create the layout with the specified project
       const newLayout = {
         ...layoutData,
         projectId,
@@ -295,7 +273,7 @@ const layoutService = {
         throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
       }
 
-      const layoutRef = await addDoc(collection(db, 'layouts'), {
+      const layoutRef = await addDoc(collection(firestore, 'layouts'), {
         ...newLayout,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
