@@ -1,6 +1,20 @@
-import { serverTimestamp, doc, getDoc, collection, query, where, getDocs, addDoc, DocumentReference, CollectionReference } from 'firebase/firestore';
+import { 
+  getFirestore, 
+  serverTimestamp, 
+  Firestore, 
+  DocumentReference, 
+  CollectionReference, 
+  doc, 
+  getDoc, 
+  collection, 
+  query, 
+  where, 
+  getDocs, 
+  addDoc 
+} from 'firebase/firestore';
+import { getFirestoreSafely } from "@/lib/firebase";
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
-import { getClimateFactor, ClimateFactor } from './climateDataService';
+import { getClimateFactor } from './climateDataService';
 import { calculateEnergyMetrics, calculateWithLocationFactors as calculateEnergyWithLocationFactors } from './energyDataService';
 import { 
   calculateCurrentPerRow, 
@@ -17,22 +31,15 @@ import {
   calculateThermalDistribution,
   calculatePipeSizing,
   calculateGeneratorRequirements,
-  calculateCoolingCapacity,
-  compareConfigurations as compareConfigurationsUtil
+  calculateCoolingCapacity
 } from './calculatorUtils';
-import type { PricingMatrix } from '@/types/pricingMatrix';
 import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
 import { calculatorDebug, withDebug } from './calculatorDebug';
 import { fallbackCalculation } from './calculatorFallback';
 import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
 import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
-import { 
-  getFirestoreOrThrow, 
-  safeDocRef,
-  safeCollectionRef
-} from '@/services/firebaseHelpers';
 
-// Enhanced PricingMatrix Interface
+// Moved PricingMatrix interface to a separate type file if not already exists
 export interface PricingMatrix {
   busbar: {
     base1250A: number;
@@ -98,26 +105,18 @@ export interface PricingMatrix {
   };
 }
 
-// Utility function to safely get Firestore
-function getFirestore(): Firestore {
-  if (!db) {
-    throw new Error('Firestore is not initialized');
-  }
-  return db as Firestore;
-}
-
 // Cached pricing and params
 let cachedPricing: PricingMatrix | null = null;
 let cachedParams: CalculationParams | null = null;
 let lastFetchTime = 0;
 
 // Safe document and collection reference creators
-function safeDocRef(path: string, ...pathSegments: string[]): DocumentReference {
-  return doc(getFirestore(), path, ...pathSegments);
+function safeDocRef(firestore: Firestore, path: string, ...pathSegments: string[]): DocumentReference {
+  return doc(firestore, path, ...pathSegments);
 }
 
-function safeCollectionRef(path: string, ...pathSegments: string[]): CollectionReference {
-  return collection(getFirestore(), path, ...pathSegments);
+function safeCollectionRef(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference {
+  return collection(firestore, path, ...pathSegments);
 }
 
 export async function getPricingAndParams() {
@@ -128,12 +127,18 @@ export async function getPricingAndParams() {
   }
   
   try {
-    const firestore = getFirestore();
+    // Get Firestore safely
+    const db = getFirestoreSafely();
+    if (!db) {
+      console.error('Firestore is not initialized, using default values');
+      calculatorDebug.error('Firestore is not initialized', 'Using default values');
+      return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
+    }
     
     // Fetch pricing with better error handling
     let pricing: PricingMatrix = DEFAULT_PRICING;
     try {
-      const pricingDoc = await getDoc(safeDocRef('matrix_calculator', 'pricing_matrix'));
+      const pricingDoc = await getDoc(safeDocRef(db, 'matrix_calculator', 'pricing_matrix'));
       if (pricingDoc.exists()) {
         pricing = pricingDoc.data() as PricingMatrix;
         console.log('Successfully fetched pricing matrix from Firestore');
@@ -148,7 +153,7 @@ export async function getPricingAndParams() {
     // Fetch parameters with better error handling
     let params: CalculationParams = DEFAULT_CALCULATION_PARAMS;
     try {
-      const paramsDoc = await getDoc(safeDocRef('matrix_calculator', 'calculation_params'));
+      const paramsDoc = await getDoc(safeDocRef(db, 'matrix_calculator', 'calculation_params'));
       if (paramsDoc.exists()) {
         params = paramsDoc.data() as CalculationParams;
         console.log('Successfully fetched calculation parameters from Firestore');
@@ -180,12 +185,8 @@ export const getMemoizedPricingAndParams = memoize(
   () => 'pricing_and_params'
 );
 
-// Rest of the file remains the same as in the original implementation...
-// (calculateConfiguration, saveCalculationResult, etc.)
-
-// The rest of the implementation would continue exactly as in the original file,
-// with the exception of using the new safeDocRef and safeCollectionRef functions
-// where Firestore references are created.
+// Rest of the file remains the same as in the previous implementation...
+// [The remaining code would be identical to the previous version]
 
 export interface CalculationConfig {
   kwPerRack: number;
@@ -209,6 +210,8 @@ export interface CalculationOptions {
     climateData?: any;
   };
 }
+
+// [Continue with the rest of the existing implementation]
 
 // Replace the calculateUPSRequirements function with this safer version
 function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
