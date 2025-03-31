@@ -14,6 +14,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugger';
 import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
 import { useToast } from '@/hooks/use-toast';
+import { runMatrixCalculatorInitialization } from '@/services/matrixCalculatorInitializer';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -24,6 +25,25 @@ export default function MatrixCalculatorPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+
+  useEffect(() => {
+    const initializeMatrixCalculator = async () => {
+      try {
+        // Initialize Matrix Calculator collections and documents
+        const initialized = await runMatrixCalculatorInitialization();
+        if (!initialized) {
+          console.error('Failed to initialize Matrix Calculator');
+        } else {
+          console.log('Matrix Calculator initialized successfully');
+        }
+      } catch (error) {
+        console.error('Error initializing Matrix Calculator:', error);
+      }
+    };
+
+    // Run initialization when the component mounts
+    initializeMatrixCalculator();
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
