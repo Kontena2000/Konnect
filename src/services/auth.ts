@@ -9,7 +9,7 @@ import {
 } from "firebase/auth";
 import userService from "./user";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
-import { ensureAuth } from "@/utils/firebaseHelpers";
+import { ensureAuth as ensureAuthHelper } from "@/utils/firebaseHelpers";
 
 export type UserRole = "admin" | "editor" | "viewer";
 

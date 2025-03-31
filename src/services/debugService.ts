@@ -1,7 +1,7 @@
 import { getApps } from "firebase/app";
 import { collection, getDocs, query, limit, where, orderBy } from "firebase/firestore";
 import { db, getFirestoreSafely } from "@/lib/firebase";
-import { ModuleTag, LogLevel } from '@/types/module'; // Ensure these types are imported
+import { ModuleTag, LogLevel } from '@/types/module-tags'; // Import from the new file
 
 export type LogLevel = "info" | "log" | "warn" | "error" | "debug";
 export type ModuleTag = "matrix" | "layout" | "firebase" | "auth" | "editor" | "general";
@@ -29,8 +29,8 @@ class DebugService {
   private logs: LogEntry[] = [];
   private maxLogs: number = 1000;
   private listeners: ((logs: LogEntry[]) => void)[] = [];
-  private moduleFilters: Set<ModuleTag> = new Set(["matrix", "layout", "firebase", "auth", "editor", "general"]);
-  private levelFilters: Set<LogLevel> = new Set(["info", "log", "warn", "error", "debug"]);
+  private moduleFilters: Set<ModuleTag> = new Set<ModuleTag>(["matrix", "layout", "firebase", "auth", "editor", "general"]);
+  private levelFilters: Set<LogLevel> = new Set<LogLevel>(["info", "log", "warn", "error", "debug"]);
 
   constructor() {
     // Initialize with some system info

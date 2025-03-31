@@ -1,6 +1,7 @@
 import { checkFirebaseInitialization, withFirebaseErrorHandling } from "@/utils/firebaseDebug";
 import { db, getFirestoreSafely } from "@/lib/firebase";
-import { collection, getDocs, query, limit, where, orderBy } from "firebase/firestore";
+import { collection, getDocs, query, limit, where, orderBy, DocumentData } from "firebase/firestore";
+import { ensureFirestore } from "@/utils/firebaseHelpers";
 
 /**
  * Matrix Debug Service
@@ -112,7 +113,7 @@ const matrixDebugService = {
         return { exists: false, data: null };
       }
       
-      const doc = snapshot.docs[0];
+      const doc: DocumentData = snapshot.docs[0];
       return {
         exists: true,
         data: {
