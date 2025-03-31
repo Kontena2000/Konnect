@@ -5,7 +5,7 @@ import type { AuthUser, UserRole } from '@/services/auth';
 import userService from '@/services/user';
 import { useRouter } from 'next/router';
 import { useToast } from '@/hooks/use-toast';
-import { ensureFirebaseInitialized, getAuth as getAuthAsync } from '@/utils/firebaseInitializer';
+import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -33,10 +33,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // Ensure Firebase is initialized before proceeding
-        const initialized = await ensureFirebaseInitialized();
-        if (!initialized) {
-          console.error('Firebase initialization failed in AuthContext');
+        // Use the new bootstrap utility to ensure Firebase is initialized
+        const bootstrapped = await waitForFirebaseBootstrap();
+        if (!bootstrapped) {
+          console.error('[AuthContext] Firebase bootstrap failed');
           if (mounted) {
             setInitError('Firebase initialization failed');
             setLoading(false);
@@ -44,79 +44,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           return;
         }
 
-        // Get auth instance safely using the async method
-        try {
-          const authInstance = await getAuthAsync();
-          
-          unsubscribe = onAuthStateChanged(authInstance, async (user) => {
-            try {
-              if (!mounted) return;
-
-              if (user) {
-                // Special case for ruud@kontena.eu - always admin
-                if (user.email === 'ruud@kontena.eu') {
-                  if (mounted) {
-                    setUser(user as AuthUser);
-                    setRole('admin');
-                  }
-                } else {
-                  // Get the user's ID token result which includes custom claims
-                  const tokenResult = await getIdTokenResult(user, true);
-                  const userDoc = await userService.getUserByEmail(user.email!);
-                  
-                  if (mounted) {
-                    setUser(user as AuthUser);
-                    // Use the role from custom claims, fallback to Firestore role
-                    setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
-                  }
-                }
-
-                // Only redirect if we're on auth pages
-                if (router.pathname === '/auth/login' || router.pathname === '/' || router.pathname === '/auth/register') {
-                  router.replace('/dashboard/projects');
-                }
-              } else {
-                if (mounted) {
-                  setUser(null);
-                  setRole(null);
-                }
-
-                // Only redirect if we're on protected pages
-                if (router.pathname.startsWith('/dashboard')) {
-                  router.replace('/auth/login');
-                }
-              }
-            } catch (error) {
-              console.error('Error in auth state change:', error);
-              
-              if (mounted) {
-                // If error occurs for ruud@kontena.eu, still grant admin access
-                if (user?.email === 'ruud@kontena.eu') {
-                  setRole('admin');
-                } else {
-                  setRole('editor');
-                  toast({
-                    title: 'Authentication Error',
-                    description: 'There was a problem verifying your account. Some features may be limited.',
-                    variant: 'destructive'
-                  });
-                }
-              }
-            } finally {
-              if (mounted) {
-                setLoading(false);
-              }
-            }
-          });
-        } catch (error) {
-          console.error('Failed to get Auth instance in AuthContext:', error);
+        // Get auth instance safely
+        const authInstance = getAuthSafely();
+        if (!authInstance) {
+          console.error('[AuthContext] Failed to get Auth instance');
           if (mounted) {
             setInitError('Failed to get Auth instance');
             setLoading(false);
           }
+          return;
         }
+        
+        unsubscribe = onAuthStateChanged(authInstance, async (user) => {
+          try {
+            if (!mounted) return;
+
+            if (user) {
+              // Special case for ruud@kontena.eu - always admin
+              if (user.email === 'ruud@kontena.eu') {
+                if (mounted) {
+                  setUser(user as AuthUser);
+                  setRole('admin');
+                }
+              } else {
+                // Get the user's ID token result which includes custom claims
+                const tokenResult = await getIdTokenResult(user, true);
+                const userDoc = await userService.getUserByEmail(user.email!);
+                
+                if (mounted) {
+                  setUser(user as AuthUser);
+                  // Use the role from custom claims, fallback to Firestore role
+                  setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
+                }
+              }
+
+              // Only redirect if we're on auth pages
+              if (router.pathname === '/auth/login' || router.pathname === '/' || router.pathname === '/auth/register') {
+                router.replace('/dashboard/projects');
+              }
+            } else {
+              if (mounted) {
+                setUser(null);
+                setRole(null);
+              }
+
+              // Only redirect if we're on protected pages
+              if (router.pathname.startsWith('/dashboard')) {
+                router.replace('/auth/login');
+              }
+            }
+          } catch (error) {
+            console.error('[AuthContext] Error in auth state change:', error);
+            
+            if (mounted) {
+              // If error occurs for ruud@kontena.eu, still grant admin access
+              if (user?.email === 'ruud@kontena.eu') {
+                setRole('admin');
+              } else {
+                setRole('editor');
+                toast({
+                  title: 'Authentication Error',
+                  description: 'There was a problem verifying your account. Some features may be limited.',
+                  variant: 'destructive'
+                });
+              }
+            }
+          } finally {
+            if (mounted) {
+              setLoading(false);
+            }
+          }
+        });
       } catch (error) {
-        console.error('Error in AuthContext initialization:', error);
+        console.error('[AuthContext] Error in initialization:', error);
         if (mounted) {
           if (error instanceof Error) {
             setInitError(`Firebase error: ${error.message}`);
