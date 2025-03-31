@@ -190,6 +190,31 @@ export function getFirestoreSafely(): Firestore | null {
   return db;
 }
 
+// Synchronous getters with initialization check
+export function getFirestoreSafely(): Firestore | null {
+  if (!initialized && typeof window !== 'undefined') {
+    console.warn('[Firebase] Attempting to use Firestore before initialization is complete');
+    // Trigger initialization but don't wait for it
+    initializeFirebaseServices();
+  }
+  return db;
+}
+
+// This is where the error was reported previously
 export function getAuthSafely(): Auth | null {
   if (!initialized && typeof window !== 'undefined') {
-    console.warn('[Firebase] Attempting to use
+    console.warn('[Firebase] Attempting to use Auth before initialization is complete');
+    // Trigger initialization but don't wait for it
+    initializeFirebaseServices();
+  }
+  return auth;
+}
+
+export function getStorageSafely(): FirebaseStorage | null {
+  if (!initialized && typeof window !== 'undefined') {
+    console.warn('[Firebase] Attempting to use Storage before initialization is complete');
+    // Trigger initialization but don't wait for it
+    initializeFirebaseServices();
+  }
+  return storage;
+}
