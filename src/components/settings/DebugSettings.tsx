@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,7 +13,8 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Loader2, AlertTriangle, CheckCircle, XCircle, Info, Bug, RefreshCw } from "lucide-react";
 import { checkFirebaseInitialization } from "@/utils/firebaseDebug";
 import { FirebaseDebugger } from "@/components/matrix-calculator/FirebaseDebugger";
-import debugService, { LogLevel, ModuleTag, DiagnosticResult } from "@/services/debugService";
+import debugService, { DiagnosticResult } from "@/services/debugService";
+import { LogLevel, ModuleTag } from "@/types/module-tags";
 
 export function DebugSettings() {
   const [isRunningDiagnostic, setIsRunningDiagnostic] = useState(false);
