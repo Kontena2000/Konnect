@@ -1,7 +1,7 @@
 import { getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
 import { disableNetwork, enableNetwork, getDocs, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
-import { ensureFirebaseInitialized } from '@/utils/firebaseInitializer';
+import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { initializeFirebaseMonitorSafely, safeMonitorOperation } from '@/utils/firebaseMonitorUtils';
 
 export interface OperationLog {
@@ -60,10 +60,10 @@ class FirebaseMonitor {
 
   private async initializeMonitoring() {
     try {
-      // Use our specialized Firebase Monitor initialization utility
-      const initialized = await initializeFirebaseMonitorSafely();
-      if (!initialized) {
-        console.error('[FirebaseMonitor] Firebase initialization failed');
+      // Use our new bootstrap utility to ensure Firebase is initialized
+      const bootstrapped = await waitForFirebaseBootstrap();
+      if (!bootstrapped) {
+        console.error('[FirebaseMonitor] Firebase bootstrap failed');
         this.status.connectionState = 'unknown';
         this.status.lastError = 'Firebase initialization failed';
         this.notifySubscribers();
