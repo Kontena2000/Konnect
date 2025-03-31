@@ -1,5 +1,5 @@
 
-import { db } from "@/lib/firebase";
+import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
 import { AuthUser } from "@/services/auth";
 import firebaseMonitor from "./firebase-monitor";
@@ -32,7 +32,11 @@ const editorPreferencesService = {
         details: { userId }
       });
 
-      const prefsRef = doc(db, "editorPreferences", userId);
+const db = getFirestoreSafely();
+if (!db) {
+  throw new Error('Firestore not available');
+}
+const docRef = doc(db, 'editorPreferences', userId);
       const snapshot = await getDoc(prefsRef);
 
       if (!snapshot.exists()) {
