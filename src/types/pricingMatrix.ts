@@ -1,10 +1,12 @@
-
 export interface PricingMatrix {
   busbar: {
     base1250A: number;
     base2000A: number;
     perMeter: number;
     copperPremium: number;
+    busbar800A: number;
+    busbar1000A: number;
+    busbar1600A: number;
     [key: string]: number;
   };
   tapOffBox: {
@@ -18,6 +20,8 @@ export interface PricingMatrix {
   rpdu: {
     standard16A: number;
     standard32A: number;
+    standard80A: number;
+    standard112A: number;
     [key: string]: number;
   };
   cooler: {

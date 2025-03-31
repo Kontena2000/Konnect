@@ -32,10 +32,10 @@ const userService = {
   async getUsers(): Promise<User[]> {
     return withFirebaseErrorHandling(async () => {
       // Get Firestore instance safely
-      const safeDb = getFirestoreSafely() || db;
+      const firestore = getFirestoreOrThrow();
       
-      const usersRef = collection(safeDb, "users");
-      const q = query(usersRef, orderBy("createdAt", "desc"));
+      const usersRef = safeCollectionRef('users');
+      const q = query(usersRef, orderBy('createdAt', 'desc'));
       const snapshot = await getDocs(q);
       
       return snapshot.docs.map(doc => {
@@ -47,16 +47,16 @@ const userService = {
           createdAt: data.createdAt?.toDate() || new Date()
         };
       });
-    }, "Failed to fetch users");
+    }, 'Failed to fetch users');
   },
 
   async getUserByEmail(email: string): Promise<User | null> {
     return withFirebaseErrorHandling(async () => {
       // Get Firestore instance safely
-      const safeDb = getFirestoreSafely() || db;
+      const firestore = getFirestoreOrThrow();
       
-      const usersRef = collection(safeDb, "users");
-      const q = query(usersRef, where("email", "==", email));
+      const usersRef = safeCollectionRef('users');
+      const q = query(usersRef, where('email', '==', email));
       const snapshot = await getDocs(q);
       
       if (snapshot.empty) {
@@ -74,7 +74,7 @@ const userService = {
     }, `Failed to fetch user by email: ${email}`);
   },
 
-  async addUser(email: string, role: User["role"]): Promise<User> {
+  async addUser(email: string, role: User['role']): Promise<User> {
     return withFirebaseErrorHandling(async () => {
       const existingUser = await this.getUserByEmail(email);
       if (existingUser) {
@@ -82,9 +82,9 @@ const userService = {
       }
 
       // Get Firestore instance safely
-      const safeDb = getFirestoreSafely() || db;
+      const firestore = getFirestoreOrThrow();
       
-      const usersRef = collection(safeDb, "users");
+      const usersRef = safeCollectionRef('users');
       const docRef = await addDoc(usersRef, {
         email,
         role,
@@ -121,12 +121,10 @@ const userService = {
     }, `Failed to add user with email: ${email}`);
   },
 
-  async updateUserRole(userId: string, role: User["role"]): Promise<void> {
+  async updateUserRole(userId: string, role: User['role']): Promise<void> {
     return withFirebaseErrorHandling(async () => {
       // Get Firestore instance safely
-      const safeDb = getFirestoreSafely() || db;
-      
-      const userRef = doc(safeDb, "users", userId);
+      const userRef = safeDocRef('users', userId);
       await updateDoc(userRef, { 
         role,
         updatedAt: serverTimestamp()
@@ -158,9 +156,7 @@ const userService = {
   async deleteUser(userId: string): Promise<void> {
     return withFirebaseErrorHandling(async () => {
       // Get Firestore instance safely
-      const safeDb = getFirestoreSafely() || db;
-      
-      const userRef = doc(safeDb, "users", userId);
+      const userRef = safeDocRef('users', userId);
       await deleteDoc(userRef);
     }, `Failed to delete user: ${userId}`);
   }

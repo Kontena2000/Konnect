@@ -1,4 +1,3 @@
-
 export const DEFAULT_CALCULATION_PARAMS = {
   // Electrical parameters
   electrical: {
@@ -43,55 +42,75 @@ export const DEFAULT_CALCULATION_PARAMS = {
 export const DEFAULT_PRICING = {
   // Electrical components
   busbar: {
-    base1250A: 42000,
-    base2000A: 65000,
+    base1250A: 12500,
+    base2000A: 18000,
     perMeter: 1200,
-    copperPremium: 1.0,
+    copperPremium: 2500,
+    busbar800A: 9000,
+    busbar1000A: 11000,
+    busbar1600A: 15000
   },
   tapOffBox: {
-    standard63A: 1200,
-    custom100A: 1500,
-    custom150A: 1800,
-    custom200A: 2100,
-    custom250A: 2400,
+    standard63A: 800,
+    custom100A: 1200,
+    custom150A: 1500,
+    custom200A: 1800,
+    custom250A: 2200
   },
   rpdu: {
-    standard80A: 3500,
-    standard112A: 4200,
+    standard16A: 450,
+    standard32A: 650,
+    standard80A: 1200,
+    standard112A: 1800
   },
   
   // Cooling components
   rdhx: {
-    average: 8000,
-    highEnd: 12000,
+    basic: 45000,
+    standard: 65000,
+    highDensity: 85000,
+    average: 65000
   },
   piping: {
     dn110PerMeter: 350,
-    dn160PerMeter: 520,
+    dn160PerMeter: 550,
     valveDn110: 1200,
     valveDn160: 1800,
   },
   cooler: {
-    tcs310aXht: 75000,
-    grundfosPump: 15000,
+    tcs310aXht: 85000,
+    grundfosPump: 12000,
     bufferTank: 8000,
+    immersionTank: 120000,
+    immersionCDU: 85000
   },
   
   // Power components
   ups: {
-    frame1000kw: 85000,
-    frame1500kw: 110000,
-    frame2000kw: 130000,
-    module250kw: 45000,
+    frame2Module: 45000,
+    frame4Module: 65000,
+    frame6Module: 85000,
+    module250kw: 35000
   },
   battery: {
-    revoTp240Cabinet: 35000,
+    revoTp240Cabinet: 75000
   },
   
   // Infrastructure
+  generator: {
+    generator1000kva: 250000,
+    generator2000kva: 450000,
+    generator3000kva: 650000,
+    fuelTankPerLiter: 2
+  },
   eHouse: {
-    base: 120000,
-    perSqMeter: 5000,
+    base: 85000,
+    perSqMeter: 3500
+  },
+  sustainability: {
+    heatRecoverySystem: 120000,
+    waterRecyclingSystem: 85000,
+    solarPanelPerKw: 1200
   }
 };
 

@@ -99,10 +99,7 @@ const validateProject = (data: Partial<ProjectValidation>): boolean => {
 const projectService = {
   async createProject(data: CreateProjectData): Promise<string> {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new ProjectError('Not authenticated', 'AUTH_REQUIRED');
-      }
+      const user = getCurrentUserOrThrow();
 
       firebaseMonitor.logOperation({
         type: 'project',
@@ -125,7 +122,7 @@ const projectService = {
         throw new ProjectError('Project validation failed', 'VALIDATION_FAILED');
       }
 
-      const projectRef = await addDoc(collection(db, 'projects'), {
+      const projectRef = await addDoc(safeCollectionRef('projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
         userId: user.uid,
@@ -174,7 +171,7 @@ const projectService = {
         details: { id }
       });
 
-      const projectRef = doc(db, "projects", id);
+      const projectRef = safeDocRef('projects', id);
       const snapshot = await getDoc(projectRef);
       
       if (!snapshot.exists()) {
@@ -211,7 +208,7 @@ const projectService = {
         error: errorMessage,
         details: { id }
       });
-      throw new ProjectError("Failed to fetch project details", "FETCH_FAILED", error);
+      throw new ProjectError('Failed to fetch project details', 'FETCH_FAILED', error);
     }
   },
 
@@ -225,9 +222,12 @@ const projectService = {
         details: { userId }
       });
 
+      const firestore = getFirestoreOrThrow();
+      const projectsCollection = safeCollectionRef('projects');
+
       const [ownedSnapshot, sharedSnapshot] = await Promise.all([
-        getDocs(query(collection(db, 'projects'), where('userId', '==', userId))),
-        getDocs(query(collection(db, 'projects'), where('sharedWith', 'array-contains', userId)))
+        getDocs(query(projectsCollection, where('userId', '==', userId))),
+        getDocs(query(projectsCollection, where('sharedWith', 'array-contains', userId)))
       ]);
       
       const projects = [...ownedSnapshot.docs, ...sharedSnapshot.docs].map(doc => {
