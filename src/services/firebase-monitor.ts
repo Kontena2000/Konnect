@@ -1,6 +1,7 @@
 import { db, auth, getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
+import { ensureFirebaseInitialized } from '@/utils/firebaseInitializer';
 
 export interface OperationLog {
   type: 'project' | 'module' | 'category' | 'auth' | 'connection' | 'settings';
@@ -52,41 +53,58 @@ class FirebaseMonitor {
   private subscribers: ((status: FirebaseStatus) => void)[] = [];
 
   constructor() {
-    this.initializeMonitoring();
+    // Initialize monitoring asynchronously to avoid blocking
+    setTimeout(() => this.initializeMonitoring(), 0);
   }
 
-  private initializeMonitoring() {
-    // Get auth instance safely
-    const safeAuth = getAuthSafely();
-    
-    if (safeAuth) {
-      onAuthStateChanged(safeAuth, (user) => {
-        this.status.authState = user ? 'authenticated' : 'unauthenticated';
+  private async initializeMonitoring() {
+    try {
+      // Ensure Firebase is initialized before proceeding
+      const initialized = await ensureFirebaseInitialized();
+      if (!initialized) {
+        console.error('[FirebaseMonitor] Firebase initialization failed');
+        this.status.connectionState = 'unknown';
+        this.status.lastError = 'Firebase initialization failed';
         this.notifySubscribers();
-      });
-    } else {
-      console.error('Failed to get Auth instance in FirebaseMonitor');
-      this.status.authState = 'unknown';
-      this.status.lastError = 'Failed to get Auth instance';
-    }
+        return;
+      }
 
-    // Get Firestore instance safely
-    const safeDb = getFirestoreSafely();
-    if (safeDb) {
-      const firestore = getFirestore();
-      enableNetwork(firestore).then(() => {
-        this.status.connectionState = 'online';
-        this.status.isOnline = true;
-        this.notifySubscribers();
-      }).catch((error: Error) => {
-        console.error('Error enabling network:', error);
-        this.status.lastError = error.message;
-        this.notifySubscribers();
-      });
-    } else {
-      console.error('Failed to get Firestore instance in FirebaseMonitor');
-      this.status.connectionState = 'unknown';
-      this.status.lastError = 'Failed to get Firestore instance';
+      // Get auth instance safely
+      const safeAuth = getAuthSafely();
+      
+      if (safeAuth) {
+        onAuthStateChanged(safeAuth, (user) => {
+          this.status.authState = user ? 'authenticated' : 'unauthenticated';
+          this.notifySubscribers();
+        });
+      } else {
+        console.error('Failed to get Auth instance in FirebaseMonitor');
+        this.status.authState = 'unknown';
+        this.status.lastError = 'Failed to get Auth instance';
+      }
+
+      // Get Firestore instance safely
+      const safeDb = getFirestoreSafely();
+      if (safeDb) {
+        const firestore = getFirestore();
+        enableNetwork(firestore).then(() => {
+          this.status.connectionState = 'online';
+          this.status.isOnline = true;
+          this.notifySubscribers();
+        }).catch((error: Error) => {
+          console.error('Error enabling network:', error);
+          this.status.lastError = error.message;
+          this.notifySubscribers();
+        });
+      } else {
+        console.error('Failed to get Firestore instance in FirebaseMonitor');
+        this.status.connectionState = 'unknown';
+        this.status.lastError = 'Failed to get Firestore instance';
+      }
+    } catch (error) {
+      console.error('[FirebaseMonitor] Error initializing monitoring:', error);
+      this.status.lastError = error instanceof Error ? error.message : 'Unknown error initializing monitoring';
+      this.notifySubscribers();
     }
   }
 
