@@ -1,15 +1,13 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
-import { Loader2, CheckCircle, XCircle, AlertTriangle, Bug, RefreshCw } from "lucide-react";
-import { calculatorDebug, checkFirebaseInitialization } from "@/services/calculatorDebug";
-import { db } from "@/lib/firebase";
-import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from "@/constants/calculatorConstants";
+import { Loader2, CheckCircle, AlertTriangle, Bug, RefreshCw } from "lucide-react";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
 import { getFirestoreSafely, isFirebaseInitialized } from '@/lib/firebase';
-import { collection, getDocs, query, limit } from 'firebase/firestore';
+import { collection, getDocs, query, limit, doc, getDoc } from 'firebase/firestore';
 import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
 
 export function FirebaseDebugger() {
@@ -26,7 +24,6 @@ export function FirebaseDebugger() {
   useEffect(() => {
     checkFirebaseStatus();
     checkMatrixCalculatorStatus();
-    getDebugLogs();
   }, []);
 
   const checkFirebaseStatus = () => {
@@ -54,11 +51,6 @@ export function FirebaseDebugger() {
     }
   };
 
-  const getDebugLogs = () => {
-    const debugLogs = calculatorDebug.getLogs();
-    setLogs(debugLogs.map(log => `[${log.timestamp}] ${log.type}: ${log.message}`));
-  };
-
   const fetchCollections = async () => {
     const db = getFirestoreSafely();
     if (!db) return;
@@ -80,19 +72,25 @@ export function FirebaseDebugger() {
           // For matrix_calculator, check if the document exists
           if (collectionName === 'matrix_calculator') {
             // Check if the pricing_matrix document exists
-            const pricingMatrixRef = collection(db, 'matrix_calculator', 'pricing_matrix', 'dummy');
+            const pricingMatrixRef = doc(db, 'matrix_calculator', 'pricing_matrix');
             try {
-              await getDocs(pricingMatrixRef);
-              collectionData['matrix_calculator_pricing'] = [{ exists: true }];
+              const pricingDoc = await getDoc(pricingMatrixRef);
+              collectionData['matrix_calculator_pricing'] = [{ 
+                exists: pricingDoc.exists(),
+                id: 'pricing_matrix'
+              }];
             } catch (error) {
               collectionData['matrix_calculator_pricing'] = [{ exists: false, error: String(error) }];
             }
 
             // Check if the calculation_params document exists
-            const paramsRef = collection(db, 'matrix_calculator', 'calculation_params', 'dummy');
+            const paramsRef = doc(db, 'matrix_calculator', 'calculation_params');
             try {
-              await getDocs(paramsRef);
-              collectionData['matrix_calculator_params'] = [{ exists: true }];
+              const paramsDoc = await getDoc(paramsRef);
+              collectionData['matrix_calculator_params'] = [{ 
+                exists: paramsDoc.exists(),
+                id: 'calculation_params'
+              }];
             } catch (error) {
               collectionData['matrix_calculator_params'] = [{ exists: false, error: String(error) }];
             }
@@ -103,8 +101,12 @@ export function FirebaseDebugger() {
               const configsSnapshot = await getDocs(query(configsRef, limit(5)));
               collectionData['matrix_calculator_configs'] = configsSnapshot.docs.map(doc => ({
                 id: doc.id,
-                ...doc.data()
+                exists: true
               }));
+              
+              if (configsSnapshot.empty) {
+                collectionData['matrix_calculator_configs'] = [{ exists: false, message: 'No configurations found' }];
+              }
             } catch (error) {
               collectionData['matrix_calculator_configs'] = [{ exists: false, error: String(error) }];
             }
@@ -114,8 +116,12 @@ export function FirebaseDebugger() {
             
             collectionData[collectionName] = snapshot.docs.map(doc => ({
               id: doc.id,
-              ...doc.data()
+              exists: true
             }));
+            
+            if (snapshot.empty) {
+              collectionData[collectionName] = [{ exists: false, message: 'No documents found' }];
+            }
           }
         } catch (error) {
           console.error(`Error fetching collection ${collectionName}:`, error);
@@ -124,171 +130,158 @@ export function FirebaseDebugger() {
       }
 
       setCollections(collectionData);
+      
+      // Check if we're using default values
+      const hasMatrixCalculator = collectionData['matrix_calculator_pricing']?.[0]?.exists &&
+                                 collectionData['matrix_calculator_params']?.[0]?.exists;
+      setDefaultsUsed(!hasMatrixCalculator);
+      
+      // Add some logs
+      const newLogs = [];
+      newLogs.push(`[${new Date().toISOString()}] INFO: Firebase status check completed`);
+      if (hasMatrixCalculator) {
+        newLogs.push(`[${new Date().toISOString()}] INFO: Matrix Calculator collections found`);
+      } else {
+        newLogs.push(`[${new Date().toISOString()}] WARNING: Matrix Calculator collections not found, using defaults`);
+      }
+      
+      // Check for configs
+      const hasConfigs = collectionData['matrix_calculator_configs']?.[0]?.exists;
+      if (hasConfigs) {
+        newLogs.push(`[${new Date().toISOString()}] INFO: User configurations found`);
+      } else {
+        newLogs.push(`[${new Date().toISOString()}] INFO: No user configurations found yet`);
+      }
+      
+      setLogs(newLogs);
     } catch (error) {
       console.error('Error fetching collections:', error);
+      setLogs([`[${new Date().toISOString()}] ERROR: Failed to fetch collections: ${error}`]);
     }
   };
 
   const runDiagnostics = async () => {
-    checkFirebaseStatus();
-    checkMatrixCalculatorStatus();
-    getDebugLogs();
-    
-    // Force bootstrap the Matrix Calculator
+    setLoading(true);
     try {
+      checkFirebaseStatus();
+      await checkMatrixCalculatorStatus();
+      
+      // Force bootstrap the Matrix Calculator
       const bootstrapped = await waitForMatrixCalculatorBootstrap();
       console.log('Matrix Calculator bootstrap result:', bootstrapped);
-      calculatorDebug.log('Matrix Calculator bootstrap result:', bootstrapped);
+      
+      // Add log
+      setLogs(prev => [
+        ...prev,
+        `[${new Date().toISOString()}] INFO: Diagnostics run completed`,
+        `[${new Date().toISOString()}] INFO: Matrix Calculator bootstrap result: ${bootstrapped ? 'success' : 'failed'}`
+      ]);
     } catch (error) {
-      console.error('Error bootstrapping Matrix Calculator:', error);
-      calculatorDebug.error('Error bootstrapping Matrix Calculator', error);
+      console.error('Error running diagnostics:', error);
+      setLogs(prev => [
+        ...prev,
+        `[${new Date().toISOString()}] ERROR: Diagnostics failed: ${error}`
+      ]);
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
-      <div className="space-y-4">
-        <div className="flex justify-between items-center">
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setShowDebugPanel(!showDebugPanel)}
-            className="flex items-center gap-2"
-          >
-            <Bug className="h-4 w-4" />
-            {showDebugPanel ? "Hide Debug Info" : "Show Debug Info"}
-          </Button>
-          
-          {showDebugPanel && (
-            <div className="flex gap-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={toggleDebugMode}
-                className="flex items-center gap-2"
-              >
-                {calculatorDebug.enabled ? "Disable Debug Mode" : "Enable Debug Mode"}
-              </Button>
-              
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={clearDebugLogs}
-                className="flex items-center gap-2"
-              >
-                Clear Logs
-              </Button>
-            </div>
-          )}
-        </div>
-        
-        {defaultsUsed && (
-          <Alert className="bg-amber-50 border-amber-200">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <AlertTitle>Using Default Values</AlertTitle>
-            <AlertDescription>
-              Due to Firebase connection issues, the calculator is using default values. 
-              Calculations will still work, but custom pricing and parameters are not available.
-            </AlertDescription>
-          </Alert>
-        )}
-        
-        {showDebugPanel && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Calculator Diagnostics</CardTitle>
-              <CardDescription>
-                Troubleshoot issues with the Matrix Calculator
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              {/* Firebase Status */}
-              <Alert className={firebaseStatus === 'initialized' ? "bg-green-50" : "bg-amber-50"}>
-                <AlertTitle className="flex items-center gap-2">
-                  {firebaseStatus === 'initialized' ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  )}
-                  Firebase Status
-                </AlertTitle>
-                <AlertDescription>
-                  {firebaseStatus === 'initialized' ? "Firebase is properly initialized" : "Firebase initialization failed - using default values"}
-                </AlertDescription>
-              </Alert>
-              
-              {/* Firestore Status */}
-              <Alert className={matrixCalculatorStatus === 'initialized' ? "bg-green-50" : "bg-amber-50"}>
-                <AlertTitle className="flex items-center gap-2">
-                  {matrixCalculatorStatus === 'initialized' ? (
-                    <CheckCircle className="h-4 w-4 text-green-500" />
-                  ) : (
-                    <AlertTriangle className="h-4 w-4 text-amber-500" />
-                  )}
-                  Firestore Status
-                </AlertTitle>
-                <AlertDescription>
-                  {matrixCalculatorStatus === 'initialized' ? "Firestore is accessible" : "Firestore access failed - using default values"}
-                </AlertDescription>
-              </Alert>
-              
-              {/* Default Values Info */}
-              <Alert className="bg-blue-50">
-                <AlertTitle>Default Values</AlertTitle>
-                <AlertDescription>
-                  When Firebase is unavailable, the calculator uses built-in default values:
-                  <ul className="list-disc pl-5 mt-2">
-                    <li>Default pricing matrix with standard rates</li>
-                    <li>Default calculation parameters for all calculations</li>
-                    <li>Saving calculations will be disabled</li>
-                  </ul>
-                </AlertDescription>
-              </Alert>
-              
-              {/* Calculation Steps */}
-              <Accordion type="single" collapsible className="w-full">
-                <AccordionItem value="calculation-steps">
-                  <AccordionTrigger>
-                    Calculation Steps ({logs.length})
-                  </AccordionTrigger>
-                  <AccordionContent>
-                    {logs.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">No calculation steps recorded</p>
-                    ) : (
-                      <div className="max-h-60 overflow-y-auto text-sm">
-                        {logs.map((step, index) => (
-                          <div 
-                            key={index} 
-                            className={`py-1 px-2 ${
-                              step.startsWith("ERROR:") 
-                                ? "bg-red-50 text-red-700" 
-                                : step.startsWith("WARNING:") 
-                                  ? "bg-amber-50 text-amber-700" 
-                                  : "border-b"
-                            }`}
-                          >
-                            {step}
-                          </div>
-                        ))}
-                      </div>
-                    )}
-                  </AccordionContent>
-                </AccordionItem>
-              </Accordion>
-            </CardContent>
-            <CardFooter>
-              <Button 
-                onClick={runDiagnostics} 
-                disabled={loading}
-                className="flex items-center gap-2"
-              >
-                {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+      <CollapsibleTrigger asChild>
+        <Button variant="outline" className="w-full">
+          {isOpen ? "Hide Firebase Debugger" : "Show Firebase Debugger"}
+        </Button>
+      </CollapsibleTrigger>
+      <CollapsibleContent>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+              <span>Firebase Status</span>
+              <Button onClick={runDiagnostics} size="sm" disabled={loading}>
+                {loading ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <RefreshCw className="h-4 w-4 mr-2" />}
                 Run Diagnostics
               </Button>
-            </CardFooter>
-          </Card>
-        )}
-      </div>
+            </CardTitle>
+            <CardDescription>
+              Check the status of Firebase and Matrix Calculator collections
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-full ${firebaseStatus === 'initialized' ? 'bg-green-500' : 'bg-red-500'}`}></div>
+                <span>Firebase is {firebaseStatus === 'initialized' ? 'properly initialized' : 'not initialized'}</span>
+              </div>
+              
+              <div className="flex items-center gap-2">
+                <div className={`w-4 h-4 rounded-full ${matrixCalculatorStatus === 'initialized' ? 'bg-green-500' : matrixCalculatorStatus === 'initializing' ? 'bg-yellow-500' : 'bg-red-500'}`}></div>
+                <span>Matrix Calculator is {matrixCalculatorStatus === 'initialized' ? 'properly initialized' : matrixCalculatorStatus === 'initializing' ? 'initializing' : 'not initialized'}</span>
+              </div>
+              
+              {defaultsUsed && (
+                <Alert className="bg-amber-50 border-amber-200">
+                  <AlertTriangle className="h-4 w-4 text-amber-500" />
+                  <AlertTitle>Using Default Values</AlertTitle>
+                  <AlertDescription>
+                    Matrix Calculator collections not found in Firebase. Using default values for calculations.
+                    Calculations will still work, but custom pricing and parameters are not available.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Collections</h3>
+                <div className="space-y-4">
+                  {Object.entries(collections).map(([collectionName, docs]) => (
+                    <div key={collectionName} className="border p-3 rounded-md">
+                      <h4 className="font-medium">{collectionName}</h4>
+                      <p className="text-sm text-muted-foreground">{docs.length} documents</p>
+                      
+                      {docs.length > 0 && (
+                        <div className="mt-2">
+                          <h5 className="text-sm font-medium">Sample IDs:</h5>
+                          <div className="text-xs text-muted-foreground space-y-1">
+                            {docs.map((doc, index) => (
+                              <div key={index} className="truncate">
+                                {doc.id || (doc.error ? `Error: ${doc.error}` : 'No ID')}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              <div className="mt-4">
+                <h3 className="text-lg font-semibold mb-2">Debug Logs</h3>
+                <div className="bg-gray-100 p-3 rounded-md max-h-60 overflow-y-auto">
+                  {logs.length > 0 ? (
+                    <pre className="text-xs whitespace-pre-wrap">
+                      {logs.join('\n')}
+                    </pre>
+                  ) : (
+                    <p className="text-sm text-muted-foreground">No logs available</p>
+                  )}
+                </div>
+              </div>
+            </div>
+          </CardContent>
+          <CardFooter>
+            <Button 
+              onClick={() => setLogs([])} 
+              variant="outline"
+              size="sm"
+              className="ml-auto"
+            >
+              Clear Logs
+            </Button>
+          </CardFooter>
+        </Card>
+      </CollapsibleContent>
     </Collapsible>
   );
 }
