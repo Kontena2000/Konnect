@@ -21,6 +21,9 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
     
     console.log('[Matrix Calculator] Successfully got Firestore instance');
     
+    // Create the matrix_calculator collection if it doesn't exist
+    // This is done implicitly by creating documents within it
+    
     // Create the pricing_matrix document if it doesn't exist
     try {
       const pricingRef = doc(db, 'matrix_calculator', 'pricing_matrix');
@@ -59,7 +62,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
       // Continue with bootstrap process even if this fails
     }
     
-    // Create the user_configurations subcollection if it doesn't exist
+    // Create the user_configurations document if it doesn't exist
     try {
       const configsRef = doc(db, 'matrix_calculator', 'user_configurations');
       const configsDoc = await getDoc(configsRef);
@@ -97,6 +100,12 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
  */
 export async function waitForMatrixCalculatorBootstrap(): Promise<boolean> {
   try {
+    // Ensure we don't try to bootstrap on the server side
+    if (typeof window === 'undefined') {
+      console.log('[Matrix Calculator] Skipping bootstrap on server side');
+      return false;
+    }
+    
     return await bootstrapMatrixCalculator();
   } catch (error) {
     console.error('[Matrix Calculator] Error waiting for bootstrap:', error);
