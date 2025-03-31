@@ -1,6 +1,5 @@
-
 import { getClimateFactor } from '../climateDataService';
-import { calculateEnergyWithLocationFactors } from '../energyDataService';
+import { calculateWithLocationFactors as calculateEnergyWithLocationFactors } from '../energyDataService';
 import { locationFactorsCache } from '../calculationCache';
 import { CalculationOptions, CalculationResult } from './types';
 import { calculateConfiguration } from './core';

@@ -1,7 +1,7 @@
-
 import { calculateCoolingCapacity } from '../calculatorUtils';
-import { CoolingParams } from '@/types/calculationParams';
+import { CalculationParams, CoolingParams } from '@/types/calculationParams';
 import { CoolingResult } from './types';
+import { DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 
 /**
  * Calculate cooling requirements based on input parameters
@@ -14,8 +14,14 @@ export function calculateCooling(
 ): CoolingResult {
   const totalITLoad = kwPerRack * totalRacks;
   
+  // Create a complete CalculationParams object with the provided cooling params
+  const fullParams: CalculationParams = {
+    ...DEFAULT_CALCULATION_PARAMS,
+    cooling: params.cooling
+  };
+  
   // Get cooling capacity based on type
-  const cooling = calculateCoolingCapacity(totalITLoad, coolingType, params);
+  const cooling = calculateCoolingCapacity(totalITLoad, coolingType, fullParams);
   
   // Add additional details based on cooling type
   switch (coolingType.toLowerCase()) {

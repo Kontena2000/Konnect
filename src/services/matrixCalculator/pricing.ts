@@ -1,4 +1,3 @@
-
 import { serverTimestamp, getDoc } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { calculatorDebug } from '../calculatorDebug';
@@ -54,7 +53,17 @@ export async function getPricingAndParams() {
     try {
       const paramsDoc = await getDoc(matrixDocRef('matrix_calculator', 'calculation_params'));
       if (paramsDoc.exists()) {
-        params = paramsDoc.data() as CalculationParams;
+        const rawParams = paramsDoc.data();
+        
+        // Ensure redundancyMode is one of the allowed values
+        if (rawParams.electrical && typeof rawParams.electrical.redundancyMode === 'string') {
+          const mode = rawParams.electrical.redundancyMode;
+          if (!['N', 'N+1', '2N'].includes(mode)) {
+            rawParams.electrical.redundancyMode = 'N+1'; // Default to N+1 if invalid
+          }
+        }
+        
+        params = rawParams as CalculationParams;
         console.log('Successfully fetched calculation parameters from Firestore');
       } else {
         console.log('Calculation parameters not found in Firestore, using default values');
