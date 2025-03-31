@@ -1,7 +1,7 @@
-import { useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { useRouter } from "next/router";
-import { AppLayout } from "@/components/layout/AppLayout";
-import { SceneContainer } from "@/components/three/SceneContainer";
+import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
+import { useRouter } from 'next/router';
+import { AppLayout } from '@/components/layout/AppLayout';
+import { SceneContainer } from '@/components/three/SceneContainer';
 import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
@@ -9,13 +9,14 @@ import { Module } from '@/types/module';
 import { Connection } from '@/services/layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import firebaseMonitor from '@/services/firebase-monitor';
-import { db } from '@/lib/firebase';
+import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
+import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 
 interface EditorState {
   modules: Module[];
@@ -40,7 +41,7 @@ export default function LayoutEditorPage() {
   const [redoStack, setRedoStack] = useState<EditorState[]>([]);
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
-  const [transformMode, setTransformMode] = useState<"translate" | "rotate" | "scale">("translate");
+  const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
 
   // Memoize heavy computations
   const memoizedModules = useMemo(() => modules, [modules]);
@@ -176,7 +177,7 @@ export default function LayoutEditorPage() {
           setEditorPreferences(prefs);
         })
         .catch(error => {
-          console.error("Failed to load editor preferences:", error);
+          console.error('Failed to load editor preferences:', error);
         });
     }
   }, [user]);
@@ -187,6 +188,15 @@ export default function LayoutEditorPage() {
       
       try {
         setLoading(true);
+        
+        // Ensure Firebase is initialized
+        await waitForFirebaseBootstrap();
+        const db = getFirestoreSafely();
+        
+        if (!db) {
+          setError('Firebase database is not available');
+          return;
+        }
         
         // Fetch project data
         const projectRef = doc(db, 'projects', projectId as string);
