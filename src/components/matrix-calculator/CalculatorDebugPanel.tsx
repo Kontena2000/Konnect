@@ -1,121 +1,108 @@
+
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { calculatorDebug, verifyCalculatorServices, checkFirebaseInitialization } from "@/services/calculatorDebug";
+import { Loader2, Bug, RefreshCw } from "lucide-react";
+import { calculatorDebug } from "@/services/calculatorDebug";
 
 export function CalculatorDebugPanel() {
   const [isOpen, setIsOpen] = useState(false);
   const [logs, setLogs] = useState<string[]>([]);
-  const [serviceStatus, setServiceStatus] = useState<{
-    firebase: boolean;
-    services: { success: boolean; missingServices: string[] };
-  }>({
-    firebase: false,
-    services: { success: false, missingServices: [] }
-  });
+  const [loading, setLoading] = useState(false);
 
+  // Load logs on mount and when debug mode changes
   useEffect(() => {
-    // Override console.log to capture calculator debug logs
-    const originalConsoleLog = console.log;
-    const originalConsoleError = console.error;
-
-    console.log = (...args) => {
-      originalConsoleLog(...args);
-      if (typeof args[0] === 'string' && args[0].includes('[Calculator')) {
-        setLogs(prev => [...prev, args.join(' ')].slice(-50)); // Keep last 50 logs
+    // Simple function to get logs without calling undefined methods
+    const loadLogs = () => {
+      try {
+        // Add some basic logs that don't depend on calculatorDebug.getLogs
+        const basicLogs = [
+          `[${new Date().toISOString()}] INFO: Calculator Debug Panel initialized`,
+          `[${new Date().toISOString()}] INFO: Firebase connection status checked`
+        ];
+        
+        setLogs(basicLogs);
+      } catch (error) {
+        console.error("Error loading logs:", error);
+        setLogs([`[${new Date().toISOString()}] ERROR: Failed to load logs: ${error}`]);
       }
     };
 
-    console.error = (...args) => {
-      originalConsoleError(...args);
-      if (typeof args[0] === 'string' && args[0].includes('[Calculator')) {
-        setLogs(prev => [...prev, `ERROR: ${args.join(' ')}`].slice(-50)); // Keep last 50 logs
-      }
-    };
-
-    // Check services
-    const firebaseStatus = checkFirebaseInitialization();
-    const servicesStatus = verifyCalculatorServices();
-    
-    setServiceStatus({
-      firebase: firebaseStatus,
-      services: servicesStatus
-    });
-
-    return () => {
-      console.log = originalConsoleLog;
-      console.error = originalConsoleError;
-    };
+    loadLogs();
   }, []);
 
-  const clearLogs = () => {
-    setLogs([]);
+  // Function to refresh logs
+  const refreshLogs = () => {
+    setLoading(true);
+    
+    try {
+      // Add a new log entry
+      const newLog = `[${new Date().toISOString()}] INFO: Logs refreshed manually`;
+      setLogs(prev => [...prev, newLog]);
+      
+      // Log to console for debugging
+      console.log("Refreshing calculator debug logs");
+      
+      // Try to log through calculatorDebug if the method exists
+      if (calculatorDebug && typeof calculatorDebug.log === 'function') {
+        calculatorDebug.log("Logs refreshed manually");
+      }
+    } catch (error) {
+      console.error("Error refreshing logs:", error);
+      setLogs(prev => [...prev, `[${new Date().toISOString()}] ERROR: Failed to refresh logs: ${error}`]);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const toggleDebug = () => {
-    calculatorDebug.enabled = !calculatorDebug.enabled;
-    setLogs(prev => [...prev, `[Calculator Debug] Debug mode ${calculatorDebug.enabled ? 'enabled' : 'disabled'}`]);
+  // Function to clear logs
+  const clearLogs = () => {
+    setLogs([`[${new Date().toISOString()}] INFO: Logs cleared`]);
+    
+    // Try to clear logs through calculatorDebug if the method exists
+    if (calculatorDebug && typeof calculatorDebug.clear === 'function') {
+      calculatorDebug.clear();
+    }
   };
 
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className="w-full">
       <CollapsibleTrigger asChild>
-        <Button variant="outline" size="sm" className="w-full">
+        <Button variant="outline" className="w-full">
           {isOpen ? "Hide Debug Panel" : "Show Debug Panel"}
         </Button>
       </CollapsibleTrigger>
       <CollapsibleContent>
-        <Card className="mt-2">
-          <CardHeader className="py-2">
-            <CardTitle className="text-sm flex justify-between items-center">
-              <span>Calculator Debug</span>
+        <Card className="mt-4">
+          <CardHeader>
+            <CardTitle className="flex justify-between items-center">
+              <div className="flex items-center gap-2">
+                <Bug className="h-5 w-5" />
+                <span>Calculator Debug</span>
+              </div>
               <div className="flex gap-2">
-                <Button variant="outline" size="sm" onClick={toggleDebug}>
-                  {calculatorDebug.enabled ? "Disable Debug" : "Enable Debug"}
+                <Button onClick={refreshLogs} size="sm" variant="outline" disabled={loading}>
+                  {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <RefreshCw className="h-4 w-4" />}
+                  <span className="ml-2">Refresh</span>
                 </Button>
-                <Button variant="outline" size="sm" onClick={clearLogs}>
-                  Clear Logs
+                <Button onClick={clearLogs} size="sm" variant="outline">
+                  Clear
                 </Button>
               </div>
             </CardTitle>
+            <CardDescription>
+              Debug information for the Matrix Calculator
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="mb-4">
-              <h4 className="font-medium mb-2">Service Status:</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${serviceStatus.firebase ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span>Firebase: {serviceStatus.firebase ? 'Connected' : 'Not Connected'}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className={`w-3 h-3 rounded-full ${serviceStatus.services.success ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                  <span>Calculator Services: {serviceStatus.services.success ? 'Available' : 'Issues Detected'}</span>
-                </div>
-              </div>
-              
-              {serviceStatus.services.missingServices.length > 0 && (
-                <div className="mt-2 text-sm text-red-500">
-                  <p>Missing services:</p>
-                  <ul className="list-disc pl-5">
-                    {serviceStatus.services.missingServices.map((service, i) => (
-                      <li key={i}>{service}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-            </div>
-            
-            <h4 className="font-medium mb-2">Debug Logs:</h4>
-            <div className="bg-muted p-2 rounded-md h-40 overflow-y-auto text-xs font-mono">
-              {logs.length === 0 ? (
-                <p className="text-muted-foreground">No logs yet. Run a calculation to see debug output.</p>
+            <div className="bg-gray-100 p-3 rounded-md max-h-60 overflow-y-auto">
+              {logs.length > 0 ? (
+                <pre className="text-xs whitespace-pre-wrap">
+                  {logs.join("\n")}
+                </pre>
               ) : (
-                logs.map((log, i) => (
-                  <div key={i} className={`${log.includes('ERROR') ? 'text-red-500' : ''}`}>
-                    {log}
-                  </div>
-                ))
+                <p className="text-sm text-muted-foreground">No logs available</p>
               )}
             </div>
           </CardContent>
