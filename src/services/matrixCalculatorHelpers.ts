@@ -1,5 +1,5 @@
 import { Firestore, DocumentReference, CollectionReference, doc, collection } from 'firebase/firestore';
-import { getFirestoreSafely, ensureFirebaseInitializedAsync } from '@/lib/firebase';
+import { getFirestoreSafely, ensureFirebaseInitializedAsync, getFirestoreAsync } from '@/lib/firebase';
 import { calculatorDebug } from './calculatorDebug';
 
 /**
@@ -11,8 +11,8 @@ export function getMatrixFirestore(): Firestore {
     const safeDb = getFirestoreSafely();
     
     if (!safeDb) {
-      console.error('[Matrix Calculator] Firestore is not initialized in getMatrixFirestore, attempting to initialize');
-      calculatorDebug.error('Firestore is not initialized in getMatrixFirestore', 'Attempting to initialize');
+      console.error('[Matrix Calculator] Firestore is not initialized in getMatrixFirestore');
+      calculatorDebug.error('Firestore is not initialized in getMatrixFirestore');
       throw new Error('Firestore is not initialized');
     }
     
@@ -30,6 +30,7 @@ export function getMatrixFirestore(): Firestore {
  */
 export function matrixDocRef(path: string, ...pathSegments: string[]): DocumentReference {
   try {
+    // Use getFirestoreSafely directly to avoid circular dependencies
     const firestore = getFirestoreSafely();
     if (!firestore) {
       console.error('[Matrix Calculator] Firestore is not initialized in matrixDocRef');
@@ -50,6 +51,7 @@ export function matrixDocRef(path: string, ...pathSegments: string[]): DocumentR
  */
 export function matrixCollectionRef(path: string, ...pathSegments: string[]): CollectionReference {
   try {
+    // Use getFirestoreSafely directly to avoid circular dependencies
     const firestore = getFirestoreSafely();
     if (!firestore) {
       console.error('[Matrix Calculator] Firestore is not initialized in matrixCollectionRef');
@@ -70,23 +72,8 @@ export function matrixCollectionRef(path: string, ...pathSegments: string[]): Co
  */
 export async function getMatrixFirestoreAsync(): Promise<Firestore> {
   try {
-    console.log('[Matrix Calculator] Ensuring Firebase is initialized in getMatrixFirestoreAsync');
-    const initialized = await ensureFirebaseInitializedAsync();
-    
-    if (!initialized) {
-      console.error('[Matrix Calculator] Firebase initialization failed in getMatrixFirestoreAsync');
-      calculatorDebug.error('Firebase initialization failed in getMatrixFirestoreAsync');
-      throw new Error('Firebase initialization failed');
-    }
-    
-    const firestore = getFirestoreSafely();
-    if (!firestore) {
-      console.error('[Matrix Calculator] Firestore is still not available after initialization');
-      calculatorDebug.error('Firestore is still not available after initialization');
-      throw new Error('Firestore is still not available after initialization');
-    }
-    
-    return firestore;
+    // Use getFirestoreAsync directly from firebase.ts
+    return await getFirestoreAsync();
   } catch (error) {
     console.error('[Matrix Calculator] Error in getMatrixFirestoreAsync:', error);
     calculatorDebug.error('Error in getMatrixFirestoreAsync', error);
@@ -99,8 +86,14 @@ export async function getMatrixFirestoreAsync(): Promise<Firestore> {
  * This is the preferred method for creating document references in async contexts
  */
 export async function matrixDocRefAsync(path: string, ...pathSegments: string[]): Promise<DocumentReference> {
-  const firestore = await getMatrixFirestoreAsync();
-  return doc(firestore, path, ...pathSegments);
+  try {
+    const firestore = await getFirestoreAsync();
+    return doc(firestore, path, ...pathSegments);
+  } catch (error) {
+    console.error('[Matrix Calculator] Error in matrixDocRefAsync:', error);
+    calculatorDebug.error('Error in matrixDocRefAsync', error);
+    throw new Error(`Failed to create document reference async: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
 
 /**
@@ -108,6 +101,12 @@ export async function matrixDocRefAsync(path: string, ...pathSegments: string[])
  * This is the preferred method for creating collection references in async contexts
  */
 export async function matrixCollectionRefAsync(path: string, ...pathSegments: string[]): Promise<CollectionReference> {
-  const firestore = await getMatrixFirestoreAsync();
-  return collection(firestore, path, ...pathSegments);
+  try {
+    const firestore = await getFirestoreAsync();
+    return collection(firestore, path, ...pathSegments);
+  } catch (error) {
+    console.error('[Matrix Calculator] Error in matrixCollectionRefAsync:', error);
+    calculatorDebug.error('Error in matrixCollectionRefAsync', error);
+    throw new Error(`Failed to create collection reference async: ${error instanceof Error ? error.message : String(error)}`);
+  }
 }
