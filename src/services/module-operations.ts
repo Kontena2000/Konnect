@@ -1,19 +1,26 @@
-
-import { db, auth } from "@/lib/firebase";
+import { getFirestoreSafely, getAuthSafely } from '@/lib/firebase';
 import { 
   doc,
   setDoc,
   updateDoc,
   deleteDoc,
   serverTimestamp
-} from "firebase/firestore";
-import { Module } from "@/types/module";
-import firebaseMonitor from "./firebase-monitor";
-import { ModuleError } from "./module";
+} from 'firebase/firestore';
+import { Module } from '@/types/module';
+import firebaseMonitor from './firebase-monitor';
+import { ModuleError } from './module';
+import { waitForFirebaseBootstrap, withBootstrappedFirebase } from '@/utils/firebaseBootstrap';
 
 export const moduleOperations = {
   async createModule(data: Module): Promise<string> {
-    try {
+    return withBootstrappedFirebase(async () => {
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
@@ -46,21 +53,18 @@ export const moduleOperations = {
       });
 
       return data.id;
-    } catch (error) {
-      console.error('Error creating module:', error);
-      firebaseMonitor.logOperation({
-        type: 'module',
-        action: 'create',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    }, data.id, 'Error creating module');
   },
 
   async updateModule(id: string, data: Partial<Module>): Promise<void> {
-    try {
+    return withBootstrappedFirebase(async () => {
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
@@ -87,21 +91,18 @@ export const moduleOperations = {
         timestamp: Date.now(),
         details: { moduleId: id }
       });
-    } catch (error) {
-      console.error('Error updating module:', error);
-      firebaseMonitor.logOperation({
-        type: 'module',
-        action: 'update',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    }, undefined, `Error updating module ${id}`);
   },
 
   async deleteModule(id: string): Promise<void> {
-    try {
+    return withBootstrappedFirebase(async () => {
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
@@ -125,16 +126,6 @@ export const moduleOperations = {
         timestamp: Date.now(),
         details: { moduleId: id }
       });
-    } catch (error) {
-      console.error('Error deleting module:', error);
-      firebaseMonitor.logOperation({
-        type: 'module',
-        action: 'delete',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    }, undefined, `Error deleting module ${id}`);
   }
 };
