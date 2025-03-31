@@ -86,8 +86,8 @@ class FirebaseMonitor {
       // Get Firestore instance safely
       const safeDb = getFirestoreSafely();
       if (safeDb) {
-        const firestore = getFirestore();
-        enableNetwork(firestore).then(() => {
+        // Use the safely obtained Firestore instance directly
+        enableNetwork(safeDb).then(() => {
           this.status.connectionState = 'online';
           this.status.isOnline = true;
           this.notifySubscribers();
