@@ -1,13 +1,13 @@
-import { db } from "@/lib/firebase";
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDocs, 
-  query, 
-  where 
+import { getFirestoreSafely } from "@/lib/firebase";
+import {
+  collection,
+  addDoc,
+  updateDoc,
+  deleteDoc,
+  doc,
+  getDocs,
+  query,
+  where
 } from "firebase/firestore";
 
 export interface TerrainPoint {
@@ -53,6 +53,11 @@ export interface SiteData {
 
 const environmentService = {
   async createSiteData(data: Omit<SiteData, "id">): Promise<string> {
+    const db = getFirestoreSafely();
+    if (!db) {
+      throw new Error('Firestore not available');
+    }
+    
     const siteRef = await addDoc(collection(db, "sites"), {
       ...data,
       createdAt: new Date(),
@@ -60,31 +65,44 @@ const environmentService = {
     });
     return siteRef.id;
   },
-
+  
   async updateSiteData(id: string, data: Partial<SiteData>): Promise<void> {
+    const db = getFirestoreSafely();
+    if (!db) {
+      throw new Error('Firestore not available');
+    }
+    
     const siteRef = doc(db, "sites", id);
     await updateDoc(siteRef, {
       ...data,
       updatedAt: new Date()
     });
   },
-
+  
   async getProjectSiteData(projectId: string): Promise<SiteData | null> {
+    const db = getFirestoreSafely();
+    if (!db) {
+      throw new Error('Firestore not available');
+    }
+    
     const sitesQuery = query(
       collection(db, "sites"),
       where("projectId", "==", projectId)
     );
-    
     const snapshot = await getDocs(sitesQuery);
     if (snapshot.empty) return null;
-    
     return {
       id: snapshot.docs[0].id,
       ...snapshot.docs[0].data()
     } as SiteData;
   },
-
+  
   async updateTerrainData(siteId: string, terrainData: Partial<TerrainData>): Promise<void> {
+    const db = getFirestoreSafely();
+    if (!db) {
+      throw new Error('Firestore not available');
+    }
+    
     const siteRef = doc(db, 'sites', siteId);
     await updateDoc(siteRef, {
       'terrain': terrainData,
