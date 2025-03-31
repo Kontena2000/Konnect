@@ -87,28 +87,16 @@ export function CalculatorComponent({
   
   // Initialize Firebase when component mounts
   useEffect(() => {
-    const initializeCalculator = async () => {
-      try {
-        // Initialize Firebase and Matrix Calculator collections
-        console.log('Bootstrapping Matrix Calculator...');
-        const success = await waitForMatrixCalculatorBootstrap();
-        
-        if (success) {
-          console.log('Matrix Calculator bootstrapped successfully');
-          calculatorDebug.log('Matrix Calculator bootstrapped successfully');
-        } else {
-          console.error('Failed to bootstrap Matrix Calculator');
-          calculatorDebug.error('Failed to bootstrap Matrix Calculator');
-          setError('Failed to initialize calculator. Please try again later.');
-        }
-      } catch (error) {
-        console.error('Error initializing Matrix Calculator:', error);
-        calculatorDebug.error('Error initializing Matrix Calculator', error);
-        setError('Error initializing calculator. Please try again later.');
-      }
-    };
-    
-    initializeCalculator();
+    // Check if Firebase is already initialized
+    const db = getFirestoreSafely();
+    if (!db) {
+      console.error('Firebase is not initialized');
+      calculatorDebug.error('Firebase is not initialized');
+      setError('Firebase is not initialized. Please try again later.');
+    } else {
+      console.log('Firebase is already initialized, ready to use Matrix Calculator');
+      calculatorDebug.log('Firebase is already initialized, ready to use Matrix Calculator');
+    }
   }, []);
   
   // Load initial results if provided
@@ -165,15 +153,15 @@ export function CalculatorComponent({
     setError(null);
     
     try {
-      // Ensure Matrix Calculator is bootstrapped before calculation
-      await waitForMatrixCalculatorBootstrap();
-      
       console.log('Starting calculation with inputs:', { kwPerRack, coolingType, totalRacks });
       calculatorDebug.log('Starting calculation with config:', {
         kwPerRack,
         coolingType,
         totalRacks
       });
+      
+      // Ensure Matrix Calculator is bootstrapped before calculation
+      await waitForMatrixCalculatorBootstrap();
       
       calculatorDebug.log('Options:', {
         redundancyMode,
