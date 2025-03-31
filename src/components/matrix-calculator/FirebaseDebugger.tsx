@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -20,12 +19,7 @@ export function FirebaseDebugger() {
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [defaultsUsed, setDefaultsUsed] = useState(false);
 
-  // Check Firebase status on mount
-  useEffect(() => {
-    checkFirebaseStatus();
-    checkMatrixCalculatorStatus();
-  }, []);
-
+  // Function to check Firebase status
   const checkFirebaseStatus = () => {
     try {
       const initialized = isFirebaseInitialized();
@@ -39,6 +33,12 @@ export function FirebaseDebugger() {
       setFirebaseStatus('error');
     }
   };
+
+  // Check Firebase status on mount
+  useEffect(() => {
+    checkFirebaseStatus();
+    checkMatrixCalculatorStatus();
+  }, [checkFirebaseStatus]); // Fixed: Added checkFirebaseStatus to dependency array
 
   const checkMatrixCalculatorStatus = async () => {
     try {
