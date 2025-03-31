@@ -1,7 +1,6 @@
 
 import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc, setDoc, updateDoc } from "firebase/firestore";
-import { AuthUser } from "@/services/auth";
 import firebaseMonitor from "./firebase-monitor";
 
 export interface EditorPreferences {
@@ -32,12 +31,13 @@ const editorPreferencesService = {
         details: { userId }
       });
 
-const db = getFirestoreSafely();
-if (!db) {
-  throw new Error('Firestore not available');
-}
-const docRef = doc(db, 'editorPreferences', userId);
-      const snapshot = await getDoc(prefsRef);
+      const db = getFirestoreSafely();
+      if (!db) {
+        throw new Error('Firestore not available');
+      }
+      
+      const docRef = doc(db, 'editorPreferences', userId);
+      const snapshot = await getDoc(docRef);
 
       if (!snapshot.exists()) {
         // Return default preferences
@@ -97,6 +97,11 @@ const docRef = doc(db, 'editorPreferences', userId);
         timestamp: Date.now(),
         details: { userId, preferences: prefsWithUser }
       });
+
+      const db = getFirestoreSafely();
+      if (!db) {
+        throw new Error('Firestore not available');
+      }
 
       const prefsRef = doc(db, "editorPreferences", userId);
       const snapshot = await getDoc(prefsRef);
