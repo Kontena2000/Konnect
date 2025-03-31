@@ -33,7 +33,7 @@ import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
-import { db } from "@/lib/firebase";
+import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 
 export default function ProjectDetailsPage() {
@@ -87,6 +87,12 @@ export default function ProjectDetailsPage() {
 
         // Fetch calculations for this project
         try {
+          const db = getFirestoreSafely();
+          if (!db) {
+            console.error('Firestore not available');
+            return;
+          }
+          
           const calculationsQuery = query(
             collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
             where('projectId', '==', id)
