@@ -1,4 +1,3 @@
-
 export const DEFAULT_CALCULATION_PARAMS = {
   // Electrical parameters
   electrical: {
@@ -6,6 +5,8 @@ export const DEFAULT_CALCULATION_PARAMS = {
     powerFactor: 0.9,         // Power factor
     busbarsPerRow: 1,         // Default number of busbars per row
     redundancyMode: "N+1" as "N" | "N+1" | "2N",    // Redundancy mode: 'N', 'N+1', '2N'
+    volts: 400,
+    phases: 3,
   },
   
   // Cooling parameters
@@ -14,6 +15,10 @@ export const DEFAULT_CALCULATION_PARAMS = {
     flowRateFactor: 2.22,     // L/min/kW at delta T of 7°C
     dlcResidualHeatFraction: 0.25, // DLC residual heat fraction
     chillerEfficiencyFactor: 1.0,  // Chiller efficiency multiplier
+    airCoolingEfficiency: 0.85,
+    dlcEfficiency: 0.95,
+    hybridEfficiency: 0.9,
+    immersionEfficiency: 0.98,
   },
   
   // UPS and power parameters
@@ -24,6 +29,8 @@ export const DEFAULT_CALCULATION_PARAMS = {
     batteryEfficiency: 0.95,  // Battery efficiency factor
     eHouseBaseSqm: 20,        // Base sqm per UPS frame
     eHouseBatterySqm: 5,      // Sqm per battery cabinet
+    upsEfficiency: 0.97,
+    generatorEfficiency: 0.85,
   },
   
   // Cost factors
@@ -31,12 +38,21 @@ export const DEFAULT_CALCULATION_PARAMS = {
     installationPercentage: 0.15, // 15% of equipment costs
     engineeringPercentage: 0.10,  // 10% of equipment costs
     contingencyPercentage: 0.05,  // 5% additional contingency (optional)
+    electricityCostPerKwh: 0.15,
+    maintenancePercentageOfCapex: 0.03,
+    inflationRate: 0.02,
   },
   
   // Cooling mode thresholds
   coolingThresholds: {
     airCooledMax: 75,         // Maximum kW/rack for air-cooled (higher requires DLC)
     recommendedDlcMin: 75,    // Recommended minimum kW/rack for DLC
+  },
+  
+  sustainability: {
+    co2PerKwh: 0.4, // kg CO2 per kWh
+    waterUsagePerMwh: 2.5, // m³ per MWh
+    generatorCo2PerLiter: 2.68 // kg CO2 per liter of diesel
   }
 };
 
@@ -45,73 +61,77 @@ export const DEFAULT_PRICING = {
   busbar: {
     base1250A: 12500,
     base2000A: 18000,
+    busbar800A: 25000,
+    busbar1000A: 30000,
+    busbar1200A: 35000,
+    busbar1600A: 45000,
+    busbar2000A: 55000,
     perMeter: 1200,
     copperPremium: 2500,
-    busbar800A: 9000,
-    busbar1000A: 11000,
-    busbar1600A: 15000
   },
   tapOffBox: {
-    standard63A: 800,
-    custom100A: 1200,
+    standard63A: 1200,
+    custom100A: 1500,
     custom150A: 1500,
     custom200A: 1800,
-    custom250A: 2200
+    custom250A: 2500,
   },
   rpdu: {
-    standard16A: 450,
-    standard32A: 650,
-    standard80A: 1200,
-    standard112A: 1800
+    standard16A: 800,
+    standard32A: 1200,
+    monitored16A: 1500,
+    monitored32A: 2000,
+    switched16A: 2500,
+    switched32A: 3000,
   },
   
   // Cooling components
   rdhx: {
-    basic: 45000,
-    standard: 65000,
-    highDensity: 85000,
-    average: 65000
+    basic: 50000,
+    standard: 75000,
+    highDensity: 100000,
+    average: 75000,
   },
   piping: {
-    dn110PerMeter: 350,
-    dn160PerMeter: 550,
-    valveDn110: 1200,
-    valveDn160: 1800,
+    dn110PerMeter: 250,
+    dn160PerMeter: 350,
+    valveDn110: 1500,
+    valveDn160: 2000,
   },
   cooler: {
-    tcs310aXht: 85000,
-    grundfosPump: 12000,
-    bufferTank: 8000,
-    immersionTank: 120000,
-    immersionCDU: 85000
+    tcs310aXht: 150000,
+    grundfosPump: 25000,
+    bufferTank: 15000,
+    immersionTank: 75000,
+    immersionCDU: 120000,
   },
   
   // Power components
   ups: {
-    frame2Module: 45000,
-    frame4Module: 65000,
-    frame6Module: 85000,
-    module250kw: 35000
+    frame2Module: 50000,
+    frame4Module: 75000,
+    frame6Module: 100000,
+    module250kw: 25000,
   },
   battery: {
-    revoTp240Cabinet: 75000
+    revoTp240Cabinet: 75000,
   },
   
   // Infrastructure
   generator: {
     generator1000kva: 250000,
-    generator2000kva: 450000,
-    generator3000kva: 650000,
-    fuelTankPerLiter: 2
+    generator2000kva: 400000,
+    generator3000kva: 550000,
+    fuelTankPerLiter: 2,
   },
   eHouse: {
-    base: 85000,
-    perSqMeter: 3500
+    base: 100000,
+    perSqMeter: 2500,
   },
   sustainability: {
-    heatRecoverySystem: 120000,
-    waterRecyclingSystem: 85000,
-    solarPanelPerKw: 1200
+    heatRecoverySystem: 75000,
+    waterRecyclingSystem: 50000,
+    solarPanelPerKw: 1500,
   }
 };
 
