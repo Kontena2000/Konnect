@@ -1,10 +1,11 @@
+
 export const DEFAULT_CALCULATION_PARAMS = {
   // Electrical parameters
   electrical: {
     voltageFactor: 400,       // Voltage (V)
     powerFactor: 0.9,         // Power factor
     busbarsPerRow: 1,         // Default number of busbars per row
-    redundancyMode: 'N+1',    // Redundancy mode: 'N', 'N+1', '2N'
+    redundancyMode: "N+1" as "N" | "N+1" | "2N",    // Redundancy mode: 'N', 'N+1', '2N'
   },
   
   // Cooling parameters
