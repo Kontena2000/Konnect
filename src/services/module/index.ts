@@ -1,5 +1,5 @@
 
-import { db, auth } from "@/lib/firebase";
+import { db, auth, getFirestoreAsync, getAuthAsync } from "@/lib/firebase";
 import { 
   collection, 
   doc,
@@ -9,9 +9,10 @@ import {
   deleteDoc,
   writeBatch,
   query,
-  where
+  where,
+  Firestore
 } from "firebase/firestore";
-import { getIdTokenResult } from 'firebase/auth';
+import { getIdTokenResult, Auth } from 'firebase/auth';
 import { ModuleData, CategoryData, ModuleError } from "./types";
 import { moduleOperations } from "./operations";
 import { validateCategory } from "./validation";
@@ -22,6 +23,11 @@ const moduleService = {
 
   async checkUserPermissions(): Promise<boolean> {
     try {
+      if (!auth) {
+        console.error('Auth is not initialized');
+        return false;
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         console.error('No user logged in');
@@ -43,9 +49,17 @@ const moduleService = {
 
   async getAllModules(): Promise<ModuleData[]> {
     try {
+      if (!auth) {
+        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      if (!db) {
+        throw new ModuleError('Firestore is not initialized', 'DB_REQUIRED');
       }
 
       firebaseMonitor.logOperation({
@@ -94,9 +108,17 @@ const moduleService = {
 
   async getCategories(): Promise<CategoryData[]> {
     try {
+      if (!auth) {
+        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      if (!db) {
+        throw new ModuleError('Firestore is not initialized', 'DB_REQUIRED');
       }
 
       const categoriesRef = collection(db, 'categories');
@@ -122,9 +144,17 @@ const moduleService = {
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
     try {
+      if (!auth) {
+        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      if (!db) {
+        throw new ModuleError('Firestore is not initialized', 'DB_REQUIRED');
       }
 
       if (!validateCategory(data.id, data.name)) {
@@ -155,9 +185,17 @@ const moduleService = {
 
   async deleteCategory(categoryId: string): Promise<void> {
     try {
+      if (!auth) {
+        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      if (!db) {
+        throw new ModuleError('Firestore is not initialized', 'DB_REQUIRED');
       }
 
       const hasPermission = await this.checkUserPermissions();
@@ -174,9 +212,17 @@ const moduleService = {
 
   async initializeDefaultModules(): Promise<void> {
     try {
+      if (!auth) {
+        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      if (!db) {
+        throw new ModuleError('Firestore is not initialized', 'DB_REQUIRED');
       }
 
       const defaultModules = [
@@ -192,7 +238,9 @@ const moduleService = {
         }
       ];
 
-      const batch = writeBatch(db);
+      const firestore = db as Firestore;
+      const batch = writeBatch(firestore);
+      
       for (const defaultItem of defaultModules) {
         const moduleRef = doc(db, 'modules', defaultItem.id);
         batch.set(moduleRef, {
@@ -210,9 +258,17 @@ const moduleService = {
 
   async initializeBasicCategory(): Promise<void> {
     try {
+      if (!auth) {
+        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
+      }
+
+      if (!db) {
+        throw new ModuleError('Firestore is not initialized', 'DB_REQUIRED');
       }
 
       const categoryRef = doc(db, 'categories', 'basic');

@@ -27,12 +27,30 @@ import { fallbackCalculation } from './calculatorFallback';
 import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
 import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, collection, query, where, getDocs, addDoc } from 'firebase/firestore';
+import { doc, getDoc, collection, query, where, getDocs, addDoc, Firestore, DocumentReference, CollectionReference } from 'firebase/firestore';
 
 // Improved cache implementation
 let cachedPricing: PricingMatrix | null = null;
 let cachedParams: CalculationParams | null = null;
 let lastFetchTime = 0;
+
+// Helper function to safely use Firestore
+function safeFirestore(): Firestore {
+  if (!db) {
+    throw new Error('Firestore is not initialized');
+  }
+  return db as Firestore;
+}
+
+// Helper function to safely create document reference
+function safeDocRef(path: string, ...pathSegments: string[]): DocumentReference {
+  return doc(safeFirestore(), path, ...pathSegments);
+}
+
+// Helper function to safely create collection reference
+function safeCollectionRef(path: string, ...pathSegments: string[]): CollectionReference {
+  return collection(safeFirestore(), path, ...pathSegments);
+}
 
 export async function getPricingAndParams() {
   // Check if cache is valid (less than 5 minutes old)
@@ -52,7 +70,7 @@ export async function getPricingAndParams() {
     // Fetch pricing with better error handling
     let pricing = DEFAULT_PRICING;
     try {
-      const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
+      const pricingDoc = await getDoc(safeDocRef('matrix_calculator', 'pricing_matrix'));
       if (pricingDoc.exists()) {
         pricing = pricingDoc.data() as PricingMatrix;
         console.log('Successfully fetched pricing matrix from Firestore');
@@ -68,7 +86,7 @@ export async function getPricingAndParams() {
     // Fetch parameters with better error handling
     let params = DEFAULT_CALCULATION_PARAMS;
     try {
-      const paramsDoc = await getDoc(doc(db, 'matrix_calculator', 'calculation_params'));
+      const paramsDoc = await getDoc(safeDocRef('matrix_calculator', 'calculation_params'));
       if (paramsDoc.exists()) {
         params = paramsDoc.data() as CalculationParams;
         console.log('Successfully fetched calculation parameters from Firestore');
@@ -935,7 +953,7 @@ export async function saveCalculationResult(userId: string, config: CalculationC
     
     // If projectId is provided, validate project access
     if (projectId) {
-      const projectRef = doc(db, 'projects', projectId);
+      const projectRef = safeDocRef('projects', projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
@@ -951,7 +969,7 @@ export async function saveCalculationResult(userId: string, config: CalculationC
       }
     }
     
-    const docRef = await addDoc(collection(db, 'matrix_calculator', 'user_configurations', 'configs'), {
+    const docRef = await addDoc(safeCollectionRef('matrix_calculator', 'user_configurations', 'configs'), {
       userId,
       name,
       description: `${config.kwPerRack}kW per rack, ${config.coolingType} cooling, ${config.totalRacks || 28} racks`,
@@ -980,7 +998,7 @@ export async function getProjectCalculations(projectId: string): Promise<any[]> 
   try {
     const querySnapshot = await getDocs(
       query(
-        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+        safeCollectionRef('matrix_calculator', 'user_configurations', 'configs'),
         where('projectId', '==', projectId)
       )
     );
@@ -1075,7 +1093,7 @@ export async function calculateWithLocationFactors(
 export async function fetchHistoricalCalculations(userId: string, limit = 5) {
   try {
     const calculationsQuery = query(
-      collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+      safeCollectionRef('matrix_calculator', 'user_configurations', 'configs'),
       where('userId', '==', userId),
       where('status', '==', 'completed')
     );
