@@ -22,6 +22,7 @@ import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group';
 import { getFirestoreSafely, initializeFirebaseSafely } from '@/lib/firebase';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
+import { initializeMatrixCalculator } from '@/services/matrixCalculatorInitializer';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -85,17 +86,37 @@ export function CalculatorComponent({
   
   // Initialize Firebase when component mounts
   useEffect(() => {
-    // Initialize Firebase when component mounts
-    console.log('Initializing Firebase in Matrix Calculator...');
-    const success = initializeFirebaseSafely();
+    const initializeCalculator = async () => {
+      // Initialize Firebase when component mounts
+      console.log('Initializing Firebase in Matrix Calculator...');
+      const success = initializeFirebaseSafely();
+      
+      if (!success) {
+        console.error('Firebase initialization failed in Matrix Calculator');
+        calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
+      } else {
+        console.log('Firebase initialized successfully in Matrix Calculator');
+        calculatorDebug.log('Firebase initialized successfully');
+        
+        // Initialize Matrix Calculator collections with default data
+        try {
+          console.log('Initializing Matrix Calculator collections...');
+          const initSuccess = await initializeMatrixCalculator();
+          if (initSuccess) {
+            console.log('Matrix Calculator collections initialized successfully');
+            calculatorDebug.log('Matrix Calculator collections initialized successfully');
+          } else {
+            console.error('Failed to initialize Matrix Calculator collections');
+            calculatorDebug.error('Failed to initialize Matrix Calculator collections');
+          }
+        } catch (error) {
+          console.error('Error initializing Matrix Calculator:', error);
+          calculatorDebug.error('Error initializing Matrix Calculator', error);
+        }
+      }
+    };
     
-    if (!success) {
-      console.error('Firebase initialization failed in Matrix Calculator');
-      calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
-    } else {
-      console.log('Firebase initialized successfully in Matrix Calculator');
-      calculatorDebug.log('Firebase initialized successfully');
-    }
+    initializeCalculator();
   }, []);
   
   // Load initial results if provided
