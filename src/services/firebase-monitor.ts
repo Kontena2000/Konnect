@@ -1,4 +1,3 @@
-
 import { getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
 import { getFirestore, disableNetwork, enableNetwork, getDocs, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
@@ -118,7 +117,8 @@ class FirebaseMonitor {
         throw new Error('Failed to get Firestore instance');
       }
       
-      const firestore = getFirestore();
+      // Use the safely obtained Firestore instance instead of getFirestore()
+      const firestore = safeDb;
       
       this.logOperation({
         type: 'connection',
