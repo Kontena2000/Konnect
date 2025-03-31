@@ -1,31 +1,25 @@
-
 import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { getFirestoreAsync, ensureFirebaseInitializedAsync } from '@/lib/firebase';
+import { getFirestoreSafely } from '@/lib/firebase';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { calculatorDebug } from '@/services/calculatorDebug';
 
 /**
- * Bootstraps the Matrix Calculator by ensuring Firebase is initialized
- * and the required collections and documents exist
+ * Bootstraps the Matrix Calculator by ensuring the required collections and documents exist
+ * This function assumes Firebase is already initialized by the main app
  */
 export async function bootstrapMatrixCalculator(): Promise<boolean> {
   try {
     console.log('[Matrix Calculator] Starting bootstrap process...');
     
-    // First, ensure Firebase is initialized
-    const initialized = await ensureFirebaseInitializedAsync();
-    if (!initialized) {
-      console.error('[Matrix Calculator] Firebase initialization failed during bootstrap');
-      calculatorDebug.error('Firebase initialization failed during bootstrap');
+    // Get Firestore instance using the safe accessor (doesn't try to initialize Firebase)
+    const db = getFirestoreSafely();
+    if (!db) {
+      console.error('[Matrix Calculator] Firestore is not available during bootstrap');
+      calculatorDebug.error('Firestore is not available during bootstrap');
       return false;
     }
     
-    // Get Firestore instance
-    const db = await getFirestoreAsync();
     console.log('[Matrix Calculator] Successfully got Firestore instance');
-    
-    // Create the matrix_calculator collection if it doesn't exist
-    // (In Firestore, collections are created implicitly when documents are added)
     
     // Create the pricing_matrix document if it doesn't exist
     try {
