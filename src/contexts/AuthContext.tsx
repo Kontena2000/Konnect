@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged, getIdTokenResult } from 'firebase/auth';
-import { auth, getAuthSafely, initializeFirebaseSafely } from '@/lib/firebase';
+import { getAuthSafely } from '@/lib/firebase';
 import type { AuthUser, UserRole } from '@/services/auth';
 import userService from '@/services/user';
 import { useRouter } from 'next/router';
 import { useToast } from '@/hooks/use-toast';
-import { checkFirebaseInitialization } from '@/utils/firebaseDebug';
+import { ensureFirebaseInitialized, getAuth as getAuthAsync } from '@/utils/firebaseInitializer';
 
 interface AuthContextType {
   user: AuthUser | null;
@@ -29,103 +29,106 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let mounted = true;
+    let unsubscribe = () => {};
 
-    // Try to initialize Firebase first
-    try {
-      initializeFirebaseSafely();
-    } catch (error) {
-      console.error("Error initializing Firebase in AuthContext:", error);
-    }
-
-    // Check Firebase initialization on component mount
-    try {
-      const isInitialized = checkFirebaseInitialization();
-      if (!isInitialized) {
-        console.error("Firebase not initialized in AuthContext");
-        setInitError("Firebase initialization failed");
-        setLoading(false);
-        return;
-      }
-    } catch (error) {
-      console.error("Error checking Firebase initialization:", error);
-      if (error instanceof Error) {
-        setInitError(`Firebase error: ${error.message}`);
-      } else {
-        setInitError("Unknown Firebase initialization error");
-      }
-      setLoading(false);
-      return;
-    }
-
-    // Get auth instance safely
-    const safeAuth = getAuthSafely();
-    if (!safeAuth) {
-      console.error("Failed to get Auth instance in AuthContext");
-      setInitError("Failed to get Auth instance");
-      setLoading(false);
-      return;
-    }
-
-    const unsubscribe = onAuthStateChanged(safeAuth, async (user) => {
+    const initializeAuth = async () => {
       try {
-        if (!mounted) return;
-
-        if (user) {
-          // Special case for ruud@kontena.eu - always admin
-          if (user.email === 'ruud@kontena.eu') {
-            if (mounted) {
-              setUser(user as AuthUser);
-              setRole('admin');
-            }
-          } else {
-            // Get the user's ID token result which includes custom claims
-            const tokenResult = await getIdTokenResult(user, true);
-            const userDoc = await userService.getUserByEmail(user.email!);
-            
-            if (mounted) {
-              setUser(user as AuthUser);
-              // Use the role from custom claims, fallback to Firestore role
-              setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
-            }
-          }
-
-          // Only redirect if we're on auth pages
-          if (router.pathname === '/auth/login' || router.pathname === '/' || router.pathname === '/auth/register') {
-            router.replace('/dashboard/projects');
-          }
-        } else {
+        // Ensure Firebase is initialized before proceeding
+        const initialized = await ensureFirebaseInitialized();
+        if (!initialized) {
+          console.error('Firebase initialization failed in AuthContext');
           if (mounted) {
-            setUser(null);
-            setRole(null);
+            setInitError('Firebase initialization failed');
+            setLoading(false);
           }
+          return;
+        }
 
-          // Only redirect if we're on protected pages
-          if (router.pathname.startsWith('/dashboard')) {
-            router.replace('/auth/login');
+        // Get auth instance safely using the async method
+        try {
+          const authInstance = await getAuthAsync();
+          
+          unsubscribe = onAuthStateChanged(authInstance, async (user) => {
+            try {
+              if (!mounted) return;
+
+              if (user) {
+                // Special case for ruud@kontena.eu - always admin
+                if (user.email === 'ruud@kontena.eu') {
+                  if (mounted) {
+                    setUser(user as AuthUser);
+                    setRole('admin');
+                  }
+                } else {
+                  // Get the user's ID token result which includes custom claims
+                  const tokenResult = await getIdTokenResult(user, true);
+                  const userDoc = await userService.getUserByEmail(user.email!);
+                  
+                  if (mounted) {
+                    setUser(user as AuthUser);
+                    // Use the role from custom claims, fallback to Firestore role
+                    setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
+                  }
+                }
+
+                // Only redirect if we're on auth pages
+                if (router.pathname === '/auth/login' || router.pathname === '/' || router.pathname === '/auth/register') {
+                  router.replace('/dashboard/projects');
+                }
+              } else {
+                if (mounted) {
+                  setUser(null);
+                  setRole(null);
+                }
+
+                // Only redirect if we're on protected pages
+                if (router.pathname.startsWith('/dashboard')) {
+                  router.replace('/auth/login');
+                }
+              }
+            } catch (error) {
+              console.error('Error in auth state change:', error);
+              
+              if (mounted) {
+                // If error occurs for ruud@kontena.eu, still grant admin access
+                if (user?.email === 'ruud@kontena.eu') {
+                  setRole('admin');
+                } else {
+                  setRole('editor');
+                  toast({
+                    title: 'Authentication Error',
+                    description: 'There was a problem verifying your account. Some features may be limited.',
+                    variant: 'destructive'
+                  });
+                }
+              }
+            } finally {
+              if (mounted) {
+                setLoading(false);
+              }
+            }
+          });
+        } catch (error) {
+          console.error('Failed to get Auth instance in AuthContext:', error);
+          if (mounted) {
+            setInitError('Failed to get Auth instance');
+            setLoading(false);
           }
         }
       } catch (error) {
-        console.error('Error in auth state change:', error);
-        
+        console.error('Error in AuthContext initialization:', error);
         if (mounted) {
-          // If error occurs for ruud@kontena.eu, still grant admin access
-          if (user?.email === 'ruud@kontena.eu') {
-            setRole('admin');
+          if (error instanceof Error) {
+            setInitError(`Firebase error: ${error.message}`);
           } else {
-            setRole('editor');
-            toast({
-              title: 'Authentication Error',
-              description: 'There was a problem verifying your account. Some features may be limited.',
-              variant: 'destructive'
-            });
+            setInitError('Unknown Firebase initialization error');
           }
-        }
-      } finally {
-        if (mounted) {
           setLoading(false);
         }
       }
-    });
+    };
+
+    initializeAuth();
 
     return () => {
       mounted = false;
@@ -136,8 +139,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Display Firebase initialization error if it occurs
   if (initError) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <p>{initError}</p>
+      <div className='flex items-center justify-center min-h-screen bg-background'>
+        <div className='p-6 bg-card border rounded-lg shadow-md'>
+          <h2 className='text-xl font-semibold mb-2'>Firebase Initialization Error</h2>
+          <p className='text-destructive'>{initError}</p>
+          <p className='mt-4 text-sm text-muted-foreground'>Please refresh the page or contact support if this issue persists.</p>
+        </div>
       </div>
     );
   }
