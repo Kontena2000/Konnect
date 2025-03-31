@@ -67,32 +67,40 @@ export function initializeFirebaseServices(): boolean {
           return acc;
         }, {} as Record<string, string>)
       );
+      
+      // CRITICAL: Initialize Firebase app
       app = initializeApp(firebaseConfig);
     }
 
-    // Initialize all services
-    db = getFirestoreOriginal(app);
-    auth = getAuthOriginal(app);
-    storage = getStorageOriginal(app);
+    // Initialize all services if app is available
+    if (app) {
+      // Initialize all services
+      db = getFirestoreOriginal(app);
+      auth = getAuthOriginal(app);
+      storage = getStorageOriginal(app);
 
-    // Enable persistence for Firestore
-    if (db) {
-      enableIndexedDbPersistence(db).catch((err) => {
-        console.warn(
-          `[Firebase] Persistence issue: ${
-            err.code === 'failed-precondition'
-              ? 'Multiple tabs open, persistence enabled in first tab only'
-              : err.code === 'unimplemented'
-              ? 'Browser does not support persistence'
-              : err.message
-          }`
-        );
-      });
+      // Enable persistence for Firestore
+      if (db) {
+        enableIndexedDbPersistence(db).catch((err) => {
+          console.warn(
+            `[Firebase] Persistence issue: ${
+              err.code === 'failed-precondition'
+                ? 'Multiple tabs open, persistence enabled in first tab only'
+                : err.code === 'unimplemented'
+                ? 'Browser does not support persistence'
+                : err.message
+            }`
+          );
+        });
+      }
+
+      initialized = true;
+      console.log('[Firebase] All services initialized successfully');
+      return true;
+    } else {
+      console.error('[Firebase] Failed to initialize Firebase app');
+      return false;
     }
-
-    initialized = true;
-    console.log('[Firebase] All services initialized successfully');
-    return true;
   } catch (error) {
     console.error('[Firebase] Error initializing Firebase:', error);
     return false;
@@ -125,6 +133,7 @@ export function ensureFirebaseInitializedAsync(): Promise<boolean> {
       // Skip on server-side
       if (typeof window === 'undefined') {
         console.log('[Firebase] Skipping initialization on server side');
+        initializationInProgress = false;
         resolve(false);
         return;
       }
@@ -134,24 +143,25 @@ export function ensureFirebaseInitializedAsync(): Promise<boolean> {
         app = getApps()[0];
         
         // Initialize services if they're not already
-        if (!db) db = getFirestoreOriginal(app);
-        if (!auth) auth = getAuthOriginal(app);
-        if (!storage) storage = getStorageOriginal(app);
+        if (!db && app) db = getFirestoreOriginal(app);
+        if (!auth && app) auth = getAuthOriginal(app);
+        if (!storage && app) storage = getStorageOriginal(app);
         
         initialized = true;
         console.log('[Firebase] Using existing Firebase app');
+        initializationInProgress = false;
         resolve(true);
         return;
       }
       
       // Initialize Firebase
       const success = initializeFirebaseServices();
+      initializationInProgress = false;
       resolve(success);
     } catch (error) {
       console.error('[Firebase] Error in ensureFirebaseInitializedAsync:', error);
-      resolve(false);
-    } finally {
       initializationInProgress = false;
+      resolve(false);
     }
   });
   
@@ -172,45 +182,57 @@ export { app, db, auth, storage };
 // Export safe accessor functions that ensure Firebase is initialized
 export function getFirestoreSafely(): Firestore | null {
   if (!initialized && typeof window !== 'undefined') {
-    initializeFirebaseServices();
+    // Try to initialize Firebase if not already initialized
+    const success = initializeFirebaseServices();
+    if (!success) {
+      console.error('[Firebase] Failed to initialize Firebase in getFirestoreSafely');
+    }
   }
   return db;
 }
 
 export function getAuthSafely(): Auth | null {
   if (!initialized && typeof window !== 'undefined') {
-    initializeFirebaseServices();
+    // Try to initialize Firebase if not already initialized
+    const success = initializeFirebaseServices();
+    if (!success) {
+      console.error('[Firebase] Failed to initialize Firebase in getAuthSafely');
+    }
   }
   return auth;
 }
 
 export function getStorageSafely(): FirebaseStorage | null {
   if (!initialized && typeof window !== 'undefined') {
-    initializeFirebaseServices();
+    // Try to initialize Firebase if not already initialized
+    const success = initializeFirebaseServices();
+    if (!success) {
+      console.error('[Firebase] Failed to initialize Firebase in getStorageSafely');
+    }
   }
   return storage;
 }
 
 // Async versions that ensure initialization and throw if service is unavailable
 export async function getFirestoreAsync(): Promise<Firestore> {
-  await ensureFirebaseInitializedAsync();
-  if (!db) {
+  const success = await ensureFirebaseInitializedAsync();
+  if (!success || !db) {
     throw new Error('[Firebase] Firestore is not available');
   }
   return db;
 }
 
 export async function getAuthAsync(): Promise<Auth> {
-  await ensureFirebaseInitializedAsync();
-  if (!auth) {
+  const success = await ensureFirebaseInitializedAsync();
+  if (!success || !auth) {
     throw new Error('[Firebase] Auth is not available');
   }
   return auth;
 }
 
 export async function getStorageAsync(): Promise<FirebaseStorage> {
-  await ensureFirebaseInitializedAsync();
-  if (!storage) {
+  const success = await ensureFirebaseInitializedAsync();
+  if (!success || !storage) {
     throw new Error('[Firebase] Storage is not available');
   }
   return storage;
