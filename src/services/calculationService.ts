@@ -9,7 +9,7 @@ import {
   query,
   where
 } from 'firebase/firestore';
-import { getFirestoreSafely } from '@/lib/firebase';
+import { getFirestoreSafely, ensureFirebaseInitializedAsync } from '@/lib/firebase';
 import { calculatorDebug } from './calculatorDebug';
 import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
 import { CalculationConfig, CalculationOptions } from './matrixCalculatorService';
@@ -30,7 +30,10 @@ export async function saveCalculationResult(
     console.log('[Matrix Calculator] Starting save calculation process...');
     calculatorDebug.log('Starting save calculation process', { userId, config, name, projectId });
     
-    // First, ensure Matrix Calculator is bootstrapped
+    // First, ensure Firebase is fully initialized
+    await ensureFirebaseInitializedAsync();
+    
+    // Then ensure Matrix Calculator is bootstrapped
     const bootstrapped = await waitForMatrixCalculatorBootstrap();
     if (!bootstrapped) {
       console.error('[Matrix Calculator] Failed to bootstrap Matrix Calculator');
@@ -134,7 +137,7 @@ export async function saveCalculationResult(
       console.log('[Matrix Calculator] Calculation saved successfully with ID:', docRef.id);
       calculatorDebug.log('Calculation saved successfully', { id: docRef.id });
       
-      return { id: docRef.id, success: true };
+      return { id: docRef.id, success: true, projectId };
     } catch (error) {
       console.error('[Matrix Calculator] Error saving calculation to Firestore:', error);
       calculatorDebug.error('Error saving calculation to Firestore', error);
@@ -152,6 +155,9 @@ export async function saveCalculationResult(
  */
 export async function getProjectCalculations(projectId: string): Promise<any[]> {
   try {
+    // Ensure Firebase is fully initialized
+    await ensureFirebaseInitializedAsync();
+    
     // Get Firestore instance directly
     const db = getFirestoreSafely();
     if (!db) {
@@ -185,6 +191,9 @@ export async function getProjectCalculations(projectId: string): Promise<any[]> 
  */
 export async function getUserCalculations(userId: string): Promise<any[]> {
   try {
+    // Ensure Firebase is fully initialized
+    await ensureFirebaseInitializedAsync();
+    
     // Get Firestore instance directly
     const db = getFirestoreSafely();
     if (!db) {
@@ -218,6 +227,9 @@ export async function getUserCalculations(userId: string): Promise<any[]> {
  */
 export async function getCalculationById(calculationId: string): Promise<any> {
   try {
+    // Ensure Firebase is fully initialized
+    await ensureFirebaseInitializedAsync();
+    
     // Get Firestore instance directly
     const db = getFirestoreSafely();
     if (!db) {
