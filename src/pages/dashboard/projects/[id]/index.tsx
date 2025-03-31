@@ -444,19 +444,24 @@ export default function ProjectDetailsPage() {
                     <CardContent>
                       <div className='space-y-1'>
                         <p className='text-sm'>
-                          <span className='font-medium'>Cooling:</span> {calculation.coolingType || 'Unknown'}
+                          <span className='font-medium'>Cooling:</span> {calculation.coolingType || calculation.results?.rack?.coolingType || 'Unknown'}
                         </p>
                         <p className='text-sm'>
-                          <span className='font-medium'>Power:</span> {calculation.kwPerRack || 0} kW/rack
+                          <span className='font-medium'>Power:</span> {calculation.kwPerRack || calculation.results?.rack?.powerDensity || 0} kW/rack
                         </p>
-                        {calculation.results?.costs?.tco?.total5Years && (
+                        {(calculation.results?.costs?.tco?.total5Years || calculation.results?.cost?.totalProjectCost) && (
                           <p className='text-sm'>
-                            <span className='font-medium'>5-Year TCO:</span> ${(calculation.results.costs.tco.total5Years / 1000000).toFixed(2)}M
+                            <span className='font-medium'>Total Cost:</span> $
+                            {calculation.results?.costs?.tco?.total5Years 
+                              ? (calculation.results.costs.tco.total5Years / 1000000).toFixed(2) + 'M'
+                              : (calculation.results?.cost?.totalProjectCost || 0).toLocaleString()}
                           </p>
                         )}
                       </div>
                       <p className='text-xs text-muted-foreground mt-2'>
-                        Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
+                        Created: {calculation.createdAt || calculation.timestamp 
+                          ? new Date(((calculation.createdAt || calculation.timestamp) as any)?.seconds * 1000 || Date.now()).toLocaleString() 
+                          : 'Unknown'}
                       </p>
                     </CardContent>
                     <CardFooter className='flex justify-end gap-2'>

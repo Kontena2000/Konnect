@@ -72,58 +72,76 @@ export default function MatrixCalculatorPage() {
         
         // If calculationId is provided, fetch the calculation
         if (calculationId) {
-          const calculationRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', calculationId as string);
-          const calculationSnap = await getDoc(calculationRef);
-          
-          if (calculationSnap.exists()) {
-            const calculationData = {
-              id: calculationSnap.id,
-              ...calculationSnap.data()
-            } as any; // Cast to any to avoid TypeScript errors
+          try {
+            const calculationRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', calculationId as string);
+            const calculationSnap = await getDoc(calculationRef);
             
-            // Check if user has access to this calculation
-            const calcUserId = calculationData.userId || '';
-            const calcProjectId = calculationData.projectId || '';
-            
-            if (calcUserId !== user.uid && user.email !== 'ruud@kontena.eu') {
-              // If calculation belongs to a project, check project access
-              if (calcProjectId) {
+            if (calculationSnap.exists()) {
+              const calculationData = {
+                id: calculationSnap.id,
+                ...calculationSnap.data()
+              } as any; // Cast to any to avoid TypeScript errors
+              
+              // Check if user has access to this calculation
+              const calcUserId = calculationData.userId || '';
+              const calcProjectId = calculationData.projectId || '';
+              
+              if (calcUserId !== user.uid && user.email !== 'ruud@kontena.eu') {
+                // If calculation belongs to a project, check project access
+                if (calcProjectId) {
+                  const calcProjectRef = doc(db, 'projects', calcProjectId);
+                  const calcProjectSnap = await getDoc(calcProjectRef);
+                  
+                  if (calcProjectSnap.exists()) {
+                    const calcProjectData = calcProjectSnap.data();
+                    const projectSharedWith = calcProjectData.sharedWith || [];
+                    
+                    if (calcProjectData.userId !== user.uid && 
+                        (!projectSharedWith.includes(user.email))) {
+                      setError('You do not have access to this calculation');
+                      return;
+                    }
+                  }
+                } else {
+                  setError('You do not have access to this calculation');
+                  return;
+                }
+              }
+              
+              setCalculation(calculationData);
+              
+              // If calculation belongs to a project and no projectId was provided,
+              // fetch the project data
+              if (calcProjectId && !projectId) {
                 const calcProjectRef = doc(db, 'projects', calcProjectId);
                 const calcProjectSnap = await getDoc(calcProjectRef);
                 
                 if (calcProjectSnap.exists()) {
-                  const calcProjectData = calcProjectSnap.data();
-                  const projectSharedWith = calcProjectData.sharedWith || [];
-                  
-                  if (calcProjectData.userId !== user.uid && 
-                      (!projectSharedWith.includes(user.email))) {
-                    setError('You do not have access to this calculation');
-                    return;
-                  }
+                  setProject({
+                    id: calcProjectSnap.id,
+                    ...calcProjectSnap.data()
+                  });
                 }
+              }
+            } else {
+              // Try the old path structure
+              const oldCalculationRef = doc(db, 'users', user.uid, 'calculations', calculationId as string);
+              const oldCalculationSnap = await getDoc(oldCalculationRef);
+              
+              if (oldCalculationSnap.exists()) {
+                const calculationData = {
+                  id: oldCalculationSnap.id,
+                  ...oldCalculationSnap.data()
+                };
+                setCalculation(calculationData);
               } else {
-                setError('You do not have access to this calculation');
+                setError('Calculation not found');
                 return;
               }
             }
-            
-            setCalculation(calculationData);
-            
-            // If calculation belongs to a project and no projectId was provided,
-            // fetch the project data
-            if (calcProjectId && !projectId) {
-              const calcProjectRef = doc(db, 'projects', calcProjectId);
-              const calcProjectSnap = await getDoc(calcProjectRef);
-              
-              if (calcProjectSnap.exists()) {
-                setProject({
-                  id: calcProjectSnap.id,
-                  ...calcProjectSnap.data()
-                });
-              }
-            }
-          } else {
-            setError('Calculation not found');
+          } catch (error) {
+            console.error('Error fetching calculation:', error);
+            setError('Failed to load calculation data');
             return;
           }
         }
