@@ -17,7 +17,7 @@ import { getIdTokenResult } from 'firebase/auth';
 import { Module, ModuleCategory } from '@/types/module';
 import firebaseMonitor from '@/services/firebase-monitor';
 import { moduleOperations } from './module-operations';
-import { ensureFirebaseInitialized, safeFirebaseOperation } from '@/utils/firebaseInitializer';
+import { waitForFirebaseBootstrap, withBootstrappedFirebase } from '@/utils/firebaseBootstrap';
 
 interface CategoryData {
   id: string;
@@ -42,7 +42,7 @@ const moduleService = {
   async checkUserPermissions(): Promise<boolean> {
     try {
       // Ensure Firebase is initialized before accessing auth
-      await ensureFirebaseInitialized();
+      await waitForFirebaseBootstrap();
       const auth = getAuthSafely();
       const user = auth?.currentUser;
       
@@ -72,9 +72,7 @@ const moduleService = {
   },
 
   async deleteCategory(categoryId: string): Promise<void> {
-    return safeFirebaseOperation(async () => {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -111,13 +109,11 @@ const moduleService = {
         timestamp: Date.now(),
         details: { categoryId, email: user.email }
       });
-    }, 'Error deleting category');
+    }, undefined, 'Error deleting category');
   },
 
   async getAllModules(): Promise<Module[]> {
-    try {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -185,23 +181,11 @@ const moduleService = {
       });
 
       return modules;
-    } catch (error) {
-      console.error('Error fetching modules:', error);
-      firebaseMonitor.logOperation({
-        type: 'module',
-        action: 'list',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      return [];
-    }
+    }, [], 'Error fetching modules');
   },
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
-    return safeFirebaseOperation(async () => {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -254,13 +238,11 @@ const moduleService = {
       });
 
       console.log('Category created successfully:', data.id);
-    }, 'Error creating category');
+    }, undefined, 'Error creating category');
   },
 
   async getCategories(): Promise<CategoryData[]> {
-    return safeFirebaseOperation(async () => {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -318,13 +300,11 @@ const moduleService = {
       });
 
       return categories;
-    }, 'Error fetching categories');
+    }, [], 'Error fetching categories');
   },
 
   async initializeDefaultModules(): Promise<void> {
-    try {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -369,23 +349,11 @@ const moduleService = {
         timestamp: Date.now(),
         details: { email: user.email, count: defaultModules.length }
       });
-    } catch (error) {
-      console.error('Error initializing default modules:', error);
-      firebaseMonitor.logOperation({
-        type: 'module',
-        action: 'initialize',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw new ModuleError('Failed to initialize default modules', 'INIT_FAILED', error);
-    }
+    }, undefined, 'Failed to initialize default modules');
   },
 
   async initializeBasicCategory(): Promise<void> {
-    try {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -414,23 +382,11 @@ const moduleService = {
         timestamp: Date.now(),
         details: { email: user.email }
       });
-    } catch (error) {
-      console.error('Error initializing basic category:', error);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'initialize',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw new ModuleError('Failed to initialize basic category', 'INIT_FAILED', error);
-    }
+    }, undefined, 'Failed to initialize basic category');
   },
 
   async duplicateModule(moduleId: string): Promise<void> {
-    return safeFirebaseOperation(async () => {
-      // Ensure Firebase is initialized before accessing auth and db
-      await ensureFirebaseInitialized();
+    return withBootstrappedFirebase(async () => {
       const auth = getAuthSafely();
       const db = getFirestoreSafely();
       
@@ -478,7 +434,7 @@ const moduleService = {
         timestamp: Date.now(),
         details: { originalId: moduleId, newId: newModuleId, email: user.email }
       });
-    }, 'Error duplicating module');
+    }, undefined, 'Error duplicating module');
   },
 
   createModule: moduleOperations.createModule,
