@@ -33,10 +33,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const initializeAuth = async () => {
       try {
-        // Use the new bootstrap utility to ensure Firebase is initialized
-        const bootstrapped = await waitForFirebaseBootstrap();
+        // Add a small delay before initialization to make sure the bootstrap had time to run
+        await new Promise(resolve => setTimeout(resolve, 50));
+        
+        // Try to bootstrap up to 3 times with increasing timeouts
+        let bootstrapped = false;
+        for (let i = 0; i < 3; i++) {
+          bootstrapped = await waitForFirebaseBootstrap();
+          if (bootstrapped) break;
+          await new Promise(resolve => setTimeout(resolve, 300 * (i + 1)));
+          console.log(`[AuthContext] Retry ${i+1} of Firebase bootstrap`);
+        }
+
         if (!bootstrapped) {
-          console.error('[AuthContext] Firebase bootstrap failed');
+          console.error('[AuthContext] Firebase bootstrap failed after retries');
           if (mounted) {
             setInitError('Firebase initialization failed');
             setLoading(false);
@@ -67,14 +77,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                   setRole('admin');
                 }
               } else {
-                // Get the user's ID token result which includes custom claims
-                const tokenResult = await getIdTokenResult(user, true);
-                const userDoc = await userService.getUserByEmail(user.email!);
-                
-                if (mounted) {
-                  setUser(user as AuthUser);
-                  // Use the role from custom claims, fallback to Firestore role
-                  setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
+                try {
+                  // Get the user's ID token result which includes custom claims
+                  const tokenResult = await getIdTokenResult(user, true);
+                  let userDoc = null;
+                  
+                  try {
+                    userDoc = await userService.getUserByEmail(user.email!);
+                  } catch (userDocError) {
+                    console.warn('[AuthContext] Error fetching user doc:', userDocError);
+                    // Continue without user doc
+                  }
+                  
+                  if (mounted) {
+                    setUser(user as AuthUser);
+                    // Use the role from custom claims, fallback to Firestore role
+                    setRole(tokenResult.claims.role as UserRole || userDoc?.role || 'editor');
+                  }
+                } catch (tokenError) {
+                  console.error('[AuthContext] Error getting token claims:', tokenError);
+                  // Still set the user but with default role
+                  if (mounted) {
+                    setUser(user as AuthUser);
+                    setRole('editor');
+                  }
                 }
               }
 
@@ -144,6 +170,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           <h2 className='text-xl font-semibold mb-2'>Firebase Initialization Error</h2>
           <p className='text-destructive'>{initError}</p>
           <p className='mt-4 text-sm text-muted-foreground'>Please refresh the page or contact support if this issue persists.</p>
+          <button 
+            className='mt-4 px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90 transition-colors'
+            onClick={() => window.location.reload()}
+          >
+            Refresh Page
+          </button>
         </div>
       </div>
     );
