@@ -12,6 +12,7 @@ import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugger';
+import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -29,11 +30,12 @@ export default function MatrixCalculatorPage() {
       try {
         setLoading(true);
         
-        // Get Firestore instance safely
+        // Ensure Firebase is initialized
+        await waitForFirebaseBootstrap();
         const db = getFirestoreSafely();
+        
         if (!db) {
-          setError('Firestore database is not available');
-          setLoading(false);
+          setError('Firebase database is not available');
           return;
         }
         
