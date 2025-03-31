@@ -285,7 +285,7 @@ const projectService = {
         throw new ProjectError('Invalid project data', 'VALIDATION_FAILED');
       }
 
-      const projectRef = doc(db, 'projects', id);
+      const projectRef = safeDocRef('projects', id);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
@@ -350,7 +350,7 @@ const projectService = {
         details: { id, userId }
       });
 
-      const projectRef = doc(db, 'projects', id);
+      const projectRef = safeDocRef('projects', id);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
@@ -378,11 +378,12 @@ const projectService = {
         throw new ProjectError('Unauthorized to delete project', 'UNAUTHORIZED');
       }
 
-      const batch = writeBatch(db);
+      const firestore = getFirestoreOrThrow();
+      const batch = writeBatch(firestore);
 
       // Delete all layouts associated with the project
       const layoutsQuery = query(
-        collection(db, 'layouts'),
+        safeCollectionRef('layouts'),
         where('projectId', '==', id)
       );
       const layoutsSnapshot = await getDocs(layoutsQuery);
@@ -392,7 +393,7 @@ const projectService = {
 
       // Delete all modules associated with the layouts
       const modulesQuery = query(
-        collection(db, 'modules'),
+        safeCollectionRef('modules'),
         where('projectId', '==', id)
       );
       const modulesSnapshot = await getDocs(modulesQuery);
@@ -441,7 +442,7 @@ const projectService = {
         details: { projectId, email }
       });
 
-      if (!email || !email.includes("@")) {
+      if (!email || !email.includes('@')) {
         firebaseMonitor.logOperation({
           type: 'project',
           action: 'share',
@@ -450,10 +451,10 @@ const projectService = {
           error: 'Invalid email address',
           details: { projectId, email }
         });
-        throw new ProjectError("Invalid email address", "VALIDATION_FAILED");
+        throw new ProjectError('Invalid email address', 'VALIDATION_FAILED');
       }
 
-      const projectRef = doc(db, "projects", projectId);
+      const projectRef = safeDocRef('projects', projectId);
       await updateDoc(projectRef, {
         sharedWith: arrayUnion(email)
       });
@@ -475,7 +476,7 @@ const projectService = {
         error: errorMessage,
         details: { projectId, email }
       });
-      throw new ProjectError("Failed to share project", "SHARE_FAILED", error);
+      throw new ProjectError('Failed to share project', 'SHARE_FAILED', error);
     }
   },
 
@@ -489,7 +490,7 @@ const projectService = {
         details: { projectId, email }
       });
 
-      const projectRef = doc(db, "projects", projectId);
+      const projectRef = safeDocRef('projects', projectId);
       await updateDoc(projectRef, {
         sharedWith: arrayRemove(email)
       });
@@ -511,7 +512,7 @@ const projectService = {
         error: errorMessage,
         details: { projectId, email }
       });
-      throw new ProjectError("Failed to remove share", "SHARE_REMOVE_FAILED", error);
+      throw new ProjectError('Failed to remove share', 'SHARE_REMOVE_FAILED', error);
     }
   }
 };

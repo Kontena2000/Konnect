@@ -1,7 +1,7 @@
 import { db, auth } from "@/lib/firebase";
-import { collection, addDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
-import { CreateProjectData, ProjectError } from "./types";
-import { validateProject } from "./validation";
+import { collection, addDoc, doc, serverTimestamp } from "firebase/firestore";
+import { CreateProjectData, ProjectError } from './types';
+import { validateProject } from './validation';
 import firebaseMonitor from '@/services/firebase-monitor';
 import { 
   getFirestoreOrThrow, 
@@ -14,10 +14,7 @@ import {
 export const projectOperations = {
   async createProject(data: CreateProjectData): Promise<string> {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new ProjectError('Not authenticated', 'AUTH_REQUIRED');
-      }
+      const user = getCurrentUserOrThrow();
 
       firebaseMonitor.logOperation({
         type: 'project',
@@ -40,7 +37,7 @@ export const projectOperations = {
         throw new ProjectError('Project validation failed', 'VALIDATION_FAILED');
       }
 
-      const projectRef = await addDoc(collection(db, 'projects'), {
+      const projectRef = await addDoc(safeCollectionRef('projects'), {
         name: data.name.trim(),
         description: data.description?.trim() || '',
         userId: user.uid,

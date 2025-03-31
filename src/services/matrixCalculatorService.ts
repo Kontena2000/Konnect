@@ -20,6 +20,7 @@ import {
   calculateCoolingCapacity,
   compareConfigurations as compareConfigurationsUtil
 } from './calculatorUtils';
+import { PricingMatrix } from '@/types/pricingMatrix';
 import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
 import { calculatorDebug, withDebug } from './calculatorDebug';
 import { fallbackCalculation } from './calculatorFallback';

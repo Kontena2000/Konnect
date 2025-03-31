@@ -15,6 +15,13 @@ import {
 import { ModuleData, ModuleError } from "./types";
 import { validateModule, validateCategory } from "./validation";
 import firebaseMonitor from '@/services/firebase-monitor';
+import { 
+  getFirestoreOrThrow, 
+  getAuthOrThrow, 
+  getCurrentUserOrThrow,
+  safeDocRef,
+  safeCollectionRef
+} from '@/services/firebaseHelpers';
 
 // Helper function to safely use Firestore
 function safeFirestore(): Firestore {
@@ -45,7 +52,7 @@ export const moduleOperations = {
   async createModule(moduleData: ModuleData): Promise<void> {
     try {
       // Use the helper function to safely get the user
-      const user = getAuthUser();
+      const user = getCurrentUserOrThrow();
 
       firebaseMonitor.logOperation({
         type: 'module',
@@ -89,7 +96,7 @@ export const moduleOperations = {
   async getModuleById(moduleId: string): Promise<ModuleData> {
     try {
       // Use the helper function to safely get the user
-      getAuthUser();
+      getCurrentUserOrThrow();
 
       const moduleRef = safeDocRef('modules', moduleId);
       const moduleDoc = await getDoc(moduleRef);
@@ -113,7 +120,7 @@ export const moduleOperations = {
   async updateModule(moduleId: string, data: Partial<ModuleData>): Promise<void> {
     try {
       // Use the helper function to safely get the user
-      getAuthUser();
+      getCurrentUserOrThrow();
       
       const moduleRef = safeDocRef('modules', moduleId);
       const moduleDoc = await getDoc(moduleRef);
@@ -137,7 +144,7 @@ export const moduleOperations = {
   async deleteModule(moduleId: string): Promise<void> {
     try {
       // Use the helper function to safely get the user
-      getAuthUser();
+      getCurrentUserOrThrow();
       
       const moduleRef = safeDocRef('modules', moduleId);
       const moduleDoc = await getDoc(moduleRef);
