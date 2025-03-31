@@ -13,6 +13,13 @@ import {
 } from "firebase/firestore";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
 import { getFirestoreSafely } from "@/lib/firebase";
+import { 
+  getFirestoreOrThrow, 
+  getAuthOrThrow, 
+  getCurrentUserOrThrow,
+  safeDocRef,
+  safeCollectionRef
+} from '@/services/firebaseHelpers';
 
 export interface User {
   id: string;

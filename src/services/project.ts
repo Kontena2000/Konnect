@@ -1,4 +1,3 @@
-
 import { db } from "@/lib/firebase";
 import { 
   collection, 
@@ -18,6 +17,13 @@ import {
 } from "firebase/firestore";
 import firebaseMonitor from '@/services/firebase-monitor';
 import { auth } from "@/lib/firebase";
+import { 
+  getFirestoreOrThrow, 
+  getAuthOrThrow, 
+  getCurrentUserOrThrow,
+  safeDocRef,
+  safeCollectionRef
+} from '@/services/firebaseHelpers';
 
 export class ProjectError extends Error {
   constructor(

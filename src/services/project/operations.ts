@@ -1,9 +1,15 @@
-
 import { db, auth } from "@/lib/firebase";
 import { collection, addDoc, doc, getDoc, serverTimestamp } from "firebase/firestore";
 import { CreateProjectData, ProjectError } from "./types";
 import { validateProject } from "./validation";
 import firebaseMonitor from '@/services/firebase-monitor';
+import { 
+  getFirestoreOrThrow, 
+  getAuthOrThrow, 
+  getCurrentUserOrThrow,
+  safeDocRef,
+  safeCollectionRef
+} from '@/services/firebaseHelpers';
 
 export const projectOperations = {
   async createProject(data: CreateProjectData): Promise<string> {

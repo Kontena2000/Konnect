@@ -29,13 +29,23 @@ function safeDocRef(path: string, ...pathSegments: string[]): DocumentReference 
   return doc(safeFirestore(), path, ...pathSegments);
 }
 
+// Helper function to safely get auth user
+function getAuthUser() {
+  if (!auth) {
+    throw new Error('Auth is not initialized');
+  }
+  const user = auth.currentUser;
+  if (!user) {
+    throw new Error('Not authenticated');
+  }
+  return user;
+}
+
 export const moduleOperations = {
   async createModule(moduleData: ModuleData): Promise<void> {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
-      }
+      // Use the helper function to safely get the user
+      const user = getAuthUser();
 
       firebaseMonitor.logOperation({
         type: 'module',
@@ -49,7 +59,7 @@ export const moduleOperations = {
         throw new ModuleError('Module validation failed', 'VALIDATION_FAILED');
       }
 
-      const moduleRef = doc(db, 'modules', moduleData.id);
+      const moduleRef = safeDocRef('modules', moduleData.id);
       await setDoc(moduleRef, {
         ...moduleData,
         createdAt: new Date().toISOString(),
@@ -78,14 +88,8 @@ export const moduleOperations = {
 
   async getModuleById(moduleId: string): Promise<ModuleData> {
     try {
-      if (!auth) {
-        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
-      }
-      
-      const user = auth.currentUser;
-      if (!user) {
-        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
-      }
+      // Use the helper function to safely get the user
+      getAuthUser();
 
       const moduleRef = safeDocRef('modules', moduleId);
       const moduleDoc = await getDoc(moduleRef);
@@ -108,14 +112,8 @@ export const moduleOperations = {
   
   async updateModule(moduleId: string, data: Partial<ModuleData>): Promise<void> {
     try {
-      if (!auth) {
-        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
-      }
-      
-      const user = auth.currentUser;
-      if (!user) {
-        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
-      }
+      // Use the helper function to safely get the user
+      getAuthUser();
       
       const moduleRef = safeDocRef('modules', moduleId);
       const moduleDoc = await getDoc(moduleRef);
@@ -138,14 +136,8 @@ export const moduleOperations = {
   
   async deleteModule(moduleId: string): Promise<void> {
     try {
-      if (!auth) {
-        throw new ModuleError('Auth is not initialized', 'AUTH_REQUIRED');
-      }
-      
-      const user = auth.currentUser;
-      if (!user) {
-        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
-      }
+      // Use the helper function to safely get the user
+      getAuthUser();
       
       const moduleRef = safeDocRef('modules', moduleId);
       const moduleDoc = await getDoc(moduleRef);
