@@ -199,10 +199,19 @@ const moduleService = {
   },
 
   async createCategory(data: { id: string; name: string }): Promise<void> {
-    try {
+    return safeFirebaseOperation(async () => {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
-        throw new Error('No user logged in');
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
       }
 
       firebaseMonitor.logOperation({
@@ -216,7 +225,7 @@ const moduleService = {
       // Special case for Ruud - always has full access
       const isRuud = user.email === 'ruud@kontena.eu';
       if (!isRuud && !(await this.checkUserPermissions())) {
-        throw new Error('Insufficient permissions');
+        throw new ModuleError('Insufficient permissions', 'UNAUTHORIZED');
       }
 
       console.log('Creating category:', data);
@@ -225,7 +234,7 @@ const moduleService = {
       // Check if category already exists
       const existingCategory = await getDoc(categoryRef);
       if (existingCategory.exists()) {
-        throw new Error('Category already exists');
+        throw new ModuleError('Category already exists', 'ALREADY_EXISTS');
       }
 
       const now = new Date().toISOString();
@@ -245,25 +254,23 @@ const moduleService = {
       });
 
       console.log('Category created successfully:', data.id);
-    } catch (error) {
-      console.error('Error creating category:', error);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'create',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    }, 'Error creating category');
   },
 
   async getCategories(): Promise<CategoryData[]> {
-    try {
+    return safeFirebaseOperation(async () => {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
-        console.error('No user logged in');
-        return [];
+        throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
       }
 
       firebaseMonitor.logOperation({
@@ -311,17 +318,7 @@ const moduleService = {
       });
 
       return categories;
-    } catch (error) {
-      console.error('Error fetching categories:', error);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'list',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      return [];
-    }
+    }, 'Error fetching categories');
   },
 
   async initializeDefaultModules(): Promise<void> {
