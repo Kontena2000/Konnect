@@ -1,20 +1,18 @@
 import { 
-  getFirestore, 
   serverTimestamp, 
-  Firestore, 
-  DocumentReference, 
-  CollectionReference, 
   doc, 
   getDoc, 
   collection, 
   query, 
   where, 
   getDocs, 
-  addDoc 
+  addDoc, 
+  DocumentReference, 
+  CollectionReference, 
+  Firestore 
 } from 'firebase/firestore';
-import { getFirestoreSafely } from "@/lib/firebase";
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
-import { getClimateFactor } from './climateDataService';
+import { getClimateFactor, ClimateFactor } from './climateDataService';
 import { calculateEnergyMetrics, calculateWithLocationFactors as calculateEnergyWithLocationFactors } from './energyDataService';
 import { 
   calculateCurrentPerRow, 
@@ -31,79 +29,17 @@ import {
   calculateThermalDistribution,
   calculatePipeSizing,
   calculateGeneratorRequirements,
-  calculateCoolingCapacity
+  calculateCoolingCapacity,
+  compareConfigurations as compareConfigurationsUtil
 } from './calculatorUtils';
 import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
 import { calculatorDebug, withDebug } from './calculatorDebug';
 import { fallbackCalculation } from './calculatorFallback';
 import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
 import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
-
-// Moved PricingMatrix interface to a separate type file if not already exists
-export interface PricingMatrix {
-  busbar: {
-    base1250A: number;
-    base2000A: number;
-    perMeter: number;
-    copperPremium: number;
-  };
-  tapOffBox: {
-    standard63A: number;
-    custom100A: number;
-    custom150A: number;
-    custom200A: number;
-    custom250A: number;
-  };
-  rpdu: {
-    standard16A: number;
-    standard32A: number;
-    standard80A: number;
-    standard112A: number;
-  };
-  generator: {
-    generator1000kva: number;
-    generator2000kva: number;
-    generator3000kva: number;
-    fuelTankPerLiter: number;
-  };
-  sustainability: {
-    heatRecoverySystem: number;
-    waterRecyclingSystem: number;
-    solarPanelPerKw: number;
-  };
-  cooler: {
-    tcs310aXht: number;
-    grundfosPump: number;
-    bufferTank: number;
-    immersionTank: number;
-    immersionCDU: number;
-  };
-  rdhx: {
-    basic: number;
-    standard: number;
-    highDensity: number;
-    average: number;
-  };
-  piping: {
-    dn110PerMeter: number;
-    dn160PerMeter: number;
-    valveDn110: number;
-    valveDn160: number;
-  };
-  ups: {
-    frame2Module: number;
-    frame4Module: number;
-    frame6Module: number;
-    module250kw: number;
-  };
-  battery: {
-    revoTp240Cabinet: number;
-  };
-  eHouse: {
-    base: number;
-    perSqMeter: number;
-  };
-}
+import { getMatrixFirestore, matrixDocRef, matrixCollectionRef } from './matrixCalculatorHelpers';
+import { getFirestoreOrThrow } from '@/services/firebaseHelpers';
+import { PricingMatrix } from '@/types/pricingMatrix';
 
 // Cached pricing and params
 let cachedPricing: PricingMatrix | null = null;
@@ -111,12 +47,16 @@ let cachedParams: CalculationParams | null = null;
 let lastFetchTime = 0;
 
 // Safe document and collection reference creators
-function safeDocRef(firestore: Firestore, path: string, ...pathSegments: string[]): DocumentReference {
-  return doc(firestore, path, ...pathSegments);
+function getFirestore(): Firestore {
+  return getMatrixFirestore();
 }
 
-function safeCollectionRef(firestore: Firestore, path: string, ...pathSegments: string[]): CollectionReference {
-  return collection(firestore, path, ...pathSegments);
+function safeDocRef(path: string, ...pathSegments: string[]): DocumentReference {
+  return matrixDocRef(path, ...pathSegments);
+}
+
+function safeCollectionRef(path: string, ...pathSegments: string[]): CollectionReference {
+  return matrixCollectionRef(path, ...pathSegments);
 }
 
 export async function getPricingAndParams() {
@@ -128,7 +68,7 @@ export async function getPricingAndParams() {
   
   try {
     // Get Firestore safely
-    const db = getFirestoreSafely();
+    const db = getFirestoreOrThrow();
     if (!db) {
       console.error('Firestore is not initialized, using default values');
       calculatorDebug.error('Firestore is not initialized', 'Using default values');
@@ -138,7 +78,7 @@ export async function getPricingAndParams() {
     // Fetch pricing with better error handling
     let pricing: PricingMatrix = DEFAULT_PRICING;
     try {
-      const pricingDoc = await getDoc(safeDocRef(db, 'matrix_calculator', 'pricing_matrix'));
+      const pricingDoc = await getDoc(safeDocRef('matrix_calculator', 'pricing_matrix'));
       if (pricingDoc.exists()) {
         pricing = pricingDoc.data() as PricingMatrix;
         console.log('Successfully fetched pricing matrix from Firestore');
@@ -153,7 +93,7 @@ export async function getPricingAndParams() {
     // Fetch parameters with better error handling
     let params: CalculationParams = DEFAULT_CALCULATION_PARAMS;
     try {
-      const paramsDoc = await getDoc(safeDocRef(db, 'matrix_calculator', 'calculation_params'));
+      const paramsDoc = await getDoc(safeDocRef('matrix_calculator', 'calculation_params'));
       if (paramsDoc.exists()) {
         params = paramsDoc.data() as CalculationParams;
         console.log('Successfully fetched calculation parameters from Firestore');
