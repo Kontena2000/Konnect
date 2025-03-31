@@ -11,191 +11,174 @@ let storage: FirebaseStorage | null = null;
 
 // Flag to track initialization
 let initialized = false;
+let initializationInProgress = false;
 let initializationPromise: Promise<boolean> | null = null;
-let initializationError: Error | null = null;
 
 /**
  * Initialize all Firebase services at once
- * Returns a promise that resolves when initialization is complete
  */
-export function initializeFirebaseServices(): Promise<boolean> {
-  // If already initialized, return resolved promise
-  if (initialized) {
-    console.log('[Firebase] Already initialized');
-    return Promise.resolve(true);
-  }
-
-  // If initialization failed previously with an error, return rejected promise
-  if (initializationError) {
-    console.warn('[Firebase] Previous initialization failed:', initializationError.message);
-    return Promise.resolve(false);
-  }
-
-  // If initialization is in progress, return the existing promise
-  if (initializationPromise) {
-    return initializationPromise;
-  }
-
+export function initializeFirebaseServices(): boolean {
   // Skip on server-side
   if (typeof window === 'undefined') {
     console.log('[Firebase] Skipping initialization on server side');
-    return Promise.resolve(false);
+    return false;
   }
 
-  // Create initialization promise
-  initializationPromise = new Promise<boolean>((resolve) => {
-    try {
-      console.log('[Firebase] Starting initialization...');
-      
-      // Get config from environment variables
-      const firebaseConfig = {
-        apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-        authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
-        projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-        storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
-        messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
-        appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
-        measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
-        databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
-      };
+  // If already initialized, return true
+  if (initialized) {
+    console.log('[Firebase] Already initialized');
+    return true;
+  }
 
-      // Check for required config values
-      const requiredFields = ['apiKey', 'authDomain', 'projectId'];
-      const missingFields = requiredFields.filter(field => !firebaseConfig[field]);
-      
-      if (missingFields.length > 0) {
-        throw new Error(`Missing required Firebase configuration: ${missingFields.join(', ')}`);
-      }
+  // If initialization is in progress, don't start another one
+  if (initializationInProgress) {
+    console.log('[Firebase] Initialization already in progress');
+    return false;
+  }
 
-      // Check if Firebase is already initialized
-      if (getApps().length > 0) {
-        app = getApps()[0];
-        console.log('[Firebase] Using existing Firebase app');
-      } else {
-        app = initializeApp(firebaseConfig);
-        console.log('[Firebase] Created new Firebase app');
-      }
+  try {
+    initializationInProgress = true;
+    
+    // Get config from environment variables
+    const firebaseConfig = {
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
+      authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN,
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+      storageBucket: process.env.NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET,
+      messagingSenderId: process.env.NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID,
+      appId: process.env.NEXT_PUBLIC_FIREBASE_APP_ID,
+      measurementId: process.env.NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID,
+      databaseURL: process.env.NEXT_PUBLIC_FIREBASE_DATABASE_URL
+    };
 
-      // Initialize all services
-      db = getFirestoreOriginal(app);
-      auth = getAuthOriginal(app);
-      storage = getStorageOriginal(app);
-      console.log('[Firebase] Core services initialized');
-
-      // Enable persistence for Firestore
-      if (db) {
-        enableIndexedDbPersistence(db).catch((err) => {
-          console.warn(
-            `[Firebase] Persistence issue: ${
-              err.code === 'failed-precondition'
-                ? 'Multiple tabs open, persistence enabled in first tab only'
-                : err.code === 'unimplemented'
-                ? 'Browser does not support persistence'
-                : err.message
-            }`
-          );
-        });
-      }
-
-      initialized = true;
-      console.log('[Firebase] All services initialized successfully');
-      resolve(true);
-    } catch (error) {
-      const errorObj = error instanceof Error ? error : new Error(String(error));
-      console.error('[Firebase] Error initializing Firebase:', errorObj.message);
-      initializationError = errorObj;
-      initializationPromise = null;
-      resolve(false);
+    // Check if Firebase is already initialized
+    if (getApps().length > 0) {
+      app = getApps()[0];
+      console.log('[Firebase] Using existing Firebase app');
+    } else {
+      console.log('[Firebase] Creating new Firebase app with config:', 
+        Object.keys(firebaseConfig).reduce((acc, key) => {
+          // Only log if the config value exists, and only show that it exists (not the actual value)
+          if (firebaseConfig[key as keyof typeof firebaseConfig]) {
+            acc[key] = '✓ Set';
+          } else {
+            acc[key] = '✗ Missing';
+          }
+          return acc;
+        }, {} as Record<string, string>)
+      );
+      app = initializeApp(firebaseConfig);
     }
-  });
 
-  return initializationPromise;
+    // Initialize all services
+    db = getFirestoreOriginal(app);
+    auth = getAuthOriginal(app);
+    storage = getStorageOriginal(app);
+
+    // Enable persistence for Firestore
+    if (db) {
+      enableIndexedDbPersistence(db).catch((err) => {
+        console.warn(
+          `[Firebase] Persistence issue: ${
+            err.code === 'failed-precondition'
+              ? 'Multiple tabs open, persistence enabled in first tab only'
+              : err.code === 'unimplemented'
+              ? 'Browser does not support persistence'
+              : err.message
+          }`
+        );
+      });
+    }
+
+    initialized = true;
+    console.log('[Firebase] All services initialized successfully');
+    return true;
+  } catch (error) {
+    console.error('[Firebase] Error initializing Firebase:', error);
+    return false;
+  } finally {
+    initializationInProgress = false;
+  }
 }
 
 /**
- * Force Firebase reinitialization - useful in case of issues
+ * Ensure Firebase is initialized with Promise support
+ * This allows for async/await usage and better error handling
  */
-export function reinitializeFirebase(): Promise<boolean> {
-  // Reset initialization state
-  initialized = false;
-  initializationPromise = null;
-  initializationError = null;
+export function ensureFirebaseInitializedAsync(): Promise<boolean> {
+  // If already initialized, resolve immediately
+  if (initialized) {
+    return Promise.resolve(true);
+  }
   
-  // Try again
-  console.log('[Firebase] Forcing reinitialization...');
-  return initializeFirebaseServices();
+  // If initialization is in progress, return the existing promise
+  if (initializationInProgress && initializationPromise) {
+    return initializationPromise;
+  }
+  
+  // Start initialization
+  initializationInProgress = true;
+  
+  // Create a new initialization promise
+  initializationPromise = new Promise<boolean>((resolve) => {
+    try {
+      // Skip on server-side
+      if (typeof window === 'undefined') {
+        console.log('[Firebase] Skipping initialization on server side');
+        resolve(false);
+        return;
+      }
+      
+      // Check if Firebase is already initialized
+      if (getApps().length > 0) {
+        app = getApps()[0];
+        
+        // Initialize services if they're not already
+        if (!db) db = getFirestoreOriginal(app);
+        if (!auth) auth = getAuthOriginal(app);
+        if (!storage) storage = getStorageOriginal(app);
+        
+        initialized = true;
+        console.log('[Firebase] Using existing Firebase app');
+        resolve(true);
+        return;
+      }
+      
+      // Initialize Firebase
+      const success = initializeFirebaseServices();
+      resolve(success);
+    } catch (error) {
+      console.error('[Firebase] Error in ensureFirebaseInitializedAsync:', error);
+      resolve(false);
+    } finally {
+      initializationInProgress = false;
+    }
+  });
+  
+  return initializationPromise;
 }
 
 // Initialize Firebase immediately when this module is imported (client-side only)
 if (typeof window !== 'undefined') {
-  // Use setTimeout to ensure this runs after module initialization
+  // Use setTimeout to avoid blocking the main thread
   setTimeout(() => {
-    initializeFirebaseServices().then((success) => {
-      if (success) {
-        console.log('[Firebase] Initialization complete');
-      } else {
-        console.error('[Firebase] Initialization failed');
-      }
-    });
+    initializeFirebaseServices();
   }, 0);
 }
 
+// Export instances directly
+export { app, db, auth, storage };
+
 // Export safe accessor functions that ensure Firebase is initialized
-export async function getFirestoreAsync(): Promise<Firestore> {
-  if (!initialized) {
-    const success = await initializeFirebaseServices();
-    if (!success) {
-      throw new Error('Failed to initialize Firebase services');
-    }
-  }
-  if (!db) {
-    throw new Error('Firestore not initialized');
-  }
-  return db;
-}
-
-export async function getAuthAsync(): Promise<Auth> {
-  if (!initialized) {
-    const success = await initializeFirebaseServices();
-    if (!success) {
-      throw new Error('Failed to initialize Firebase services');
-    }
-  }
-  if (!auth) {
-    throw new Error('Auth not initialized');
-  }
-  return auth;
-}
-
-export async function getStorageAsync(): Promise<FirebaseStorage> {
-  if (!initialized) {
-    const success = await initializeFirebaseServices();
-    if (!success) {
-      throw new Error('Failed to initialize Firebase services');
-    }
-  }
-  if (!storage) {
-    throw new Error('Storage not initialized');
-  }
-  return storage;
-}
-
-// Synchronous getters with initialization check
 export function getFirestoreSafely(): Firestore | null {
   if (!initialized && typeof window !== 'undefined') {
-    console.warn('[Firebase] Attempting to use Firestore before initialization is complete');
-    // Trigger initialization but don't wait for it
     initializeFirebaseServices();
   }
   return db;
 }
 
-
-// This is where the error was reported previously
 export function getAuthSafely(): Auth | null {
   if (!initialized && typeof window !== 'undefined') {
-    console.warn('[Firebase] Attempting to use Auth before initialization is complete');
-    // Trigger initialization but don't wait for it
     initializeFirebaseServices();
   }
   return auth;
@@ -203,9 +186,43 @@ export function getAuthSafely(): Auth | null {
 
 export function getStorageSafely(): FirebaseStorage | null {
   if (!initialized && typeof window !== 'undefined') {
-    console.warn('[Firebase] Attempting to use Storage before initialization is complete');
-    // Trigger initialization but don't wait for it
     initializeFirebaseServices();
   }
   return storage;
 }
+
+// Async versions that ensure initialization and throw if service is unavailable
+export async function getFirestoreAsync(): Promise<Firestore> {
+  await ensureFirebaseInitializedAsync();
+  if (!db) {
+    throw new Error('[Firebase] Firestore is not available');
+  }
+  return db;
+}
+
+export async function getAuthAsync(): Promise<Auth> {
+  await ensureFirebaseInitializedAsync();
+  if (!auth) {
+    throw new Error('[Firebase] Auth is not available');
+  }
+  return auth;
+}
+
+export async function getStorageAsync(): Promise<FirebaseStorage> {
+  await ensureFirebaseInitializedAsync();
+  if (!storage) {
+    throw new Error('[Firebase] Storage is not available');
+  }
+  return storage;
+}
+
+// Alias for backward compatibility
+export const getFirestore = getFirestoreSafely;
+export const getAuth = getAuthSafely;
+export const getStorage = getStorageSafely;
+
+// Alias for AppLayout
+export const initializeFirebaseSafely = initializeFirebaseServices;
+
+// Export initialization status check
+export const isFirebaseInitialized = () => initialized;
