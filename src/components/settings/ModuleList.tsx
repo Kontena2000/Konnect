@@ -30,7 +30,8 @@ export function ModuleList({
 
   const handleUpdateModule = async (updatedModule: Module) => {
     try {
-      await moduleService.updateModule(updatedModule);
+      // Fix: Pass the module ID as the second argument
+      await moduleService.updateModule(updatedModule, updatedModule.id);
       await onModuleUpdated();
       setShowEditDialog(false);
       toast({

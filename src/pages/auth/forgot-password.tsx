@@ -21,6 +21,7 @@ import { useToast } from "@/hooks/use-toast";
 import { ArrowLeft, Loader2, Mail } from "lucide-react";
 import { sendPasswordResetEmail } from "firebase/auth";
 import { auth } from "@/lib/firebase";
+import { ensureAuth } from "@/utils/firebaseHelpers";
 
 const formSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -42,12 +43,9 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
-      // Fix the auth null check
-      if (!auth) {
-        throw new Error("Firebase auth is not initialized");
-      }
-      // Now TypeScript knows auth is not null
-      await sendPasswordResetEmail(auth, values.email);
+      // Use the ensureAuth helper to handle null auth
+      const safeAuth = ensureAuth(auth);
+      await sendPasswordResetEmail(safeAuth, values.email);
       setEmailSent(true);
       toast({
         title: "Reset email sent",
