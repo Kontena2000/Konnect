@@ -1,6 +1,6 @@
-
 import { calculatorDebug } from './calculatorDebug';
 import { db } from '@/lib/firebase';
+import { DocumentData } from 'firebase/firestore';
 
 /**
  * Comprehensive Firebase diagnostics utility
@@ -192,7 +192,7 @@ export const firebaseDiagnostics = {
       
       return { 
         success: true, 
-        data: snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })) 
+        data: snapshot.docs.map((doc: { id: string; data: () => DocumentData }) => ({ id: doc.id, ...doc.data() })) 
       };
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
