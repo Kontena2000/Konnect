@@ -1,7 +1,6 @@
-
 import { getApps } from "firebase/app";
 import { initializeFirebaseServices } from "@/lib/firebase";
-import { ensureFirebaseInitialized } from "@/utils/firebaseInitializer";
+import { waitForFirebaseBootstrap } from "@/utils/firebaseBootstrap";
 
 /**
  * Firebase Monitor Utilities
@@ -43,22 +42,23 @@ export const initializeFirebaseMonitorSafely = async (): Promise<boolean> => {
   console.log("[Firebase Monitor] Starting initialization...");
   
   try {
-    // First check if Firebase is already initialized
-    const status = checkFirebaseStatus();
-    if (status.initialized) {
-      console.log("[Firebase Monitor] Firebase already initialized");
+    // Use the centralized bootstrap utility instead of direct initialization
+    const bootstrapped = await waitForFirebaseBootstrap();
+    
+    if (bootstrapped) {
+      console.log("[Firebase Monitor] Firebase initialized successfully via bootstrap");
       return true;
     }
     
-    // Try to initialize Firebase
-    console.log("[Firebase Monitor] Firebase not initialized, initializing...");
-    const initialized = await ensureFirebaseInitialized();
+    // If bootstrap failed, try direct initialization as a fallback
+    console.log("[Firebase Monitor] Bootstrap failed, trying direct initialization...");
+    const directSuccess = initializeFirebaseServices();
     
-    if (initialized) {
-      console.log("[Firebase Monitor] Firebase initialized successfully");
+    if (directSuccess) {
+      console.log("[Firebase Monitor] Direct initialization successful");
       return true;
     } else {
-      console.error("[Firebase Monitor] Firebase initialization failed");
+      console.error("[Firebase Monitor] All initialization attempts failed");
       return false;
     }
   } catch (error) {
@@ -77,10 +77,10 @@ export const safeMonitorOperation = async <T>(
   errorMessage = "Firebase monitor operation failed"
 ): Promise<T> => {
   try {
-    // Ensure Firebase is initialized first
-    const initialized = await initializeFirebaseMonitorSafely();
-    if (!initialized) {
-      console.error("[Firebase Monitor] Firebase could not be initialized");
+    // Use the centralized bootstrap utility
+    const bootstrapped = await waitForFirebaseBootstrap();
+    if (!bootstrapped) {
+      console.error("[Firebase Monitor] Firebase could not be bootstrapped");
       return fallback;
     }
     
@@ -108,8 +108,8 @@ export const diagnoseFirebaseInitialization = async (): Promise<void> => {
     console.log("Firebase app details:", status.appDetails);
   } else {
     console.log("Attempting to initialize Firebase...");
-    const initialized = await ensureFirebaseInitialized();
-    console.log(`Initialization attempt result: ${initialized ? "✅ Success" : "❌ Failed"}`);
+    const bootstrapped = await waitForFirebaseBootstrap();
+    console.log(`Bootstrap attempt result: ${bootstrapped ? "✅ Success" : "❌ Failed"}`);
     
     // Check environment variables
     console.log("Environment variable check:");
