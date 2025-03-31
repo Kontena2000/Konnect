@@ -13,6 +13,7 @@ import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firesto
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugger';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
+import { useToast } from '@/hooks/use-toast';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -22,6 +23,7 @@ export default function MatrixCalculatorPage() {
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const fetchData = async () => {
@@ -144,6 +146,8 @@ export default function MatrixCalculatorPage() {
   };
   
   const handleLoadCalculation = (calculationId: string) => {
+    console.log('Loading calculation:', calculationId);
+    // Instead of directly loading the calculation, redirect to the page with the calculationId
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
 

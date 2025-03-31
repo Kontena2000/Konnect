@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { getFirestore, collection, query, where, orderBy, limit, getDocs, deleteDoc, doc } from 'firebase/firestore';
+import { getFirestoreSafely } from '@/lib/firebase';
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Loader2, Trash2, FileText, ChevronDown, ChevronUp } from "lucide-react";
@@ -25,25 +26,54 @@ export function SavedCalculations({ userId, onLoadCalculation }: SavedCalculatio
   const loadCalculations = async () => {
     setLoading(true);
     try {
-      const db = getFirestore();
-      const calculationsRef = collection(db, 'users', userId, 'calculations');
+      const db = getFirestoreSafely();
+      if (!db) {
+        console.error('Firestore not available');
+        return;
+      }
       
-      const q = query(
-        calculationsRef,
+      // Try to load from the new path structure first
+      const matrixCalculationsRef = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
+      
+      const userQuery = query(
+        matrixCalculationsRef,
+        where('userId', '==', userId),
         orderBy('timestamp', 'desc'),
         limit(5)
       );
       
-      const snapshot = await getDocs(q);
+      const snapshot = await getDocs(userQuery);
       const loadedCalculations: any[] = [];
       
-      snapshot.forEach(doc => {
-        loadedCalculations.push({
-          id: doc.id,
-          ...doc.data(),
-          timestamp: doc.data().timestamp?.toDate() || new Date()
+      if (!snapshot.empty) {
+        // New structure found, use it
+        snapshot.forEach(doc => {
+          loadedCalculations.push({
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate() || new Date()
+          });
         });
-      });
+      } else {
+        // Fall back to old structure
+        const oldCalculationsRef = collection(db, 'users', userId, 'calculations');
+        
+        const oldQuery = query(
+          oldCalculationsRef,
+          orderBy('timestamp', 'desc'),
+          limit(5)
+        );
+        
+        const oldSnapshot = await getDocs(oldQuery);
+        
+        oldSnapshot.forEach(doc => {
+          loadedCalculations.push({
+            id: doc.id,
+            ...doc.data(),
+            timestamp: doc.data().timestamp?.toDate() || new Date()
+          });
+        });
+      }
       
       setCalculations(loadedCalculations);
     } catch (error) {
@@ -57,8 +87,19 @@ export function SavedCalculations({ userId, onLoadCalculation }: SavedCalculatio
     if (!confirm('Are you sure you want to delete this calculation?')) return;
     
     try {
-      const db = getFirestore();
-      await deleteDoc(doc(db, 'users', userId, 'calculations', id));
+      const db = getFirestoreSafely();
+      if (!db) {
+        console.error('Firestore not available');
+        return;
+      }
+      
+      // Try to delete from the new path structure
+      try {
+        await deleteDoc(doc(db, 'matrix_calculator', 'user_configurations', 'configs', id));
+      } catch (e) {
+        // If that fails, try the old path
+        await deleteDoc(doc(db, 'users', userId, 'calculations', id));
+      }
       
       // Update local state
       setCalculations(prev => prev.filter(calc => calc.id !== id));
@@ -70,7 +111,7 @@ export function SavedCalculations({ userId, onLoadCalculation }: SavedCalculatio
   
   const handleLoad = (calculation: any) => {
     if (onLoadCalculation) {
-      onLoadCalculation(calculation.results);
+      onLoadCalculation(calculation.id);
     }
   };
   
