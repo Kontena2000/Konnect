@@ -12,9 +12,9 @@ import { nanoid } from "nanoid";
 import moduleService from "@/services/module";
 
 interface CreateModuleDialogProps {
-  onSubmit: (module: Module) => Promise<void>;
-  isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  onModuleCreate: (module: Module) => Promise<void>;
+  isOpen?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
 interface FormData {
@@ -34,7 +34,12 @@ interface FormData {
   visibleInEditor: boolean;
 }
 
-export function CreateModuleDialog({ onSubmit, isOpen, onOpenChange }: CreateModuleDialogProps) {
+export function CreateModuleDialog({ 
+  onModuleCreate, 
+  isOpen: propIsOpen, 
+  onOpenChange: propOnOpenChange 
+}: CreateModuleDialogProps) {
+  const [isOpen, setIsOpen] = useState(propIsOpen || false);
   const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
   const [formData, setFormData] = useState<FormData>({
     name: "",
@@ -52,6 +57,13 @@ export function CreateModuleDialog({ onSubmit, isOpen, onOpenChange }: CreateMod
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
+  const onOpenChange = (open: boolean) => {
+    setIsOpen(open);
+    if (propOnOpenChange) {
+      propOnOpenChange(open);
+    }
+  };
+
   useEffect(() => {
     const loadCategories = async () => {
       try {
@@ -59,9 +71,9 @@ export function CreateModuleDialog({ onSubmit, isOpen, onOpenChange }: CreateMod
         setCategories(fetchedCategories);
       } catch (error) {
         toast({
-          variant: "destructive",
-          title: "Error",
-          description: "Failed to load categories"
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load categories'
         });
       }
     };
@@ -119,18 +131,18 @@ export function CreateModuleDialog({ onSubmit, isOpen, onOpenChange }: CreateMod
         visibleInEditor: formData.visibleInEditor
       };
 
-      await onSubmit(newModule);
+      await onModuleCreate(newModule);
       onOpenChange(false);
       resetForm();
       toast({
-        title: "Success",
-        description: "Module created successfully"
+        title: 'Success',
+        description: 'Module created successfully'
       });
     } catch (error) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create module"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create module'
       });
     } finally {
       setIsCreating(false);

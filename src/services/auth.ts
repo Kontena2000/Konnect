@@ -4,7 +4,8 @@ import {
   signInWithEmailAndPassword, 
   signOut as firebaseSignOut,
   UserCredential,
-  User
+  User,
+  Auth
 } from "firebase/auth";
 import userService from "./user";
 import { withFirebaseErrorHandling } from "@/utils/firebaseDebug";
@@ -25,11 +26,19 @@ export class AuthError extends Error {
   }
 }
 
+// Helper function to ensure auth is not null
+const ensureAuth = (authInstance: Auth | null): Auth => {
+  if (!authInstance) {
+    throw new Error("Firebase auth is not initialized");
+  }
+  return authInstance;
+};
+
 const authService = {
   async register(email: string, password: string, role: UserRole = "editor"): Promise<UserCredential> {
     return withFirebaseErrorHandling(async () => {
-      // Get auth instance safely
-      const safeAuth = getAuthSafely() || auth;
+      // Get auth instance safely and ensure it's not null
+      const safeAuth = ensureAuth(getAuthSafely() || auth);
       
       const userCredential = await createUserWithEmailAndPassword(safeAuth, email, password);
       
@@ -42,8 +51,8 @@ const authService = {
 
   async login(email: string, password: string): Promise<UserCredential> {
     return withFirebaseErrorHandling(async () => {
-      // Get auth instance safely
-      const safeAuth = getAuthSafely() || auth;
+      // Get auth instance safely and ensure it's not null
+      const safeAuth = ensureAuth(getAuthSafely() || auth);
       
       return await signInWithEmailAndPassword(safeAuth, email, password);
     }, `Failed to login with email: ${email}`);
@@ -51,8 +60,8 @@ const authService = {
 
   async signOut(): Promise<void> {
     return withFirebaseErrorHandling(async () => {
-      // Get auth instance safely
-      const safeAuth = getAuthSafely() || auth;
+      // Get auth instance safely and ensure it's not null
+      const safeAuth = ensureAuth(getAuthSafely() || auth);
       
       await firebaseSignOut(safeAuth);
     }, "Failed to sign out");
@@ -62,6 +71,12 @@ const authService = {
     try {
       // Get auth instance safely
       const safeAuth = getAuthSafely() || auth;
+      
+      // Check if auth is initialized
+      if (!safeAuth) {
+        console.warn("Firebase auth is not initialized");
+        return null;
+      }
       
       return safeAuth.currentUser as AuthUser | null;
     } catch (error) {

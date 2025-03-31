@@ -189,7 +189,7 @@ export function ModuleManager({ userId, userRole }: ModuleManagerProps) {
       <CreateModuleDialog
         isOpen={showCreateDialog}
         onOpenChange={setShowCreateDialog}
-        onSubmit={handleCreateModule}
+        onModuleCreate={handleCreateModule}
       />
 
       <CategoryDialog

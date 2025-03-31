@@ -191,6 +191,15 @@ export function ModuleList({
           isOpen={showEditDialog}
           onClose={() => setShowEditDialog(false)}
           onSubmit={handleUpdateModule}
+          categories={[]} // Add the missing categories prop
+          onModuleUpdate={async (data) => {
+            // Add the missing onModuleUpdate prop
+            await moduleService.updateModule({
+              ...moduleToEdit,
+              ...data
+            });
+            await onModuleUpdated();
+          }}
         />
       )}
     </>

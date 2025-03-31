@@ -1,7 +1,7 @@
-
 import { Button } from "@/components/ui/button";
 import { CreateModuleDialog } from "./CreateModuleDialog";
 import { ModuleSearch } from "./ModuleSearch";
+import { Module } from "@/types/module"; // Add this import
 
 interface ModuleHeaderProps {
   searchTerm: string;
@@ -15,7 +15,7 @@ interface ModuleHeaderProps {
   isDeletingCategory: boolean;
   categoryToDelete: string | null;
   setCategoryToDelete: (id: string | null) => void;
-  onCreateModule: (moduleData: any) => Promise<void>;
+  onCreateModule: (moduleData: Module) => Promise<void>;
 }
 
 export function ModuleHeader({

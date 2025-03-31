@@ -1,7 +1,6 @@
 import { checkFirebaseInitialization, withFirebaseErrorHandling } from "@/utils/firebaseDebug";
 import { db, getFirestoreSafely } from "@/lib/firebase";
 import { collection, getDocs, query, limit, where, orderBy } from "firebase/firestore";
-import { initializeFirebaseSafely } from "@/services/firebase-init";
 
 /**
  * Matrix Debug Service
@@ -77,8 +76,14 @@ const matrixDebugService = {
    */
   async checkCollection(collectionName: string) {
     return await withFirebaseErrorHandling(async () => {
-      const collRef = collection(db, collectionName);
-      const q = query(collRef, orderBy("createdAt", "desc"), limit(5));
+      const firestore = getFirestoreSafely();
+      if (!firestore) {
+        throw new Error("Firestore is not initialized");
+      }
+      
+      const collRef = collection(firestore, collectionName);
+      // Fix the query to handle missing createdAt field
+      const q = query(collRef, limit(5));
       const snapshot = await getDocs(q);
       
       return {
@@ -94,7 +99,12 @@ const matrixDebugService = {
    */
   async testCalculation(calculationId: string) {
     return await withFirebaseErrorHandling(async () => {
-      const calculationsRef = collection(db, "calculations");
+      const firestore = getFirestoreSafely();
+      if (!firestore) {
+        throw new Error("Firestore is not initialized");
+      }
+      
+      const calculationsRef = collection(firestore, "calculations");
       const q = query(calculationsRef, where("id", "==", calculationId), limit(1));
       const snapshot = await getDocs(q);
       

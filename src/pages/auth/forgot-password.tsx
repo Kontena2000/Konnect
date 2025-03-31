@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { useRouter } from "next/router";
 import Link from "next/link";
@@ -43,6 +42,11 @@ export default function ForgotPasswordPage() {
   const onSubmit = async (values: z.infer<typeof formSchema>) => {
     try {
       setLoading(true);
+      // Fix the auth null check
+      if (!auth) {
+        throw new Error("Firebase auth is not initialized");
+      }
+      // Now TypeScript knows auth is not null
       await sendPasswordResetEmail(auth, values.email);
       setEmailSent(true);
       toast({
