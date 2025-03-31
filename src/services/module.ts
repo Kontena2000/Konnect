@@ -1,4 +1,4 @@
-import { db, auth } from "@/lib/firebase";
+import { getFirestoreSafely, getAuthSafely } from '@/lib/firebase';
 import { 
   collection, 
   doc,
@@ -12,11 +12,12 @@ import {
   query,
   where,
   FirestoreError
-} from "firebase/firestore";
+} from 'firebase/firestore';
 import { getIdTokenResult } from 'firebase/auth';
-import { Module, ModuleCategory } from "@/types/module";
+import { Module, ModuleCategory } from '@/types/module';
 import firebaseMonitor from '@/services/firebase-monitor';
 import { moduleOperations } from './module-operations';
+import { ensureFirebaseInitialized, safeFirebaseOperation } from '@/utils/firebaseInitializer';
 
 interface CategoryData {
   id: string;
@@ -40,9 +41,13 @@ export class ModuleError extends Error {
 const moduleService = {
   async checkUserPermissions(): Promise<boolean> {
     try {
-      const user = auth.currentUser;
-      if (!user) {
-        console.error('No user logged in');
+      // Ensure Firebase is initialized before accessing auth
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const user = auth?.currentUser;
+      
+      if (!auth || !user) {
+        console.error('No user logged in or auth not initialized');
         return false;
       }
 
@@ -67,7 +72,16 @@ const moduleService = {
   },
 
   async deleteCategory(categoryId: string): Promise<void> {
-    try {
+    return safeFirebaseOperation(async () => {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
@@ -97,21 +111,21 @@ const moduleService = {
         timestamp: Date.now(),
         details: { categoryId, email: user.email }
       });
-    } catch (error) {
-      console.error('Error deleting category:', error);
-      firebaseMonitor.logOperation({
-        type: 'category',
-        action: 'delete',
-        status: 'error',
-        timestamp: Date.now(),
-        error: error instanceof Error ? error.message : 'Unknown error'
-      });
-      throw error;
-    }
+    }, 'Error deleting category');
   },
 
   async getAllModules(): Promise<Module[]> {
     try {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        console.error('Firebase not initialized');
+        return [];
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         console.error('No user logged in');
