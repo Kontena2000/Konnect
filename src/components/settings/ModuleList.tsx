@@ -30,8 +30,8 @@ export function ModuleList({
 
   const handleUpdateModule = async (updatedModule: Module) => {
     try {
-      // Fix: Pass the module ID as the second argument
-      await moduleService.updateModule(updatedModule, updatedModule.id);
+      // Fix: Pass the ID as the first parameter and the module data as the second parameter
+      await moduleService.updateModule(updatedModule.id, updatedModule);
       await onModuleUpdated();
       setShowEditDialog(false);
       toast({
@@ -194,11 +194,11 @@ export function ModuleList({
           onSubmit={handleUpdateModule}
           categories={[]} // Add the missing categories prop
           onModuleUpdate={async (data) => {
-            // Add the missing onModuleUpdate prop
-            await moduleService.updateModule({
-              ...moduleToEdit,
-              ...data
-            });
+            // Fix: Pass the ID as the first parameter and the module data as the second parameter
+            await moduleService.updateModule(
+              moduleToEdit.id,
+              { ...moduleToEdit, ...data }
+            );
             await onModuleUpdated();
           }}
         />
