@@ -1,6 +1,5 @@
-
-import { doc, setDoc, getDoc } from 'firebase/firestore';
-import { getFirestoreAsync, ensureFirebaseInitializedAsync } from '@/lib/firebase';
+import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
+import { getFirestoreAsync, ensureFirebaseInitializedAsync, getFirestoreSafely } from '@/lib/firebase';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { calculatorDebug } from './calculatorDebug';
 
@@ -13,16 +12,29 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
     console.log('[Matrix Calculator] Starting initialization...');
     calculatorDebug.log('Starting Matrix Calculator initialization');
     
-    // Ensure Firebase is initialized
-    const initialized = await ensureFirebaseInitializedAsync();
-    if (!initialized) {
-      console.error('[Matrix Calculator] Firebase initialization failed');
-      calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
-      return false;
+    // First check if Firebase is already initialized using the safe accessor
+    let db = getFirestoreSafely();
+    
+    if (!db) {
+      // If not initialized, ensure Firebase is initialized
+      console.log('[Matrix Calculator] Firebase not initialized, attempting to initialize...');
+      const initialized = await ensureFirebaseInitializedAsync();
+      if (!initialized) {
+        console.error('[Matrix Calculator] Firebase initialization failed');
+        calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
+        return false;
+      }
+      
+      // Get Firestore again after initialization
+      db = getFirestoreSafely();
+      if (!db) {
+        console.error('[Matrix Calculator] Still could not get Firestore after initialization');
+        calculatorDebug.error('Still could not get Firestore after initialization');
+        return false;
+      }
     }
     
-    // Get Firestore
-    const db = await getFirestoreAsync();
+    console.log('[Matrix Calculator] Firebase is initialized, proceeding with Matrix Calculator initialization');
     
     // Check if pricing matrix exists
     const pricingRef = doc(db, 'matrix_calculator', 'pricing_matrix');
@@ -33,6 +45,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
       console.log('[Matrix Calculator] Creating default pricing matrix');
       calculatorDebug.log('Creating default pricing matrix');
       await setDoc(pricingRef, DEFAULT_PRICING);
+      console.log('[Matrix Calculator] Default pricing matrix created successfully');
     } else {
       console.log('[Matrix Calculator] Pricing matrix already exists');
     }
@@ -46,12 +59,38 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
       console.log('[Matrix Calculator] Creating default calculation parameters');
       calculatorDebug.log('Creating default calculation parameters');
       await setDoc(paramsRef, DEFAULT_CALCULATION_PARAMS);
+      console.log('[Matrix Calculator] Default calculation parameters created successfully');
     } else {
       console.log('[Matrix Calculator] Calculation parameters already exist');
     }
     
-    // Create the user_configurations collection if it doesn't exist
-    // (Firestore collections are created implicitly when documents are added)
+    // Create the user_configurations document if it doesn't exist
+    const configsRef = doc(db, 'matrix_calculator', 'user_configurations');
+    const configsDoc = await getDoc(configsRef);
+    
+    if (!configsDoc.exists()) {
+      console.log('[Matrix Calculator] Creating user_configurations document');
+      calculatorDebug.log('Creating user_configurations document');
+      await setDoc(configsRef, {
+        created: new Date(),
+        description: 'User calculation configurations'
+      });
+      console.log('[Matrix Calculator] user_configurations document created successfully');
+    } else {
+      console.log('[Matrix Calculator] user_configurations document already exists');
+    }
+    
+    // Create the configs subcollection if it doesn't exist
+    // Note: In Firestore, collections are created implicitly when documents are added
+    // But we'll create an empty document to ensure the collection exists
+    try {
+      const configsCollectionRef = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
+      console.log('[Matrix Calculator] Configs collection reference created');
+    } catch (error) {
+      console.error('[Matrix Calculator] Error creating configs collection reference:', error);
+      calculatorDebug.error('Error creating configs collection reference', error);
+      // Continue with initialization even if this fails
+    }
     
     console.log('[Matrix Calculator] Initialization complete');
     calculatorDebug.log('Matrix Calculator initialization complete');
@@ -59,6 +98,21 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
   } catch (error) {
     console.error('[Matrix Calculator] Initialization error:', error);
     calculatorDebug.error('Matrix Calculator initialization error', error);
+    return false;
+  }
+}
+
+/**
+ * Run the Matrix Calculator initialization
+ * This function is called from the Matrix Calculator page
+ */
+export async function runMatrixCalculatorInitialization(): Promise<boolean> {
+  try {
+    console.log('[Matrix Calculator] Running initialization...');
+    return await initializeMatrixCalculator();
+  } catch (error) {
+    console.error('[Matrix Calculator] Error running initialization:', error);
+    calculatorDebug.error('Error running Matrix Calculator initialization', error);
     return false;
   }
 }
