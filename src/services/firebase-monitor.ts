@@ -110,16 +110,12 @@ class FirebaseMonitor {
   }
 
   async testConnection(): Promise<void> {
-    try {
-      // Ensure Firebase is initialized before proceeding
-      await ensureFirebaseInitialized();
+    return safeMonitorOperation(async () => {
+      // Get Firestore instance safely
       const safeDb = getFirestoreSafely();
       if (!safeDb) {
         throw new Error('Failed to get Firestore instance');
       }
-      
-      // Use the safely obtained Firestore instance instead of getFirestore()
-      const firestore = safeDb;
       
       this.logOperation({
         type: 'connection',
@@ -128,18 +124,18 @@ class FirebaseMonitor {
         timestamp: Date.now()
       });
 
-      await disableNetwork(firestore);
+      await disableNetwork(safeDb);
       this.status.connectionState = 'offline';
       this.status.isOnline = false;
       this.notifySubscribers();
 
       await new Promise(resolve => setTimeout(resolve, 1000));
 
-      await enableNetwork(firestore);
+      await enableNetwork(safeDb);
       this.status.connectionState = 'online';
       this.status.isOnline = true;
 
-      const testCollection = collection(firestore, 'editorPreferences');
+      const testCollection = collection(safeDb, 'editorPreferences');
       await getDocs(testCollection);
 
       this.logOperation({
@@ -154,26 +150,7 @@ class FirebaseMonitor {
       });
 
       this.notifySubscribers();
-    } catch (error) {
-      this.status.connectionState = 'offline';
-      this.status.isOnline = false;
-      this.status.lastError = error instanceof Error ? error.message : 'Connection test failed';
-      
-      this.logOperation({
-        type: 'connection',
-        action: 'test_connection',
-        status: 'error',
-        timestamp: Date.now(),
-        error: this.status.lastError,
-        details: {
-          connectionState: this.status.connectionState,
-          authState: this.status.authState
-        }
-      });
-
-      this.notifySubscribers();
-      throw error;
-    }
+    }, undefined, 'Connection test failed');
   }
 
   measureOperation<T>(operation: string, fn: () => Promise<T>): Promise<T> {
