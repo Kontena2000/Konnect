@@ -31,11 +31,6 @@ function safeFirestore(): Firestore {
   return db as Firestore;
 }
 
-// Helper function to safely create document reference
-function safeDocRef(path: string, ...pathSegments: string[]): DocumentReference {
-  return doc(safeFirestore(), path, ...pathSegments);
-}
-
 // Helper function to safely get auth user
 function getAuthUser() {
   if (!auth) {

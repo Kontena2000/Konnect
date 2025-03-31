@@ -1,4 +1,4 @@
-import { getFirestore, serverTimestamp, Firestore, DocumentReference, CollectionReference, doc, getDoc, collection, query, where, getDocs, addDoc, DocumentData } from 'firebase/firestore';
+import { serverTimestamp, doc, getDoc, collection, query, where, getDocs, addDoc, DocumentReference, CollectionReference } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { getClimateFactor, ClimateFactor } from './climateDataService';
 import { calculateEnergyMetrics, calculateWithLocationFactors as calculateEnergyWithLocationFactors } from './energyDataService';
@@ -20,13 +20,17 @@ import {
   calculateCoolingCapacity,
   compareConfigurations as compareConfigurationsUtil
 } from './calculatorUtils';
-import { PricingMatrix } from '@/types/pricingMatrix';
+import type { PricingMatrix } from '@/types/pricingMatrix';
 import { pricingCache, paramsCache, configurationCache, locationFactorsCache, memoize } from './calculationCache';
 import { calculatorDebug, withDebug } from './calculatorDebug';
 import { fallbackCalculation } from './calculatorFallback';
 import { getNestedProperty, ensureObjectStructure, toNumber, safeDivide } from '@/utils/safeObjectAccess';
 import { validateCalculationResults, validateCalculationInputs } from '@/utils/calculationValidator';
-import { db } from '@/lib/firebase';
+import { 
+  getFirestoreOrThrow, 
+  safeDocRef,
+  safeCollectionRef
+} from '@/services/firebaseHelpers';
 
 // Enhanced PricingMatrix Interface
 export interface PricingMatrix {
