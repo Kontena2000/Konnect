@@ -23,6 +23,7 @@ import { getFirestoreSafely, initializeFirebaseSafely } from '@/lib/firebase';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
 import { initializeMatrixCalculator } from '@/services/matrixCalculatorInitializer';
+import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -87,32 +88,23 @@ export function CalculatorComponent({
   // Initialize Firebase when component mounts
   useEffect(() => {
     const initializeCalculator = async () => {
-      // Initialize Firebase when component mounts
-      console.log('Initializing Firebase in Matrix Calculator...');
-      const success = initializeFirebaseSafely();
-      
-      if (!success) {
-        console.error('Firebase initialization failed in Matrix Calculator');
-        calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
-      } else {
-        console.log('Firebase initialized successfully in Matrix Calculator');
-        calculatorDebug.log('Firebase initialized successfully');
+      try {
+        // Initialize Firebase and Matrix Calculator collections
+        console.log('Bootstrapping Matrix Calculator...');
+        const success = await waitForMatrixCalculatorBootstrap();
         
-        // Initialize Matrix Calculator collections with default data
-        try {
-          console.log('Initializing Matrix Calculator collections...');
-          const initSuccess = await initializeMatrixCalculator();
-          if (initSuccess) {
-            console.log('Matrix Calculator collections initialized successfully');
-            calculatorDebug.log('Matrix Calculator collections initialized successfully');
-          } else {
-            console.error('Failed to initialize Matrix Calculator collections');
-            calculatorDebug.error('Failed to initialize Matrix Calculator collections');
-          }
-        } catch (error) {
-          console.error('Error initializing Matrix Calculator:', error);
-          calculatorDebug.error('Error initializing Matrix Calculator', error);
+        if (success) {
+          console.log('Matrix Calculator bootstrapped successfully');
+          calculatorDebug.log('Matrix Calculator bootstrapped successfully');
+        } else {
+          console.error('Failed to bootstrap Matrix Calculator');
+          calculatorDebug.error('Failed to bootstrap Matrix Calculator');
+          setError('Failed to initialize calculator. Please try again later.');
         }
+      } catch (error) {
+        console.error('Error initializing Matrix Calculator:', error);
+        calculatorDebug.error('Error initializing Matrix Calculator', error);
+        setError('Error initializing calculator. Please try again later.');
       }
     };
     
@@ -173,6 +165,9 @@ export function CalculatorComponent({
     setError(null);
     
     try {
+      // Ensure Matrix Calculator is bootstrapped before calculation
+      await waitForMatrixCalculatorBootstrap();
+      
       console.log('Starting calculation with inputs:', { kwPerRack, coolingType, totalRacks });
       calculatorDebug.log('Starting calculation with config:', {
         kwPerRack,
