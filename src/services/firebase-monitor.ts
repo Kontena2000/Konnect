@@ -2,6 +2,7 @@ import { getAuthSafely, getFirestoreSafely } from '@/lib/firebase';
 import { disableNetwork, enableNetwork, getDocs, collection } from 'firebase/firestore';
 import { onAuthStateChanged } from 'firebase/auth';
 import { ensureFirebaseInitialized } from '@/utils/firebaseInitializer';
+import { initializeFirebaseMonitorSafely, safeMonitorOperation } from '@/utils/firebaseMonitorUtils';
 
 export interface OperationLog {
   type: 'project' | 'module' | 'category' | 'auth' | 'connection' | 'settings';
