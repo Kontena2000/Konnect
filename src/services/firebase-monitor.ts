@@ -60,8 +60,8 @@ class FirebaseMonitor {
 
   private async initializeMonitoring() {
     try {
-      // Ensure Firebase is initialized before proceeding
-      const initialized = await ensureFirebaseInitialized();
+      // Use our specialized Firebase Monitor initialization utility
+      const initialized = await initializeFirebaseMonitorSafely();
       if (!initialized) {
         console.error('[FirebaseMonitor] Firebase initialization failed');
         this.status.connectionState = 'unknown';
