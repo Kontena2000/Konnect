@@ -323,6 +323,15 @@ const moduleService = {
 
   async initializeDefaultModules(): Promise<void> {
     try {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
@@ -375,6 +384,15 @@ const moduleService = {
 
   async initializeBasicCategory(): Promise<void> {
     try {
+      // Ensure Firebase is initialized before accessing auth and db
+      await ensureFirebaseInitialized();
+      const auth = getAuthSafely();
+      const db = getFirestoreSafely();
+      
+      if (!auth || !db) {
+        throw new ModuleError('Firebase not initialized', 'FIREBASE_ERROR');
+      }
+      
       const user = auth.currentUser;
       if (!user) {
         throw new ModuleError('Not authenticated', 'AUTH_REQUIRED');
