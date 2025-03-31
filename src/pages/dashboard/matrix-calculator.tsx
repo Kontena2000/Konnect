@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Calculator, Settings } from "lucide-react";
 import { CalculatorComponent } from "@/components/matrix-calculator/CalculatorComponent";
 import { SavedCalculations } from "@/components/SavedCalculations";
-import { db } from '@/lib/firebase';
+import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
 import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugger';
@@ -28,6 +28,14 @@ export default function MatrixCalculatorPage() {
       
       try {
         setLoading(true);
+        
+        // Get Firestore instance safely
+        const db = getFirestoreSafely();
+        if (!db) {
+          setError('Firestore database is not available');
+          setLoading(false);
+          return;
+        }
         
         // If projectId is provided, fetch project data
         if (projectId) {
