@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { Save, AlertTriangle, Download, Share2 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Save, AlertTriangle, Download, Share2, BarChart2 } from 'lucide-react';
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { GeneratePdfButton } from './GeneratePdfButton';
 
@@ -11,10 +11,21 @@ interface ResultsDisplayProps {
   results: any;
   onSave?: (results: any) => void;
   userId: string;
+  calculationOptions?: any;
+  projectName?: string;
+  clientName?: string;
 }
 
-export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps) {
+export function ResultsDisplay({ 
+  results, 
+  onSave, 
+  userId, 
+  calculationOptions = {}, 
+  projectName = '', 
+  clientName = '' 
+}: ResultsDisplayProps) {
   const [saving, setSaving] = useState(false);
+  const [showComparisonModal, setShowComparisonModal] = useState(false);
   
   // Add debugging to see what results we're getting
   console.log('ResultsDisplay received results:', results);

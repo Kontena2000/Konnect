@@ -622,7 +622,6 @@ function safelyAccessCalculationResults(results: any) {
         results.cooling.airPortion : totalITLoad * 0.4;
       
       results.cooling.dlcFlowRate = results.cooling.dlcPortion * 0.25;
-      results.cooling.rdhxUnits = Math.ceil(results.cooling.airPortion / 150);
     } else if (coolingType === 'immersion' && !results.cooling.flowRate) {
       results.cooling.tanksNeeded = typeof results.cooling.tanksNeeded === 'number' && results.cooling.tanksNeeded > 0 ? 
         results.cooling.tanksNeeded : Math.ceil(results.rack.totalRacks / 4);
@@ -683,7 +682,7 @@ export const calculateConfiguration = withDebug(
     try {
       // Log input parameters
       console.log('Calculate Configuration - Input Parameters:', { kwPerRack, coolingType, totalRacks, options });
-      calculatorDebug.log('Calculate Configuration - Input Parameters:', { kwPerRack, coolingType, totalRacks, options });
+      calculatorDebug.log('Calculate Configuration - Input Parameters', { kwPerRack, coolingType, totalRacks, options });
       
       // Validate input parameters
       const validatedInputs = validateCalculationInputs({
@@ -693,7 +692,7 @@ export const calculateConfiguration = withDebug(
         ...options
       });
       
-      calculatorDebug.log('Calculate Configuration - Validated Inputs:', validatedInputs);
+      calculatorDebug.log('Calculate Configuration - Validated Inputs', validatedInputs);
       
       // Try the original calculation first
       const results = await calculateConfigurationImpl(
@@ -704,12 +703,12 @@ export const calculateConfiguration = withDebug(
       );
       
       console.log('Calculate Configuration - Raw Results:', results);
-      calculatorDebug.log('Calculate Configuration - Raw Results:', results);
+      calculatorDebug.log('Calculate Configuration - Raw Results', results);
       
       // Validate and ensure all required properties exist
-      const validatedResults = validateCalculationResults(results, validatedInputs);
+      const validatedResults = validateCalculationResults(results);
       
-      calculatorDebug.log('Calculate Configuration - Validated Results:', validatedResults);
+      calculatorDebug.log('Calculate Configuration - Validated Results', validatedResults);
       
       // Apply additional defensive handling to ensure no undefined properties
       const safeResults = safelyAccessCalculationResults(validatedResults);
@@ -771,7 +770,7 @@ export const calculateConfiguration = withDebug(
       }
       
       console.log('Calculate Configuration - Safe Results:', safeResults);
-      calculatorDebug.log('Calculate Configuration - Safe Results:', safeResults);
+      calculatorDebug.log('Calculate Configuration - Safe Results', safeResults);
       
       return safeResults;
     } catch (error) {
@@ -780,20 +779,15 @@ export const calculateConfiguration = withDebug(
       // If the original calculation fails, use the fallback
       const fallbackResults = await fallbackCalculation(kwPerRack, coolingType, totalRacks, options);
       
-      calculatorDebug.log('Calculate Configuration - Fallback Results:', fallbackResults);
+      calculatorDebug.log('Calculate Configuration - Fallback Results', fallbackResults);
       
       // Also validate the fallback results
-      const validatedFallback = validateCalculationResults(fallbackResults, {
-        kwPerRack,
-        coolingType,
-        totalRacks,
-        ...options
-      });
+      const validatedFallback = validateCalculationResults(fallbackResults);
       
       // Apply additional defensive handling to fallback results
       const safeFallbackResults = safelyAccessCalculationResults(validatedFallback);
       
-      calculatorDebug.log('Calculate Configuration - Safe Fallback Results:', safeFallbackResults);
+      calculatorDebug.log('Calculate Configuration - Safe Fallback Results', safeFallbackResults);
       
       return safeFallbackResults;
     }
@@ -1407,8 +1401,7 @@ export async function fetchHistoricalCalculations(userId: string, limit = 5) {
   try {
     const calculationsQuery = query(
       safeCollectionRef('matrix_calculator', 'user_configurations', 'configs'),
-      where('userId', '==', userId),
-      where('status', '==', 'completed')
+      where('userId', '==', userId)
     );
     
     const calculationsSnapshot = await getDocs(calculationsQuery);
