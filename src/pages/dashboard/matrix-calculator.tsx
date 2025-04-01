@@ -15,6 +15,7 @@ import { FirebaseDebugger } from '@/components/matrix-calculator/FirebaseDebugge
 import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
 import { useToast } from '@/hooks/use-toast';
 import { runMatrixCalculatorInitialization } from '@/services/matrixCalculatorInitializer';
+import { PricingDebugger } from '@/components/matrix-calculator/PricingDebugger';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -259,6 +260,7 @@ export default function MatrixCalculatorPage() {
                 userId={user.uid} 
                 onLoadCalculation={handleLoadCalculation} 
               />
+              <PricingDebugger />
             </>
           )}
         </div>
