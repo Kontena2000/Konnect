@@ -5,8 +5,6 @@ import { SceneContainer } from "@/components/three/SceneContainer";
 import { Toolbox } from "@/components/layout/Toolbox";
 import { useAuth } from "@/contexts/AuthContext";
 import { useRouter } from "next/router";
-import { Button } from "@/components/ui/button";
-import { Undo2, Redo2, Save } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import layoutService from "@/services/layout";
 import { Module } from "@/types/module";
@@ -50,25 +48,7 @@ export default function BlankEditorPage() {
       setHistory(newHistory);
       setHistoryIndex(newHistory.length - 1);
     }
-  }, [modules, connections, history, historyIndex]); // Include history and historyIndex in dependencies
-
-  const handleUndo = () => {
-    if (historyIndex > 0) {
-      const newIndex = historyIndex - 1;
-      setHistoryIndex(newIndex);
-      setModules([...history[newIndex].modules]);
-      setConnections([...history[newIndex].connections]);
-    }
-  };
-
-  const handleRedo = () => {
-    if (historyIndex < history.length - 1) {
-      const newIndex = historyIndex + 1;
-      setHistoryIndex(newIndex);
-      setModules([...history[newIndex].modules]);
-      setConnections([...history[newIndex].connections]);
-    }
-  };
+  }, [modules, connections, history, historyIndex]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -117,64 +97,30 @@ export default function BlankEditorPage() {
   }
 
   return (
-    <AppLayout>
+    <AppLayout fullWidth noPadding>
       <Head>
         <title>Blank Layout Editor | Konnect</title>
         <meta name="description" content="Create a new layout from scratch" />
       </Head>
       
-      <div className="flex h-full">
+      <div className="flex h-screen">
         <Toolbox 
           onModuleDragStart={handleModuleDragStart}
           onSave={handleSave}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
+          onUndo={() => historyIndex > 0 && setHistoryIndex(historyIndex - 1)}
+          onRedo={() => historyIndex < history.length - 1 && setHistoryIndex(historyIndex + 1)}
           controlsRef={controlsRef}
         />
         
-        <div className="flex-1 flex flex-col">
-          <div className="bg-white border-b p-2 flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleUndo}
-                disabled={historyIndex <= 0}
-              >
-                <Undo2 className="h-4 w-4 mr-1" />
-                Undo
-              </Button>
-              <Button 
-                variant="outline" 
-                size="sm" 
-                onClick={handleRedo}
-                disabled={historyIndex >= history.length - 1}
-              >
-                <Redo2 className="h-4 w-4 mr-1" />
-                Redo
-              </Button>
-            </div>
-            
-            <Button 
-              onClick={handleSave}
-              disabled={saving}
-              className="bg-primary hover:bg-primary/90"
-            >
-              <Save className="h-4 w-4 mr-2" />
-              Save Layout
-            </Button>
-          </div>
-          
-          <div className="flex-1 relative">
-            <SceneContainer
-              modules={modules}
-              onModuleSelect={handleModuleSelect}
-              selectedModuleId={selectedModuleId}
-              onModuleUpdate={handleModuleUpdate}
-              connections={connections}
-              controlsRef={controlsRef}
-            />
-          </div>
+        <div className="flex-1 relative">
+          <SceneContainer
+            modules={modules}
+            onModuleSelect={handleModuleSelect}
+            selectedModuleId={selectedModuleId}
+            onModuleUpdate={handleModuleUpdate}
+            connections={connections}
+            controlsRef={controlsRef}
+          />
         </div>
       </div>
     </AppLayout>
