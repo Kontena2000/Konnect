@@ -227,12 +227,12 @@ function calculateBatteryRequirements(totalITLoad: number, params: CalculationPa
   // Calculate energy needed in kWh (convert minutes to hours)
   const energyNeeded = Math.round(totalITLoad * batteryRuntime / 60);
   
-  // Calculate number of cabinets needed based on energy capacity per cabinet
-  const energyPerCabinet = params?.power?.batteryEnergyPerCabinet || 40; // kWh
+  // Use default values instead of accessing non-existent properties
+  const energyPerCabinet = 40; // kWh per cabinet (default value)
   const cabinetsNeeded = Math.max(Math.ceil(energyNeeded / energyPerCabinet), 1);
   
-  // Calculate total weight
-  const cabinetWeight = params?.power?.batteryCabinetWeight || 1200; // kg
+  // Use default value for cabinet weight
+  const cabinetWeight = 1200; // kg (default value)
   const totalWeight = cabinetsNeeded * cabinetWeight;
   
   console.log('Battery Requirements calculated:', {
