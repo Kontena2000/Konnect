@@ -40,79 +40,301 @@ const DEFAULT_CALCULATION_SCHEMA = {
 };
 
 /**
+ * Validates calculation inputs to ensure they are within acceptable ranges
+ * @param inputs The calculation inputs to validate
+ * @returns Validated inputs with default values applied where needed
+ */
+export function validateCalculationInputs(inputs: any) {
+  const validatedInputs = { ...inputs };
+  
+  // Validate kwPerRack
+  if (typeof validatedInputs.kwPerRack !== 'number' || 
+      isNaN(validatedInputs.kwPerRack) || 
+      validatedInputs.kwPerRack <= 0) {
+    validatedInputs.kwPerRack = 75; // Default value
+  }
+  
+  // Validate coolingType
+  const validCoolingTypes = ['air', 'dlc', 'hybrid', 'immersion'];
+  if (!validCoolingTypes.includes(validatedInputs.coolingType)) {
+    validatedInputs.coolingType = 'air'; // Default value
+  }
+  
+  // Validate totalRacks
+  if (typeof validatedInputs.totalRacks !== 'number' || 
+      isNaN(validatedInputs.totalRacks) || 
+      validatedInputs.totalRacks <= 0) {
+    validatedInputs.totalRacks = 28; // Default value
+  }
+  
+  // Validate redundancyMode
+  const validRedundancyModes = ['N', 'N+1', '2N', '2N+1'];
+  if (!validRedundancyModes.includes(validatedInputs.redundancyMode)) {
+    validatedInputs.redundancyMode = 'N+1'; // Default value
+  }
+  
+  // Validate includeGenerator
+  validatedInputs.includeGenerator = !!validatedInputs.includeGenerator;
+  
+  // Validate batteryRuntime
+  if (typeof validatedInputs.batteryRuntime !== 'number' || 
+      isNaN(validatedInputs.batteryRuntime) || 
+      validatedInputs.batteryRuntime <= 0) {
+    validatedInputs.batteryRuntime = 10; // Default value
+  }
+  
+  // Validate sustainabilityOptions
+  if (!validatedInputs.sustainabilityOptions || typeof validatedInputs.sustainabilityOptions !== 'object') {
+    validatedInputs.sustainabilityOptions = {};
+  }
+  
+  // Validate enableWasteHeatRecovery
+  validatedInputs.sustainabilityOptions.enableWasteHeatRecovery = 
+    !!validatedInputs.sustainabilityOptions.enableWasteHeatRecovery;
+  
+  // Validate enableWaterRecycling
+  validatedInputs.sustainabilityOptions.enableWaterRecycling = 
+    !!validatedInputs.sustainabilityOptions.enableWaterRecycling;
+  
+  // Validate renewableEnergyPercentage
+  if (typeof validatedInputs.sustainabilityOptions.renewableEnergyPercentage !== 'number' || 
+      isNaN(validatedInputs.sustainabilityOptions.renewableEnergyPercentage) || 
+      validatedInputs.sustainabilityOptions.renewableEnergyPercentage < 0 || 
+      validatedInputs.sustainabilityOptions.renewableEnergyPercentage > 100) {
+    validatedInputs.sustainabilityOptions.renewableEnergyPercentage = 20; // Default value
+  }
+  
+  return validatedInputs;
+}
+
+/**
  * Validate calculation results and ensure all required properties exist
  * @param results The calculation results to validate
  * @param inputParams The input parameters used for the calculation
  * @returns The validated results with all required properties
  */
 export function validateCalculationResults(results: any, inputParams?: any): any {
-  // If results are completely missing, create a minimal valid structure
-  if (!results || typeof results !== 'object') {
-    results = {};
+  if (!results) {
+    return createDefaultResults(inputParams);
   }
-
-  // Ensure all required properties exist with defaults
-  results = ensureObjectStructure(results, DEFAULT_CALCULATION_SCHEMA);
-
-  // If we have input parameters, use them to calculate better defaults for missing values
-  if (inputParams && typeof inputParams === 'object') {
-    const kwPerRack = toNumber(inputParams.kwPerRack, 10);
-    const totalRacks = toNumber(inputParams.totalRacks, 28);
-    const coolingType = inputParams.coolingType || 'air';
-
-    // Recalculate critical values if they're missing or zero
-    if (!getNestedProperty(results, 'power.ups.totalITLoad', 0)) {
-      results.power.ups.totalITLoad = kwPerRack * totalRacks;
-    }
-
-    if (!getNestedProperty(results, 'power.ups.requiredCapacity', 0)) {
-      const redundancyFactor = getNestedProperty(results, 'power.ups.redundancyFactor', 1.2);
-      results.power.ups.requiredCapacity = kwPerRack * totalRacks * redundancyFactor;
-    }
-
-    if (!getNestedProperty(results, 'cooling.totalCapacity', 0)) {
-      results.cooling.totalCapacity = kwPerRack * totalRacks * 1.1;
-    }
-
-    if (!getNestedProperty(results, 'sustainability.annualEnergyConsumption.total', 0)) {
-      const pue = getNestedProperty(results, 'sustainability.pue', 1.4);
-      results.sustainability.annualEnergyConsumption.it = kwPerRack * totalRacks * 8760;
-      results.sustainability.annualEnergyConsumption.total = 
-        results.sustainability.annualEnergyConsumption.it * pue;
-      results.sustainability.annualEnergyConsumption.overhead = 
-        results.sustainability.annualEnergyConsumption.total - 
-        results.sustainability.annualEnergyConsumption.it;
-    }
+  
+  const validatedResults = { ...results };
+  
+  // Ensure rack object exists
+  if (!validatedResults.rack) {
+    validatedResults.rack = {
+      powerDensity: inputParams.kwPerRack || 75,
+      coolingType: inputParams.coolingType || 'air',
+      totalRacks: inputParams.totalRacks || 28
+    };
   }
-
-  return results;
+  
+  // Ensure electrical object exists
+  if (!validatedResults.electrical) {
+    validatedResults.electrical = {
+      currentPerRow: 0,
+      busbarSize: 'busbar800A',
+      currentPerRack: 0,
+      tapOffBox: 'standard63A',
+      rpdu: 'standard16A',
+      multiplicityWarning: ''
+    };
+  }
+  
+  // Ensure cooling object exists
+  if (!validatedResults.cooling) {
+    validatedResults.cooling = {
+      type: inputParams.coolingType || 'air',
+      totalCapacity: 0,
+      pue: 1.4
+    };
+  }
+  
+  // Ensure power object exists
+  if (!validatedResults.power) {
+    validatedResults.power = {
+      ups: {
+        totalITLoad: 0,
+        redundancyFactor: 1.2,
+        requiredCapacity: 0,
+        moduleSize: 250,
+        totalModulesNeeded: 1,
+        redundantModules: 1,
+        framesNeeded: 1,
+        frameSize: 'frame2Module'
+      },
+      battery: {
+        runtime: inputParams.batteryRuntime || 10,
+        energyNeeded: 0,
+        cabinetsNeeded: 1,
+        totalWeight: 1200
+      },
+      generator: {
+        included: inputParams.includeGenerator || false,
+        capacity: inputParams.includeGenerator ? 1000 : 0,
+        model: inputParams.includeGenerator ? '1000kVA' : 'none',
+        fuel: {
+          tankSize: inputParams.includeGenerator ? 1000 : 0,
+          consumption: inputParams.includeGenerator ? 200 : 0,
+          runtime: inputParams.includeGenerator ? 8 : 0
+        }
+      }
+    };
+  }
+  
+  // Ensure cost object exists with reasonable defaults
+  if (!validatedResults.cost || typeof validatedResults.cost.totalProjectCost !== 'number' || validatedResults.cost.totalProjectCost === 0) {
+    const kwPerRack = inputParams.kwPerRack || 75;
+    const totalRacks = inputParams.totalRacks || 28;
+    const fallbackTotalCost = totalRacks * kwPerRack * 5000;
+    
+    validatedResults.cost = {
+      electrical: { 
+        busbar: 50000, 
+        tapOffBox: 1200 * totalRacks, 
+        rpdu: 800 * totalRacks, 
+        total: 50000 + 2000 * totalRacks 
+      },
+      cooling: inputParams.coolingType === 'air' ? 60000 : 150000,
+      power: { 
+        ups: 220000, 
+        battery: 80000, 
+        generator: inputParams.includeGenerator ? 200000 : 0, 
+        total: 300000 
+      },
+      infrastructure: 250000,
+      sustainability: 0,
+      equipmentTotal: 700000,
+      installation: 105000,
+      engineering: 70000,
+      contingency: 70000,
+      totalProjectCost: fallbackTotalCost,
+      costPerRack: Math.round(fallbackTotalCost / totalRacks),
+      costPerKw: Math.round(fallbackTotalCost / (kwPerRack * totalRacks))
+    };
+  }
+  
+  return validatedResults;
 }
 
 /**
- * Validate calculation input parameters
- * @param params The input parameters to validate
- * @returns The validated parameters with defaults for missing values
+ * Creates default calculation results based on inputs
+ * @param inputs The calculation inputs
+ * @returns Default calculation results
  */
-export function validateCalculationInputs(params: any): any {
-  if (!params || typeof params !== 'object') {
-    params = {};
-  }
-
-  // Define default values for critical input parameters
-  const defaultInputs = {
-    kwPerRack: 10,
-    coolingType: 'air',
-    totalRacks: 28,
-    redundancyMode: 'N+1',
-    includeGenerator: false,
-    batteryRuntime: 10,
-    sustainabilityOptions: {
-      enableWasteHeatRecovery: false,
-      enableWaterRecycling: false,
-      renewableEnergyPercentage: 20
+function createDefaultResults(inputs: any) {
+  const kwPerRack = inputs.kwPerRack || 75;
+  const coolingType = inputs.coolingType || 'air';
+  const totalRacks = inputs.totalRacks || 28;
+  const includeGenerator = inputs.includeGenerator || false;
+  
+  // Calculate a reasonable fallback total cost
+  const fallbackTotalCost = totalRacks * kwPerRack * 5000;
+  
+  return {
+    rack: {
+      powerDensity: kwPerRack,
+      coolingType: coolingType,
+      totalRacks: totalRacks
+    },
+    electrical: {
+      currentPerRow: 0,
+      busbarSize: 'busbar800A',
+      currentPerRack: 0,
+      tapOffBox: 'standard63A',
+      rpdu: 'standard16A',
+      multiplicityWarning: ''
+    },
+    cooling: {
+      type: coolingType,
+      totalCapacity: 0,
+      pue: 1.4
+    },
+    thermalDistribution: {
+      pue: 1.4,
+      distribution: { liquid: { load: 0 } }
+    },
+    pipeSizing: null,
+    power: {
+      ups: {
+        totalITLoad: 0,
+        redundancyFactor: 1.2,
+        requiredCapacity: 0,
+        moduleSize: 250,
+        totalModulesNeeded: 1,
+        redundantModules: 1,
+        framesNeeded: 1,
+        frameSize: 'frame2Module'
+      },
+      battery: {
+        runtime: 10,
+        energyNeeded: 0,
+        cabinetsNeeded: 1,
+        totalWeight: 1200
+      },
+      generator: {
+        included: includeGenerator,
+        capacity: includeGenerator ? 1000 : 0,
+        model: includeGenerator ? '1000kVA' : 'none',
+        fuel: {
+          tankSize: includeGenerator ? 1000 : 0,
+          consumption: includeGenerator ? 200 : 0,
+          runtime: includeGenerator ? 8 : 0
+        }
+      }
+    },
+    reliability: {
+      availability: 0.995,
+      tier: 'Tier 3',
+      annualDowntime: 4.38,
+      mtbf: 8760,
+      mttr: 4
+    },
+    sustainability: {
+      pue: 1.4,
+      wue: 0.5,
+      annualEnergyConsumption: {
+        it: kwPerRack * totalRacks * 8760,
+        cooling: kwPerRack * totalRacks * 8760 * 0.4,
+        power: kwPerRack * totalRacks * 8760 * 0.1,
+        total: kwPerRack * totalRacks * 8760 * 1.5
+      }
+    },
+    carbonFootprint: {
+      annualCO2Grid: 0,
+      annualCO2Generator: 0,
+      totalAnnualCO2: 0,
+      co2PerKwh: 0
+    },
+    cost: {
+      electrical: { 
+        busbar: 50000, 
+        tapOffBox: 1200 * totalRacks, 
+        rpdu: 800 * totalRacks, 
+        total: 50000 + 2000 * totalRacks 
+      },
+      cooling: coolingType === 'air' ? 60000 : 150000,
+      power: { 
+        ups: 220000, 
+        battery: 80000, 
+        generator: includeGenerator ? 200000 : 0, 
+        total: 300000 
+      },
+      infrastructure: 250000,
+      sustainability: 0,
+      equipmentTotal: 700000,
+      installation: 105000,
+      engineering: 70000,
+      contingency: 70000,
+      totalProjectCost: fallbackTotalCost,
+      costPerRack: Math.round(fallbackTotalCost / totalRacks),
+      costPerKw: Math.round(fallbackTotalCost / (kwPerRack * totalRacks))
+    },
+    tco: {
+      capex: fallbackTotalCost,
+      opex: {},
+      total5Year: 0,
+      total10Year: 0
     }
   };
-
-  // Ensure all required properties exist with defaults
-  return ensureObjectStructure(params, defaultInputs);
 }
