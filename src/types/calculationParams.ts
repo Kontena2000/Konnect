@@ -16,6 +16,8 @@ export interface CoolingParams {
   dlcEfficiency: number; // Added missing property
   hybridEfficiency: number; // Added missing property
   immersionEfficiency: number; // Added missing property
+  dlcResidualHeatFraction: number; // Add missing property
+  chillerEfficiencyFactor: number; // Add missing property
 }
 
 export interface PowerParams {
@@ -180,6 +182,8 @@ export function ensureParamsStructure(params: any): CalculationParams {
       dlcEfficiency: params.cooling?.dlcEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.dlcEfficiency, // Added default value
       hybridEfficiency: params.cooling?.hybridEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.hybridEfficiency, // Added default value
       immersionEfficiency: params.cooling?.immersionEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.immersionEfficiency, // Added default value
+      dlcResidualHeatFraction: params.cooling?.dlcResidualHeatFraction ?? DEFAULT_CALCULATION_PARAMS.cooling.dlcResidualHeatFraction, // Added default value
+      chillerEfficiencyFactor: params.cooling?.chillerEfficiencyFactor ?? DEFAULT_CALCULATION_PARAMS.cooling.chillerEfficiencyFactor, // Added default value
     },
     power: {
       upsModuleSize: params.power?.upsModuleSize ?? DEFAULT_CALCULATION_PARAMS.power.upsModuleSize,
