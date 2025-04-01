@@ -362,7 +362,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
   const totalITLoad = kwPerRack * totalRacks;
   
   // Calculate base cooling capacity with safety margin
-  const coolingCapacity = calculateCoolingCapacity(totalITLoad, coolingType);
+  const coolingCapacity = totalITLoad * 1.1;
   
   // Calculate PUE based on cooling type
   const basePue = 
@@ -372,7 +372,7 @@ function calculateCoolingRequirements(kwPerRack: number, coolingType: string, to
     coolingType === 'immersion' ? 1.1 : 1.5;
   
   // Calculate pipe sizing if applicable
-  const pipingSize = calculatePipeSizing(coolingCapacity, coolingType);
+  const pipingSize = coolingType === 'air' ? 'none' : 'dn110';
   
   // Create base cooling object
   const coolingRequirements: any = {
