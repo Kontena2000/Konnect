@@ -39,6 +39,10 @@ export interface CoolingThresholds {
   lowDensity: number; // Added missing property
   mediumDensity: number; // Added missing property
   highDensity: number; // Added missing property
+  airCooledMax: number; // Added missing property
+  recommendedDlcMin: number; // Added missing property
+  hybridCoolingMin?: number; // Added missing property
+  hybridCoolingMax?: number; // Added missing property
 }
 
 export interface CalculationParams {
@@ -202,6 +206,10 @@ export function ensureParamsStructure(params: any): CalculationParams {
       lowDensity: params.coolingThresholds?.lowDensity ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.lowDensity, // Added default value
       mediumDensity: params.coolingThresholds?.mediumDensity ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.mediumDensity, // Added default value
       highDensity: params.coolingThresholds?.highDensity ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.highDensity, // Added default value
+      airCooledMax: params.coolingThresholds?.airCooledMax ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.airCooledMax, // Added default value
+      recommendedDlcMin: params.coolingThresholds?.recommendedDlcMin ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.recommendedDlcMin, // Added default value
+      hybridCoolingMin: params.coolingThresholds?.hybridCoolingMin ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.hybridCoolingMin, // Added default value
+      hybridCoolingMax: params.coolingThresholds?.hybridCoolingMax ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.hybridCoolingMax, // Added default value
     }
   };
 }
