@@ -45,12 +45,24 @@ export interface CoolingThresholds {
   hybridCoolingMax?: number; // Added missing property
 }
 
+export interface SustainabilityParams {
+  co2PerKwh: number;
+  waterUsagePerMwh: number;
+  generatorCo2PerLiter: number;
+  carbonIntensityGrid?: number;
+  carbonIntensityDiesel?: number;
+  waterRecoveryRate?: number;
+  wasteHeatRecoveryRate?: number;
+  renewableEnergyFraction?: number;
+}
+
 export interface CalculationParams {
   electrical: ElectricalParams;
   cooling: CoolingParams;
   power: PowerParams;
   costFactors: CostFactorParams;
-  coolingThresholds: CoolingThresholds; // Added missing property
+  coolingThresholds: CoolingThresholds;
+  sustainability: SustainabilityParams;
   [key: string]: any; // Added index signature
 }
 
@@ -210,6 +222,16 @@ export function ensureParamsStructure(params: any): CalculationParams {
       recommendedDlcMin: params.coolingThresholds?.recommendedDlcMin ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.recommendedDlcMin, // Added default value
       hybridCoolingMin: params.coolingThresholds?.hybridCoolingMin ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.hybridCoolingMin, // Added default value
       hybridCoolingMax: params.coolingThresholds?.hybridCoolingMax ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.hybridCoolingMax, // Added default value
+    },
+    sustainability: {
+      co2PerKwh: params.sustainability?.co2PerKwh ?? DEFAULT_CALCULATION_PARAMS.sustainability.co2PerKwh, // Added default value
+      waterUsagePerMwh: params.sustainability?.waterUsagePerMwh ?? DEFAULT_CALCULATION_PARAMS.sustainability.waterUsagePerMwh, // Added default value
+      generatorCo2PerLiter: params.sustainability?.generatorCo2PerLiter ?? DEFAULT_CALCULATION_PARAMS.sustainability.generatorCo2PerLiter, // Added default value
+      carbonIntensityGrid: params.sustainability?.carbonIntensityGrid ?? DEFAULT_CALCULATION_PARAMS.sustainability.carbonIntensityGrid, // Added default value
+      carbonIntensityDiesel: params.sustainability?.carbonIntensityDiesel ?? DEFAULT_CALCULATION_PARAMS.sustainability.carbonIntensityDiesel, // Added default value
+      waterRecoveryRate: params.sustainability?.waterRecoveryRate ?? DEFAULT_CALCULATION_PARAMS.sustainability.waterRecoveryRate, // Added default value
+      wasteHeatRecoveryRate: params.sustainability?.wasteHeatRecoveryRate ?? DEFAULT_CALCULATION_PARAMS.sustainability.wasteHeatRecoveryRate, // Added default value
+      renewableEnergyFraction: params.sustainability?.renewableEnergyFraction ?? DEFAULT_CALCULATION_PARAMS.sustainability.renewableEnergyFraction, // Added default value
     }
   };
 }
