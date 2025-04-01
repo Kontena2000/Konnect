@@ -21,6 +21,7 @@ export default function BlankEditorPage() {
   const [saving, setSaving] = useState(false);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>(undefined);
   const controlsRef = useRef(null);
+  const [draggedModule, setDraggedModule] = useState<Module | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -80,8 +81,25 @@ export default function BlankEditorPage() {
   };
 
   const handleModuleDragStart = (module: Module) => {
-    // Handle module drag start logic here
     console.log("Module drag started:", module);
+    setDraggedModule(module);
+  };
+
+  const handleDropPoint = (point: [number, number, number]) => {
+    if (!draggedModule) return;
+    
+    // Create a new module instance with unique ID
+    const newModule: Module = {
+      ...draggedModule,
+      id: `${draggedModule.id}-${Date.now()}`,
+      position: point,
+      rotation: [0, 0, 0],
+      scale: [1, 1, 1]
+    };
+    
+    setModules(prev => [...prev, newModule]);
+    setSelectedModuleId(newModule.id);
+    setDraggedModule(null);
   };
 
   const handleModuleSelect = (moduleId: string) => {
@@ -120,6 +138,7 @@ export default function BlankEditorPage() {
             onModuleUpdate={handleModuleUpdate}
             connections={connections}
             controlsRef={controlsRef}
+            onDropPoint={handleDropPoint}
           />
         </div>
       </div>
