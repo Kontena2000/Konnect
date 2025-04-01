@@ -50,6 +50,7 @@ export default function ProjectsPage() {
     }
     
     try {
+      // Fix for issue 1: The deleteProject function only needs projectId and userId
       await projectService.deleteProject(projectId, user.uid);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
       toast({
