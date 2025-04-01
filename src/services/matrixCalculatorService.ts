@@ -216,6 +216,43 @@ function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params:
   };
 }
 
+// Add the missing calculateBatteryRequirements function
+function calculateBatteryRequirements(totalITLoad: number, params: CalculationParams) {
+  // Safety check for inputs
+  totalITLoad = typeof totalITLoad === 'number' && !isNaN(totalITLoad) ? totalITLoad : 280;
+  
+  // Get battery runtime from params with fallback
+  const batteryRuntime = params?.power?.batteryRuntime || 10;
+  
+  // Calculate energy needed in kWh (convert minutes to hours)
+  const energyNeeded = Math.round(totalITLoad * batteryRuntime / 60);
+  
+  // Calculate number of cabinets needed based on energy capacity per cabinet
+  const energyPerCabinet = params?.power?.batteryEnergyPerCabinet || 40; // kWh
+  const cabinetsNeeded = Math.max(Math.ceil(energyNeeded / energyPerCabinet), 1);
+  
+  // Calculate total weight
+  const cabinetWeight = params?.power?.batteryCabinetWeight || 1200; // kg
+  const totalWeight = cabinetsNeeded * cabinetWeight;
+  
+  console.log('Battery Requirements calculated:', {
+    totalITLoad,
+    batteryRuntime,
+    energyNeeded,
+    energyPerCabinet,
+    cabinetsNeeded,
+    cabinetWeight,
+    totalWeight
+  });
+  
+  return {
+    runtime: batteryRuntime,
+    energyNeeded: energyNeeded,
+    cabinetsNeeded: cabinetsNeeded,
+    totalWeight: totalWeight
+  };
+}
+
 // Calculate cooling requirements
 function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: CalculationParams) {
   // Safety check for inputs
