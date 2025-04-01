@@ -37,7 +37,7 @@ export async function saveCalculationResult(
     const bootstrapped = await waitForMatrixCalculatorBootstrap();
     if (!bootstrapped) {
       console.error('[Matrix Calculator] Failed to bootstrap Matrix Calculator');
-      calculatorDebug.error('Failed to bootstrap Matrix Calculator');
+      calculatorDebug.error('Failed to bootstrap Matrix Calculator', 'Bootstrap process failed');
       return { success: false, error: 'Failed to bootstrap Matrix Calculator' };
     }
     
@@ -45,7 +45,7 @@ export async function saveCalculationResult(
     const db = getFirestoreSafely();
     if (!db) {
       console.error('[Matrix Calculator] Firestore is not available');
-      calculatorDebug.error('Firestore is not available');
+      calculatorDebug.error('Firestore is not available', 'Cannot access Firestore');
       return { success: false, error: 'Firestore is not available' };
     }
     
@@ -162,7 +162,7 @@ export async function getProjectCalculations(projectId: string): Promise<any[]> 
     const db = getFirestoreSafely();
     if (!db) {
       console.error('[Matrix Calculator] Firestore is not available');
-      calculatorDebug.error('Firestore is not available');
+      calculatorDebug.error('Firestore is not available', 'Cannot access Firestore');
       return [];
     }
     
@@ -198,7 +198,7 @@ export async function getUserCalculations(userId: string): Promise<any[]> {
     const db = getFirestoreSafely();
     if (!db) {
       console.error('[Matrix Calculator] Firestore is not available');
-      calculatorDebug.error('Firestore is not available');
+      calculatorDebug.error('Firestore is not available', 'Cannot access Firestore');
       return [];
     }
     
@@ -234,7 +234,7 @@ export async function getCalculationById(calculationId: string): Promise<any> {
     const db = getFirestoreSafely();
     if (!db) {
       console.error('[Matrix Calculator] Firestore is not available');
-      calculatorDebug.error('Firestore is not available');
+      calculatorDebug.error('Firestore is not available', 'Cannot access Firestore');
       return null;
     }
     
