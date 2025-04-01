@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project, ProjectError } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin, Share2, LayoutGrid, Calculator } from 'lucide-react';
+import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin } from 'lucide-react';
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
@@ -161,60 +161,43 @@ export default function ProjectsPage() {
           <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
             {filteredAndSortedProjects.map((project) => (
               <Card key={project.id} className='flex flex-col h-full shadow-sm hover:shadow-md transition-shadow'>
-                <CardHeader className='pb-2'>
+                <CardHeader className='pb-4'>
                   <div className='flex justify-between items-start'>
-                    <div className='space-y-1'>
+                    <div className='space-y-2'>
                       <CardTitle className='text-xl'>{project.name}</CardTitle>
                       <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                         <Calendar className='h-4 w-4' />
                         {format(project.createdAt.toDate(), 'MMM d, yyyy')}
                       </div>
                     </div>
-                    <div className='flex gap-1'>
-                      <ShareProjectButton project={project} />
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button variant='ghost' size='icon' className='text-red-500 hover:text-red-600 hover:bg-red-100'>
-                            <Trash2 className='h-4 w-4' />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Are you sure you want to delete this project? This action cannot be undone and all layouts will be permanently deleted.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Cancel</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={() => handleDeleteProject(project.id)}
-                              className='bg-red-500 hover:bg-red-600'
-                            >
-                              Delete
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                  <div className='mt-2 flex gap-2'>
-                    <Link href={`/dashboard/projects/${project.id}/editor`}>
-                      <Button variant='outline' size='sm'>
-                        <LayoutGrid className='h-4 w-4 mr-1' />
-                        Planning
-                      </Button>
-                    </Link>
-                    <Link href={`/dashboard/matrix-calculator?projectId=${project.id}`}>
-                      <Button variant='outline' size='sm'>
-                        <Calculator className='h-4 w-4 mr-1' />
-                        Calculator
-                      </Button>
-                    </Link>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button variant='ghost' size='icon' className='text-red-500 hover:text-red-600 hover:bg-red-100'>
+                          <Trash2 className='h-4 w-4' />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Are you sure you want to delete this project? This action cannot be undone and all layouts will be permanently deleted.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => handleDeleteProject(project.id)}
+                            className='bg-red-500 hover:bg-red-600'
+                          >
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </CardHeader>
-                <CardContent className='flex-1 space-y-4 p-6'>
-                  <div className='space-y-4 flex-grow'>
+                <CardContent className='flex-1 space-y-6 p-6'>
+                  <div className='space-y-4'>
                     <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                       {project.description || 'No description'}
                     </p>
@@ -252,20 +235,13 @@ export default function ProjectsPage() {
                       Last modified: {format(project.updatedAt.toDate(), 'MMM d, yyyy')}
                     </div>
                     <div className='flex gap-2'>
-                      <Badge variant='outline'>
-                        <LayoutGrid className='h-3 w-3 mr-1' />
-                        {project.layouts?.length || 0} Layouts
-                      </Badge>
-                      <Badge variant='outline'>
-                        <Calculator className='h-3 w-3 mr-1' />
-                        {project.calculations?.length || 0} Calculations
-                      </Badge>
+                      <Badge variant='outline'>{(project.layouts || []).length} Layouts</Badge>
                       {project.status && (
                         <Badge variant='secondary'>{project.status}</Badge>
                       )}
                     </div>
                   </div>
-                  <div className='pt-4 mt-auto'>
+                  <div className='flex flex-col gap-4'>
                     <Link href={`/dashboard/projects/${project.id}`} className='block'>
                       <Button variant='outline' className='w-full bg-background hover:bg-accent'>
                         Open Project
@@ -279,157 +255,5 @@ export default function ProjectsPage() {
         )}
       </div>
     </AppLayout>
-  );
-}
-
-interface ShareProjectButtonProps {
-  project: Project;
-}
-
-function ShareProjectButton({ project }: ShareProjectButtonProps) {
-  const [open, setOpen] = useState(false);
-  const [email, setEmail] = useState('');
-  const [sharedWith, setSharedWith] = useState<string[]>(project.sharedWith || []);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const { toast } = useToast();
-  const { user } = useAuth();
-
-  const handleShare = async () => {
-    if (!email || !email.includes('@')) {
-      toast({
-        variant: 'destructive',
-        title: 'Invalid email',
-        description: 'Please enter a valid email address'
-      });
-      return;
-    }
-
-    if (sharedWith.includes(email)) {
-      toast({
-        variant: 'destructive',
-        title: 'Already shared',
-        description: 'This project is already shared with this email'
-      });
-      return;
-    }
-
-    try {
-      setIsSubmitting(true);
-      
-      // Update the project with the new shared email
-      const updatedSharedWith = [...sharedWith, email];
-      await projectService.updateProject(project.id, {
-        sharedWith: updatedSharedWith
-      }, user?.uid || '');
-      
-      setSharedWith(updatedSharedWith);
-      setEmail('');
-      
-      toast({
-        title: 'Project shared',
-        description: `Project has been shared with ${email}`
-      });
-    } catch (error) {
-      console.error('Error sharing project:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to share project. Please try again.'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  const handleRemoveShare = async (emailToRemove: string) => {
-    try {
-      setIsSubmitting(true);
-      
-      // Update the project by removing the email
-      const updatedSharedWith = sharedWith.filter(e => e !== emailToRemove);
-      await projectService.updateProject(project.id, {
-        sharedWith: updatedSharedWith
-      }, user?.uid || '');
-      
-      setSharedWith(updatedSharedWith);
-      
-      toast({
-        title: 'Access removed',
-        description: `Access for ${emailToRemove} has been removed`
-      });
-    } catch (error) {
-      console.error('Error removing share:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to remove access. Please try again.'
-      });
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
-  return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant='ghost' size='icon' title='Share project'>
-          <Share2 className='h-4 w-4' />
-        </Button>
-      </DialogTrigger>
-      <DialogContent className='sm:max-w-md'>
-        <DialogHeader>
-          <DialogTitle>Share Project</DialogTitle>
-          <DialogDescription>
-            Share this project with other users by email
-          </DialogDescription>
-        </DialogHeader>
-        <div className='space-y-4 py-4'>
-          <div className='flex items-center gap-2'>
-            <Input
-              placeholder='Enter email address'
-              type='email'
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className='flex-1'
-            />
-            <Button 
-              onClick={handleShare} 
-              disabled={isSubmitting || !email}
-              size='sm'
-            >
-              {isSubmitting ? <Loader2 className='h-4 w-4 animate-spin' /> : 'Share'}
-            </Button>
-          </div>
-          
-          {sharedWith.length > 0 ? (
-            <div className='space-y-2'>
-              <h4 className='text-sm font-medium'>Shared with:</h4>
-              <div className='space-y-2'>
-                {sharedWith.map((sharedEmail) => (
-                  <div key={sharedEmail} className='flex items-center justify-between bg-muted p-2 rounded-md'>
-                    <span className='text-sm'>{sharedEmail}</span>
-                    <Button 
-                      variant='ghost' 
-                      size='sm'
-                      onClick={() => handleRemoveShare(sharedEmail)}
-                      disabled={isSubmitting}
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            </div>
-          ) : (
-            <p className='text-sm text-muted-foreground'>This project is not shared with anyone yet.</p>
-          )}
-        </div>
-        <DialogFooter>
-          <Button variant='outline' onClick={() => setOpen(false)}>
-            Close
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
   );
 }
