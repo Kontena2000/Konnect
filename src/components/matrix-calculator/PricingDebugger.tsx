@@ -1,5 +1,4 @@
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
@@ -16,7 +15,7 @@ export function PricingDebugger() {
   const [resetting, setResetting] = useState(false);
   const { toast } = useToast();
 
-  const fetchPricingData = async () => {
+  const fetchPricingData = useCallback(async () => {
     setLoading(true);
     try {
       const db = getFirestoreSafely();
@@ -58,7 +57,7 @@ export function PricingDebugger() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   const handleReset = async () => {
     setResetting(true);
@@ -92,7 +91,7 @@ export function PricingDebugger() {
 
   useEffect(() => {
     fetchPricingData();
-  }, []);
+  }, [fetchPricingData]);
 
   const formatData = (data: any) => {
     if (!data) return 'No data';
