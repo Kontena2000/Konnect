@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project, ProjectError } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin, Copy } from 'lucide-react';
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
@@ -63,6 +63,37 @@ export default function ProjectsPage() {
         variant: 'destructive',
         title: 'Error',
         description: error instanceof ProjectError ? error.message : 'Failed to delete project'
+      });
+    }
+  };
+
+  const handleDuplicateProject = async (projectId: string) => {
+    if (!user) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to duplicate projects'
+      });
+      return;
+    }
+    
+    try {
+      const newProjectId = await projectService.duplicateProject(projectId, user.uid);
+      
+      // Refresh the projects list
+      const userProjects = await projectService.getUserProjects(user.uid);
+      setProjects(userProjects);
+      
+      toast({
+        title: 'Success',
+        description: 'Project duplicated successfully'
+      });
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof ProjectError ? error.message : 'Failed to duplicate project'
       });
     }
   };
@@ -171,30 +202,41 @@ export default function ProjectsPage() {
                         {format(project.createdAt.toDate(), 'MMM d, yyyy')}
                       </div>
                     </div>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant='ghost' size='icon' className='text-red-500 hover:text-red-600 hover:bg-red-100'>
-                          <Trash2 className='h-4 w-4' />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Delete Project</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Are you sure you want to delete this project? This action cannot be undone and all layouts will be permanently deleted.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={() => handleDeleteProject(project.id)}
-                            className='bg-red-500 hover:bg-red-600'
-                          >
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
+                    <div className='flex'>
+                      <Button 
+                        variant='ghost' 
+                        size='icon' 
+                        className='text-blue-500 hover:text-blue-600 hover:bg-blue-100'
+                        onClick={() => handleDuplicateProject(project.id)}
+                        title='Duplicate Project'
+                      >
+                        <Copy className='h-4 w-4' />
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button variant='ghost' size='icon' className='text-red-500 hover:text-red-600 hover:bg-red-100'>
+                            <Trash2 className='h-4 w-4' />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>Delete Project</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              Are you sure you want to delete this project? This action cannot be undone and all layouts will be permanently deleted.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancel</AlertDialogCancel>
+                            <AlertDialogAction
+                              onClick={() => handleDeleteProject(project.id)}
+                              className='bg-red-500 hover:bg-red-600'
+                            >
+                              Delete
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </CardHeader>
                 <CardContent className='flex-1 space-y-6 p-6'>

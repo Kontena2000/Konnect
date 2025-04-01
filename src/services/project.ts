@@ -514,6 +514,123 @@ const projectService = {
       });
       throw new ProjectError('Failed to remove share', 'SHARE_REMOVE_FAILED', error);
     }
+  },
+
+  async duplicateProject(id: string, userId: string): Promise<string> {
+    try {
+      firebaseMonitor.logOperation({
+        type: 'project',
+        action: 'duplicate',
+        status: 'pending',
+        timestamp: Date.now(),
+        details: { id, userId }
+      });
+
+      // Get the original project
+      const originalProject = await this.getProject(id);
+      
+      if (!originalProject) {
+        firebaseMonitor.logOperation({
+          type: 'project',
+          action: 'duplicate',
+          status: 'error',
+          timestamp: Date.now(),
+          error: 'Project not found',
+          details: { id }
+        });
+        throw new ProjectError('Project not found', 'NOT_FOUND');
+      }
+
+      // Check if user has access to the project
+      if (originalProject.userId !== userId && !originalProject.sharedWith?.includes(userId)) {
+        firebaseMonitor.logOperation({
+          type: 'project',
+          action: 'duplicate',
+          status: 'error',
+          timestamp: Date.now(),
+          error: 'Unauthorized access',
+          details: { id, userId }
+        });
+        throw new ProjectError('Unauthorized to duplicate project', 'UNAUTHORIZED');
+      }
+
+      // Create a new project with the same data
+      const newProjectData: CreateProjectData = {
+        name: `${originalProject.name} (Copy)`,
+        description: originalProject.description,
+        userId: userId,
+        companyName: originalProject.clientInfo.name,
+        clientEmail: originalProject.clientInfo.email,
+        clientPhone: originalProject.clientInfo.phone,
+        clientAddress: originalProject.clientInfo.address,
+        status: originalProject.status
+      };
+
+      // Create the new project
+      const newProjectId = await this.createProject(newProjectData);
+
+      // Get all layouts from the original project
+      const firestore = getFirestoreOrThrow();
+      const layoutsQuery = query(
+        safeCollectionRef('layouts'),
+        where('projectId', '==', id)
+      );
+      const layoutsSnapshot = await getDocs(layoutsQuery);
+      
+      // Duplicate each layout
+      const batch = writeBatch(firestore);
+      const layoutMap = new Map(); // Map original layout IDs to new layout IDs
+      
+      for (const layoutDoc of layoutsSnapshot.docs) {
+        const layoutData = layoutDoc.data();
+        const newLayoutRef = doc(safeCollectionRef('layouts'));
+        layoutMap.set(layoutDoc.id, newLayoutRef.id);
+        
+        batch.set(newLayoutRef, {
+          ...layoutData,
+          projectId: newProjectId,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+      
+      // Update the new project with the layout references
+      if (layoutsSnapshot.size > 0) {
+        const newLayouts = Array.from(layoutMap.values()).map(id => ({ id }));
+        const projectRef = safeDocRef('projects', newProjectId);
+        batch.update(projectRef, { layouts: newLayouts });
+      }
+      
+      // Commit all the changes
+      await batch.commit();
+
+      firebaseMonitor.logOperation({
+        type: 'project',
+        action: 'duplicate',
+        status: 'success',
+        timestamp: Date.now(),
+        details: { 
+          originalId: id, 
+          newId: newProjectId,
+          userId,
+          duplicatedLayouts: layoutsSnapshot.size
+        }
+      });
+
+      return newProjectId;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      firebaseMonitor.logOperation({
+        type: 'project',
+        action: 'duplicate',
+        status: 'error',
+        timestamp: Date.now(),
+        error: errorMessage,
+        details: { id, userId }
+      });
+      if (error instanceof ProjectError) throw error;
+      throw new ProjectError('Failed to duplicate project', 'DUPLICATE_FAILED', error);
+    }
   }
 };
 
