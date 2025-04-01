@@ -94,7 +94,7 @@ export async function fallbackCalculation(
   }
   
   // Return a simplified result structure
-  return {
+  const fallbackResults = {
     rack: {
       powerDensity: kwPerRack,
       coolingType: coolingType,
@@ -245,8 +245,16 @@ export async function fallbackCalculation(
       },
       total5Year: totalProjectCost + (totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05) * 5,
       total10Year: totalProjectCost + (totalFacilityLoad * 8760 * 0.12 + totalProjectCost * 0.05) * 10
+    },
+    _meta: {
+      calculationMethod: 'fallback',
+      timestamp: Date.now()
     }
   };
+  
+  calculatorDebug.log('Fallback calculation completed', fallbackResults);
+  
+  return fallbackResults;
 }
 
 /**

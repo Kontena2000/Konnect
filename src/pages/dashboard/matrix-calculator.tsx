@@ -16,6 +16,7 @@ import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootst
 import { useToast } from '@/hooks/use-toast';
 import { runMatrixCalculatorInitialization } from '@/services/matrixCalculatorInitializer';
 import { PricingDebugger } from '@/components/matrix-calculator/PricingDebugger';
+import { CalculatorDebugger } from '@/components/matrix-calculator/CalculatorDebugger';
 
 export default function MatrixCalculatorPage() {
   const router = useRouter();
@@ -261,6 +262,7 @@ export default function MatrixCalculatorPage() {
                 onLoadCalculation={handleLoadCalculation} 
               />
               <PricingDebugger />
+              <CalculatorDebugger />
             </>
           )}
         </div>

@@ -184,6 +184,89 @@ export const calculatorDebug = {
   }
 };
 
+// Add a subscription mechanism to the calculatorDebug service
+let debugLogs: any[] = [];
+const subscribers: ((logs: any[]) => void)[] = [];
+
+// Add methods to the calculatorDebug object
+const enhancedCalculatorDebug = {
+  ...calculatorDebug,
+  
+  // Subscribe to debug logs
+  subscribe: (callback: (logs: any[]) => void) => {
+    subscribers.push(callback);
+    callback([...debugLogs]); // Immediately provide current logs
+    
+    // Return unsubscribe function
+    return () => {
+      const index = subscribers.indexOf(callback);
+      if (index !== -1) {
+        subscribers.splice(index, 1);
+      }
+    };
+  },
+  
+  // Clear all logs
+  clear: () => {
+    debugLogs = [];
+    subscribers.forEach(callback => callback([]));
+  },
+  
+  // Override log method to store logs
+  log: (message: string, data?: any) => {
+    const logEntry = {
+      level: 'info',
+      source: 'calculator',
+      message,
+      data,
+      timestamp: Date.now()
+    };
+    
+    debugLogs.push(logEntry);
+    subscribers.forEach(callback => callback([...debugLogs]));
+    
+    // Call original log method
+    calculatorDebug.log(message, data);
+  },
+  
+  // Override warn method to store logs
+  warn: (message: string, data?: any) => {
+    const logEntry = {
+      level: 'warn',
+      source: 'calculator',
+      message,
+      data,
+      timestamp: Date.now()
+    };
+    
+    debugLogs.push(logEntry);
+    subscribers.forEach(callback => callback([...debugLogs]));
+    
+    // Call original warn method
+    calculatorDebug.warn(message, data);
+  },
+  
+  // Override error method to store logs
+  error: (message: string, data?: any) => {
+    const logEntry = {
+      level: 'error',
+      source: 'calculator',
+      message,
+      data,
+      timestamp: Date.now()
+    };
+    
+    debugLogs.push(logEntry);
+    subscribers.forEach(callback => callback([...debugLogs]));
+    
+    // Call original error method
+    calculatorDebug.error(message, data);
+  }
+};
+
+// Export the enhanced calculatorDebug
+export { enhancedCalculatorDebug as calculatorDebug };
+
 /**
  * Wrap a calculator function with debug logging
  */
