@@ -10,7 +10,7 @@ import { calculatorDebug } from './calculatorDebug';
 export async function initializeMatrixCalculator(): Promise<boolean> {
   try {
     console.log('[Matrix Calculator] Starting initialization...');
-    calculatorDebug.log('Starting Matrix Calculator initialization');
+    calculatorDebug.log('Starting Matrix Calculator initialization', null);
     
     // First check if Firebase is already initialized using the safe accessor
     let db = getFirestoreSafely();
@@ -21,7 +21,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
       const initialized = await ensureFirebaseInitializedAsync();
       if (!initialized) {
         console.error('[Matrix Calculator] Firebase initialization failed');
-        calculatorDebug.error('Firebase initialization failed', 'Could not initialize Firebase');
+        calculatorDebug.error('Firebase initialization failed', new Error('Could not initialize Firebase'));
         return false;
       }
       
@@ -29,7 +29,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
       db = getFirestoreSafely();
       if (!db) {
         console.error('[Matrix Calculator] Still could not get Firestore after initialization');
-        calculatorDebug.error('Still could not get Firestore after initialization');
+        calculatorDebug.error('Still could not get Firestore after initialization', new Error('Firestore unavailable after initialization'));
         return false;
       }
     }
@@ -43,7 +43,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
     // If pricing matrix doesn't exist, create it with default values
     if (!pricingDoc.exists()) {
       console.log('[Matrix Calculator] Creating default pricing matrix');
-      calculatorDebug.log('Creating default pricing matrix');
+      calculatorDebug.log('Creating default pricing matrix', null);
       await setDoc(pricingRef, DEFAULT_PRICING);
       console.log('[Matrix Calculator] Default pricing matrix created successfully');
     } else {
@@ -57,7 +57,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
     // If calculation parameters don't exist, create them with default values
     if (!paramsDoc.exists()) {
       console.log('[Matrix Calculator] Creating default calculation parameters');
-      calculatorDebug.log('Creating default calculation parameters');
+      calculatorDebug.log('Creating default calculation parameters', null);
       await setDoc(paramsRef, DEFAULT_CALCULATION_PARAMS);
       console.log('[Matrix Calculator] Default calculation parameters created successfully');
     } else {
@@ -70,7 +70,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
     
     if (!configsDoc.exists()) {
       console.log('[Matrix Calculator] Creating user_configurations document');
-      calculatorDebug.log('Creating user_configurations document');
+      calculatorDebug.log('Creating user_configurations document', null);
       await setDoc(configsRef, {
         created: new Date(),
         description: 'User calculation configurations'
@@ -93,7 +93,7 @@ export async function initializeMatrixCalculator(): Promise<boolean> {
     }
     
     console.log('[Matrix Calculator] Initialization complete');
-    calculatorDebug.log('Matrix Calculator initialization complete');
+    calculatorDebug.log('Matrix Calculator initialization complete', null);
     return true;
   } catch (error) {
     console.error('[Matrix Calculator] Initialization error:', error);
@@ -124,13 +124,13 @@ export async function runMatrixCalculatorInitialization(): Promise<boolean> {
 export async function resetMatrixCalculator(): Promise<boolean> {
   try {
     console.log('[Matrix Calculator] Starting reset...');
-    calculatorDebug.log('Starting Matrix Calculator reset');
+    calculatorDebug.log('Starting Matrix Calculator reset', null);
     
     // Get Firestore safely
     const db = getFirestoreSafely();
     if (!db) {
       console.error('[Matrix Calculator] Firebase is not initialized, cannot reset');
-      calculatorDebug.error('Firebase is not initialized', 'Cannot reset Matrix Calculator');
+      calculatorDebug.error('Firebase is not initialized', new Error('Cannot reset Matrix Calculator'));
       return false;
     }
     
@@ -161,7 +161,7 @@ export async function resetMatrixCalculator(): Promise<boolean> {
     }
     
     console.log('[Matrix Calculator] Reset complete');
-    calculatorDebug.log('Matrix Calculator reset complete');
+    calculatorDebug.log('Matrix Calculator reset complete', null);
     return true;
   } catch (error) {
     console.error('[Matrix Calculator] Reset error:', error);
