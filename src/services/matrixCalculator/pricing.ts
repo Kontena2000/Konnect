@@ -1,4 +1,3 @@
-
 import { serverTimestamp, getDoc } from 'firebase/firestore';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { calculatorDebug } from '../calculatorDebug';
@@ -31,11 +30,11 @@ export async function getPricingAndParams() {
     if (!db) {
       console.error('Firestore is not initialized, using default values');
       calculatorDebug.error('Firestore is not initialized', 'Using default values');
-      return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
+      return { pricing: DEFAULT_PRICING as unknown as PricingMatrix, params: DEFAULT_CALCULATION_PARAMS };
     }
     
     // Fetch pricing with better error handling
-    let pricing: PricingMatrix = DEFAULT_PRICING;
+    let pricing: PricingMatrix = DEFAULT_PRICING as unknown as PricingMatrix;
     try {
       const pricingDoc = await getDoc(matrixDocRef('matrix_calculator', 'pricing_matrix'));
       if (pricingDoc.exists()) {
@@ -86,7 +85,7 @@ export async function getPricingAndParams() {
   } catch (error) {
     console.error('Error fetching data from Firestore:', error);
     calculatorDebug.error('Error fetching data from Firestore', error);
-    return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
+    return { pricing: DEFAULT_PRICING as unknown as PricingMatrix, params: DEFAULT_CALCULATION_PARAMS };
   }
 }
 
