@@ -12,7 +12,7 @@ export function getMatrixFirestore(): Firestore {
     
     if (!safeDb) {
       console.error('[Matrix Calculator] Firestore is not initialized in getMatrixFirestore');
-      calculatorDebug.error('Firestore is not initialized in getMatrixFirestore');
+      calculatorDebug.error('Firestore is not initialized in getMatrixFirestore', new Error('Firestore is not initialized'));
       throw new Error('Firestore is not initialized');
     }
     
@@ -34,7 +34,7 @@ export function matrixDocRef(path: string, ...pathSegments: string[]): DocumentR
     const firestore = getFirestoreSafely();
     if (!firestore) {
       console.error('[Matrix Calculator] Firestore is not initialized in matrixDocRef');
-      calculatorDebug.error('Firestore is not initialized in matrixDocRef');
+      calculatorDebug.error('Firestore is not initialized in matrixDocRef', new Error('Firestore is not initialized'));
       throw new Error('Firestore is not initialized');
     }
     return doc(firestore, path, ...pathSegments);
@@ -55,7 +55,7 @@ export function matrixCollectionRef(path: string, ...pathSegments: string[]): Co
     const firestore = getFirestoreSafely();
     if (!firestore) {
       console.error('[Matrix Calculator] Firestore is not initialized in matrixCollectionRef');
-      calculatorDebug.error('Firestore is not initialized in matrixCollectionRef');
+      calculatorDebug.error('Firestore is not initialized in matrixCollectionRef', new Error('Firestore is not initialized'));
       throw new Error('Firestore is not initialized');
     }
     return collection(firestore, path, ...pathSegments);
