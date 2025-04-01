@@ -165,6 +165,38 @@ export default function ProjectsPage() {
                   <div className='flex justify-between items-start'>
                     <div className='space-y-2'>
                       <CardTitle className='text-xl'>{project.name}</CardTitle>
+                      <Select
+                        value={project.status || 'planning'}
+                        onValueChange={async (newStatus) => {
+                          try {
+                            await projectService.updateProject(project.id, { status: newStatus });
+                            setProjects(projects.map(p => 
+                              p.id === project.id ? { ...p, status: newStatus } : p
+                            ));
+                          } catch (error) {
+                            toast({
+                              variant: 'destructive',
+                              title: 'Error',
+                              description: 'Failed to update project status'
+                            });
+                          }
+                        }}
+                      >
+                        <SelectTrigger className='h-7 w-[120px]'>
+                          <SelectValue>
+                            <Badge variant='outline' className={`bg-${project.status || 'default'}`}>
+                              {project.status || 'Planning'}
+                            </Badge>
+                          </SelectValue>
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value='planning'>Planning</SelectItem>
+                          <SelectItem value='in-progress'>In Progress</SelectItem>
+                          <SelectItem value='review'>Review</SelectItem>
+                          <SelectItem value='completed'>Completed</SelectItem>
+                          <SelectItem value='on-hold'>On Hold</SelectItem>
+                        </SelectContent>
+                      </Select>
                       <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                         <Calendar className='h-4 w-4' />
                         {format(project.createdAt.toDate(), 'MMM d, yyyy')}
@@ -242,9 +274,9 @@ export default function ProjectsPage() {
                       )}
                     </div>
                   </div>
-                  <div className='flex flex-col gap-4'>
+                  <div className='flex flex-col gap-4 mt-auto pt-4'>
                     <Link href={`/dashboard/projects/${project.id}`} className='block'>
-                      <Button variant='outline' className='w-full bg-background hover:bg-accent'>
+                      <Button variant='outline' className='w-full bg-[#FFD700] hover:bg-[#FFD700]/90 text-black border-[#FFD700]'>
                         Open Project
                       </Button>
                     </Link>

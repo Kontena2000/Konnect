@@ -1,119 +1,117 @@
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
-
+ 
 @layer base {
   :root {
     --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
-    
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 0%;
-    
-    --popover: 0 0% 98%;
-    --popover-foreground: 0 0% 0%;
-    
-    --primary: 45 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
-    
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    
-    --accent: 45 100% 50%;
-    --accent-foreground: 0 0% 0%;
-    
-    --destructive: 0 84% 60%;
+    --foreground: 240 10% 3.9%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 10% 3.9%;
+ 
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 10% 3.9%;
+ 
+    --primary: 240 5.9% 10%;
+    --primary-foreground: 0 0% 98%;
+ 
+    --secondary: 240 4.8% 95.9%;
+    --secondary-foreground: 240 5.9% 10%;
+ 
+    --muted: 240 4.8% 95.9%;
+    --muted-foreground: 240 3.8% 46.1%;
+ 
+    --accent: 240 4.8% 95.9%;
+    --accent-foreground: 240 5.9% 10%;
+ 
+    --destructive: 0 84.2% 60.2%;
     --destructive-foreground: 0 0% 98%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 45 100% 50%;
-    
+    --border: 240 5.9% 90%;
+    --input: 240 5.9% 90%;
+    --ring: 240 10% 3.9%;
+ 
     --radius: 0.5rem;
+
+    /* Project Status Colors */
+    --status-planning: 215 100% 50%;
+    --status-in-progress: 142 76% 36%;
+    --status-review: 31 100% 50%;
+    --status-completed: 142 76% 36%;
+    --status-on-hold: 0 0% 50%;
   }
-
+ 
   .dark {
-    --background: 0 0% 100%;
-    --foreground: 0 0% 0%;
-    
-    --card: 0 0% 98%;
-    --card-foreground: 0 0% 0%;
-    
-    --popover: 0 0% 98%;
-    --popover-foreground: 0 0% 0%;
-    
-    --primary: 45 100% 50%;
-    --primary-foreground: 0 0% 0%;
-    
-    --secondary: 0 0% 96%;
-    --secondary-foreground: 0 0% 0%;
-    
-    --muted: 0 0% 96%;
-    --muted-foreground: 0 0% 45%;
-    
-    --accent: 45 100% 50%;
-    --accent-foreground: 0 0% 0%;
-    
-    --destructive: 0 84% 60%;
+    --background: 240 10% 3.9%;
+    --foreground: 0 0% 98%;
+ 
+    --card: 240 10% 3.9%;
+    --card-foreground: 0 0% 98%;
+ 
+    --popover: 240 10% 3.9%;
+    --popover-foreground: 0 0% 98%;
+ 
+    --primary: 0 0% 98%;
+    --primary-foreground: 240 5.9% 10%;
+ 
+    --secondary: 240 3.7% 15.9%;
+    --secondary-foreground: 0 0% 98%;
+ 
+    --muted: 240 3.7% 15.9%;
+    --muted-foreground: 240 5% 64.9%;
+ 
+    --accent: 240 3.7% 15.9%;
+    --accent-foreground: 0 0% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
     --destructive-foreground: 0 0% 98%;
+ 
+    --border: 240 3.7% 15.9%;
+    --input: 240 3.7% 15.9%;
+    --ring: 240 4.9% 83.9%;
 
-    --border: 0 0% 90%;
-    --input: 0 0% 90%;
-    --ring: 45 100% 50%;
+    /* Project Status Colors - Dark Theme */
+    --status-planning: 215 100% 60%;
+    --status-in-progress: 142 76% 45%;
+    --status-review: 31 100% 60%;
+    --status-completed: 142 76% 45%;
+    --status-on-hold: 0 0% 60%;
   }
 }
-
+ 
 @layer base {
   * {
     @apply border-border;
   }
   body {
     @apply bg-background text-foreground;
-    font-family: 'Helvetica Neue', Arial, sans-serif;
   }
 }
 
-@layer components {
-  .container {
-    @apply mx-auto px-4 md:px-6 lg:px-8 max-w-[2000px] w-full;
-  }
+/* Project Status Badge Styles */
+.bg-planning {
+  background-color: hsl(var(--status-planning));
+  color: white;
+}
 
-  .card-hover {
-    @apply hover:shadow-md transition-shadow duration-200;
-  }
+.bg-in-progress {
+  background-color: hsl(var(--status-in-progress));
+  color: white;
+}
 
-  .input-focus {
-    @apply focus:ring-2 focus:ring-primary/20 focus:border-primary transition-colors duration-200;
-  }
+.bg-review {
+  background-color: hsl(var(--status-review));
+  color: white;
+}
 
-  .button-base {
-    @apply shadow-sm transition-all duration-200;
-  }
+.bg-completed {
+  background-color: hsl(var(--status-completed));
+  color: white;
+}
 
-  .button-primary {
-    @apply bg-primary hover:bg-primary/90 text-primary-foreground button-base;
-  }
-
-  .button-secondary {
-    @apply bg-secondary hover:bg-secondary/90 text-secondary-foreground button-base;
-  }
-
-  .page-container {
-    @apply space-y-8 p-4 md:p-6 lg:p-8;
-  }
-
-  .section-container {
-    @apply space-y-6 p-4 md:p-6;
-  }
-
-  .flex-center {
-    @apply flex items-center justify-center;
-  }
-
-  .flex-between {
-    @apply flex items-center justify-between;
-  }
+.bg-on-hold {
+  background-color: hsl(var(--status-on-hold));
+  color: white;
 }
