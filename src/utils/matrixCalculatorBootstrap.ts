@@ -15,7 +15,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
     const db = getFirestoreSafely();
     if (!db) {
       console.error('[Matrix Calculator] Firestore is not available during bootstrap');
-      calculatorDebug.error('Firestore is not available during bootstrap');
+      calculatorDebug.error('Firestore is not available during bootstrap', new Error('Firestore unavailable'));
       return false;
     }
     
@@ -31,7 +31,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
       
       if (!pricingDoc.exists()) {
         console.log('[Matrix Calculator] Creating default pricing matrix');
-        calculatorDebug.log('Creating default pricing matrix');
+        calculatorDebug.log('Creating default pricing matrix', null);
         await setDoc(pricingRef, DEFAULT_PRICING);
         console.log('[Matrix Calculator] Default pricing matrix created successfully');
       } else {
@@ -50,7 +50,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
       
       if (!paramsDoc.exists()) {
         console.log('[Matrix Calculator] Creating default calculation parameters');
-        calculatorDebug.log('Creating default calculation parameters');
+        calculatorDebug.log('Creating default calculation parameters', null);
         await setDoc(paramsRef, DEFAULT_CALCULATION_PARAMS);
         console.log('[Matrix Calculator] Default calculation parameters created successfully');
       } else {
@@ -69,7 +69,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
       
       if (!configsDoc.exists()) {
         console.log('[Matrix Calculator] Creating user_configurations document');
-        calculatorDebug.log('Creating user_configurations document');
+        calculatorDebug.log('Creating user_configurations document', null);
         await setDoc(configsRef, {
           created: new Date(),
           description: 'User calculation configurations'
@@ -85,7 +85,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
     }
     
     console.log('[Matrix Calculator] Bootstrap process completed successfully');
-    calculatorDebug.log('Matrix Calculator bootstrap completed successfully');
+    calculatorDebug.log('Matrix Calculator bootstrap completed successfully', null);
     return true;
   } catch (error) {
     console.error('[Matrix Calculator] Bootstrap process failed:', error);
