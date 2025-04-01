@@ -73,11 +73,11 @@ export async function getPricingAndParams() {
     if (!db) {
       console.error('Firestore is not initialized, using default values');
       calculatorDebug.error('Firestore is not initialized', 'Using default values');
-      return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
+      return { pricing: DEFAULT_PRICING as unknown as PricingMatrix, params: DEFAULT_CALCULATION_PARAMS };
     }
     
     // Fetch pricing with better error handling
-    let pricing: PricingMatrix = DEFAULT_PRICING;
+    let pricing: PricingMatrix = DEFAULT_PRICING as unknown as PricingMatrix;
     try {
       const pricingDocRef = safeDocRef('matrix_calculator', 'pricing_matrix');
       console.log('Attempting to fetch pricing matrix from:', pricingDocRef.path);
@@ -125,7 +125,7 @@ export async function getPricingAndParams() {
   } catch (error) {
     console.error('Error fetching data from Firestore:', error);
     calculatorDebug.error('Error fetching data from Firestore', error);
-    return { pricing: DEFAULT_PRICING, params: DEFAULT_CALCULATION_PARAMS };
+    return { pricing: DEFAULT_PRICING as unknown as PricingMatrix, params: DEFAULT_CALCULATION_PARAMS };
   }
 }
 
@@ -823,7 +823,7 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
     if (!hasPricingData) {
       console.error('Pricing matrix is empty or invalid, using default values');
       calculatorDebug.error('Pricing matrix is empty or invalid', pricing);
-      pricing = DEFAULT_PRICING;
+      pricing = DEFAULT_PRICING as unknown as PricingMatrix;
     }
     
     // Extract configuration values with validation
