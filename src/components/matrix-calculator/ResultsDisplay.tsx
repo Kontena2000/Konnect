@@ -24,6 +24,7 @@ export function ResultsDisplay({
   projectName = '', 
   clientName = '' 
 }: ResultsDisplayProps) {
+  const [activeTab, setActiveTab] = useState<string>('overview');
   const [saving, setSaving] = useState(false);
   const [showComparisonModal, setShowComparisonModal] = useState(false);
   

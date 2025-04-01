@@ -1,3 +1,4 @@
+
 import { 
   serverTimestamp, 
   doc, 
@@ -148,10 +149,10 @@ async function calculateConfigurationImpl(
     const { pricing, params } = await getMemoizedPricingAndParams();
     
     // Calculate electrical requirements
-    const currentPerRow = calculateCurrentPerRow(kwPerRack, totalRacks);
-    const currentPerRack = calculateCurrentPerRack(kwPerRack);
+    const currentPerRow = calculateCurrentPerRow(kwPerRack, params);
+    const currentPerRack = calculateCurrentPerRack(kwPerRack, params);
     const busbarSize = selectBusbarSize(currentPerRow);
-    const tapOffBox = selectTapOffBoxSize(currentPerRack, coolingType);
+    const tapOffBox = selectTapOffBoxSize(currentPerRack);
     const rpdu = selectRPDUSize(currentPerRack);
     
     // Calculate UPS requirements
@@ -162,7 +163,7 @@ async function calculateConfigurationImpl(
     
     // Calculate generator requirements if needed
     const generatorRequirements = options.includeGenerator ? 
-      calculateGeneratorRequirements(upsRequirements.requiredCapacity) : 
+      calculateGeneratorRequirements(upsRequirements.requiredCapacity, options.includeGenerator, params) : 
       {
         included: false,
         capacity: 0,
@@ -199,24 +200,39 @@ async function calculateConfigurationImpl(
     );
     
     // Calculate reliability metrics
-    const reliabilityMetrics = calculateSystemAvailability(options.redundancyMode || 'N+1');
+    const reliabilityMetrics = calculateSystemAvailability(
+      options.redundancyMode || 'N+1', 
+      !!options.includeGenerator, 
+      params
+    );
     
     // Calculate sustainability metrics
     const sustainabilityMetrics = calculateSustainabilityMetrics(
       kwPerRack * totalRacks,
+      coolingRequirements.pue,
       coolingType,
-      options.sustainabilityOptions
+      options.sustainabilityOptions || {},
+      params
     );
     
     // Calculate carbon footprint
     const carbonFootprint = calculateCarbonFootprint(
-      kwPerRack * totalRacks,
-      sustainabilityMetrics.pue,
-      options.sustainabilityOptions?.renewableEnergyPercentage || 20
+      kwPerRack * totalRacks * 24 * 365, // annual energy consumption
+      !!options.includeGenerator,
+      24, // generator test hours
+      generatorRequirements.capacity,
+      options.sustainabilityOptions?.renewableEnergyPercentage || 20,
+      params
     );
     
     // Calculate TCO
-    const tco = calculateTCO(costBreakdown, kwPerRack * totalRacks);
+    const tco = calculateTCO(
+      costBreakdown.totalProjectCost,
+      kwPerRack * totalRacks * 24 * 365 * coolingRequirements.pue,
+      coolingType,
+      !!options.includeGenerator,
+      params
+    );
     
     // Compile final results
     const results = {
