@@ -1,9 +1,8 @@
+
 import { CalculationConfig, CalculationOptions } from './matrixCalculatorService';
 
-/**
- * Debug utility to trace calculator execution flow
- */
-export const calculatorDebug = {
+// Define the base calculator debug object
+const baseCalculatorDebug = {
   enabled: true,
   
   // Set this to true to enable detailed step-by-step logging
@@ -53,7 +52,6 @@ export const calculatorDebug = {
     this.calculationSteps.push(`ERROR: ${message} - ${error?.message || JSON.stringify(error)}`);
   },
   
-  // Add the clear method to fix the TypeScript error
   clear(): void {
     this.calculationSteps = [];
     this.timers = {};
@@ -188,9 +186,9 @@ export const calculatorDebug = {
 let debugLogs: any[] = [];
 const subscribers: ((logs: any[]) => void)[] = [];
 
-// Add methods to the calculatorDebug object
-const enhancedCalculatorDebug = {
-  ...calculatorDebug,
+// Create and export the enhanced calculator debug object
+export const calculatorDebug = {
+  ...baseCalculatorDebug,
   
   // Subscribe to debug logs
   subscribe: (callback: (logs: any[]) => void) => {
@@ -206,10 +204,11 @@ const enhancedCalculatorDebug = {
     };
   },
   
-  // Clear all logs
+  // Override clear method to notify subscribers
   clear: () => {
     debugLogs = [];
     subscribers.forEach(callback => callback([]));
+    baseCalculatorDebug.clear();
   },
   
   // Override log method to store logs
@@ -226,7 +225,7 @@ const enhancedCalculatorDebug = {
     subscribers.forEach(callback => callback([...debugLogs]));
     
     // Call original log method
-    calculatorDebug.log(message, data);
+    baseCalculatorDebug.log(message, data);
   },
   
   // Override warn method to store logs
@@ -243,7 +242,7 @@ const enhancedCalculatorDebug = {
     subscribers.forEach(callback => callback([...debugLogs]));
     
     // Call original warn method
-    calculatorDebug.warn(message, data);
+    baseCalculatorDebug.warn(message, data);
   },
   
   // Override error method to store logs
@@ -260,12 +259,9 @@ const enhancedCalculatorDebug = {
     subscribers.forEach(callback => callback([...debugLogs]));
     
     // Call original error method
-    calculatorDebug.error(message, data);
+    baseCalculatorDebug.error(message, data);
   }
 };
-
-// Export the enhanced calculatorDebug
-export { enhancedCalculatorDebug as calculatorDebug };
 
 /**
  * Wrap a calculator function with debug logging
