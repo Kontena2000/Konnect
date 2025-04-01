@@ -1,4 +1,3 @@
-
 import { Grid } from "@react-three/drei";
 import { Float32BufferAttribute } from "three";
 import { EditorPreferences } from '@/services/editor-preferences';
@@ -20,6 +19,11 @@ export function GridHelper({
   gridColor = "#444444",
   preferences
 }: GridHelperProps) {
+  // If preferences exist and visible is explicitly false, don't render the grid
+  if (preferences && preferences.visible === false) {
+    return null;
+  }
+
   // Get grid size from preferences or use default
   const getGridSize = () => {
     if (!preferences) return size;
@@ -32,14 +36,27 @@ export function GridHelper({
     return parseFloat(preferences.weight);
   };
 
+  // Get divisions from preferences or use default
+  const getDivisions = () => {
+    if (!preferences) return divisions;
+    return preferences.divisions;
+  };
+
+  // Check if axes should be shown
+  const shouldShowAxes = () => {
+    if (!preferences) return showAxes;
+    return preferences.showAxes;
+  };
+
   const actualSize = getGridSize();
+  const actualDivisions = getDivisions();
   const xAxisPoints = new Float32Array([-actualSize / 2, 0.01, 0, actualSize / 2, 0.01, 0]);
   const zAxisPoints = new Float32Array([0, 0.01, -actualSize / 2, 0, 0.01, actualSize / 2]);
 
   return (
     <>
       <Grid
-        args={[actualSize, divisions]}
+        args={[actualSize, actualDivisions]}
         position={[0, 0, 0]}
         cellColor={preferences?.color || gridColor}
         sectionColor={preferences?.color || gridColor}
@@ -50,7 +67,7 @@ export function GridHelper({
         sectionSize={getLineWeight() * 5}
       />
       
-      {showAxes && (
+      {shouldShowAxes() && (
         <>
           <line>
             <bufferGeometry>
