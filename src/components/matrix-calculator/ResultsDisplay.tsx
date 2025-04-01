@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -6,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Save, AlertTriangle, Download, Share2 } from "lucide-react";
 import { getFirestore, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { GeneratePdfButton } from './GeneratePdfButton';
 
 interface ResultsDisplayProps {
   results: any;
@@ -90,10 +90,39 @@ export function ResultsDisplay({ results, onSave, userId }: ResultsDisplayProps)
     <div className='space-y-6'>
       <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4'>
         <h2 className='text-2xl font-bold'>Configuration Results</h2>
-        <div className='flex flex-wrap gap-2'>
-          <Button size='sm' onClick={handleSave} disabled={saving}>
-            <Save className='h-4 w-4 mr-2' />
-            {saving ? 'Saving...' : 'Save Configuration'}
+        <div className='flex flex-wrap gap-2 mb-4'>
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={handleSave}
+            disabled={!results || saving}
+            className='flex items-center gap-2'
+          >
+            <Save className='h-4 w-4' />
+            {saving ? 'Saving...' : 'Save Calculation'}
+          </Button>
+          
+          <GeneratePdfButton
+            config={{
+              kwPerRack: results?.rack?.powerDensity || 0,
+              coolingType: results?.rack?.coolingType || 'air',
+              totalRacks: results?.rack?.totalRacks || 0
+            }}
+            results={results}
+            options={calculationOptions}
+            projectName={projectName}
+            clientName={clientName}
+          />
+          
+          <Button
+            variant='outline'
+            size='sm'
+            onClick={() => setShowComparisonModal(true)}
+            disabled={!results}
+            className='flex items-center gap-2'
+          >
+            <BarChart2 className='h-4 w-4' />
+            Compare
           </Button>
         </div>
       </div>

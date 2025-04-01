@@ -58,6 +58,8 @@
     "framer-motion": "^12.0.6",
     "gsap": "^3.12.7",
     "input-otp": "^1.4.2",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "lodash": "^4.17.21",
     "lucide-react": "^0.474.0",
     "micro": "^10.0.1",
