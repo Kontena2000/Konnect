@@ -19,39 +19,8 @@ export function FirebaseDebugger() {
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [defaultsUsed, setDefaultsUsed] = useState(false);
 
-  // Function to check Firebase status - wrapped in useCallback
-  const checkFirebaseStatus = useCallback(() => {
-    try {
-      const initialized = isFirebaseInitialized();
-      setFirebaseStatus(initialized ? 'initialized' : 'error');
-      
-      if (initialized) {
-        fetchCollections();
-      }
-    } catch (error) {
-      console.error('Error checking Firebase status:', error);
-      setFirebaseStatus('error');
-    }
-  }, []);  // Empty dependency array since it doesn't use any external variables
-
-  // Check Firebase status on mount
-  useEffect(() => {
-    checkFirebaseStatus();
-    checkMatrixCalculatorStatus();
-  }, [checkFirebaseStatus]); // Now this is valid since checkFirebaseStatus is wrapped in useCallback
-
-  const checkMatrixCalculatorStatus = async () => {
-    try {
-      setMatrixCalculatorStatus('initializing');
-      const bootstrapped = await waitForMatrixCalculatorBootstrap();
-      setMatrixCalculatorStatus(bootstrapped ? 'initialized' : 'error');
-    } catch (error) {
-      console.error('Error checking Matrix Calculator status:', error);
-      setMatrixCalculatorStatus('error');
-    }
-  };
-
-  const fetchCollections = async () => {
+  // Function to fetch collections - wrapped in useCallback
+  const fetchCollections = useCallback(async () => {
     const db = getFirestoreSafely();
     if (!db) return;
 
@@ -158,7 +127,40 @@ export function FirebaseDebugger() {
       console.error('Error fetching collections:', error);
       setLogs([`[${new Date().toISOString()}] ERROR: Failed to fetch collections: ${error}`]);
     }
-  };
+  }, []);
+
+  // Function to check Firebase status - wrapped in useCallback
+  const checkFirebaseStatus = useCallback(() => {
+    try {
+      const initialized = isFirebaseInitialized();
+      setFirebaseStatus(initialized ? 'initialized' : 'error');
+      
+      if (initialized) {
+        fetchCollections();
+      }
+    } catch (error) {
+      console.error('Error checking Firebase status:', error);
+      setFirebaseStatus('error');
+    }
+  }, [fetchCollections]);  // Add fetchCollections as a dependency
+
+  // Function to check Matrix Calculator status - wrapped in useCallback
+  const checkMatrixCalculatorStatus = useCallback(async () => {
+    try {
+      setMatrixCalculatorStatus('initializing');
+      const bootstrapped = await waitForMatrixCalculatorBootstrap();
+      setMatrixCalculatorStatus(bootstrapped ? 'initialized' : 'error');
+    } catch (error) {
+      console.error('Error checking Matrix Calculator status:', error);
+      setMatrixCalculatorStatus('error');
+    }
+  }, []);
+
+  // Check Firebase status on mount
+  useEffect(() => {
+    checkFirebaseStatus();
+    checkMatrixCalculatorStatus();
+  }, [checkFirebaseStatus, checkMatrixCalculatorStatus]); // Add both callbacks as dependencies
 
   const runDiagnostics = async () => {
     setLoading(true);
