@@ -63,6 +63,7 @@ export async function getPricingAndParams() {
   // Check if cache is valid (less than 5 minutes old)
   const now = Date.now();
   if (cachedPricing && cachedParams && now - lastFetchTime < 5 * 60 * 1000) {
+    console.log('Using cached pricing and params data');
     return { pricing: cachedPricing, params: cachedParams };
   }
   
@@ -78,12 +79,17 @@ export async function getPricingAndParams() {
     // Fetch pricing with better error handling
     let pricing: PricingMatrix = DEFAULT_PRICING;
     try {
-      const pricingDoc = await getDoc(safeDocRef('matrix_calculator', 'pricing_matrix'));
+      const pricingDocRef = safeDocRef('matrix_calculator', 'pricing_matrix');
+      console.log('Attempting to fetch pricing matrix from:', pricingDocRef.path);
+      
+      const pricingDoc = await getDoc(pricingDocRef);
       if (pricingDoc.exists()) {
         pricing = pricingDoc.data() as PricingMatrix;
-        console.log('Successfully fetched pricing matrix from Firestore');
+        console.log('Successfully fetched pricing matrix from Firestore:', pricing);
+        calculatorDebug.log('Successfully fetched pricing matrix', pricing);
       } else {
         console.log('Pricing matrix not found in Firestore, using default values');
+        calculatorDebug.log('Pricing matrix not found, using defaults', DEFAULT_PRICING);
       }
     } catch (pricingError) {
       console.error('Error fetching pricing matrix:', pricingError);
@@ -93,12 +99,17 @@ export async function getPricingAndParams() {
     // Fetch parameters with better error handling
     let params: CalculationParams = DEFAULT_CALCULATION_PARAMS;
     try {
-      const paramsDoc = await getDoc(safeDocRef('matrix_calculator', 'calculation_params'));
+      const paramsDocRef = safeDocRef('matrix_calculator', 'calculation_params');
+      console.log('Attempting to fetch calculation parameters from:', paramsDocRef.path);
+      
+      const paramsDoc = await getDoc(paramsDocRef);
       if (paramsDoc.exists()) {
         params = paramsDoc.data() as CalculationParams;
-        console.log('Successfully fetched calculation parameters from Firestore');
+        console.log('Successfully fetched calculation parameters from Firestore:', params);
+        calculatorDebug.log('Successfully fetched calculation parameters', params);
       } else {
         console.log('Calculation parameters not found in Firestore, using default values');
+        calculatorDebug.log('Calculation parameters not found, using defaults', DEFAULT_CALCULATION_PARAMS);
       }
     } catch (paramsError) {
       console.error('Error fetching calculation parameters:', paramsError);
@@ -784,26 +795,40 @@ export const calculateConfiguration = withDebug(
 // Update the calculateCost function to ensure it doesn't return zero values
 function calculateCost(config: any, pricing: PricingMatrix, params: CalculationParams) {
   try {
-    console.log('Calculate Cost - Input Config:', config);
-    console.log('Calculate Cost - Pricing Matrix:', pricing);
+    console.log('Calculate Cost - Input Config:', JSON.stringify(config, null, 2));
+    console.log('Calculate Cost - Pricing Matrix:', JSON.stringify(pricing, null, 2));
+    calculatorDebug.log('Calculate Cost - Input Config', config);
+    calculatorDebug.log('Calculate Cost - Pricing Matrix', pricing);
     
-    // Add safety checks for all possible undefined inputs
+    // Validate inputs
     if (!config) {
       console.error('Configuration is undefined');
       throw new Error('Configuration is undefined');
     }
+    
     if (!pricing) {
       console.error('Pricing matrix is undefined');
       throw new Error('Pricing matrix is undefined');
     }
+    
     if (!params) {
       console.error('Calculation parameters are undefined');
       throw new Error('Calculation parameters are undefined');
     }
     
-    // Ensure required config properties exist with default values
-    const kwPerRack = config.kwPerRack || 75;
-    const totalRacks = config.totalRacks || 28;
+    // Check if pricing has actual data or is just an empty object
+    const hasPricingData = Object.keys(pricing).length > 0 && 
+                          pricing.busbar && Object.keys(pricing.busbar).length > 0;
+    
+    if (!hasPricingData) {
+      console.error('Pricing matrix is empty or invalid, using default values');
+      calculatorDebug.error('Pricing matrix is empty or invalid', pricing);
+      pricing = DEFAULT_PRICING;
+    }
+    
+    // Extract configuration values with validation
+    const kwPerRack = typeof config.kwPerRack === 'number' ? config.kwPerRack : 75;
+    const totalRacks = typeof config.totalRacks === 'number' ? config.totalRacks : 28;
     const busbarSize = config.busbarSize || 'busbar800A';
     const coolingType = config.cooling?.type || 'air';
     
@@ -811,150 +836,220 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
     const tapOffBox = config.electrical?.tapOffBox || 'standard63A';
     const rpdu = config.electrical?.rpdu || 'standard16A';
     
-    // Add fallback values for pricing if they're missing
-    const defaultPricing = {
-      busbar: { busbar800A: 50000, busbar1000A: 65000, busbar1600A: 85000, busbar2000A: 110000 },
-      tapOffBox: { standard63A: 1200, standard100A: 1800, standard160A: 2500, custom250A: 3500 },
-      rpdu: { standard16A: 800, standard32A: 1200, standard63A: 2000 },
-      cooler: { 
-        tcs310aXht: 120000, 
-        grundfosPump: 15000, 
-        bufferTank: 8000,
-        immersionTank: 80000,
-        immersionCDU: 150000
-      },
-      rdhx: { basic: 40000, standard: 60000, average: 80000, highDensity: 120000 },
-      piping: {
-        dn110PerMeter: 200,
-        dn160PerMeter: 350,
-        valveDn110: 1500,
-        valveDn160: 2500
-      },
-      ups: {
-        frame2Module: 120000,
-        frame4Module: 180000,
-        frame6Module: 240000,
-        module250kw: 50000
-      },
-      battery: { revoTp240Cabinet: 80000 },
-      generator: {
-        generator1000kva: 200000,
-        generator2000kva: 350000,
-        generator3000kva: 500000,
-        fuelTankPerLiter: 2
-      },
-      eHouse: { base: 150000, perSqMeter: 5000 },
-      sustainability: {
-        heatRecoverySystem: 100000,
-        waterRecyclingSystem: 80000,
-        solarPanelPerKw: 1500
-      }
-    };
+    // Log the actual pricing values we're using
+    console.log('Using busbar pricing:', pricing.busbar);
+    console.log('Using tapOffBox pricing:', pricing.tapOffBox);
+    console.log('Using rpdu pricing:', pricing.rpdu);
     
-    // Use pricing values with fallbacks
-    const safePricing = {
-      busbar: pricing.busbar || defaultPricing.busbar,
-      tapOffBox: pricing.tapOffBox || defaultPricing.tapOffBox,
-      rpdu: pricing.rpdu || defaultPricing.rpdu,
-      cooler: pricing.cooler || defaultPricing.cooler,
-      rdhx: pricing.rdhx || defaultPricing.rdhx,
-      piping: pricing.piping || defaultPricing.piping,
-      ups: pricing.ups || defaultPricing.ups,
-      battery: pricing.battery || defaultPricing.battery,
-      generator: pricing.generator || defaultPricing.generator,
-      eHouse: pricing.eHouse || defaultPricing.eHouse,
-      sustainability: pricing.sustainability || defaultPricing.sustainability
-    };
+    // Calculate electrical costs with direct pricing access
+    let busbarCost = 0;
+    if (pricing.busbar && pricing.busbar[busbarSize]) {
+      busbarCost = pricing.busbar[busbarSize];
+      console.log(`Using actual pricing for ${busbarSize}: ${busbarCost}`);
+    } else {
+      busbarCost = busbarSize === 'busbar800A' ? 50000 : 
+                  busbarSize === 'busbar1000A' ? 65000 : 
+                  busbarSize === 'busbar1600A' ? 85000 : 110000;
+      console.log(`Using fallback pricing for ${busbarSize}: ${busbarCost}`);
+    }
     
-    // Calculate electrical costs with fallbacks
-    const busbarCost = calculateBusbarCost(busbarSize, safePricing) || 
-                      (busbarSize === 'busbar800A' ? 50000 : 
-                       busbarSize === 'busbar1000A' ? 65000 : 
-                       busbarSize === 'busbar1600A' ? 85000 : 110000);
+    // Calculate tapOffBox cost with direct pricing access
+    let tapOffBoxPrice = 0;
+    const effectiveTapOffBox = coolingType === 'dlc' ? 'custom250A' : tapOffBox;
     
-    // Ensure we have valid pricing values for tapOffBox and rpdu
-    const tapOffBoxPrice = safePricing.tapOffBox[coolingType === 'dlc' ? 'custom250A' : tapOffBox] || 
-                          (coolingType === 'dlc' ? 3500 : tapOffBox === 'standard63A' ? 1200 : 
-                           tapOffBox === 'standard100A' ? 1800 : 2500);
+    if (pricing.tapOffBox && pricing.tapOffBox[effectiveTapOffBox]) {
+      tapOffBoxPrice = pricing.tapOffBox[effectiveTapOffBox];
+      console.log(`Using actual pricing for ${effectiveTapOffBox}: ${tapOffBoxPrice}`);
+    } else {
+      tapOffBoxPrice = effectiveTapOffBox === 'custom250A' ? 3500 : 
+                      effectiveTapOffBox === 'standard63A' ? 1200 : 
+                      effectiveTapOffBox === 'standard100A' ? 1800 : 2500;
+      console.log(`Using fallback pricing for ${effectiveTapOffBox}: ${tapOffBoxPrice}`);
+    }
     
-    const rpduPrice = safePricing.rpdu[rpdu] || 
-                     (rpdu === 'standard16A' ? 800 : 
-                      rpdu === 'standard32A' ? 1200 : 2000);
+    // Calculate rpdu cost with direct pricing access
+    let rpduPrice = 0;
+    if (pricing.rpdu && pricing.rpdu[rpdu]) {
+      rpduPrice = pricing.rpdu[rpdu];
+      console.log(`Using actual pricing for ${rpdu}: ${rpduPrice}`);
+    } else {
+      rpduPrice = rpdu === 'standard16A' ? 800 : 
+                 rpdu === 'standard32A' ? 1200 : 2000;
+      console.log(`Using fallback pricing for ${rpdu}: ${rpduPrice}`);
+    }
     
     const tapOffBoxCost = tapOffBoxPrice * totalRacks;
     const rpduCost = rpduPrice * totalRacks;
     
-    console.log('Electrical costs calculated:', { busbarCost, tapOffBoxCost, rpduCost });
+    console.log('Electrical costs calculated:', { 
+      busbarCost, 
+      tapOffBoxCost, 
+      rpduCost,
+      totalRacks
+    });
     
-    // Calculate cooling costs with safety checks
+    // Calculate cooling costs based on cooling type
     let coolingCost = 0;
+    
     if (coolingType === 'dlc') {
-      coolingCost = (safePricing.cooler.tcs310aXht || 120000) + 
-                   (safePricing.cooler.grundfosPump || 15000) + 
-                   (safePricing.cooler.bufferTank || 8000) +
-                   (config.cooling?.pipingSize === 'dn160' ? 
-                    (safePricing.piping.dn160PerMeter || 350) : 
-                    (safePricing.piping.dn110PerMeter || 200)) * 100 +
-                   (config.cooling?.pipingSize === 'dn160' ? 
-                    (safePricing.piping.valveDn160 || 2500) : 
-                    (safePricing.piping.valveDn110 || 1500)) * 10;
-    } else if (coolingType === 'hybrid') {
-      const dlcPortion = (safePricing.cooler.tcs310aXht || 120000) * 0.7 +
-                        (safePricing.cooler.grundfosPump || 15000) + 
-                        (safePricing.cooler.bufferTank || 8000) +
-                        (safePricing.piping.dn110PerMeter || 200) * 50;
+      // Check if we have actual pricing for DLC components
+      const tcs310aXhtPrice = pricing.cooler?.tcs310aXht || 120000;
+      const grundfosPumpPrice = pricing.cooler?.grundfosPump || 15000;
+      const bufferTankPrice = pricing.cooler?.bufferTank || 8000;
       
-      const airPortion = (safePricing.rdhx.average || 80000) * 
-                        Math.ceil(((config.cooling?.airPortion || 0) / 150) || 1);
+      const pipingSize = config.cooling?.pipingSize || 'dn110';
+      const pipePerMeterPrice = pipingSize === 'dn160' ? 
+                               (pricing.piping?.dn160PerMeter || 350) : 
+                               (pricing.piping?.dn110PerMeter || 200);
+      
+      const valvePrice = pipingSize === 'dn160' ? 
+                        (pricing.piping?.valveDn160 || 2500) : 
+                        (pricing.piping?.valveDn110 || 1500);
+      
+      coolingCost = tcs310aXhtPrice + grundfosPumpPrice + bufferTankPrice +
+                   pipePerMeterPrice * 100 + valvePrice * 10;
+      
+      console.log('DLC cooling cost breakdown:', {
+        tcs310aXhtPrice,
+        grundfosPumpPrice,
+        bufferTankPrice,
+        pipingSize,
+        pipePerMeterPrice,
+        valvePrice,
+        totalCost: coolingCost
+      });
+      
+    } else if (coolingType === 'hybrid') {
+      // Check if we have actual pricing for hybrid components
+      const tcs310aXhtPrice = pricing.cooler?.tcs310aXht || 120000;
+      const grundfosPumpPrice = pricing.cooler?.grundfosPump || 15000;
+      const bufferTankPrice = pricing.cooler?.bufferTank || 8000;
+      const pipePerMeterPrice = pricing.piping?.dn110PerMeter || 200;
+      
+      const dlcPortion = tcs310aXhtPrice * 0.7 + grundfosPumpPrice + bufferTankPrice + pipePerMeterPrice * 50;
+      
+      const rdhxModel = config.cooling?.rdhxModel || 'average';
+      const rdhxPrice = pricing.rdhx?.[rdhxModel] || 80000;
+      const rdhxUnits = Math.ceil(((config.cooling?.airPortion || 0) / 150) || 1);
+      
+      const airPortion = rdhxPrice * rdhxUnits;
       
       coolingCost = dlcPortion + airPortion;
+      
+      console.log('Hybrid cooling cost breakdown:', {
+        dlcPortion,
+        airPortion,
+        rdhxModel,
+        rdhxPrice,
+        rdhxUnits,
+        totalCost: coolingCost
+      });
+      
     } else if (coolingType === 'immersion') {
-      coolingCost = (safePricing.cooler.immersionTank || 80000) * Math.ceil(totalRacks / 4) +
-                   (safePricing.cooler.immersionCDU || 150000) + 
-                   (safePricing.piping.dn110PerMeter || 200) * 50;
+      // Check if we have actual pricing for immersion components
+      const immersionTankPrice = pricing.cooler?.immersionTank || 80000;
+      const immersionCDUPrice = pricing.cooler?.immersionCDU || 150000;
+      const pipePerMeterPrice = pricing.piping?.dn110PerMeter || 200;
+      
+      const tanksNeeded = Math.ceil(totalRacks / 4);
+      
+      coolingCost = immersionTankPrice * tanksNeeded + immersionCDUPrice + pipePerMeterPrice * 50;
+      
+      console.log('Immersion cooling cost breakdown:', {
+        immersionTankPrice,
+        immersionCDUPrice,
+        pipePerMeterPrice,
+        tanksNeeded,
+        totalCost: coolingCost
+      });
+      
     } else {
-      // Default to air cooling with safety checks
+      // Default to air cooling
       const rdhxModel = config.cooling?.rdhxModel || 'standard';
       const rdhxUnits = config.cooling?.rdhxUnits || Math.ceil(totalRacks / 10);
       
-      // Ensure we have a valid price for the rdhx model
-      const rdhxPrice = safePricing.rdhx[rdhxModel] || 
-                       (rdhxModel === 'basic' ? 40000 : 
-                        rdhxModel === 'standard' ? 60000 : 
-                        rdhxModel === 'highDensity' ? 120000 : 80000);
+      let rdhxPrice = 0;
+      if (pricing.rdhx && pricing.rdhx[rdhxModel]) {
+        rdhxPrice = pricing.rdhx[rdhxModel];
+        console.log(`Using actual pricing for ${rdhxModel}: ${rdhxPrice}`);
+      } else {
+        rdhxPrice = rdhxModel === 'basic' ? 40000 : 
+                   rdhxModel === 'standard' ? 60000 : 
+                   rdhxModel === 'highDensity' ? 120000 : 80000;
+        console.log(`Using fallback pricing for ${rdhxModel}: ${rdhxPrice}`);
+      }
       
       coolingCost = rdhxPrice * rdhxUnits;
+      
+      console.log('Air cooling cost breakdown:', {
+        rdhxModel,
+        rdhxPrice,
+        rdhxUnits,
+        totalCost: coolingCost
+      });
     }
     
-    console.log('Cooling cost calculated:', coolingCost);
-    
-    // Calculate power costs with safety checks
+    // Calculate power costs (UPS, battery, generator)
     let upsCost = 0;
     if (config.power?.ups) {
       const frameSize = config.power.ups.frameSize || 'frame2Module';
       const framesNeeded = config.power.ups.framesNeeded || 1;
       const redundantModules = config.power.ups.redundantModules || 2;
       
-      // Ensure we have valid prices for UPS components
-      const framePrice = safePricing.ups[frameSize] || 
-                        (frameSize === 'frame2Module' ? 120000 : 
-                         frameSize === 'frame4Module' ? 180000 : 240000);
+      let framePrice = 0;
+      if (pricing.ups && pricing.ups[frameSize]) {
+        framePrice = pricing.ups[frameSize];
+        console.log(`Using actual pricing for ${frameSize}: ${framePrice}`);
+      } else {
+        framePrice = frameSize === 'frame2Module' ? 120000 : 
+                    frameSize === 'frame4Module' ? 180000 : 240000;
+        console.log(`Using fallback pricing for ${frameSize}: ${framePrice}`);
+      }
       
-      const modulePrice = safePricing.ups.module250kw || 50000;
+      const modulePrice = pricing.ups?.module250kw || 50000;
       
       upsCost = framePrice * framesNeeded + modulePrice * redundantModules;
+      
+      console.log('UPS cost breakdown:', {
+        frameSize,
+        framePrice,
+        framesNeeded,
+        modulePrice,
+        redundantModules,
+        totalCost: upsCost
+      });
     } else {
-      // Default UPS cost if no configuration is provided
-      upsCost = (safePricing.ups.frame2Module || 120000) + (safePricing.ups.module250kw || 50000) * 2;
+      // Default UPS cost
+      const framePrice = pricing.ups?.frame2Module || 120000;
+      const modulePrice = pricing.ups?.module250kw || 50000;
+      
+      upsCost = framePrice + modulePrice * 2;
+      
+      console.log('Default UPS cost breakdown:', {
+        framePrice,
+        modulePrice,
+        totalCost: upsCost
+      });
     }
     
+    // Calculate battery costs
     let batteryCost = 0;
     if (config.power?.battery) {
       const cabinetsNeeded = config.power.battery.cabinetsNeeded || 1;
-      batteryCost = (safePricing.battery.revoTp240Cabinet || 80000) * cabinetsNeeded;
+      const cabinetPrice = pricing.battery?.revoTp240Cabinet || 80000;
+      
+      batteryCost = cabinetPrice * cabinetsNeeded;
+      
+      console.log('Battery cost breakdown:', {
+        cabinetPrice,
+        cabinetsNeeded,
+        totalCost: batteryCost
+      });
     } else {
-      // Default battery cost if no configuration is provided
-      batteryCost = (safePricing.battery.revoTp240Cabinet || 80000);
+      // Default battery cost
+      batteryCost = pricing.battery?.revoTp240Cabinet || 80000;
+      
+      console.log('Default battery cost:', batteryCost);
     }
     
     // Calculate generator costs if included
@@ -964,18 +1059,30 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
       const generatorPriceKey = generatorCapacity <= 1000 ? 'generator1000kva' :
                                generatorCapacity <= 2000 ? 'generator2000kva' : 'generator3000kva';
       
-      // Ensure we have a valid price for the generator
-      const generatorPrice = safePricing.generator?.[generatorPriceKey] || 
-                            (generatorPriceKey === 'generator1000kva' ? 200000 : 
-                             generatorPriceKey === 'generator2000kva' ? 350000 : 500000);
-      
-      generatorCost = generatorPrice;
+      let generatorPrice = 0;
+      if (pricing.generator && pricing.generator[generatorPriceKey]) {
+        generatorPrice = pricing.generator[generatorPriceKey];
+        console.log(`Using actual pricing for ${generatorPriceKey}: ${generatorPrice}`);
+      } else {
+        generatorPrice = generatorPriceKey === 'generator1000kva' ? 200000 : 
+                        generatorPriceKey === 'generator2000kva' ? 350000 : 500000;
+        console.log(`Using fallback pricing for ${generatorPriceKey}: ${generatorPrice}`);
+      }
       
       const fuelTankSize = config.power.generator.fuel?.tankSize || 1000;
-      generatorCost += fuelTankSize * (safePricing.generator?.fuelTankPerLiter || 2);
+      const fuelTankPerLiterPrice = pricing.generator?.fuelTankPerLiter || 2;
+      
+      generatorCost = generatorPrice + fuelTankSize * fuelTankPerLiterPrice;
+      
+      console.log('Generator cost breakdown:', {
+        generatorCapacity,
+        generatorPriceKey,
+        generatorPrice,
+        fuelTankSize,
+        fuelTankPerLiterPrice,
+        totalCost: generatorCost
+      });
     }
-    
-    console.log('Power costs calculated:', { upsCost, batteryCost, generatorCost });
     
     // Calculate e-house costs
     const eHouseBaseSqm = params.power.eHouseBaseSqm || 20;
@@ -989,33 +1096,54 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
                       eHouseBatterySqm * cabinetsNeeded +
                       eHouseGeneratorSqm;
     
-    // Ensure we have valid prices for e-house
-    const eHouseBasePrice = safePricing.eHouse.base || 150000;
-    const eHousePerSqMeterPrice = safePricing.eHouse.perSqMeter || 5000;
+    const eHouseBasePrice = pricing.eHouse?.base || 150000;
+    const eHousePerSqMeterPrice = pricing.eHouse?.perSqMeter || 5000;
     
     const eHouseCost = eHouseBasePrice + eHousePerSqMeterPrice * eHouseSize;
     
-    console.log('E-house cost calculated:', eHouseCost);
+    console.log('E-house cost breakdown:', {
+      eHouseBaseSqm,
+      eHouseBatterySqm,
+      eHouseGeneratorSqm,
+      framesNeeded,
+      cabinetsNeeded,
+      eHouseSize,
+      eHouseBasePrice,
+      eHousePerSqMeterPrice,
+      totalCost: eHouseCost
+    });
     
     // Calculate sustainability options costs
     let sustainabilityCost = 0;
-    if (safePricing.sustainability) {
+    if (pricing.sustainability) {
       if (config.sustainabilityOptions?.enableWasteHeatRecovery) {
-        sustainabilityCost += safePricing.sustainability.heatRecoverySystem || 100000;
+        const heatRecoveryPrice = pricing.sustainability.heatRecoverySystem || 100000;
+        sustainabilityCost += heatRecoveryPrice;
+        console.log('Added heat recovery system cost:', heatRecoveryPrice);
       }
       
       if (config.sustainabilityOptions?.enableWaterRecycling) {
-        sustainabilityCost += safePricing.sustainability.waterRecyclingSystem || 80000;
+        const waterRecyclingPrice = pricing.sustainability.waterRecyclingSystem || 80000;
+        sustainabilityCost += waterRecyclingPrice;
+        console.log('Added water recycling system cost:', waterRecyclingPrice);
       }
       
       const renewablePercentage = config.sustainabilityOptions?.renewableEnergyPercentage || 0;
       if (renewablePercentage > 0) {
         const solarCapacity = (kwPerRack * totalRacks * renewablePercentage / 100) * 1.5;
-        sustainabilityCost += solarCapacity * (safePricing.sustainability.solarPanelPerKw || 1500);
+        const solarPanelPerKwPrice = pricing.sustainability.solarPanelPerKw || 1500;
+        const solarCost = solarCapacity * solarPanelPerKwPrice;
+        
+        sustainabilityCost += solarCost;
+        
+        console.log('Solar power cost breakdown:', {
+          renewablePercentage,
+          solarCapacity,
+          solarPanelPerKwPrice,
+          solarCost
+        });
       }
     }
-    
-    console.log('Sustainability cost calculated:', sustainabilityCost);
     
     // Calculate total equipment cost
     const electricalTotal = busbarCost + tapOffBoxCost + rpduCost;
@@ -1023,12 +1151,11 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
     
     const equipmentCost = electricalTotal + coolingCost + powerTotal + eHouseCost + sustainabilityCost;
     
-    // Ensure we have valid cost factors
+    // Calculate additional costs
     const installationPercentage = params.costFactors?.installationPercentage || 0.15;
     const engineeringPercentage = params.costFactors?.engineeringPercentage || 0.10;
     const contingencyPercentage = params.costFactors?.contingencyPercentage || 0.10;
     
-    // Add installation and engineering costs
     const installationCost = equipmentCost * installationPercentage;
     const engineeringCost = equipmentCost * engineeringPercentage;
     const contingencyCost = equipmentCost * contingencyPercentage;
@@ -1037,6 +1164,11 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
     const totalCost = equipmentCost + installationCost + engineeringCost + contingencyCost;
     
     console.log('Total cost breakdown:', {
+      electricalTotal,
+      coolingCost,
+      powerTotal,
+      eHouseCost,
+      sustainabilityCost,
       equipmentCost,
       installationCost,
       engineeringCost,
@@ -1044,37 +1176,43 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
       totalCost
     });
     
-    // Ensure we don't return zero for totalProjectCost
-    const safeTotalCost = totalCost || 
-                         (kwPerRack * totalRacks * 5000); // Fallback calculation based on kW
+    // Ensure we have a valid total cost
+    const safeTotalCost = totalCost > 0 ? totalCost : (kwPerRack * totalRacks * 5000);
     
-    // Return cost breakdown with safe rounding and fallbacks
-    return {
+    // Return cost breakdown with precise values
+    const result = {
       electrical: {
-        busbar: Math.round(busbarCost || 50000),
-        tapOffBox: Math.round(tapOffBoxCost || (1200 * totalRacks)),
-        rpdu: Math.round(rpduCost || (800 * totalRacks)),
-        total: Math.round(electricalTotal || (50000 + 2000 * totalRacks))
+        busbar: Math.round(busbarCost),
+        tapOffBox: Math.round(tapOffBoxCost),
+        rpdu: Math.round(rpduCost),
+        total: Math.round(electricalTotal)
       },
-      cooling: Math.round(coolingCost || (coolingType === 'air' ? 60000 : 150000)),
+      cooling: Math.round(coolingCost),
       power: {
-        ups: Math.round(upsCost || 220000),
-        battery: Math.round(batteryCost || 80000),
-        generator: Math.round(generatorCost || (config.power?.generator?.included ? 200000 : 0)),
-        total: Math.round(powerTotal || 300000)
+        ups: Math.round(upsCost),
+        battery: Math.round(batteryCost),
+        generator: Math.round(generatorCost),
+        total: Math.round(powerTotal)
       },
-      infrastructure: Math.round(eHouseCost || 250000),
-      sustainability: Math.round(sustainabilityCost || 0),
-      equipmentTotal: Math.round(equipmentCost || 700000),
-      installation: Math.round(installationCost || 105000),
-      engineering: Math.round(engineeringCost || 70000),
-      contingency: Math.round(contingencyCost || 70000),
+      infrastructure: Math.round(eHouseCost),
+      sustainability: Math.round(sustainabilityCost),
+      equipmentTotal: Math.round(equipmentCost),
+      installation: Math.round(installationCost),
+      engineering: Math.round(engineeringCost),
+      contingency: Math.round(contingencyCost),
       totalProjectCost: Math.round(safeTotalCost),
-      costPerRack: Math.round((safeTotalCost) / (totalRacks || 1)),
-      costPerKw: Math.round((safeTotalCost) / ((kwPerRack || 10) * (totalRacks || 1)))
+      costPerRack: Math.round(safeTotalCost / (totalRacks || 1)),
+      costPerKw: Math.round(safeTotalCost / ((kwPerRack || 10) * (totalRacks || 1)))
     };
+    
+    console.log('Final cost calculation result:', result);
+    calculatorDebug.log('Final cost calculation result', result);
+    
+    return result;
   } catch (error) {
     console.error('Error calculating costs:', error);
+    calculatorDebug.error('Error calculating costs', error);
+    
     // Return a fallback result with reasonable default values
     const totalRacks = config?.totalRacks || 28;
     const kwPerRack = config?.kwPerRack || 75;
