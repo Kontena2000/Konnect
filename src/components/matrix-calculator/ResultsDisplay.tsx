@@ -11,7 +11,12 @@ interface ResultsDisplayProps {
   results: any;
   onSave?: (results: any) => void;
   userId: string;
-  calculationOptions?: any;
+  config?: {
+    kwPerRack: number;
+    coolingType: string;
+    totalRacks?: number;
+  };
+  options?: any;
   projectName?: string;
   clientName?: string;
 }
@@ -20,7 +25,8 @@ export function ResultsDisplay({
   results, 
   onSave, 
   userId, 
-  calculationOptions = {}, 
+  config,
+  options = {}, 
   projectName = '', 
   clientName = '' 
 }: ResultsDisplayProps) {
@@ -98,6 +104,13 @@ export function ResultsDisplay({
     };
   }
 
+  // Create a config object if not provided
+  const calculationConfig = config || {
+    kwPerRack: results?.rack?.powerDensity || 0,
+    coolingType: results?.rack?.coolingType || 'air',
+    totalRacks: results?.rack?.totalRacks || 0
+  };
+
   return (
     <div className='space-y-6'>
       <div className='flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4'>
@@ -115,13 +128,9 @@ export function ResultsDisplay({
           </Button>
           
           <GeneratePdfButton
-            config={{
-              kwPerRack: results?.rack?.powerDensity || 0,
-              coolingType: results?.rack?.coolingType || 'air',
-              totalRacks: results?.rack?.totalRacks || 0
-            }}
+            config={calculationConfig}
             results={results}
-            options={calculationOptions}
+            options={options}
             projectName={projectName}
             clientName={clientName}
           />
