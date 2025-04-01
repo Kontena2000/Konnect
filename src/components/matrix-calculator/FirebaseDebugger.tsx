@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
@@ -19,8 +19,8 @@ export function FirebaseDebugger() {
   const [showDebugPanel, setShowDebugPanel] = useState(false);
   const [defaultsUsed, setDefaultsUsed] = useState(false);
 
-  // Function to check Firebase status
-  const checkFirebaseStatus = () => {
+  // Function to check Firebase status - wrapped in useCallback
+  const checkFirebaseStatus = useCallback(() => {
     try {
       const initialized = isFirebaseInitialized();
       setFirebaseStatus(initialized ? 'initialized' : 'error');
@@ -32,13 +32,13 @@ export function FirebaseDebugger() {
       console.error('Error checking Firebase status:', error);
       setFirebaseStatus('error');
     }
-  };
+  }, []);  // Empty dependency array since it doesn't use any external variables
 
   // Check Firebase status on mount
   useEffect(() => {
     checkFirebaseStatus();
     checkMatrixCalculatorStatus();
-  }, [checkFirebaseStatus]); // Fixed: Added checkFirebaseStatus to dependency array
+  }, [checkFirebaseStatus]); // Now this is valid since checkFirebaseStatus is wrapped in useCallback
 
   const checkMatrixCalculatorStatus = async () => {
     try {
