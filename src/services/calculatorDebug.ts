@@ -53,6 +53,13 @@ export const calculatorDebug = {
     this.calculationSteps.push(`ERROR: ${message} - ${error?.message || JSON.stringify(error)}`);
   },
   
+  // Add the clear method to fix the TypeScript error
+  clear(): void {
+    this.calculationSteps = [];
+    this.timers = {};
+    console.log('[Calculator Debug] Logs cleared');
+  },
+  
   startCalculation(config: CalculationConfig, options?: CalculationOptions): void {
     // Reset calculation steps
     this.calculationSteps = [];
