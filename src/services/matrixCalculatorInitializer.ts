@@ -1,4 +1,4 @@
-import { doc, setDoc, getDoc, collection } from 'firebase/firestore';
+import { doc, setDoc, getDoc, collection, deleteDoc } from 'firebase/firestore';
 import { getFirestoreAsync, ensureFirebaseInitializedAsync, getFirestoreSafely } from '@/lib/firebase';
 import { DEFAULT_PRICING, DEFAULT_CALCULATION_PARAMS } from '@/constants/calculatorConstants';
 import { calculatorDebug } from './calculatorDebug';
@@ -113,6 +113,59 @@ export async function runMatrixCalculatorInitialization(): Promise<boolean> {
   } catch (error) {
     console.error('[Matrix Calculator] Error running initialization:', error);
     calculatorDebug.error('Error running Matrix Calculator initialization', error);
+    return false;
+  }
+}
+
+/**
+ * Reset the Matrix Calculator to default values
+ * This function deletes existing documents and recreates them with default values
+ */
+export async function resetMatrixCalculator(): Promise<boolean> {
+  try {
+    console.log('[Matrix Calculator] Starting reset...');
+    calculatorDebug.log('Starting Matrix Calculator reset');
+    
+    // Get Firestore safely
+    const db = getFirestoreSafely();
+    if (!db) {
+      console.error('[Matrix Calculator] Firebase is not initialized, cannot reset');
+      calculatorDebug.error('Firebase is not initialized', 'Cannot reset Matrix Calculator');
+      return false;
+    }
+    
+    // Delete and recreate pricing matrix
+    const pricingRef = doc(db, 'matrix_calculator', 'pricing_matrix');
+    try {
+      await deleteDoc(pricingRef);
+      console.log('[Matrix Calculator] Deleted existing pricing matrix');
+      await setDoc(pricingRef, DEFAULT_PRICING);
+      console.log('[Matrix Calculator] Created new pricing matrix with default values');
+    } catch (error) {
+      console.error('[Matrix Calculator] Error resetting pricing matrix:', error);
+      calculatorDebug.error('Error resetting pricing matrix', error);
+      return false;
+    }
+    
+    // Delete and recreate calculation parameters
+    const paramsRef = doc(db, 'matrix_calculator', 'calculation_params');
+    try {
+      await deleteDoc(paramsRef);
+      console.log('[Matrix Calculator] Deleted existing calculation parameters');
+      await setDoc(paramsRef, DEFAULT_CALCULATION_PARAMS);
+      console.log('[Matrix Calculator] Created new calculation parameters with default values');
+    } catch (error) {
+      console.error('[Matrix Calculator] Error resetting calculation parameters:', error);
+      calculatorDebug.error('Error resetting calculation parameters', error);
+      return false;
+    }
+    
+    console.log('[Matrix Calculator] Reset complete');
+    calculatorDebug.log('Matrix Calculator reset complete');
+    return true;
+  } catch (error) {
+    console.error('[Matrix Calculator] Reset error:', error);
+    calculatorDebug.error('Matrix Calculator reset error', error);
     return false;
   }
 }
