@@ -281,6 +281,11 @@ export function SceneContainer({
     };
   }, [cleanupRefs]);
 
+  // Add a console log to debug the editor preferences
+  useEffect(() => {
+    console.log('Editor preferences in SceneContainer:', editorPreferences);
+  }, [editorPreferences]);
+
   return (
     <div 
       ref={setNodeRef} 
@@ -335,9 +340,18 @@ export function SceneContainer({
           onTransformEnd={handleTransformEnd}
           editorPreferences={editorPreferences}
         />
+        {/* Force the grid to be visible by providing default preferences if none exist */}
         <GridHelper
           showAxes={true}
-          preferences={editorPreferences?.grid}
+          preferences={editorPreferences?.grid || {
+            size: 50,
+            weight: '1',
+            color: '#888888',
+            visible: true,
+            showAxes: true,
+            snap: true,
+            divisions: 5
+          }}
         />
       </Canvas>
 
