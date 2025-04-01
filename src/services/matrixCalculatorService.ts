@@ -319,7 +319,7 @@ function calculateBatteryRequirements(totalITLoad: number, params: CalculationPa
   // Calculate energy needed in kWh (convert minutes to hours)
   const energyNeeded = Math.round(totalITLoad * batteryRuntime / 60);
   
-  // Use default values instead of accessing non-existent properties
+  // Use default values for energy per cabinet
   const energyPerCabinet = 40; // kWh per cabinet (default value)
   const cabinetsNeeded = Math.max(Math.ceil(energyNeeded / energyPerCabinet), 1);
   
@@ -586,7 +586,7 @@ function safelyAccessCalculationResults(results: any) {
     } else if (coolingType === 'hybrid') {
       results.cooling.dlcPortion = totalITLoad * 0.6;
       results.cooling.airPortion = totalITLoad * 0.4;
-      results.cooling.dlcFlowRate = totalITLoad * 0.6 * 0.25;
+      results.cooling.dlcFlowRate = results.cooling.dlcPortion * 0.25;
       results.cooling.rdhxUnits = Math.ceil(totalITLoad * 0.4 / 150);
       results.cooling.rdhxModel = 'average';
     } else if (coolingType === 'immersion') {
@@ -1093,8 +1093,8 @@ function calculateCost(config: any, pricing: PricingMatrix, params: CalculationP
     }
     
     // Calculate e-house costs
-    const eHouseBaseSqm = params.power.eHouseBaseSqm || 20;
-    const eHouseBatterySqm = params.power.eHouseBatterySqm || 5;
+    const eHouseBaseSqm = params.power?.eHouseBaseSqm || 20;
+    const eHouseBatterySqm = params.power?.eHouseBatterySqm || 5;
     const eHouseGeneratorSqm = (config.power?.generator?.included) ? 30 : 0;
     
     const framesNeeded = config.power?.ups?.framesNeeded || 1;
