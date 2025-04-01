@@ -1,4 +1,3 @@
-
 import { CalculationConfig, CalculationOptions } from './matrixCalculatorService';
 
 // Define the base calculator debug object
@@ -186,8 +185,8 @@ const baseCalculatorDebug = {
 let debugLogs: any[] = [];
 const subscribers: ((logs: any[]) => void)[] = [];
 
-// Create and export the enhanced calculator debug object
-export const calculatorDebug = {
+// Create the enhanced calculator debug object
+const enhancedCalculatorDebug = {
   ...baseCalculatorDebug,
   
   // Subscribe to debug logs
@@ -262,6 +261,9 @@ export const calculatorDebug = {
     baseCalculatorDebug.error(message, data);
   }
 };
+
+// Export the enhanced calculatorDebug
+export const calculatorDebug = enhancedCalculatorDebug;
 
 /**
  * Wrap a calculator function with debug logging
