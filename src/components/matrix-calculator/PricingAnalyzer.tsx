@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -9,11 +8,12 @@ import { getFirestoreSafely } from "@/lib/firebase";
 import { DEFAULT_PRICING } from "@/constants/calculatorConstants";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { PricingMatrix } from "@/types/pricingMatrix";
 
 export function PricingAnalyzer() {
   const [isOpen, setIsOpen] = useState(false);
-  const [pricingData, setPricingData] = useState<any>(null);
-  const [defaultPricing, setDefaultPricing] = useState<any>(DEFAULT_PRICING);
+  const [pricingData, setPricingData] = useState<PricingMatrix | null>(null);
+  const [defaultPricing, setDefaultPricing] = useState<PricingMatrix>(DEFAULT_PRICING as PricingMatrix);
   const [loading, setLoading] = useState(false);
   const [differences, setDifferences] = useState<any[]>([]);
   const [missingKeys, setMissingKeys] = useState<string[]>([]);
@@ -32,7 +32,7 @@ export function PricingAnalyzer() {
       const pricingDoc = await getDoc(pricingDocRef);
 
       if (pricingDoc.exists()) {
-        const data = pricingDoc.data();
+        const data = pricingDoc.data() as PricingMatrix;
         setPricingData(data);
         
         // Compare with default pricing
@@ -41,25 +41,31 @@ export function PricingAnalyzer() {
         
         // Check for missing top-level categories
         Object.keys(DEFAULT_PRICING).forEach(category => {
-          if (!data[category]) {
+          if (!data[category as keyof PricingMatrix]) {
             missing.push(category);
           } else {
             // Check for differences in values
-            Object.keys(DEFAULT_PRICING[category]).forEach(key => {
-              if (data[category][key] !== DEFAULT_PRICING[category][key]) {
-                diffs.push({
-                  category,
-                  key,
-                  defaultValue: DEFAULT_PRICING[category][key],
-                  actualValue: data[category][key]
-                });
-              }
-              
-              // Check for missing keys
-              if (data[category][key] === undefined) {
-                missing.push(`${category}.${key}`);
-              }
-            });
+            const defaultCategory = DEFAULT_PRICING[category as keyof PricingMatrix];
+            const dataCategory = data[category as keyof PricingMatrix];
+            
+            if (defaultCategory && dataCategory) {
+              Object.keys(defaultCategory).forEach(key => {
+                const typedKey = key as keyof typeof defaultCategory;
+                if (dataCategory[typedKey] !== defaultCategory[typedKey]) {
+                  diffs.push({
+                    category,
+                    key,
+                    defaultValue: defaultCategory[typedKey],
+                    actualValue: dataCategory[typedKey]
+                  });
+                }
+                
+                // Check for missing keys
+                if (dataCategory[typedKey] === undefined) {
+                  missing.push(`${category}.${key}`);
+                }
+              });
+            }
           }
         });
         
