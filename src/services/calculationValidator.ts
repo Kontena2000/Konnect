@@ -1,4 +1,3 @@
-
 import { calculatorDebug } from './calculatorDebug';
 
 /**
@@ -18,7 +17,12 @@ export function validateCalculationInputs(inputs: any): any {
       enableWaterRecycling: false,
       renewableEnergyPercentage: 20
     },
-    location: null
+    location: null as null | {
+      latitude: number;
+      longitude: number;
+      address?: string;
+      climateData?: any;
+    }
   };
 
   try {
