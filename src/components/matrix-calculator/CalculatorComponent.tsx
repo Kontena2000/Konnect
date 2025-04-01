@@ -66,7 +66,7 @@ export function CalculatorComponent({
   const [calculationName, setCalculationName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [projectId, setProjectId] = useState<string | null>(null);
+  const [projectId, setProjectId] = useState<string | undefined>(undefined);
   
   // Advanced options
   const [redundancyMode, setRedundancyMode] = useState('N+1');
@@ -91,7 +91,7 @@ export function CalculatorComponent({
       const db = getFirestoreSafely();
       if (!db) {
         console.error('Firebase is not initialized');
-        calculatorDebug.error('Firebase is not initialized');
+        calculatorDebug.error('Firebase is not initialized', new Error('Firebase not initialized'));
         setError('Firebase is not initialized. Please try again later.');
       } else {
         console.log('Firebase is already initialized, ready to use Matrix Calculator');
@@ -105,7 +105,7 @@ export function CalculatorComponent({
             calculatorDebug.log('Matrix Calculator bootstrapped successfully');
           } else {
             console.error('Failed to bootstrap Matrix Calculator');
-            calculatorDebug.error('Failed to bootstrap Matrix Calculator');
+            calculatorDebug.error('Failed to bootstrap Matrix Calculator', new Error('Bootstrap failed'));
           }
         } catch (error) {
           console.error('Error bootstrapping Matrix Calculator:', error);
