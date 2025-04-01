@@ -217,7 +217,7 @@ export async function getUserCalculations(userId: string): Promise<any[]> {
     return calculations;
   } catch (error) {
     console.error('[Matrix Calculator] Error fetching user calculations:', error);
-    calculatorDebug.error('Error fetching user calculations', error);
+    calculatorDebug.error('Error fetching user calculations', error instanceof Error ? error : new Error(String(error)));
     return [];
   }
 }
