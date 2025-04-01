@@ -45,8 +45,9 @@ export const DEFAULT_CALCULATION_PARAMS = {
   
   // Cooling mode thresholds
   coolingThresholds: {
-    airCooledMax: 75,         // Maximum kW/rack for air-cooled (higher requires DLC)
-    recommendedDlcMin: 75,    // Recommended minimum kW/rack for DLC
+    lowDensity: 10,
+    mediumDensity: 20,
+    highDensity: 30,
   },
   
   sustainability: {
