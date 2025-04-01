@@ -4,7 +4,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project, ProjectError } from "@/services/project";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin } from 'lucide-react';
+import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin, Calculator } from 'lucide-react';
 import Link from "next/link";
 import { useToast } from "@/hooks/use-toast";
 import { Input } from '@/components/ui/input';
@@ -236,6 +236,7 @@ export default function ProjectsPage() {
                     </div>
                     <div className='flex gap-2'>
                       <Badge variant='outline'>{(project.layouts || []).length} Layouts</Badge>
+                      <Badge variant='outline'>{(project.calculations || []).length || 0} Calculations</Badge>
                       {project.status && (
                         <Badge variant='secondary'>{project.status}</Badge>
                       )}
