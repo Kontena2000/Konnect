@@ -32,7 +32,7 @@ export function PricingAnalyzer() {
       const pricingDoc = await getDoc(pricingDocRef);
 
       if (pricingDoc.exists()) {
-        const data = pricingDoc.data() as unknown as PricingMatrix;
+        const data = pricingDoc.data() as PricingMatrix;
         setPricingData(data);
         
         // Compare with default pricing
@@ -41,13 +41,16 @@ export function PricingAnalyzer() {
         
         // Check for missing top-level categories
         Object.keys(DEFAULT_PRICING).forEach(category => {
-          const categoryKey = category as keyof typeof DEFAULT_PRICING;
-          if (!data[categoryKey as keyof PricingMatrix]) {
+          // Use type assertion to handle string indexing
+          const defaultPricingAny = DEFAULT_PRICING as any;
+          const dataAny = data as any;
+          
+          if (!dataAny[category]) {
             missing.push(category);
           } else {
             // Check for differences in values
-            const defaultCategory = (DEFAULT_PRICING as any)[categoryKey];
-            const dataCategory = (data as any)[categoryKey];
+            const defaultCategory = defaultPricingAny[category];
+            const dataCategory = dataAny[category];
             
             if (defaultCategory && dataCategory) {
               // Use type assertion to handle string indexing
@@ -176,14 +179,18 @@ export function PricingAnalyzer() {
                         <div className="p-4 bg-gray-50 rounded-md">
                           <h3 className="font-medium mb-2">Key Categories</h3>
                           <ul className="text-sm space-y-1">
-                            {Object.keys(pricingData).map((category) => (
-                              <li key={category} className="flex justify-between">
-                                <span>{category}</span>
-                                <span className="text-gray-500">
-                                  {Object.keys(pricingData[category] || {}).length} items
-                                </span>
-                              </li>
-                            ))}
+                            {Object.keys(pricingData).map((category) => {
+                              // Safe access with type assertion
+                              const categoryData = (pricingData as any)[category] || {};
+                              return (
+                                <li key={category} className="flex justify-between">
+                                  <span>{category}</span>
+                                  <span className="text-gray-500">
+                                    {Object.keys(categoryData).length} items
+                                  </span>
+                                </li>
+                              );
+                            })}
                           </ul>
                         </div>
                         
