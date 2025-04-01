@@ -164,547 +164,7 @@ export interface CalculationOptions {
 
 // [Continue with the rest of the existing implementation]
 
-// Replace the calculateUPSRequirements function with this safer version
-function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
-  // Safety check for inputs
-  kwPerRack = typeof kwPerRack === 'number' && !isNaN(kwPerRack) ? kwPerRack : 10;
-  totalRacks = typeof totalRacks === 'number' && !isNaN(totalRacks) ? totalRacks : 28;
-  
-  const totalITLoad = kwPerRack * totalRacks;
-  
-  // Ensure params and its properties exist
-  const redundancyMode = params?.electrical?.redundancyMode || 'N+1';
-  
-  const redundancyFactor = redundancyMode === 'N' ? 1 :
-                          redundancyMode === 'N+1' ? 1.2 :
-                          redundancyMode === '2N' ? 2 : 1.5;
-  
-  const requiredCapacity = totalITLoad * redundancyFactor;
-  const moduleSize = params?.power?.upsModuleSize || 250; // kW
-  const maxModulesPerFrame = params?.power?.upsFrameMaxModules || 6;
-  
-  // Calculate number of modules needed (with safety checks)
-  const totalModulesNeeded = Math.max(Math.ceil(requiredCapacity / moduleSize) || 1, 1);
-  const framesNeeded = Math.max(Math.ceil(totalModulesNeeded / maxModulesPerFrame) || 1, 1);
-  
-  // Determine frame size based on modules per frame
-  const frameSize = totalModulesNeeded <= 2 ? 'frame2Module' :
-                   totalModulesNeeded <= 4 ? 'frame4Module' : 'frame6Module';
-  
-  console.log('UPS Requirements calculated:', {
-    kwPerRack,
-    totalRacks,
-    totalITLoad,
-    redundancyMode,
-    redundancyFactor,
-    requiredCapacity,
-    moduleSize,
-    totalModulesNeeded,
-    framesNeeded,
-    frameSize
-  });
-  
-  return {
-    totalITLoad: Math.max(totalITLoad, 1),
-    redundancyFactor: redundancyFactor,
-    requiredCapacity: Math.max(requiredCapacity, 1),
-    moduleSize: moduleSize,
-    totalModulesNeeded: totalModulesNeeded,
-    redundantModules: totalModulesNeeded,
-    framesNeeded: framesNeeded,
-    frameSize: frameSize
-  };
-}
-
-// Add the missing calculateBatteryRequirements function
-function calculateBatteryRequirements(totalITLoad: number, params: CalculationParams) {
-  // Safety check for inputs
-  totalITLoad = typeof totalITLoad === 'number' && !isNaN(totalITLoad) ? totalITLoad : 280;
-  
-  // Get battery runtime from params with fallback
-  const batteryRuntime = params?.power?.batteryRuntime || 10;
-  
-  // Calculate energy needed in kWh (convert minutes to hours)
-  const energyNeeded = Math.round(totalITLoad * batteryRuntime / 60);
-  
-  // Use default values instead of accessing non-existent properties
-  const energyPerCabinet = 40; // kWh per cabinet (default value)
-  const cabinetsNeeded = Math.max(Math.ceil(energyNeeded / energyPerCabinet), 1);
-  
-  // Use default value for cabinet weight
-  const cabinetWeight = 1200; // kg (default value)
-  const totalWeight = cabinetsNeeded * cabinetWeight;
-  
-  console.log('Battery Requirements calculated:', {
-    totalITLoad,
-    batteryRuntime,
-    energyNeeded,
-    energyPerCabinet,
-    cabinetsNeeded,
-    cabinetWeight,
-    totalWeight
-  });
-  
-  return {
-    runtime: batteryRuntime,
-    energyNeeded: energyNeeded,
-    cabinetsNeeded: cabinetsNeeded,
-    totalWeight: totalWeight
-  };
-}
-
-// Calculate cooling requirements
-function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: CalculationParams) {
-  // Safety check for inputs
-  kwPerRack = typeof kwPerRack === 'number' && !isNaN(kwPerRack) ? kwPerRack : 10;
-  totalRacks = typeof totalRacks === 'number' && !isNaN(totalRacks) ? totalRacks : 28;
-  coolingType = typeof coolingType === 'string' ? coolingType.toLowerCase() : 'air';
-  
-  const totalITLoad = kwPerRack * totalRacks;
-  
-  // Get cooling capacity based on type
-  const cooling = calculateCoolingCapacity(totalITLoad, coolingType, params);
-  
-  // Ensure cooling has a valid totalCapacity
-  const totalCapacity = typeof cooling.totalCapacity === 'number' && !isNaN(cooling.totalCapacity) ? 
-    cooling.totalCapacity : totalITLoad * 1.1;
-  
-  console.log('Cooling Requirements calculated:', {
-    kwPerRack,
-    totalRacks,
-    totalITLoad,
-    coolingType,
-    totalCapacity
-  });
-  
-  // Add additional details based on cooling type
-  switch (coolingType) {
-    case 'dlc':
-      const dlcCoolingCapacity = typeof cooling.dlcCoolingCapacity === 'number' ? 
-        cooling.dlcCoolingCapacity : totalITLoad * 0.75;
-      
-      const residualCoolingCapacity = typeof cooling.residualCoolingCapacity === 'number' ? 
-        cooling.residualCoolingCapacity : totalITLoad * 0.25;
-      
-      const dlcFlowRate = dlcCoolingCapacity * (params.cooling?.flowRateFactor || 0.25);
-      
-      return {
-        type: 'dlc',
-        totalCapacity: totalCapacity,
-        dlcCoolingCapacity: dlcCoolingCapacity,
-        residualCoolingCapacity: residualCoolingCapacity,
-        dlcFlowRate: dlcFlowRate,
-        pipingSize: dlcCoolingCapacity > 1000 ? 'dn160' : 'dn110',
-        pue: cooling.pueImpact || 1.2
-      };
-      
-    case 'hybrid':
-      const dlcPortion = typeof cooling.dlcPortion === 'number' ? 
-        cooling.dlcPortion : totalITLoad * 0.6;
-      
-      const airPortion = typeof cooling.airPortion === 'number' ? 
-        cooling.airPortion : totalITLoad * 0.4;
-      
-      const hybridFlowRate = dlcPortion * (params.cooling?.flowRateFactor || 0.25);
-      
-      return {
-        type: 'hybrid',
-        totalCapacity: totalCapacity,
-        dlcPortion: dlcPortion,
-        airPortion: airPortion,
-        dlcFlowRate: hybridFlowRate,
-        rdhxUnits: Math.ceil(airPortion / 150),
-        rdhxModel: 'average',
-        pipingSize: 'dn110',
-        pue: cooling.pueImpact || 1.3
-      };
-      
-    case 'immersion':
-      const flowRate = totalCapacity * (params.cooling?.flowRateFactor || 0.25) * 0.8;
-      
-      return {
-        type: 'immersion',
-        totalCapacity: totalCapacity,
-        tanksNeeded: Math.ceil(totalRacks / 4),
-        flowRate: flowRate,
-        pipingSize: 'dn110',
-        pue: cooling.pueImpact || 1.1
-      };
-      
-    default: // air cooling
-      const rdhxCapacity = 150; // kW per unit
-      const rdhxUnits = Math.ceil(totalCapacity / rdhxCapacity);
-      
-      return {
-        type: 'air',
-        totalCapacity: totalCapacity,
-        rdhxUnits: rdhxUnits,
-        rdhxModel: kwPerRack <= 15 ? 'basic' : kwPerRack <= 30 ? 'standard' : 'highDensity',
-        pipingSize: 'none',
-        pue: cooling.pueImpact || 1.6
-      };
-  }
-}
-
-async function calculateConfigurationImpl(
-  kwPerRack: number,
-  coolingType: string,
-  totalRacks: number,
-  options: CalculationOptions = {}
-): Promise<any> {
-  try {
-    // Make sure inputs have default values
-    kwPerRack = typeof kwPerRack === 'number' ? kwPerRack : 10;
-    coolingType = typeof coolingType === 'string' ? coolingType : 'air';
-    totalRacks = typeof totalRacks === 'number' ? totalRacks : 28;
-    
-    const { pricing, params } = await getMemoizedPricingAndParams();
-    
-    // Extract options with defaults
-    const redundancyMode = options.redundancyMode || params.electrical.redundancyMode || 'N+1';
-    const includeGenerator = !!options.includeGenerator;
-    const batteryRuntime = options.batteryRuntime || params.power.batteryRuntime || 10;
-    const sustainabilityOptions = options.sustainabilityOptions || {
-      enableWasteHeatRecovery: false,
-      enableWaterRecycling: false,
-      renewableEnergyPercentage: 20
-    };
-    
-    // Update params with options
-    const updatedParams = {
-      ...params,
-      electrical: {
-        ...params.electrical,
-        redundancyMode
-      },
-      power: {
-        ...params.power,
-        batteryRuntime
-      }
-    };
-    
-    // Create a wrapper for all calculation functions to ensure they don't throw errors
-    const safeCalculate = (fn: Function, ...args: any[]) => {
-      try {
-        return fn(...args);
-      } catch (error) {
-        console.error(`Error in ${fn.name || 'calculation function'}:`, error);
-        return {}; // Return an empty object as fallback
-      }
-    };
-    
-    // Calculate electrical requirements with safety
-    const currentPerRow = safeCalculate(calculateCurrentPerRow, kwPerRack, updatedParams) || 0;
-    const busbarSize = safeCalculate(selectBusbarSize, currentPerRow) || 'busbar800A';
-    const currentPerRack = safeCalculate(calculateCurrentPerRack, kwPerRack, updatedParams) || 0;
-    const tapOffBox = safeCalculate(selectTapOffBoxSize, currentPerRack) || 'standard63A';
-    const rpdu = safeCalculate(selectRPDUSize, currentPerRack) || 'standard16A';
-    
-    // Calculate cooling requirements with safety
-    const cooling = safeCalculate(calculateCoolingRequirements, kwPerRack, coolingType, totalRacks, updatedParams) || {
-      type: coolingType || 'air',
-      totalCapacity: kwPerRack * totalRacks * 1.1,
-      pue: 1.4
-    };
-    
-    // Calculate thermal distribution with safety
-    const thermalDistribution = safeCalculate(calculateThermalDistribution, kwPerRack * totalRacks, coolingType, updatedParams) || {
-      pue: 1.4,
-      distribution: {
-        liquid: { load: 0 }
-      }
-    };
-    
-    // Calculate UPS and battery with safety
-    const ups = safeCalculate(calculateUPSRequirements, kwPerRack, totalRacks, updatedParams) || {
-      totalITLoad: kwPerRack * totalRacks,
-      redundancyFactor: 1.2,
-      requiredCapacity: kwPerRack * totalRacks * 1.2,
-      moduleSize: 250,
-      totalModulesNeeded: 2,
-      redundantModules: 2,
-      framesNeeded: 1,
-      frameSize: 'frame2Module'
-    };
-    
-    const battery = safeCalculate(calculateBatteryRequirements, ups.totalITLoad || (kwPerRack * totalRacks), updatedParams) || {
-      runtime: 10,
-      energyNeeded: Math.round((kwPerRack * totalRacks * 10) / 60),
-      cabinetsNeeded: 1,
-      totalWeight: 1200
-    };
-    
-    // Calculate generator if included with safety
-    // CRITICAL: Ensure we have a valid requiredCapacity
-    const generatorInputCapacity = typeof ups.requiredCapacity === 'number' ? 
-      ups.requiredCapacity : 
-      totalRacks * kwPerRack * 1.2;
-    
-    const generator = safeCalculate(calculateGeneratorRequirements, generatorInputCapacity, includeGenerator, updatedParams) || {
-      included: includeGenerator,
-      capacity: includeGenerator ? 1000 : 0,
-      model: includeGenerator ? '1000kVA' : 'none',
-      fuel: {
-        tankSize: includeGenerator ? 1000 : 0,
-        consumption: includeGenerator ? 200 : 0,
-        runtime: includeGenerator ? 8 : 0
-      }
-    };
-    
-    // Calculate pipe sizing for DLC with safety
-    let pipeSizing = null;
-    if (coolingType === 'dlc' || coolingType === 'hybrid') {
-      try {
-        const flowRate = cooling.dlcFlowRate || 
-          ((thermalDistribution.distribution?.liquid?.load || 0) * 
-          (updatedParams.cooling?.flowRateFactor || 0.25));
-        
-        pipeSizing = safeCalculate(calculatePipeSizing, flowRate, updatedParams.cooling?.deltaT || 5) || {
-          pipeSize: 'dn110',
-          velocityMS: 2.5,
-          pressureDropKpa: 1.5
-        };
-      } catch (error) {
-        console.error('Error calculating pipe sizing:', error);
-        pipeSizing = {
-          pipeSize: 'dn110',
-          velocityMS: 2.5,
-          pressureDropKpa: 1.5
-        };
-      }
-    }
-    
-    // Prepare config object for cost calculation with all required properties
-    const configForCost = {
-      kwPerRack,
-      coolingType,
-      totalRacks,
-      busbarSize,
-      cooling: cooling || {},
-      ups: ups || {},
-      battery: battery || {},
-      generator: generator || { included: false },
-      electrical: {
-        currentPerRack: currentPerRack || 0,
-        tapOffBox: tapOffBox || 'standard63A',
-        rpdu: rpdu || 'standard16A'
-      },
-      sustainabilityOptions: sustainabilityOptions || {}
-    };
-    
-    // Calculate costs with safety
-    const cost = safeCalculate(calculateCost, configForCost, pricing, updatedParams) || {
-      electrical: { busbar: 0, tapOffBox: 0, rpdu: 0, total: 0 },
-      cooling: 0,
-      power: { ups: 0, battery: 0, generator: 0, total: 0 },
-      infrastructure: 0,
-      sustainability: 0,
-      equipmentTotal: 0,
-      installation: 0,
-      engineering: 0,
-      contingency: 0,
-      totalProjectCost: 0,
-      costPerRack: 0,
-      costPerKw: 0
-    };
-    
-    // Calculate system availability with safety
-    const reliability = safeCalculate(calculateSystemAvailability, redundancyMode, includeGenerator, updatedParams) || {
-      availability: 0.995,
-      tier: 'Tier 3',
-      annualDowntime: 4.38,
-      mtbf: 8760,
-      mttr: 4
-    };
-    
-    // Calculate sustainability metrics with safety
-    const sustainability = safeCalculate(calculateSustainabilityMetrics, 
-      ups.totalITLoad || (kwPerRack * totalRacks),
-      thermalDistribution.pue || 1.4,
-      coolingType,
-      sustainabilityOptions,
-      updatedParams) || {
-        pue: 1.4,
-        wue: 0.5,
-        annualEnergyConsumption: {
-          it: kwPerRack * totalRacks * 8760,
-          cooling: kwPerRack * totalRacks * 8760 * 0.4,
-          power: kwPerRack * totalRacks * 8760 * 0.1,
-          total: kwPerRack * totalRacks * 8760 * 1.5
-        }
-      };
-    
-    // Calculate TCO with safety
-    const tco = safeCalculate(calculateTCO,
-      cost.totalProjectCost || 0,
-      sustainability.annualEnergyConsumption?.total || (kwPerRack * totalRacks * 8760 * 1.5),
-      coolingType,
-      includeGenerator,
-      updatedParams) || {
-        capex: cost.totalProjectCost || 0,
-        opex: {},
-        total5Year: 0,
-        total10Year: 0
-      };
-    
-    // Calculate carbon footprint with safety
-    const generatorCapacity = (generator && generator.included && typeof generator.capacity === 'number') ? 
-      generator.capacity : 0;
-    
-    const renewablePercentage = sustainabilityOptions?.renewableEnergyPercentage ?? 20;
-    
-    const carbonFootprint = safeCalculate(calculateCarbonFootprint,
-      sustainability.annualEnergyConsumption?.total || (kwPerRack * totalRacks * 8760 * 1.5),
-      includeGenerator,
-      24, // Generator testing hours
-      generatorCapacity,
-      renewablePercentage,
-      updatedParams) || {
-        annualCO2Grid: 0,
-        annualCO2Generator: 0,
-        totalAnnualCO2: 0,
-        co2PerKwh: 0
-      };
-    
-    // Return a fully populated result object with no undefined properties
-    return {
-      rack: {
-        powerDensity: kwPerRack,
-        coolingType: coolingType,
-        totalRacks: totalRacks
-      },
-      electrical: {
-        currentPerRow,
-        busbarSize,
-        currentPerRack,
-        tapOffBox,
-        rpdu,
-        multiplicityWarning: currentPerRow > 2000 ? 
-          `Current exceeds maximum busbar rating (2000A). Multiple busbars required per row.` : ``
-      },
-      cooling,
-      thermalDistribution,
-      pipeSizing,
-      power: {
-        ups: {
-          ...ups,
-          // Explicitly ensure requiredCapacity is set and a number
-          requiredCapacity: typeof ups.requiredCapacity === 'number' ? ups.requiredCapacity : (kwPerRack * totalRacks * 1.2)
-        },
-        battery,
-        generator
-      },
-      reliability,
-      sustainability,
-      carbonFootprint,
-      cost,
-      tco
-    };
-  } catch (error) {
-    console.error('Error in calculation:', error);
-    
-    // Return a minimal valid result to prevent further errors
-    return {
-      rack: {
-        powerDensity: kwPerRack || 10,
-        coolingType: coolingType || 'air',
-        totalRacks: totalRacks || 28
-      },
-      electrical: {
-        currentPerRow: 0,
-        busbarSize: 'busbar800A',
-        currentPerRack: 0,
-        tapOffBox: 'standard63A',
-        rpdu: 'standard16A',
-        multiplicityWarning: ''
-      },
-      cooling: {
-        type: coolingType || 'air',
-        totalCapacity: 0,
-        pue: 1.4
-      },
-      thermalDistribution: {
-        pue: 1.4,
-        distribution: { liquid: { load: 0 } }
-      },
-      pipeSizing: null,
-      power: {
-        ups: {
-          totalITLoad: 0,
-          redundancyFactor: 1.2,
-          requiredCapacity: 0,
-          moduleSize: 250,
-          totalModulesNeeded: 1,
-          redundantModules: 1,
-          framesNeeded: 1,
-          frameSize: 'frame2Module'
-        },
-        battery: {
-          runtime: 10,
-          energyNeeded: 0,
-          cabinetsNeeded: 1,
-          totalWeight: 1200
-        },
-        generator: {
-          included: false,
-          capacity: 0,
-          model: 'none',
-          fuel: {
-            tankSize: 0,
-            consumption: 0,
-            runtime: 0
-          }
-        }
-      },
-      reliability: {
-        availability: 0.995,
-        tier: 'Tier 3',
-        annualDowntime: 4.38,
-        mtbf: 8760,
-        mttr: 4
-      },
-      sustainability: {
-        pue: 1.4,
-        wue: 0.5,
-        annualEnergyConsumption: {
-          it: 0,
-          cooling: 0,
-          power: 0,
-          total: 0
-        }
-      },
-      carbonFootprint: {
-        annualCO2Grid: 0,
-        annualCO2Generator: 0,
-        totalAnnualCO2: 0,
-        co2PerKwh: 0
-      },
-      cost: {
-        electrical: { busbar: 0, tapOffBox: 0, rpdu: 0, total: 0 },
-        cooling: 0,
-        power: { ups: 0, battery: 0, generator: 0, total: 0 },
-        infrastructure: 0,
-        sustainability: 0,
-        equipmentTotal: 0,
-        installation: 0,
-        engineering: 0,
-        contingency: 0,
-        totalProjectCost: 0,
-        costPerRack: 0,
-        costPerKw: 0
-      },
-      tco: {
-        capex: 0,
-        opex: {},
-        total5Year: 0,
-        total10Year: 0
-      }
-    };
-  }
-}
-
 // Helper function to ensure calculation results have all required properties
-// This prevents 'undefined is not an object' errors when accessing nested properties
 function safelyAccessCalculationResults(results: any) {
   // Provide a helper function to safely access nested properties
   if (!results) return {};
@@ -725,7 +185,7 @@ function safelyAccessCalculationResults(results: any) {
   }
   
   // Calculate total IT load for use in other calculations
-  const totalITLoad = results.rack.totalITLoad;
+  const totalITLoad = results.rack.totalITLoad || results.rack.powerDensity * results.rack.totalRacks;
   
   // Ensure power object exists
   if (!results.power) {
@@ -773,25 +233,25 @@ function safelyAccessCalculationResults(results: any) {
     };
   } else {
     // Ensure ups properties have valid values
-    results.power.ups.totalITLoad = typeof results.power.ups.totalITLoad === 'number' ? 
+    results.power.ups.totalITLoad = typeof results.power.ups.totalITLoad === 'number' && results.power.ups.totalITLoad > 0 ? 
       results.power.ups.totalITLoad : totalITLoad;
     
-    results.power.ups.redundancyFactor = typeof results.power.ups.redundancyFactor === 'number' ? 
+    results.power.ups.redundancyFactor = typeof results.power.ups.redundancyFactor === 'number' && results.power.ups.redundancyFactor > 0 ? 
       results.power.ups.redundancyFactor : 1.2;
     
-    results.power.ups.requiredCapacity = typeof results.power.ups.requiredCapacity === 'number' ? 
+    results.power.ups.requiredCapacity = typeof results.power.ups.requiredCapacity === 'number' && results.power.ups.requiredCapacity > 0 ? 
       results.power.ups.requiredCapacity : totalITLoad * results.power.ups.redundancyFactor;
     
-    results.power.ups.moduleSize = typeof results.power.ups.moduleSize === 'number' ? 
+    results.power.ups.moduleSize = typeof results.power.ups.moduleSize === 'number' && results.power.ups.moduleSize > 0 ? 
       results.power.ups.moduleSize : 250;
     
-    results.power.ups.totalModulesNeeded = typeof results.power.ups.totalModulesNeeded === 'number' ? 
+    results.power.ups.totalModulesNeeded = typeof results.power.ups.totalModulesNeeded === 'number' && results.power.ups.totalModulesNeeded > 0 ? 
       results.power.ups.totalModulesNeeded : Math.max(Math.ceil(results.power.ups.requiredCapacity / results.power.ups.moduleSize), 1);
     
-    results.power.ups.redundantModules = typeof results.power.ups.redundantModules === 'number' ? 
+    results.power.ups.redundantModules = typeof results.power.ups.redundantModules === 'number' && results.power.ups.redundantModules > 0 ? 
       results.power.ups.redundantModules : results.power.ups.totalModulesNeeded;
     
-    results.power.ups.framesNeeded = typeof results.power.ups.framesNeeded === 'number' ? 
+    results.power.ups.framesNeeded = typeof results.power.ups.framesNeeded === 'number' && results.power.ups.framesNeeded > 0 ? 
       results.power.ups.framesNeeded : Math.max(Math.ceil(results.power.ups.totalModulesNeeded / 6), 1);
   }
   
@@ -826,6 +286,8 @@ function safelyAccessCalculationResults(results: any) {
       results.cooling.dlcPortion = totalITLoad * 0.6;
       results.cooling.airPortion = totalITLoad * 0.4;
       results.cooling.dlcFlowRate = totalITLoad * 0.6 * 0.25;
+      results.cooling.rdhxUnits = Math.ceil(totalITLoad * 0.4 / 150);
+      results.cooling.rdhxModel = 'average';
     } else if (coolingType === 'immersion') {
       results.cooling.tanksNeeded = Math.ceil(results.rack.totalRacks / 4);
       results.cooling.flowRate = totalITLoad * 1.1 * 0.25 * 0.8;
@@ -837,34 +299,42 @@ function safelyAccessCalculationResults(results: any) {
     }
   } else {
     // Ensure cooling properties have valid values
-    results.cooling.totalCapacity = typeof results.cooling.totalCapacity === 'number' ? 
+    results.cooling.totalCapacity = typeof results.cooling.totalCapacity === 'number' && results.cooling.totalCapacity > 0 ? 
       results.cooling.totalCapacity : totalITLoad * 1.1;
     
     // Set cooling type specific properties if missing
     const coolingType = results.cooling.type || results.rack.coolingType || 'air';
     
     if (coolingType === 'dlc' && !results.cooling.dlcFlowRate) {
-      results.cooling.dlcCoolingCapacity = typeof results.cooling.dlcCoolingCapacity === 'number' ? 
+      results.cooling.dlcCoolingCapacity = typeof results.cooling.dlcCoolingCapacity === 'number' && results.cooling.dlcCoolingCapacity > 0 ? 
         results.cooling.dlcCoolingCapacity : totalITLoad * 0.75;
       
-      results.cooling.residualCoolingCapacity = typeof results.cooling.residualCoolingCapacity === 'number' ? 
+      results.cooling.residualCoolingCapacity = typeof results.cooling.residualCoolingCapacity === 'number' && results.cooling.residualCoolingCapacity > 0 ? 
         results.cooling.residualCoolingCapacity : totalITLoad * 0.25;
       
       results.cooling.dlcFlowRate = results.cooling.dlcCoolingCapacity * 0.25;
     } else if (coolingType === 'hybrid' && !results.cooling.dlcFlowRate) {
-      results.cooling.dlcPortion = typeof results.cooling.dlcPortion === 'number' ? 
+      results.cooling.dlcPortion = typeof results.cooling.dlcPortion === 'number' && results.cooling.dlcPortion > 0 ? 
         results.cooling.dlcPortion : totalITLoad * 0.6;
       
-      results.cooling.airPortion = typeof results.cooling.airPortion === 'number' ? 
+      results.cooling.airPortion = typeof results.cooling.airPortion === 'number' && results.cooling.airPortion > 0 ? 
         results.cooling.airPortion : totalITLoad * 0.4;
       
       results.cooling.dlcFlowRate = results.cooling.dlcPortion * 0.25;
       results.cooling.rdhxUnits = Math.ceil(results.cooling.airPortion / 150);
     } else if (coolingType === 'immersion' && !results.cooling.flowRate) {
-      results.cooling.tanksNeeded = typeof results.cooling.tanksNeeded === 'number' ? 
+      results.cooling.tanksNeeded = typeof results.cooling.tanksNeeded === 'number' && results.cooling.tanksNeeded > 0 ? 
         results.cooling.tanksNeeded : Math.ceil(results.rack.totalRacks / 4);
       
       results.cooling.flowRate = results.cooling.totalCapacity * 0.25 * 0.8;
+    } else if (coolingType === 'air') {
+      // Ensure air cooling has rdhxUnits and rdhxModel
+      results.cooling.rdhxUnits = typeof results.cooling.rdhxUnits === 'number' && results.cooling.rdhxUnits > 0 ?
+        results.cooling.rdhxUnits : Math.ceil(totalITLoad * 1.1 / 150);
+      
+      results.cooling.rdhxModel = results.cooling.rdhxModel || 
+        (results.rack.powerDensity <= 15 ? 'basic' : 
+         results.rack.powerDensity <= 30 ? 'standard' : 'highDensity');
     }
   }
   
@@ -878,6 +348,28 @@ function safelyAccessCalculationResults(results: any) {
     } else {
       results.cooling.pipingSize = 'none';
     }
+  }
+  
+  // Make sure rack.totalITLoad is set correctly
+  if (!results.rack.totalITLoad || results.rack.totalITLoad === 0) {
+    results.rack.totalITLoad = results.rack.powerDensity * results.rack.totalRacks;
+  }
+  
+  // Make sure power.ups.totalITLoad matches rack.totalITLoad
+  if (results.power && results.power.ups) {
+    if (!results.power.ups.totalITLoad || results.power.ups.totalITLoad === 0) {
+      results.power.ups.totalITLoad = results.rack.totalITLoad;
+    }
+    
+    // Recalculate requiredCapacity if it's zero
+    if (!results.power.ups.requiredCapacity || results.power.ups.requiredCapacity === 0) {
+      results.power.ups.requiredCapacity = results.power.ups.totalITLoad * results.power.ups.redundancyFactor;
+    }
+  }
+  
+  // Make sure cooling.totalCapacity is set correctly
+  if (results.cooling && (!results.cooling.totalCapacity || results.cooling.totalCapacity === 0)) {
+    results.cooling.totalCapacity = results.rack.totalITLoad * 1.1;
   }
   
   return results;
@@ -920,6 +412,62 @@ export const calculateConfiguration = withDebug(
       
       // Apply additional defensive handling to ensure no undefined properties
       const safeResults = safelyAccessCalculationResults(validatedResults);
+      
+      // Ensure power requirements are properly set
+      if (safeResults.rack && safeResults.power && safeResults.power.ups) {
+        // Make sure totalITLoad is correctly set
+        const totalITLoad = safeResults.rack.powerDensity * safeResults.rack.totalRacks;
+        safeResults.rack.totalITLoad = totalITLoad;
+        
+        // Make sure UPS values are correctly set
+        if (!safeResults.power.ups.totalITLoad || safeResults.power.ups.totalITLoad === 0) {
+          safeResults.power.ups.totalITLoad = totalITLoad;
+        }
+        
+        const redundancyFactor = safeResults.power.ups.redundancyFactor || 1.2;
+        if (!safeResults.power.ups.requiredCapacity || safeResults.power.ups.requiredCapacity === 0) {
+          safeResults.power.ups.requiredCapacity = totalITLoad * redundancyFactor;
+        }
+        
+        const moduleSize = safeResults.power.ups.moduleSize || 250;
+        if (!safeResults.power.ups.totalModulesNeeded || safeResults.power.ups.totalModulesNeeded === 0) {
+          safeResults.power.ups.totalModulesNeeded = Math.max(Math.ceil(safeResults.power.ups.requiredCapacity / moduleSize), 1);
+        }
+      }
+      
+      // Ensure cooling requirements are properly set
+      if (safeResults.rack && safeResults.cooling) {
+        const totalITLoad = safeResults.rack.powerDensity * safeResults.rack.totalRacks;
+        
+        if (!safeResults.cooling.totalCapacity || safeResults.cooling.totalCapacity === 0) {
+          safeResults.cooling.totalCapacity = totalITLoad * 1.1;
+        }
+        
+        // Set cooling type specific properties
+        const coolingType = safeResults.cooling.type || safeResults.rack.coolingType;
+        
+        if (coolingType === 'dlc') {
+          if (!safeResults.cooling.dlcCoolingCapacity || safeResults.cooling.dlcCoolingCapacity === 0) {
+            safeResults.cooling.dlcCoolingCapacity = totalITLoad * 0.75;
+          }
+          if (!safeResults.cooling.residualCoolingCapacity || safeResults.cooling.residualCoolingCapacity === 0) {
+            safeResults.cooling.residualCoolingCapacity = totalITLoad * 0.25;
+          }
+          if (!safeResults.cooling.dlcFlowRate || safeResults.cooling.dlcFlowRate === 0) {
+            safeResults.cooling.dlcFlowRate = safeResults.cooling.dlcCoolingCapacity * 0.25;
+          }
+        } else if (coolingType === 'hybrid') {
+          if (!safeResults.cooling.dlcPortion || safeResults.cooling.dlcPortion === 0) {
+            safeResults.cooling.dlcPortion = totalITLoad * 0.6;
+          }
+          if (!safeResults.cooling.airPortion || safeResults.cooling.airPortion === 0) {
+            safeResults.cooling.airPortion = totalITLoad * 0.4;
+          }
+          if (!safeResults.cooling.dlcFlowRate || safeResults.cooling.dlcFlowRate === 0) {
+            safeResults.cooling.dlcFlowRate = safeResults.cooling.dlcPortion * 0.25;
+          }
+        }
+      }
       
       console.log('Calculate Configuration - Safe Results:', safeResults);
       calculatorDebug.log('Calculate Configuration - Safe Results:', safeResults);
