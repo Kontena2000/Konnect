@@ -48,6 +48,10 @@ export const DEFAULT_CALCULATION_PARAMS = {
     lowDensity: 10,
     mediumDensity: 20,
     highDensity: 30,
+    airCooledMax: 30,         // Maximum kW/rack for air cooling
+    recommendedDlcMin: 25,    // Minimum kW/rack where DLC is recommended
+    hybridCoolingMin: 20,     // Minimum kW/rack for hybrid cooling
+    hybridCoolingMax: 40,     // Maximum kW/rack for hybrid cooling
   },
   
   sustainability: {
