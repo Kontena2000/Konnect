@@ -13,7 +13,7 @@ import { PricingMatrix } from "@/types/pricingMatrix";
 export function PricingAnalyzer() {
   const [isOpen, setIsOpen] = useState(false);
   const [pricingData, setPricingData] = useState<PricingMatrix | null>(null);
-  const [defaultPricing, setDefaultPricing] = useState<PricingMatrix>(DEFAULT_PRICING as PricingMatrix);
+  const [defaultPricing, setDefaultPricing] = useState<PricingMatrix>((DEFAULT_PRICING as unknown) as PricingMatrix);
   const [loading, setLoading] = useState(false);
   const [differences, setDifferences] = useState<any[]>([]);
   const [missingKeys, setMissingKeys] = useState<string[]>([]);
@@ -41,13 +41,13 @@ export function PricingAnalyzer() {
         
         // Check for missing top-level categories
         Object.keys(DEFAULT_PRICING).forEach(category => {
-          const categoryKey = category as keyof PricingMatrix;
-          if (!data[categoryKey]) {
+          const categoryKey = category as keyof typeof DEFAULT_PRICING;
+          if (!data[categoryKey as keyof PricingMatrix]) {
             missing.push(category);
           } else {
             // Check for differences in values
-            const defaultCategory = DEFAULT_PRICING[categoryKey];
-            const dataCategory = data[categoryKey];
+            const defaultCategory = (DEFAULT_PRICING as any)[categoryKey];
+            const dataCategory = (data as any)[categoryKey];
             
             if (defaultCategory && dataCategory) {
               // Use type assertion to handle string indexing
