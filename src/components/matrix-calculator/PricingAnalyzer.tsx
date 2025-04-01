@@ -13,7 +13,7 @@ import { PricingMatrix } from "@/types/pricingMatrix";
 export function PricingAnalyzer() {
   const [isOpen, setIsOpen] = useState(false);
   const [pricingData, setPricingData] = useState<PricingMatrix | null>(null);
-  const [defaultPricing, setDefaultPricing] = useState<PricingMatrix>(DEFAULT_PRICING as unknown as PricingMatrix);
+  const [defaultPricing, setDefaultPricing] = useState<PricingMatrix>((DEFAULT_PRICING as unknown) as PricingMatrix);
   const [loading, setLoading] = useState(false);
   const [differences, setDifferences] = useState<any[]>([]);
   const [missingKeys, setMissingKeys] = useState<string[]>([]);
