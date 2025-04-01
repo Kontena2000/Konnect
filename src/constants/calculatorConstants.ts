@@ -57,7 +57,12 @@ export const DEFAULT_CALCULATION_PARAMS = {
   sustainability: {
     co2PerKwh: 0.4, // kg CO2 per kWh
     waterUsagePerMwh: 2.5, // m³ per MWh
-    generatorCo2PerLiter: 2.68 // kg CO2 per liter of diesel
+    generatorCo2PerLiter: 2.68, // kg CO2 per liter of diesel
+    carbonIntensityGrid: 0.4,
+    carbonIntensityDiesel: 2.68,
+    waterRecoveryRate: 0.5,
+    wasteHeatRecoveryRate: 0.7,
+    renewableEnergyFraction: 0.2
   }
 };
 

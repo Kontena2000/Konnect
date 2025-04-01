@@ -39,7 +39,7 @@ export async function bootstrapMatrixCalculator(): Promise<boolean> {
       }
     } catch (error) {
       console.error('[Matrix Calculator] Error creating pricing matrix:', error);
-      calculatorDebug.error('Error creating pricing matrix', error);
+      calculatorDebug.error('Error creating pricing matrix', error instanceof Error ? error : new Error(String(error)));
       // Continue with bootstrap process even if this fails
     }
     
