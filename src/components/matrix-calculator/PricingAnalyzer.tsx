@@ -41,27 +41,31 @@ export function PricingAnalyzer() {
         
         // Check for missing top-level categories
         Object.keys(DEFAULT_PRICING).forEach(category => {
-          if (!data[category as keyof PricingMatrix]) {
+          const categoryKey = category as keyof PricingMatrix;
+          if (!data[categoryKey]) {
             missing.push(category);
           } else {
             // Check for differences in values
-            const defaultCategory = DEFAULT_PRICING[category as keyof PricingMatrix];
-            const dataCategory = data[category as keyof PricingMatrix];
+            const defaultCategory = DEFAULT_PRICING[categoryKey];
+            const dataCategory = data[categoryKey];
             
             if (defaultCategory && dataCategory) {
-              Object.keys(defaultCategory).forEach(key => {
-                const typedKey = key as keyof typeof defaultCategory;
-                if (dataCategory[typedKey] !== defaultCategory[typedKey]) {
+              // Use type assertion to handle string indexing
+              const defaultCategoryObj = defaultCategory as Record<string, number>;
+              const dataCategoryObj = dataCategory as Record<string, number>;
+              
+              Object.keys(defaultCategoryObj).forEach(key => {
+                if (dataCategoryObj[key] !== defaultCategoryObj[key]) {
                   diffs.push({
                     category,
                     key,
-                    defaultValue: defaultCategory[typedKey],
-                    actualValue: dataCategory[typedKey]
+                    defaultValue: defaultCategoryObj[key],
+                    actualValue: dataCategoryObj[key]
                   });
                 }
                 
                 // Check for missing keys
-                if (dataCategory[typedKey] === undefined) {
+                if (dataCategoryObj[key] === undefined) {
                   missing.push(`${category}.${key}`);
                 }
               });
