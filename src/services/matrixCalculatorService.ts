@@ -167,8 +167,8 @@ export interface CalculationOptions {
 // Replace the calculateUPSRequirements function with this safer version
 function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params: CalculationParams) {
   // Safety check for inputs
-  kwPerRack = typeof kwPerRack === 'number' ? kwPerRack : 0;
-  totalRacks = typeof totalRacks === 'number' ? totalRacks : 0;
+  kwPerRack = typeof kwPerRack === 'number' && !isNaN(kwPerRack) ? kwPerRack : 10;
+  totalRacks = typeof totalRacks === 'number' && !isNaN(totalRacks) ? totalRacks : 28;
   
   const totalITLoad = kwPerRack * totalRacks;
   
@@ -184,98 +184,127 @@ function calculateUPSRequirements(kwPerRack: number, totalRacks: number, params:
   const maxModulesPerFrame = params?.power?.upsFrameMaxModules || 6;
   
   // Calculate number of modules needed (with safety checks)
-  const totalModulesNeeded = Math.ceil(requiredCapacity / moduleSize) || 1;
-  const framesNeeded = Math.ceil(totalModulesNeeded / maxModulesPerFrame) || 1;
+  const totalModulesNeeded = Math.max(Math.ceil(requiredCapacity / moduleSize) || 1, 1);
+  const framesNeeded = Math.max(Math.ceil(totalModulesNeeded / maxModulesPerFrame) || 1, 1);
   
   // Determine frame size based on modules per frame
   const frameSize = totalModulesNeeded <= 2 ? 'frame2Module' :
                    totalModulesNeeded <= 4 ? 'frame4Module' : 'frame6Module';
   
-  return {
-    totalITLoad: totalITLoad || 0,
-    redundancyFactor: redundancyFactor || 1,
-    requiredCapacity: requiredCapacity || 0, // Ensure this is never undefined
-    moduleSize: moduleSize || 250,
-    totalModulesNeeded: totalModulesNeeded || 1,
-    redundantModules: totalModulesNeeded || 1,
-    framesNeeded: framesNeeded || 1,
-    frameSize: frameSize || 'frame2Module'
-  };
-}
-
-// Calculate battery requirements
-function calculateBatteryRequirements(totalITLoad: number, params: CalculationParams) {
-  const runtime = params.power.batteryRuntime || 10; // minutes
-  const batteryEfficiency = params.power.batteryEfficiency || 0.95;
-  
-  // Calculate energy needed in kWh
-  const energyNeeded = (totalITLoad * runtime) / (60 * batteryEfficiency);
-  
-  // Assume each cabinet provides 40 kWh of energy
-  const cabinetsNeeded = Math.ceil(energyNeeded / 40);
+  console.log('UPS Requirements calculated:', {
+    kwPerRack,
+    totalRacks,
+    totalITLoad,
+    redundancyMode,
+    redundancyFactor,
+    requiredCapacity,
+    moduleSize,
+    totalModulesNeeded,
+    framesNeeded,
+    frameSize
+  });
   
   return {
-    runtime,
-    energyNeeded: Math.round(energyNeeded),
-    cabinetsNeeded,
-    totalWeight: cabinetsNeeded * 1200 // kg, assuming 1200kg per cabinet
+    totalITLoad: Math.max(totalITLoad, 1),
+    redundancyFactor: redundancyFactor,
+    requiredCapacity: Math.max(requiredCapacity, 1),
+    moduleSize: moduleSize,
+    totalModulesNeeded: totalModulesNeeded,
+    redundantModules: totalModulesNeeded,
+    framesNeeded: framesNeeded,
+    frameSize: frameSize
   };
 }
 
 // Calculate cooling requirements
 function calculateCoolingRequirements(kwPerRack: number, coolingType: string, totalRacks: number, params: CalculationParams) {
+  // Safety check for inputs
+  kwPerRack = typeof kwPerRack === 'number' && !isNaN(kwPerRack) ? kwPerRack : 10;
+  totalRacks = typeof totalRacks === 'number' && !isNaN(totalRacks) ? totalRacks : 28;
+  coolingType = typeof coolingType === 'string' ? coolingType.toLowerCase() : 'air';
+  
   const totalITLoad = kwPerRack * totalRacks;
   
   // Get cooling capacity based on type
   const cooling = calculateCoolingCapacity(totalITLoad, coolingType, params);
   
+  // Ensure cooling has a valid totalCapacity
+  const totalCapacity = typeof cooling.totalCapacity === 'number' && !isNaN(cooling.totalCapacity) ? 
+    cooling.totalCapacity : totalITLoad * 1.1;
+  
+  console.log('Cooling Requirements calculated:', {
+    kwPerRack,
+    totalRacks,
+    totalITLoad,
+    coolingType,
+    totalCapacity
+  });
+  
   // Add additional details based on cooling type
-  switch (coolingType.toLowerCase()) {
+  switch (coolingType) {
     case 'dlc':
+      const dlcCoolingCapacity = typeof cooling.dlcCoolingCapacity === 'number' ? 
+        cooling.dlcCoolingCapacity : totalITLoad * 0.75;
+      
+      const residualCoolingCapacity = typeof cooling.residualCoolingCapacity === 'number' ? 
+        cooling.residualCoolingCapacity : totalITLoad * 0.25;
+      
+      const dlcFlowRate = dlcCoolingCapacity * (params.cooling?.flowRateFactor || 0.25);
+      
       return {
         type: 'dlc',
-        totalCapacity: cooling.totalCapacity,
-        dlcCoolingCapacity: cooling.dlcCoolingCapacity || 0,
-        residualCoolingCapacity: cooling.residualCoolingCapacity || 0,
-        dlcFlowRate: (cooling.dlcCoolingCapacity || 0) * params.cooling.flowRateFactor,
-        pipingSize: (cooling.dlcCoolingCapacity || 0) > 1000 ? 'dn160' : 'dn110',
-        pue: cooling.pueImpact
+        totalCapacity: totalCapacity,
+        dlcCoolingCapacity: dlcCoolingCapacity,
+        residualCoolingCapacity: residualCoolingCapacity,
+        dlcFlowRate: dlcFlowRate,
+        pipingSize: dlcCoolingCapacity > 1000 ? 'dn160' : 'dn110',
+        pue: cooling.pueImpact || 1.2
       };
       
     case 'hybrid':
+      const dlcPortion = typeof cooling.dlcPortion === 'number' ? 
+        cooling.dlcPortion : totalITLoad * 0.6;
+      
+      const airPortion = typeof cooling.airPortion === 'number' ? 
+        cooling.airPortion : totalITLoad * 0.4;
+      
+      const hybridFlowRate = dlcPortion * (params.cooling?.flowRateFactor || 0.25);
+      
       return {
         type: 'hybrid',
-        totalCapacity: cooling.totalCapacity,
-        dlcPortion: cooling.dlcPortion || 0,
-        airPortion: cooling.airPortion || 0,
-        dlcFlowRate: (cooling.dlcPortion || 0) * params.cooling.flowRateFactor,
-        rdhxUnits: Math.ceil((cooling.airPortion || 0) / 150),
+        totalCapacity: totalCapacity,
+        dlcPortion: dlcPortion,
+        airPortion: airPortion,
+        dlcFlowRate: hybridFlowRate,
+        rdhxUnits: Math.ceil(airPortion / 150),
         rdhxModel: 'average',
         pipingSize: 'dn110',
-        pue: cooling.pueImpact
+        pue: cooling.pueImpact || 1.3
       };
       
     case 'immersion':
+      const flowRate = totalCapacity * (params.cooling?.flowRateFactor || 0.25) * 0.8;
+      
       return {
         type: 'immersion',
-        totalCapacity: cooling.totalCapacity,
+        totalCapacity: totalCapacity,
         tanksNeeded: Math.ceil(totalRacks / 4),
-        flowRate: cooling.totalCapacity * params.cooling.flowRateFactor * 0.8, // 80% of heat removed by fluid
-        pipingSize: 'dn110', // Add pipingSize for immersion cooling
-        pue: cooling.pueImpact
+        flowRate: flowRate,
+        pipingSize: 'dn110',
+        pue: cooling.pueImpact || 1.1
       };
       
     default: // air cooling
       const rdhxCapacity = 150; // kW per unit
-      const rdhxUnits = Math.ceil(cooling.totalCapacity / rdhxCapacity);
+      const rdhxUnits = Math.ceil(totalCapacity / rdhxCapacity);
       
       return {
         type: 'air',
-        totalCapacity: cooling.totalCapacity,
-        rdhxUnits,
+        totalCapacity: totalCapacity,
+        rdhxUnits: rdhxUnits,
         rdhxModel: kwPerRack <= 15 ? 'basic' : kwPerRack <= 30 ? 'standard' : 'highDensity',
-        pipingSize: 'none', // Add default pipingSize for air cooling
-        pue: cooling.pueImpact
+        pipingSize: 'none',
+        pue: cooling.pueImpact || 1.6
       };
   }
 }
@@ -643,24 +672,42 @@ function safelyAccessCalculationResults(results: any) {
   // Provide a helper function to safely access nested properties
   if (!results) return {};
   
+  // Ensure rack object exists with valid values
+  if (!results.rack || typeof results.rack !== 'object') {
+    results.rack = {
+      powerDensity: 10,
+      coolingType: 'air',
+      totalRacks: 28,
+      totalITLoad: 280
+    };
+  } else {
+    // Ensure rack properties have valid values
+    results.rack.powerDensity = typeof results.rack.powerDensity === 'number' ? results.rack.powerDensity : 10;
+    results.rack.totalRacks = typeof results.rack.totalRacks === 'number' ? results.rack.totalRacks : 28;
+    results.rack.totalITLoad = results.rack.powerDensity * results.rack.totalRacks;
+  }
+  
+  // Calculate total IT load for use in other calculations
+  const totalITLoad = results.rack.totalITLoad;
+  
   // Ensure power object exists
   if (!results.power) {
     results.power = {
       ups: {
-        requiredCapacity: 0,
-        totalITLoad: 0,
+        totalITLoad: totalITLoad,
         redundancyFactor: 1.2,
+        requiredCapacity: totalITLoad * 1.2,
         moduleSize: 250,
-        totalModulesNeeded: 1,
-        redundantModules: 1,
-        framesNeeded: 1,
+        totalModulesNeeded: Math.max(Math.ceil(totalITLoad * 1.2 / 250), 1),
+        redundantModules: Math.max(Math.ceil(totalITLoad * 1.2 / 250), 1),
+        framesNeeded: Math.max(Math.ceil(Math.ceil(totalITLoad * 1.2 / 250) / 6), 1),
         frameSize: 'frame2Module'
       },
       battery: {
         runtime: 10,
-        energyNeeded: 0,
-        cabinetsNeeded: 1,
-        totalWeight: 1200
+        energyNeeded: Math.round(totalITLoad * 10 / 60),
+        cabinetsNeeded: Math.max(Math.ceil(Math.round(totalITLoad * 10 / 60) / 40), 1),
+        totalWeight: Math.max(Math.ceil(Math.round(totalITLoad * 10 / 60) / 40), 1) * 1200
       },
       generator: {
         included: false,
@@ -675,38 +722,113 @@ function safelyAccessCalculationResults(results: any) {
     };
   }
   
-  // Ensure ups object exists
+  // Ensure ups object exists with valid values
   if (!results.power.ups) {
     results.power.ups = {
-      requiredCapacity: 0,
-      totalITLoad: 0,
+      totalITLoad: totalITLoad,
       redundancyFactor: 1.2,
+      requiredCapacity: totalITLoad * 1.2,
       moduleSize: 250,
-      totalModulesNeeded: 1,
-      redundantModules: 1,
-      framesNeeded: 1,
+      totalModulesNeeded: Math.max(Math.ceil(totalITLoad * 1.2 / 250), 1),
+      redundantModules: Math.max(Math.ceil(totalITLoad * 1.2 / 250), 1),
+      framesNeeded: Math.max(Math.ceil(Math.ceil(totalITLoad * 1.2 / 250) / 6), 1),
       frameSize: 'frame2Module'
     };
+  } else {
+    // Ensure ups properties have valid values
+    results.power.ups.totalITLoad = typeof results.power.ups.totalITLoad === 'number' ? 
+      results.power.ups.totalITLoad : totalITLoad;
+    
+    results.power.ups.redundancyFactor = typeof results.power.ups.redundancyFactor === 'number' ? 
+      results.power.ups.redundancyFactor : 1.2;
+    
+    results.power.ups.requiredCapacity = typeof results.power.ups.requiredCapacity === 'number' ? 
+      results.power.ups.requiredCapacity : totalITLoad * results.power.ups.redundancyFactor;
+    
+    results.power.ups.moduleSize = typeof results.power.ups.moduleSize === 'number' ? 
+      results.power.ups.moduleSize : 250;
+    
+    results.power.ups.totalModulesNeeded = typeof results.power.ups.totalModulesNeeded === 'number' ? 
+      results.power.ups.totalModulesNeeded : Math.max(Math.ceil(results.power.ups.requiredCapacity / results.power.ups.moduleSize), 1);
+    
+    results.power.ups.redundantModules = typeof results.power.ups.redundantModules === 'number' ? 
+      results.power.ups.redundantModules : results.power.ups.totalModulesNeeded;
+    
+    results.power.ups.framesNeeded = typeof results.power.ups.framesNeeded === 'number' ? 
+      results.power.ups.framesNeeded : Math.max(Math.ceil(results.power.ups.totalModulesNeeded / 6), 1);
   }
   
-  // Ensure requiredCapacity property exists
-  if (typeof results.power.ups.requiredCapacity !== 'number') {
-    // If rack properties exist, calculate a fallback value
-    if (results.rack && typeof results.rack.powerDensity === 'number' && typeof results.rack.totalRacks === 'number') {
-      results.power.ups.requiredCapacity = results.rack.powerDensity * results.rack.totalRacks * 1.2;
-    } else {
-      results.power.ups.requiredCapacity = 0;
-    }
-  }
-  
-  // Ensure cooling object exists
-  if (!results.cooling) {
-    results.cooling = {
-      type: 'air',
-      totalCapacity: 0,
-      pipingSize: 'none',
-      pue: 1.4
+  // Ensure battery object exists with valid values
+  if (!results.power.battery) {
+    results.power.battery = {
+      runtime: 10,
+      energyNeeded: Math.round(totalITLoad * 10 / 60),
+      cabinetsNeeded: Math.max(Math.ceil(Math.round(totalITLoad * 10 / 60) / 40), 1),
+      totalWeight: Math.max(Math.ceil(Math.round(totalITLoad * 10 / 60) / 40), 1) * 1200
     };
+  }
+  
+  // Ensure cooling object exists with valid values
+  if (!results.cooling) {
+    const coolingType = results.rack.coolingType || 'air';
+    results.cooling = {
+      type: coolingType,
+      totalCapacity: totalITLoad * 1.1,
+      pipingSize: coolingType === 'air' ? 'none' : 'dn110',
+      pue: coolingType === 'air' ? 1.6 : 
+           coolingType === 'dlc' ? 1.2 : 
+           coolingType === 'hybrid' ? 1.3 : 1.1
+    };
+    
+    // Add cooling type specific properties
+    if (coolingType === 'dlc') {
+      results.cooling.dlcCoolingCapacity = totalITLoad * 0.75;
+      results.cooling.residualCoolingCapacity = totalITLoad * 0.25;
+      results.cooling.dlcFlowRate = totalITLoad * 0.75 * 0.25;
+    } else if (coolingType === 'hybrid') {
+      results.cooling.dlcPortion = totalITLoad * 0.6;
+      results.cooling.airPortion = totalITLoad * 0.4;
+      results.cooling.dlcFlowRate = totalITLoad * 0.6 * 0.25;
+    } else if (coolingType === 'immersion') {
+      results.cooling.tanksNeeded = Math.ceil(results.rack.totalRacks / 4);
+      results.cooling.flowRate = totalITLoad * 1.1 * 0.25 * 0.8;
+    } else {
+      // Air cooling
+      results.cooling.rdhxUnits = Math.ceil(totalITLoad * 1.1 / 150);
+      results.cooling.rdhxModel = results.rack.powerDensity <= 15 ? 'basic' : 
+                                 results.rack.powerDensity <= 30 ? 'standard' : 'highDensity';
+    }
+  } else {
+    // Ensure cooling properties have valid values
+    results.cooling.totalCapacity = typeof results.cooling.totalCapacity === 'number' ? 
+      results.cooling.totalCapacity : totalITLoad * 1.1;
+    
+    // Set cooling type specific properties if missing
+    const coolingType = results.cooling.type || results.rack.coolingType || 'air';
+    
+    if (coolingType === 'dlc' && !results.cooling.dlcFlowRate) {
+      results.cooling.dlcCoolingCapacity = typeof results.cooling.dlcCoolingCapacity === 'number' ? 
+        results.cooling.dlcCoolingCapacity : totalITLoad * 0.75;
+      
+      results.cooling.residualCoolingCapacity = typeof results.cooling.residualCoolingCapacity === 'number' ? 
+        results.cooling.residualCoolingCapacity : totalITLoad * 0.25;
+      
+      results.cooling.dlcFlowRate = results.cooling.dlcCoolingCapacity * 0.25;
+    } else if (coolingType === 'hybrid' && !results.cooling.dlcFlowRate) {
+      results.cooling.dlcPortion = typeof results.cooling.dlcPortion === 'number' ? 
+        results.cooling.dlcPortion : totalITLoad * 0.6;
+      
+      results.cooling.airPortion = typeof results.cooling.airPortion === 'number' ? 
+        results.cooling.airPortion : totalITLoad * 0.4;
+      
+      results.cooling.dlcFlowRate = results.cooling.dlcPortion * 0.25;
+      results.cooling.rdhxUnits = Math.ceil(results.cooling.airPortion / 150);
+    } else if (coolingType === 'immersion' && !results.cooling.flowRate) {
+      results.cooling.tanksNeeded = typeof results.cooling.tanksNeeded === 'number' ? 
+        results.cooling.tanksNeeded : Math.ceil(results.rack.totalRacks / 4);
+      
+      results.cooling.flowRate = results.cooling.totalCapacity * 0.25 * 0.8;
+    }
   }
   
   // Ensure cooling.pipingSize exists
