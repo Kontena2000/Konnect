@@ -32,7 +32,7 @@ export function PricingAnalyzer() {
       const pricingDoc = await getDoc(pricingDocRef);
 
       if (pricingDoc.exists()) {
-        const data = pricingDoc.data() as PricingMatrix;
+        const data = pricingDoc.data() as unknown as PricingMatrix;
         setPricingData(data);
         
         // Compare with default pricing
