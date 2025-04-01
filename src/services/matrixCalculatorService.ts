@@ -148,11 +148,11 @@ async function calculateConfigurationImpl(
     const { pricing, params } = await getMemoizedPricingAndParams();
     
     // Calculate electrical requirements
-    const currentPerRow = calculateCurrentPerRow(kwPerRack, totalRacks, params);
-    const currentPerRack = calculateCurrentPerRack(kwPerRack, params);
-    const busbarSize = selectBusbarSize(currentPerRow, params);
-    const tapOffBox = selectTapOffBoxSize(currentPerRack, coolingType, params);
-    const rpdu = selectRPDUSize(currentPerRack, params);
+    const currentPerRow = calculateCurrentPerRow(kwPerRack, totalRacks);
+    const currentPerRack = calculateCurrentPerRack(kwPerRack);
+    const busbarSize = selectBusbarSize(currentPerRow);
+    const tapOffBox = selectTapOffBoxSize(currentPerRack, coolingType);
+    const rpdu = selectRPDUSize(currentPerRack);
     
     // Calculate UPS requirements
     const upsRequirements = calculateUPSRequirements(kwPerRack, totalRacks, params);
@@ -162,7 +162,7 @@ async function calculateConfigurationImpl(
     
     // Calculate generator requirements if needed
     const generatorRequirements = options.includeGenerator ? 
-      calculateGeneratorRequirements(upsRequirements.requiredCapacity, params) : 
+      calculateGeneratorRequirements(upsRequirements.requiredCapacity) : 
       {
         included: false,
         capacity: 0,
@@ -212,12 +212,11 @@ async function calculateConfigurationImpl(
     const carbonFootprint = calculateCarbonFootprint(
       kwPerRack * totalRacks,
       sustainabilityMetrics.pue,
-      options.sustainabilityOptions?.renewableEnergyPercentage || 20,
-      options.includeGenerator || false
+      options.sustainabilityOptions?.renewableEnergyPercentage || 20
     );
     
     // Calculate TCO
-    const tco = calculateTCO(costBreakdown, kwPerRack * totalRacks, sustainabilityMetrics.pue);
+    const tco = calculateTCO(costBreakdown, kwPerRack * totalRacks);
     
     // Compile final results
     const results = {
@@ -587,16 +586,13 @@ function safelyAccessCalculationResults(results: any) {
       results.cooling.dlcPortion = totalITLoad * 0.6;
       results.cooling.airPortion = totalITLoad * 0.4;
       results.cooling.dlcFlowRate = results.cooling.dlcPortion * 0.25;
-      results.cooling.rdhxUnits = Math.ceil(totalITLoad * 0.4 / 150);
-      results.cooling.rdhxModel = 'average';
     } else if (coolingType === 'immersion') {
       results.cooling.tanksNeeded = Math.ceil(results.rack.totalRacks / 4);
       results.cooling.flowRate = totalITLoad * 1.1 * 0.25 * 0.8;
     } else {
       // Air cooling
       results.cooling.rdhxUnits = Math.ceil(totalITLoad * 1.1 / 150);
-      results.cooling.rdhxModel = results.rack.powerDensity <= 15 ? 'basic' : 
-                                 results.rack.powerDensity <= 30 ? 'standard' : 'highDensity';
+      results.cooling.rdhxModel = 'average';
     }
   } else {
     // Ensure cooling properties have valid values
@@ -632,9 +628,7 @@ function safelyAccessCalculationResults(results: any) {
       results.cooling.rdhxUnits = typeof results.cooling.rdhxUnits === 'number' && results.cooling.rdhxUnits > 0 ?
         results.cooling.rdhxUnits : Math.ceil(totalITLoad * 1.1 / 150);
       
-      results.cooling.rdhxModel = results.cooling.rdhxModel || 
-        (results.rack.powerDensity <= 15 ? 'basic' : 
-         results.rack.powerDensity <= 30 ? 'standard' : 'highDensity');
+      results.cooling.rdhxModel = results.cooling.rdhxModel || 'average';
     }
   }
   
