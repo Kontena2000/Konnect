@@ -5,13 +5,17 @@ export interface ElectricalParams {
   powerFactor: number;
   busbarsPerRow: number;
   redundancyMode: "N" | "N+1" | "2N";
+  volts: number; // Added missing property
+  phases: number; // Added missing property
 }
 
 export interface CoolingParams {
   deltaT: number;
   flowRateFactor: number;
-  dlcResidualHeatFraction: number;
-  chillerEfficiencyFactor: number;
+  airCoolingEfficiency: number; // Added missing property
+  dlcEfficiency: number; // Added missing property
+  hybridEfficiency: number; // Added missing property
+  immersionEfficiency: number; // Added missing property
 }
 
 export interface PowerParams {
@@ -30,8 +34,9 @@ export interface CostFactorParams {
 }
 
 export interface CoolingThresholds {
-  airCooledMax: number;
-  recommendedDlcMin: number;
+  lowDensity: number; // Added missing property
+  mediumDensity: number; // Added missing property
+  highDensity: number; // Added missing property
 }
 
 export interface CalculationParams {
@@ -40,6 +45,7 @@ export interface CalculationParams {
   power: PowerParams;
   costFactors: CostFactorParams;
   coolingThresholds: CoolingThresholds; // Added missing property
+  [key: string]: any; // Added index signature
 }
 
 // Helper function to validate calculation parameters
@@ -67,6 +73,12 @@ export function validateCalculationParams(params: any): { isValid: boolean; erro
     if (!["N", "N+1", "2N"].includes(params.electrical.redundancyMode)) {
       errors.push("Invalid redundancy mode");
     }
+    if (typeof params.electrical.volts !== "number" || params.electrical.volts <= 0) { // Added validation
+      errors.push("Invalid volts value");
+    }
+    if (typeof params.electrical.phases !== "number" || params.electrical.phases <= 0) { // Added validation
+      errors.push("Invalid phases value");
+    }
   }
 
   // Check cooling parameters
@@ -78,6 +90,18 @@ export function validateCalculationParams(params: any): { isValid: boolean; erro
     }
     if (typeof params.cooling.flowRateFactor !== "number" || params.cooling.flowRateFactor <= 0) {
       errors.push("Invalid flow rate factor");
+    }
+    if (typeof params.cooling.airCoolingEfficiency !== "number" || params.cooling.airCoolingEfficiency <= 0) { // Added validation
+      errors.push("Invalid air cooling efficiency");
+    }
+    if (typeof params.cooling.dlcEfficiency !== "number" || params.cooling.dlcEfficiency <= 0) { // Added validation
+      errors.push("Invalid DLC efficiency");
+    }
+    if (typeof params.cooling.hybridEfficiency !== "number" || params.cooling.hybridEfficiency <= 0) { // Added validation
+      errors.push("Invalid hybrid efficiency");
+    }
+    if (typeof params.cooling.immersionEfficiency !== "number" || params.cooling.immersionEfficiency <= 0) { // Added validation
+      errors.push("Invalid immersion efficiency");
     }
     if (typeof params.cooling.dlcResidualHeatFraction !== "number" || 
         params.cooling.dlcResidualHeatFraction <= 0 || 
@@ -146,12 +170,16 @@ export function ensureParamsStructure(params: any): CalculationParams {
       powerFactor: params.electrical?.powerFactor ?? DEFAULT_CALCULATION_PARAMS.electrical.powerFactor,
       busbarsPerRow: params.electrical?.busbarsPerRow ?? DEFAULT_CALCULATION_PARAMS.electrical.busbarsPerRow,
       redundancyMode: params.electrical?.redundancyMode ?? DEFAULT_CALCULATION_PARAMS.electrical.redundancyMode,
+      volts: params.electrical?.volts ?? DEFAULT_CALCULATION_PARAMS.electrical.volts, // Added default value
+      phases: params.electrical?.phases ?? DEFAULT_CALCULATION_PARAMS.electrical.phases, // Added default value
     },
     cooling: {
       deltaT: params.cooling?.deltaT ?? DEFAULT_CALCULATION_PARAMS.cooling.deltaT,
       flowRateFactor: params.cooling?.flowRateFactor ?? DEFAULT_CALCULATION_PARAMS.cooling.flowRateFactor,
-      dlcResidualHeatFraction: params.cooling?.dlcResidualHeatFraction ?? DEFAULT_CALCULATION_PARAMS.cooling.dlcResidualHeatFraction,
-      chillerEfficiencyFactor: params.cooling?.chillerEfficiencyFactor ?? DEFAULT_CALCULATION_PARAMS.cooling.chillerEfficiencyFactor,
+      airCoolingEfficiency: params.cooling?.airCoolingEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.airCoolingEfficiency, // Added default value
+      dlcEfficiency: params.cooling?.dlcEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.dlcEfficiency, // Added default value
+      hybridEfficiency: params.cooling?.hybridEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.hybridEfficiency, // Added default value
+      immersionEfficiency: params.cooling?.immersionEfficiency ?? DEFAULT_CALCULATION_PARAMS.cooling.immersionEfficiency, // Added default value
     },
     power: {
       upsModuleSize: params.power?.upsModuleSize ?? DEFAULT_CALCULATION_PARAMS.power.upsModuleSize,
@@ -167,8 +195,9 @@ export function ensureParamsStructure(params: any): CalculationParams {
       contingencyPercentage: params.costFactors?.contingencyPercentage ?? DEFAULT_CALCULATION_PARAMS.costFactors.contingencyPercentage,
     },
     coolingThresholds: {
-      airCooledMax: params.coolingThresholds?.airCooledMax ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.airCooledMax,
-      recommendedDlcMin: params.coolingThresholds?.recommendedDlcMin ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.recommendedDlcMin,
+      lowDensity: params.coolingThresholds?.lowDensity ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.lowDensity, // Added default value
+      mediumDensity: params.coolingThresholds?.mediumDensity ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.mediumDensity, // Added default value
+      highDensity: params.coolingThresholds?.highDensity ?? DEFAULT_CALCULATION_PARAMS.coolingThresholds.highDensity, // Added default value
     }
   };
 }
