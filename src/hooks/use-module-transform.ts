@@ -94,23 +94,23 @@ export function useModuleTransform({
       }
     });
     
-    if (maxCollisionHeight > minHeight) {
-      gsap.to(meshRef.current.position, {
-        y: maxCollisionHeight,
-        duration: 0.15,
-        ease: 'power2.out',
-        onUpdate: updateShadowTransform
-      });
-      adjustedPosition.y = maxCollisionHeight;
-    } else {
-      gsap.to(meshRef.current.position, {
-        y: minHeight,
-        duration: 0.15,
-        ease: 'power2.out',
-        onUpdate: updateShadowTransform
-      });
-      adjustedPosition.y = minHeight;
-    }
+    // if (maxCollisionHeight > minHeight) {
+    //   gsap.to(meshRef.current.position, {
+    //     y: maxCollisionHeight,
+    //     duration: 0.15,
+    //     ease: 'power2.out',
+    //     onUpdate: updateShadowTransform
+    //   });
+    //   adjustedPosition.y = maxCollisionHeight;
+    // } else {
+    //   gsap.to(meshRef.current.position, {
+    //     y: minHeight,
+    //     duration: 0.15,
+    //     ease: 'power2.out',
+    //     onUpdate: updateShadowTransform
+    //   });
+    //   adjustedPosition.y = minHeight;
+    // }
     
     onUpdate?.({
       position: [adjustedPosition.x, adjustedPosition.y, adjustedPosition.z],

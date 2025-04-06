@@ -99,7 +99,7 @@ export function SceneContainer({
   terrain,
   onEnvironmentalElementSelect,
   cameraZoom = 1,
-  gridSnap = true,
+  gridSnap = false,
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
