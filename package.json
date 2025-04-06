@@ -83,6 +83,7 @@
     "tailwindcss-animate": "^1.0.7",
     "three": "^0.174.0",
     "ts-node": "^10.9.2",
+    "uuid": "^11.1.0",
     "vaul": "^1.1.2",
     "vercel": "^39.3.0",
     "zod": "^3.24.1"
