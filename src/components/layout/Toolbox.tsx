@@ -59,6 +59,7 @@ export function Toolbox({
   };
 
   const handle2DView = () => {
+    console.log('2D View button clicked', controlsRef?.current);
     if (controlsRef?.current) {
       // Call the reset method which sets the camera to 2D top-down view
       controlsRef.current.reset();
@@ -67,22 +68,43 @@ export function Toolbox({
         description: 'Switched to 2D top-down view',
         duration: 1500
       });
+    } else {
+      console.error('Controls reference is not available');
+      toast({
+        title: 'Error',
+        description: 'Could not switch to 2D view',
+        variant: 'destructive',
+        duration: 1500
+      });
     }
   };
 
   const handle3DView = () => {
+    console.log('3D View button clicked', controlsRef?.current);
     if (controlsRef?.current) {
-      // Use the new set3DView method for isometric view
-      if (controlsRef.current.set3DView) {
+      // Use the set3DView method for isometric view
+      if (typeof controlsRef.current.set3DView === 'function') {
         controlsRef.current.set3DView();
+        toast({
+          title: '3D View',
+          description: 'Switched to 3D isometric view',
+          duration: 1500
+        });
       } else {
-        // Fallback to the old approach if set3DView doesn't exist
-        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
-        controlsRef.current.setPolarAngle(Math.PI / 4);
+        console.error('set3DView method is not available');
+        toast({
+          title: 'Error',
+          description: 'Could not switch to 3D view',
+          variant: 'destructive',
+          duration: 1500
+        });
       }
+    } else {
+      console.error('Controls reference is not available');
       toast({
-        title: '3D View',
-        description: 'Switched to 3D isometric view',
+        title: 'Error',
+        description: 'Could not switch to 3D view',
+        variant: 'destructive',
         duration: 1500
       });
     }

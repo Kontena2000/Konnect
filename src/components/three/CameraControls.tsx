@@ -46,36 +46,15 @@ export function CameraControls({
 
     // Add methods for camera position control
     controls.reset = () => {
+      console.log('Setting 2D view');
       // Set camera to top-down 2D view
-      camera.position.set(0, 20, 0);
+      camera.position.set(0, 20, 0.001); // Small z offset to prevent issues
       camera.lookAt(0, 0, 0);
       controls.update();
     };
 
-    controls.setAzimuthalAngle = (angle: number) => {
-      // This method exists on OrbitControls but needs to be called properly
-      if (controls.setAzimuthalAngle) {
-        controls.setAzimuthalAngle(angle);
-      } else {
-        // Fallback if the method doesn't exist
-        controls.azimuthAngle = angle;
-      }
-      controls.update();
-    };
-
-    controls.setPolarAngle = (angle: number) => {
-      // This method exists on OrbitControls but needs to be called properly
-      if (controls.setPolarAngle) {
-        controls.setPolarAngle(angle);
-      } else {
-        // Fallback if the method doesn't exist
-        controls.polarAngle = angle;
-      }
-      controls.update();
-    };
-
-    // Add a method to set 3D isometric view
     controls.set3DView = () => {
+      console.log('Setting 3D view');
       // Set camera to isometric view position
       camera.position.set(15, 15, 15);
       camera.lookAt(0, 0, 0);
