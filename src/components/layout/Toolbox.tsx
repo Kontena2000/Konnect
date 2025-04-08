@@ -178,7 +178,7 @@ export function Toolbox({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    variant='secondary' 
+                    variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
                     onClick={onUndo}
                     className='w-full'
@@ -195,7 +195,7 @@ export function Toolbox({
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    variant='secondary' 
+                    variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
                     onClick={onRedo}
                     className='w-full'

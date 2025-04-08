@@ -42,10 +42,32 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
-
+  const [history, setHistory] = useState<Array<{ modules: Module[], connections: Connection[] }>>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   // Memoize heavy computations
   const memoizedModules = useMemo(() => modules, [modules]);
   const memoizedConnections = useMemo(() => connections, [connections]);
+
+  useEffect(() => {
+    if (modules.length > 0 || connections.length > 0) {
+      // Don't save if we're in the middle of an undo/redo operation
+      if (historyIndex >= 0 && 
+          history.length > 0 &&
+          JSON.stringify(history[historyIndex].modules) === JSON.stringify(modules) &&
+          JSON.stringify(history[historyIndex].connections) === JSON.stringify(connections)) {
+        return;
+      }
+      
+      // If we're not at the end of the history, truncate it
+      const newHistory = historyIndex < history.length - 1 
+        ? history.slice(0, historyIndex + 1) 
+        : [...history];
+      
+      newHistory.push({ modules: [...modules], connections: [...connections] });
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [modules, connections, history, historyIndex]);
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
@@ -296,9 +318,17 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout fullWidth noPadding>
+      <Toolbox 
+          onModuleDragStart={handleModuleDragStart}
+          onSave={handleSave}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          controlsRef={controlsRef}
+        />
+        
       <div className='h-screen w-screen overflow-hidden'>
         <ErrorBoundary>
-          <div className='absolute inset-0'>
+          <div className='inset-0'>
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}

@@ -52,7 +52,7 @@ export function ProjectSelector({
         const userProjectsQuery = query(
           collection(safeDb, "projects"),
           where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
+          // orderBy("createdAt", "desc")
         );
         
         const userProjectsSnapshot = await getDocs(userProjectsQuery);
@@ -63,7 +63,7 @@ export function ProjectSelector({
           const sharedProjectsQuery = query(
             collection(safeDb, "projects"),
             where("sharedWith", "array-contains", user.email),
-            orderBy("createdAt", "desc")
+            // orderBy("createdAt", "desc")
           );
           
           const sharedProjectsSnapshot = await getDocs(sharedProjectsQuery);

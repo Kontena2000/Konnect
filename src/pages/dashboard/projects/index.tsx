@@ -12,6 +12,8 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { useToastMessages } from "@/components/message/useToastMessages";
+import NewProjectModal from "./new";
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -20,6 +22,8 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const { toast } = useToast();
+  const { Success, Warn, Errors } = useToastMessages();
+  const [openModal, setOpenModal] = useState(false);
 
   const filteredAndSortedProjects = projects
     .filter(project => 
@@ -41,11 +45,7 @@ export default function ProjectsPage() {
 
   const handleDeleteProject = async (projectId: string) => {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to delete projects'
-      });
+      Errors('You must be logged in to delete projects'); 
       return;
     }
     
@@ -53,27 +53,16 @@ export default function ProjectsPage() {
       // Fix for issue 1: The deleteProject function only needs projectId and userId
       await projectService.deleteProject(projectId, user.uid);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      toast({
-        title: 'Success',
-        description: 'Project deleted successfully'
-      });
+      Success('Project deleted successfully'); 
     } catch (error) {
       console.error('Error deleting project:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof ProjectError ? error.message : 'Failed to delete project'
-      });
+      Errors(error instanceof ProjectError ? error.message : 'Failed to delete project') 
     }
   };
 
   const handleDuplicateProject = async (projectId: string) => {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to duplicate projects'
-      });
+      Errors('You must be logged in to duplicate projects') 
       return;
     }
     
@@ -83,18 +72,10 @@ export default function ProjectsPage() {
       // Refresh the projects list
       const userProjects = await projectService.getUserProjects(user.uid);
       setProjects(userProjects);
-      
-      toast({
-        title: 'Success',
-        description: 'Project duplicated successfully'
-      });
+      Success('Project duplicated successfully'); 
     } catch (error) {
       console.error('Error duplicating project:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof ProjectError ? error.message : 'Failed to duplicate project'
-      });
+      Errors(error instanceof ProjectError ? error.message : 'Failed to duplicate project') 
     }
   };
 
@@ -107,11 +88,7 @@ export default function ProjectsPage() {
         setProjects(userProjects);
       } catch (error) {
         console.error('Error loading projects:', error);
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Failed to load projects. Please try again.'
-        });
+        Errors('Failed to load projects. Please try again.'); 
       } finally {
         setLoading(false);
       }
@@ -141,16 +118,17 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='space-y-8'>
+      <div className='container space-y-8'>
         <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
           <h1 className='text-2xl md:text-3xl font-bold tracking-tight'>Projects</h1>
-          <Link href='/dashboard/projects/new'>
-            <Button className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors'>
+          <Button onClick={() => setOpenModal(true)} className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors'>
               <Plus className='h-4 w-4 mr-2' />
               New Project
-            </Button>
-          </Link>
+          </Button>
         </div>
+
+        {/* Modal Component */}
+      <NewProjectModal open={openModal} setOpen={setOpenModal} />
 
         <div className='flex flex-col sm:flex-row gap-4'>
           <div className='relative flex-1'>
@@ -193,7 +171,7 @@ export default function ProjectsPage() {
           <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
             {filteredAndSortedProjects.map((project) => (
               <Card key={project.id} className='flex flex-col h-full shadow-sm hover:shadow-md transition-shadow'>
-                <CardHeader className='pb-4'>
+                <CardHeader className='pb-1'>
                   <div className='flex justify-between items-start'>
                     <div className='space-y-2'>
                       <CardTitle className='text-xl'>{project.name}</CardTitle>
@@ -241,36 +219,28 @@ export default function ProjectsPage() {
                 </CardHeader>
                 <CardContent className='flex-1 space-y-6 p-6'>
                   <div className='space-y-4'>
-                    <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
+                    <p className='text-sm text-muted-foreground min-h-[1.5rem]'>
                       {project.description || 'No description'}
                     </p>
                     
                     {/* Client Details Section */}
                     <div className='space-y-2 border-t pt-4'>
-                      {project.clientInfo?.name && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Building2 className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.name}</span>
+                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.name ? 'text-muted-foreground' : ''}`}>{project.clientInfo.name || 'No Company'}</span>
                         </div>
-                      )}
-                      {project.clientInfo?.email && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Mail className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.email}</span>
+                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.email ? 'text-muted-foreground' : ''}`}>{project.clientInfo.email || 'No Email'}</span>
                         </div>
-                      )}
-                      {project.clientInfo?.phone && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Phone className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.phone}</span>
+                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.phone ? 'text-muted-foreground' : ''}`}>{project.clientInfo.phone || 'No Phone'}</span>
                         </div>
-                      )}
-                      {project.clientInfo?.address && (
-                        <div className='flex items-center gap-2 text-sm'>
+                        <div className='flex items-center gap-2 text-sm '>
                           <MapPin className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.address}</span>
+                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.address ? 'text-muted-foreground' : ''}`}>{project.clientInfo.address || 'No Address'}</span>
                         </div>
-                      )}
                     </div>
 
                     <div className='flex items-center gap-2 text-sm text-muted-foreground'>
