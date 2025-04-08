@@ -311,6 +311,15 @@ export default function LayoutEditorPage() {
               editorPreferences={editorPreferences}
             />
           </div>
+          
+          {/* Add Toolbox component */}
+          <Toolbox 
+            onModuleDragStart={handleModuleDragStart}
+            onSave={handleSave}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            controlsRef={controlsRef}
+          />
         </ErrorBoundary>
       </div>
     </AppLayout>
