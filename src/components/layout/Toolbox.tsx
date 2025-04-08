@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -57,6 +56,36 @@ export function Toolbox({
       description: 'Your layout changes have been saved successfully.',
       duration: 2000
     });
+  };
+
+  const handle2DView = () => {
+    if (controlsRef?.current) {
+      // Call the reset method which sets the camera to 2D top-down view
+      controlsRef.current.reset();
+      toast({
+        title: '2D View',
+        description: 'Switched to 2D top-down view',
+        duration: 1500
+      });
+    }
+  };
+
+  const handle3DView = () => {
+    if (controlsRef?.current) {
+      // Use the new set3DView method for isometric view
+      if (controlsRef.current.set3DView) {
+        controlsRef.current.set3DView();
+      } else {
+        // Fallback to the old approach if set3DView doesn't exist
+        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
+        controlsRef.current.setPolarAngle(Math.PI / 4);
+      }
+      toast({
+        title: '3D View',
+        description: 'Switched to 3D isometric view',
+        duration: 1500
+      });
+    }
   };
 
   return (
@@ -215,11 +244,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={() => {
-                      if (controlsRef?.current) {
-                        controlsRef.current.reset();
-                      }
-                    }}
+                    onClick={handle2DView}
                     className='w-full'
                   >
                     <View className='h-4 w-4' />
@@ -236,12 +261,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={() => {
-                      if (controlsRef?.current) {
-                        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
-                        controlsRef.current.setPolarAngle(Math.PI / 4);
-                      }
-                    }}
+                    onClick={handle3DView}
                     className='w-full'
                   >
                     <Grid className='h-4 w-4' />
