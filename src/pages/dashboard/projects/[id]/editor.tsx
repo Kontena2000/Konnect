@@ -321,8 +321,8 @@ export default function LayoutEditorPage() {
       <Toolbox 
           onModuleDragStart={handleModuleDragStart}
           onSave={handleSave}
-          onUndo={() => historyIndex > 0 && setHistoryIndex(historyIndex - 1)}
-          onRedo={() => historyIndex < history.length - 1 && setHistoryIndex(historyIndex + 1)}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
           controlsRef={controlsRef}
         />
         
