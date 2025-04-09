@@ -14,6 +14,7 @@ import { PricingEditor } from "@/components/settings/PricingEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import { DebugSettings } from "@/components/settings/DebugSettings";
 import { useRouter } from 'next/router';
+import ModelImporter from '@/components/settings/ModelImporter';
 
 export default function SettingsPage() {
   const { user } = useAuth();
@@ -42,55 +43,47 @@ export default function SettingsPage() {
 
   return (
     <AppLayout>
-      <div className='w-full p-4 md:p-6 space-y-6'>
-        <div className='flex items-center justify-between'>
-          <div>
-            <h1 className='text-3xl font-bold tracking-tight'>Settings</h1>
-            <p className='text-muted-foreground'>
-              Manage your application settings and preferences
-            </p>
-          </div>
+      <div className='container mx-auto py-6 space-y-8'>
+        <div className='flex justify-between items-center'>
+          <h1 className='text-3xl font-bold'>Settings</h1>
         </div>
 
-        <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='space-y-6'>
-          <TabsList className='w-full'>
+        <Tabs defaultValue='general' value={activeTab} onValueChange={setActiveTab} className='mb-4'>
+          <TabsList className='mb-4'>
             <TabsTrigger value='general'>General</TabsTrigger>
-            <TabsTrigger value='users'>Users</TabsTrigger>
-            <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
-            <TabsTrigger value='layout-editor'>Layout Editor</TabsTrigger>
-            <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
-            <TabsTrigger value='system'>System</TabsTrigger>
+            <TabsTrigger value='models'>3D Models</TabsTrigger>
+            <TabsTrigger value='editor'>Editor</TabsTrigger>
+            <TabsTrigger value='theme'>Theme</TabsTrigger>
+            <TabsTrigger value='users'>Users</TabsTrigger>
+            <TabsTrigger value='debug'>Debug</TabsTrigger>
           </TabsList>
 
-          <TabsContent value='general' className='space-y-6'>
+          <TabsContent value='general'>
             <GeneralSettings userId={user?.uid || ''} />
           </TabsContent>
 
-          <TabsContent value='users' className='space-y-6'>
-            <UserManagement />
-          </TabsContent>
-
-          <TabsContent value='theme' className='space-y-6'>
-            <ThemeEditor />
-          </TabsContent>
-
-          <TabsContent value='modules' className='space-y-6'>
+          <TabsContent value='modules'>
             <ModuleManager userId={user?.uid || ''} userRole={user?.role} />
           </TabsContent>
+          
+          <TabsContent value='models'>
+            <ModelImporter />
+          </TabsContent>
 
-          <TabsContent value='layout-editor' className='space-y-6'>
+          <TabsContent value='editor'>
             <EditorSettings userId={user?.uid || ''} />
           </TabsContent>
 
-          <TabsContent value='matrix-calculator' className='space-y-6'>
-            <MatrixCalculatorSettings userId={user?.uid || ''} />
-            <CalculationSettings readOnly={user?.role !== 'admin'} />
-            <PricingEditor readOnly={user?.role !== 'admin'} />
+          <TabsContent value='theme'>
+            <ThemeEditor />
           </TabsContent>
 
-          <TabsContent value='system' className='space-y-6'>
-            <FirebaseMonitor />
+          <TabsContent value='users'>
+            <UserManagement />
+          </TabsContent>
+
+          <TabsContent value='debug'>
             <DebugSettings />
           </TabsContent>
         </Tabs>
