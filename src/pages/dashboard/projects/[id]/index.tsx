@@ -29,6 +29,7 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
