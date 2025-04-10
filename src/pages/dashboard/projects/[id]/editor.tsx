@@ -383,34 +383,36 @@ export default function LayoutEditorPage() {
             />
           </div>
           
-          {/* Layout selector - Updated positioning for better responsiveness */}
-          <div className='fixed top-4 left-0 right-0 z-10 mx-auto flex justify-center'>
-            <div className='bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-md flex items-center gap-4'>
-              <LayoutSelector
-                projectId={projectId as string}
-                layouts={layouts}
-                currentLayout={currentLayout}
-                onLayoutChange={handleLayoutChange}
-                onLayoutCreate={handleLayoutCreate}
-              />
-              
-              <SaveLayoutDialog
-                layoutData={{
-                  id: currentLayout?.id,
-                  projectId: projectId as string,
-                  name: currentLayout?.name || '',
-                  description: currentLayout?.description || '',
-                  modules: modules,
-                  connections: connections
-                }}
-                onSaveComplete={handleSaveLayout}
-                trigger={
-                  <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
-                    <Save className='h-4 w-4 mr-2' />
-                    {currentLayout?.id ? 'Save As' : 'Save Layout'}
-                  </Button>
-                }
-              />
+          {/* Layout selector - Improved positioning for better responsiveness */}
+          <div className='fixed top-4 left-0 right-0 z-10'>
+            <div className='max-w-3xl mx-auto px-4'>
+              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex flex-wrap items-center justify-center gap-4'>
+                <LayoutSelector
+                  projectId={projectId as string}
+                  layouts={layouts}
+                  currentLayout={currentLayout}
+                  onLayoutChange={handleLayoutChange}
+                  onLayoutCreate={handleLayoutCreate}
+                />
+                
+                <SaveLayoutDialog
+                  layoutData={{
+                    id: currentLayout?.id,
+                    projectId: projectId as string,
+                    name: currentLayout?.name || '',
+                    description: currentLayout?.description || '',
+                    modules: modules,
+                    connections: connections
+                  }}
+                  onSaveComplete={handleSaveLayout}
+                  trigger={
+                    <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                      <Save className='h-4 w-4 mr-2' />
+                      {currentLayout?.id ? 'Save As' : 'Save Layout'}
+                    </Button>
+                  }
+                />
+              </div>
             </div>
           </div>
           
