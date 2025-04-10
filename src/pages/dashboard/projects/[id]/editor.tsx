@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -20,6 +19,10 @@ import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import { AuthUser } from '@/services/auth';
+import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Share, Copy, Loader2 } from 'lucide-react';
 
 interface EditorState {
   modules: Module[];
@@ -37,6 +40,8 @@ export default function LayoutEditorPage() {
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [shareEmail, setShareEmail] = useState<string>('');
+  const [duplicating, setDuplicating] = useState<boolean>(false);
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -612,7 +617,60 @@ export default function LayoutEditorPage() {
                   />
                 </div>
                 
-                <div className='flex items-center justify-center'>
+                <div className='flex items-center gap-2 justify-center'>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant='outline'
+                        size='sm'
+                        className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
+                      >
+                        <Share className='h-3 w-3' />
+                        <span>Share</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Share Project</DialogTitle>
+                        <DialogDescription>
+                          Enter the email address of the user you want to share this project with.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className='space-y-4 py-4'>
+                        <div className='space-y-2'>
+                          <Label htmlFor='email'>Email Address</Label>
+                          <Input 
+                            id='email' 
+                            placeholder='user@example.com' 
+                            value={shareEmail}
+                            onChange={(e) => setShareEmail(e.target.value)}
+                          />
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button onClick={handleShareProject} className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white'>
+                          <Share className='mr-2 h-4 w-4' />
+                          Share
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                  
+                  <Button 
+                    variant='outline'
+                    size='sm'
+                    onClick={handleDuplicateProject}
+                    disabled={duplicating}
+                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#4A7AFF] text-[#4A7AFF] hover:bg-[#4A7AFF]/10'
+                  >
+                    {duplicating ? (
+                      <Loader2 className='h-3 w-3 animate-spin' />
+                    ) : (
+                      <Copy className='h-3 w-3' />
+                    )}
+                    <span>Duplicate</span>
+                  </Button>
+                  
                   <SaveLayoutDialog
                     layoutData={{
                       id: currentLayout?.id,
@@ -624,9 +682,9 @@ export default function LayoutEditorPage() {
                     }}
                     onSaveComplete={handleSaveLayout}
                     trigger={
-                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
-                        <Save className='h-4 w-4 mr-2' />
-                        {currentLayout?.id ? 'Save As' : 'Save Layout'}
+                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
+                        <Save className='h-3 w-3 mr-1' />
+                        {currentLayout?.id ? 'Save As' : 'Save'}
                       </Button>
                     }
                   />
