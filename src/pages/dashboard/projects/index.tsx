@@ -12,10 +12,14 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
+import { getFirestoreSafely } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import layoutService from '@/services/layout';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectLayoutCounts, setProjectLayoutCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
@@ -38,6 +42,34 @@ export default function ProjectsPage() {
           return 0;
       }
     });
+
+  // Fetch layout counts for all projects
+  useEffect(() => {
+    const fetchLayoutCounts = async () => {
+      if (!projects.length) return;
+      
+      const counts: Record<string, number> = {};
+      
+      try {
+        // Fetch layout counts for each project
+        for (const project of projects) {
+          try {
+            const layouts = await layoutService.getProjectLayouts(project.id);
+            counts[project.id] = layouts.length;
+          } catch (error) {
+            console.error(`Error fetching layouts for project ${project.id}:`, error);
+            counts[project.id] = 0;
+          }
+        }
+        
+        setProjectLayoutCounts(counts);
+      } catch (error) {
+        console.error('Error fetching layout counts:', error);
+      }
+    };
+    
+    fetchLayoutCounts();
+  }, [projects]);
 
   const handleDeleteProject = async (projectId: string) => {
     if (!user) {
@@ -278,7 +310,9 @@ export default function ProjectsPage() {
                       Last modified: {format(project.updatedAt.toDate(), 'MMM d, yyyy')}
                     </div>
                     <div className='flex gap-2'>
-                      <Badge variant='outline'>{(project.layouts || []).length} Layouts</Badge>
+                      <Badge variant='outline'>
+                        {projectLayoutCounts[project.id] || 0} Layouts
+                      </Badge>
                       {project.status && (
                         <Badge variant='secondary'>{project.status}</Badge>
                       )}
