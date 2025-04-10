@@ -313,11 +313,6 @@ export default function ProjectDetailsPage() {
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           <div className='md:col-span-2 space-y-6'>
-            <div>
-              <h2 className='text-xl font-semibold mb-4'>Layouts</h2>
-              <LayoutList projectId={id as string} />
-            </div>
-            
             <Tabs defaultValue="layouts">
               <TabsList>
                 <TabsTrigger value="layouts">Layouts</TabsTrigger>
