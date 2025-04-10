@@ -199,22 +199,22 @@ export default function LayoutEditorPage() {
     // Ensure all module positions and rotations are numbers before saving
     const modulesToSave = modules.map(module => {
       // Create a deep copy to avoid modifying the original
-      const moduleCopy = { ...module };
+      const moduleCopy = JSON.parse(JSON.stringify(module));
       
       // Ensure position values are numbers
       if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
-        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+        moduleCopy.position = moduleCopy.position.map(Number);
       }
       
       // Ensure rotation values are numbers
       if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
-        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+        moduleCopy.rotation = moduleCopy.rotation.map(Number);
         console.log(`Module ${moduleCopy.id} rotation for immediate save:`, moduleCopy.rotation);
       }
       
       // Ensure scale values are numbers
       if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
-        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+        moduleCopy.scale = moduleCopy.scale.map(Number);
       }
       
       return moduleCopy;

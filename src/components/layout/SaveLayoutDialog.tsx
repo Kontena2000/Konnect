@@ -117,7 +117,7 @@ export function SaveLayoutDialog({
       if (saveData.modules && Array.isArray(saveData.modules)) {
         saveData.modules = saveData.modules.map(module => {
           // Create a deep copy to avoid modifying the original
-          const moduleCopy = { ...module };
+          const moduleCopy = JSON.parse(JSON.stringify(module));
           
           // Ensure position values are numbers
           if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
