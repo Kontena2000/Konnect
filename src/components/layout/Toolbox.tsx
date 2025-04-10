@@ -9,21 +9,22 @@ import { Module } from "@/types/module";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { toast } from '@/hooks/use-toast';
+import { SaveLayoutDialog } from './SaveLayoutDialog';
 
 interface ToolboxProps {
   onModuleDragStart: (module: Module) => void;
-  onSave?: () => void;
-  onUndo?: () => void;
-  onRedo?: () => void;
-  controlsRef?: React.RefObject<any>;
+  onSave: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  controlsRef: React.RefObject<any>;
 }
 
 export function Toolbox({ 
   onModuleDragStart, 
   onSave, 
   onUndo, 
-  onRedo,
-  controlsRef
+  onRedo, 
+  controlsRef 
 }: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>("modules");
@@ -50,7 +51,7 @@ export function Toolbox({
   ];
 
   const handleSave = () => {
-    onSave?.();
+    onSave();
     toast({
       title: 'Layout Saved',
       description: 'Your layout changes have been saved successfully.',

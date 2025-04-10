@@ -1,5 +1,4 @@
-
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -47,6 +46,13 @@ export function SaveLayoutDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   
+  // Update form values when layoutData changes
+  useEffect(() => {
+    setName(layoutData.name || '');
+    setDescription(layoutData.description || '');
+    setSelectedProjectId(layoutData.projectId || '');
+  }, [layoutData]);
+  
   const handleSave = async () => {
     if (!user) {
       toast({
@@ -62,6 +68,15 @@ export function SaveLayoutDialog({
         variant: 'destructive',
         title: 'Error',
         description: 'Please select a project to save to'
+      });
+      return;
+    }
+    
+    if (!name.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a name for your layout'
       });
       return;
     }

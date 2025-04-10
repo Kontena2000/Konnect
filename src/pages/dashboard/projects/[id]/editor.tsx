@@ -6,7 +6,7 @@ import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
-import { Connection } from '@/services/layout';
+import { Connection, Layout } from '@/services/layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import firebaseMonitor from '@/services/firebase-monitor';
 import { getFirestoreSafely } from '@/lib/firebase';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
+import { LayoutSelector } from '@/components/layout/LayoutSelector';
 
 interface EditorState {
   modules: Module[];
@@ -42,6 +43,31 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
+  const [layouts, setLayouts] = useState<Layout[]>([]);
+  const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
+  
+  // Handle save layout
+  const handleSaveLayout = useCallback((layoutId: string) => {
+    // Redirect to the layout editor with the saved layout
+    if (projectId) {
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
+    }
+  }, [projectId, router]);
+
+  // Handle layout change
+  const handleLayoutChange = useCallback((layout: Layout) => {
+    setCurrentLayout(layout);
+    setModules(layout.modules || []);
+    setConnections(layout.connections || []);
+  }, []);
+
+  // Handle layout create
+  const handleLayoutCreate = useCallback((layout: Layout) => {
+    setLayouts(prev => [...prev, layout]);
+    setCurrentLayout(layout);
+    setModules(layout.modules || []);
+    setConnections(layout.connections || []);
+  }, []);
 
   // Memoize heavy computations
   const memoizedModules = useMemo(() => modules, [modules]);
@@ -225,6 +251,10 @@ export default function LayoutEditorPage() {
         
         setProject(projectData);
         
+        // Fetch all layouts for this project
+        const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
+        setLayouts(projectLayouts);
+        
         // If layoutId is provided, fetch the layout
         if (layoutId) {
           const layoutRef = doc(db, 'layouts', layoutId as string);
@@ -239,6 +269,7 @@ export default function LayoutEditorPage() {
             // Verify this layout belongs to the current project
             if (layoutData.projectId === projectId) {
               setLayout(layoutData);
+              setCurrentLayout(layoutData);
               
               // Set modules and connections from layout data
               if (layoutData.modules) {
@@ -310,6 +341,37 @@ export default function LayoutEditorPage() {
               controlsRef={controlsRef}
               editorPreferences={editorPreferences}
             />
+          </div>
+          
+          {/* Layout selector */}
+          <div className='absolute top-4 left-4 z-10 bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-md'>
+            <div className='flex items-center gap-4'>
+              <LayoutSelector
+                projectId={projectId as string}
+                layouts={layouts}
+                currentLayout={currentLayout}
+                onLayoutChange={handleLayoutChange}
+                onLayoutCreate={handleLayoutCreate}
+              />
+              
+              <SaveLayoutDialog
+                layoutData={{
+                  id: currentLayout?.id,
+                  projectId: projectId as string,
+                  name: currentLayout?.name || '',
+                  description: currentLayout?.description || '',
+                  modules: modules,
+                  connections: connections
+                }}
+                onSaveComplete={handleSaveLayout}
+                trigger={
+                  <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                    <Save className='h-4 w-4 mr-2' />
+                    Save Layout
+                  </Button>
+                }
+              />
+            </div>
           </div>
           
           {/* Add Toolbox component */}
