@@ -1,12 +1,14 @@
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Layout } from "@/services/layout";
 import layoutService from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { SceneContainer } from "@/components/three/SceneContainer";
+import { ViewControls } from "@/components/viewer/ViewControls";
 
 export default function ViewerPage() {
   const router = useRouter();
@@ -16,6 +18,7 @@ export default function ViewerPage() {
   const [layout, setLayout] = useState<Layout | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const controlsRef = useRef(null);
 
   useEffect(() => {
     const loadLayout = async () => {
@@ -69,44 +72,49 @@ export default function ViewerPage() {
   if (error || !layout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
-        <Card className="w-full max-w-md">
-          <CardHeader>
-            <CardTitle>Layout Not Found</CardTitle>
-            <CardDescription>
-              {error || "The layout you are looking for could not be found."}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Button onClick={() => router.push("/dashboard/projects")}>
-              <ArrowLeft className="mr-2 h-4 w-4" />
-              Back to Projects
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Layout Not Found</h2>
+          <p className="text-gray-600 mb-6">
+            {error || "The layout you are looking for could not be found."}
+          </p>
+          <Button onClick={() => router.push("/dashboard/projects")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Projects
+          </Button>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex items-center justify-center">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <CardTitle className="text-3xl font-bold">{layout.name}</CardTitle>
-          <CardDescription className="text-lg mt-2">
-            {layout.description || "No description available"}
-          </CardDescription>
-        </CardHeader>
-        
-        <CardFooter className="flex justify-center pt-4">
-          <Button 
-            size="lg"
-            onClick={handleBackToProject}
-          >
-            <ArrowLeft className="mr-2 h-5 w-5" />
+    <AppLayout fullWidth>
+      <div className="flex flex-col h-screen">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold">{layout.name}</h1>
+            <p className="text-muted-foreground">{layout.description || "No description available"}</p>
+          </div>
+          <Button onClick={handleBackToProject}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
             Back to Project
           </Button>
-        </CardFooter>
-      </Card>
-    </div>
+        </div>
+        
+        <div className="flex flex-1 gap-4 h-[calc(100vh-120px)]">
+          <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden">
+            <SceneContainer
+              modules={layout.modules || []}
+              connections={layout.connections || []}
+              readOnly={true}
+              controlsRef={controlsRef}
+            />
+          </div>
+          
+          <div className="w-80 shrink-0">
+            <ViewControls />
+          </div>
+        </div>
+      </div>
+    </AppLayout>
   );
 }
