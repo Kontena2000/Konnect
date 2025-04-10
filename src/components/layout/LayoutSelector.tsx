@@ -1,11 +1,11 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 import { Layout } from "@/services/layout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Loader2 } from "lucide-react";
 import layoutService from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
 
@@ -27,10 +27,29 @@ export function LayoutSelector({
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState("");
   const [newLayoutDescription, setNewLayoutDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
 
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!isCreateOpen) {
+      setNewLayoutName("");
+      setNewLayoutDescription("");
+    }
+  }, [isCreateOpen]);
+
   const handleCreateLayout = async () => {
+    if (!newLayoutName.trim()) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Please enter a name for your layout"
+      });
+      return;
+    }
+
     try {
+      setIsCreating(true);
       const layoutId = await layoutService.createLayout({
         projectId,
         name: newLayoutName,
@@ -43,19 +62,20 @@ export function LayoutSelector({
       if (newLayout) {
         onLayoutCreate(newLayout);
         setIsCreateOpen(false);
-        setNewLayoutName("");
-        setNewLayoutDescription("");
         toast({
           title: "Success",
           description: "New layout created"
         });
       }
     } catch (error) {
+      console.error("Error creating layout:", error);
       toast({
         variant: "destructive",
         title: "Error",
         description: "Failed to create layout"
       });
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -72,11 +92,17 @@ export function LayoutSelector({
           <SelectValue placeholder='Select layout' />
         </SelectTrigger>
         <SelectContent>
-          {layouts.map((layout) => (
-            <SelectItem key={layout.id} value={layout.id}>
-              {layout.name}
-            </SelectItem>
-          ))}
+          {layouts.length === 0 ? (
+            <div className='p-2 text-sm text-muted-foreground text-center'>
+              No layouts found
+            </div>
+          ) : (
+            layouts.map((layout) => (
+              <SelectItem key={layout.id} value={layout.id}>
+                {layout.name}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
 
@@ -119,10 +145,17 @@ export function LayoutSelector({
             </Button>
             <Button 
               onClick={handleCreateLayout} 
-              disabled={!newLayoutName}
+              disabled={isCreating || !newLayoutName.trim()}
               className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
             >
-              Create Layout
+              {isCreating ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Creating...
+                </>
+              ) : (
+                'Create Layout'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

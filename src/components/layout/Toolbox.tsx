@@ -1,15 +1,16 @@
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from "lucide-react";
-import { ModuleLibrary } from "@/components/three/ModuleLibrary";
-import { cn } from "@/lib/utils";
-import { Module } from "@/types/module";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
+import { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from 'lucide-react';
+import { ModuleLibrary } from '@/components/three/ModuleLibrary';
+import { cn } from '@/lib/utils';
+import { Module } from '@/types/module';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
 import { SaveLayoutDialog } from './SaveLayoutDialog';
+import { useRouter } from 'next/router';
 
 interface ToolboxProps {
   onModuleDragStart: (module: Module) => void;
@@ -17,6 +18,14 @@ interface ToolboxProps {
   onUndo: () => void;
   onRedo: () => void;
   controlsRef: React.RefObject<any>;
+  currentLayout?: {
+    id?: string;
+    projectId?: string;
+    name?: string;
+    description?: string;
+  };
+  modules?: any[];
+  connections?: any[];
 }
 
 export function Toolbox({ 
@@ -24,31 +33,48 @@ export function Toolbox({
   onSave, 
   onUndo, 
   onRedo, 
-  controlsRef 
+  controlsRef,
+  currentLayout,
+  modules = [],
+  connections = []
 }: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string>("modules");
+  const [expandedSection, setExpandedSection] = useState<string>('modules');
+  const router = useRouter();
+  const { id: projectId } = router.query;
 
   const sections = [
     {
-      id: "modules",
-      title: "Module Library",
-      icon: <Box className="h-5 w-5" />,
+      id: 'modules',
+      title: 'Module Library',
+      icon: <Box className='h-5 w-5' />,
       content: <ModuleLibrary onDragStart={onModuleDragStart} />
     },
     {
-      id: "layers",
-      title: "Layers",
-      icon: <Layers className="h-5 w-5" />,
-      content: <div className="p-4 text-sm text-muted-foreground">Layer management coming soon</div>
+      id: 'layers',
+      title: 'Layers',
+      icon: <Layers className='h-5 w-5' />,
+      content: <div className='p-4 text-sm text-muted-foreground'>Layer management coming soon</div>
     },
     {
-      id: "settings",
-      title: "Scene Settings",
-      icon: <Settings className="h-5 w-5" />,
-      content: <div className="p-4 text-sm text-muted-foreground">Scene settings coming soon</div>
+      id: 'settings',
+      title: 'Scene Settings',
+      icon: <Settings className='h-5 w-5' />,
+      content: <div className='p-4 text-sm text-muted-foreground'>Scene settings coming soon</div>
     }
   ];
+
+  const handleSaveComplete = (layoutId: string) => {
+    toast({
+      title: 'Layout Saved',
+      description: 'Your layout has been saved successfully.',
+      duration: 2000
+    });
+    
+    if (projectId) {
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
+    }
+  };
 
   const handleSave = () => {
     onSave();
@@ -203,22 +229,27 @@ export function Toolbox({
         <TooltipProvider>
           <div className='space-y-2'>
             {/* Save button - Always visible and prominent */}
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <SaveLayoutDialog
+              layoutData={{
+                id: currentLayout?.id,
+                projectId: (projectId as string) || '',
+                name: currentLayout?.name || '',
+                description: currentLayout?.description || '',
+                modules: modules,
+                connections: connections
+              }}
+              onSaveComplete={handleSaveComplete}
+              trigger={
                 <Button 
                   variant='default' 
                   size={collapsed ? 'icon' : 'default'}
-                  onClick={handleSave}
-                  className='w-full bg-primary hover:bg-primary/90'
+                  className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
                 >
                   <Save className='h-4 w-4' />
                   {!collapsed && <span className='ml-2'>Save Layout</span>}
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent side='left'>
-                <p>Save current layout</p>
-              </TooltipContent>
-            </Tooltip>
+              }
+            />
 
             <Separator />
 

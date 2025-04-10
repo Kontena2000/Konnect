@@ -48,8 +48,24 @@ export default function LayoutEditorPage() {
   
   // Handle save layout
   const handleSaveLayout = useCallback((layoutId: string) => {
-    // Redirect to the layout editor with the saved layout
+    // Refresh layouts list
     if (projectId) {
+      // Fetch all layouts for this project
+      layoutService.getProjectLayouts(projectId as string)
+        .then(projectLayouts => {
+          setLayouts(projectLayouts);
+          
+          // Find the newly saved layout
+          const savedLayout = projectLayouts.find(l => l.id === layoutId);
+          if (savedLayout) {
+            setCurrentLayout(savedLayout);
+          }
+        })
+        .catch(err => {
+          console.error('Error refreshing layouts:', err);
+        });
+      
+      // Redirect to the layout editor with the saved layout
       router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
     }
   }, [projectId, router]);
@@ -381,6 +397,9 @@ export default function LayoutEditorPage() {
             onUndo={handleUndo}
             onRedo={handleRedo}
             controlsRef={controlsRef}
+            currentLayout={currentLayout || undefined}
+            modules={modules}
+            connections={connections}
           />
         </ErrorBoundary>
       </div>

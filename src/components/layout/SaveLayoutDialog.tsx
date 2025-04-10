@@ -46,12 +46,14 @@ export function SaveLayoutDialog({
   const { toast } = useToast();
   const { user } = useAuth();
   
-  // Update form values when layoutData changes
+  // Update form values when layoutData changes or dialog opens
   useEffect(() => {
-    setName(layoutData.name || '');
-    setDescription(layoutData.description || '');
-    setSelectedProjectId(layoutData.projectId || '');
-  }, [layoutData]);
+    if (open) {
+      setName(layoutData.name || '');
+      setDescription(layoutData.description || '');
+      setSelectedProjectId(layoutData.projectId || '');
+    }
+  }, [layoutData, open]);
   
   const handleSave = async () => {
     if (!user) {
@@ -172,7 +174,11 @@ export function SaveLayoutDialog({
           <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
-          <Button onClick={handleSave} disabled={saving}>
+          <Button 
+            onClick={handleSave} 
+            disabled={saving || !name.trim() || !selectedProjectId}
+            className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+          >
             {saving ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
