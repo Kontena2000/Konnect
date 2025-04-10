@@ -201,8 +201,8 @@ export default function LayoutEditorPage() {
   }, [removeConnection]);
   
   // Handle save completion
-  const handleSaveComplete = useCallback((newLayoutId: string) => {
-    console.log('Save complete with new layout ID:', newLayoutId);
+  const handleSaveComplete = useCallback((newLayoutId: string, savedProjectId: string) => {
+    console.log('Save complete with new layout ID:', newLayoutId, 'to project:', savedProjectId);
     
     // Set the new layout ID in state first
     setLayoutId(newLayoutId);
@@ -211,7 +211,22 @@ export default function LayoutEditorPage() {
     // Get the current project ID from the URL
     const currentProjectId = router.query.id as string;
     
-    // Construct the new URL with the layout ID
+    // Check if we saved to a different project
+    if (savedProjectId !== currentProjectId) {
+      console.log('Layout saved to a different project. Redirecting...');
+      
+      // Show success toast first
+      toast({
+        title: 'Success',
+        description: 'Layout saved to different project successfully'
+      });
+      
+      // Redirect to the editor page for the new project with the new layout ID
+      router.push(`/dashboard/projects/${savedProjectId}/editor?layoutId=${newLayoutId}`);
+      return;
+    }
+    
+    // If we're saving to the same project, just update the URL
     const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
     console.log('Updating URL to:', newUrl);
     

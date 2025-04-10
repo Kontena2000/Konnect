@@ -29,7 +29,7 @@ interface SaveLayoutDialogProps {
     modules?: any[];
     connections?: any[];
   };
-  onSaveComplete?: (layoutId: string) => void;
+  onSaveComplete?: (layoutId: string, projectId: string) => void;
   trigger: React.ReactNode;
 }
 
@@ -196,12 +196,12 @@ export function SaveLayoutDialog({
       // Close dialog first
       setOpen(false);
       
-      // Call the callback with the new layout ID after a short delay
+      // Call the callback with the new layout ID and project ID after a short delay
       if (onSaveComplete && layoutId) {
-        console.log('Calling onSaveComplete with layoutId:', layoutId);
+        console.log('Calling onSaveComplete with layoutId:', layoutId, 'projectId:', selectedProjectId);
         // Use a small delay to ensure dialog is closed first
         setTimeout(() => {
-          onSaveComplete(layoutId);
+          onSaveComplete(layoutId, selectedProjectId);
         }, 300);
       }
       
