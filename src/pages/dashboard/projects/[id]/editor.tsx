@@ -417,8 +417,8 @@ export default function LayoutEditorPage() {
           
           {/* Layout selector - Improved positioning for better responsiveness */}
           <div className='fixed top-4 left-0 right-0 z-10'>
-            <div className='max-w-3xl mx-auto px-4'>
-              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center sm:justify-between flex-wrap gap-4'>
+            <div className='max-w-2xl mx-auto'>
+              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center flex-wrap gap-4'>
                 <div className='flex items-center justify-center flex-grow sm:flex-grow-0'>
                   <LayoutSelector
                     projectId={projectId as string}
