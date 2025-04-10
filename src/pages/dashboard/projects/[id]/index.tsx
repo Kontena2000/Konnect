@@ -416,13 +416,12 @@ export default function ProjectDetailsPage() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
-                      className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-9 py-0 px-2 rounded-md shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30 text-xs'
+                      variant='outline'
                       size='sm'
+                      className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
                     >
-                      <div className='flex items-center gap-1.5'>
-                        <Share className='h-3 w-3' />
-                        <span className='font-medium'>Share Project</span>
-                      </div>
+                      <Share className='h-3 w-3' />
+                      <span>Share Project</span>
                     </Button>
                   </DialogTrigger>
                   <DialogContent>
@@ -453,31 +452,29 @@ export default function ProjectDetailsPage() {
                 </Dialog>
                 
                 <Button 
-                  className='bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-9 py-0 px-2 rounded-md shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30 text-xs'
+                  variant='outline'
+                  size='sm'
                   onClick={handleDuplicateProject}
                   disabled={duplicating}
-                  size='sm'
+                  className='h-8 text-xs flex items-center gap-1 bg-white border-[#4A7AFF] text-[#4A7AFF] hover:bg-[#4A7AFF]/10'
                 >
-                  <div className='flex items-center gap-1.5'>
-                    {duplicating ? (
-                      <Loader2 className='h-3 w-3 animate-spin' />
-                    ) : (
-                      <Copy className='h-3 w-3' />
-                    )}
-                    <span className='font-medium'>Duplicate Project</span>
-                  </div>
+                  {duplicating ? (
+                    <Loader2 className='h-3 w-3 animate-spin' />
+                  ) : (
+                    <Copy className='h-3 w-3' />
+                  )}
+                  <span>Duplicate Project</span>
                 </Button>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
-                      className='bg-red-500 hover:bg-red-600/80 text-white h-9 py-0 px-2 rounded-md shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400 text-xs'
+                      variant='outline'
                       size='sm'
+                      className='h-8 text-xs flex items-center gap-1 bg-white border-red-500 text-red-500 hover:bg-red-50'
                     >
-                      <div className='flex items-center gap-1.5'>
-                        <Trash2 className='h-3 w-3' />
-                        <span className='font-medium'>Delete Project</span>
-                      </div>
+                      <Trash2 className='h-3 w-3' />
+                      <span>Delete Project</span>
                     </Button>
                   </AlertDialogTrigger>
                   <AlertDialogContent>
