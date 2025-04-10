@@ -278,7 +278,7 @@ export default function LayoutEditorPage() {
         if (currentLayout?.id && user) {
           saveLayoutImmediately();
         }
-      }, 500);
+      }, 250); // Reduced from 500ms for more responsive saving
       
       return newModules;
     });

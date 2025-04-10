@@ -35,6 +35,7 @@ export function useModuleTransform({
       Number(meshRef.current.position.z)
     ];
 
+    // Convert rotation from radians to degrees for storage
     const rotation: [number, number, number] = [
       Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
       Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),

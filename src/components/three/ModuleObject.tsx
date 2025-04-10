@@ -1,7 +1,7 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
-import { TransformControls } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
 import { ModuleMesh } from "./ModuleMesh";
@@ -147,7 +147,7 @@ export function ModuleObject({
     if (meshRef.current) {
       meshRef.current.rotation.y -= Math.PI/2;
       
-      // Get current rotation after change
+      // Get current rotation after change - convert from radians to degrees
       const newRotation: [number, number, number] = [
         Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
         Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
@@ -170,7 +170,7 @@ export function ModuleObject({
     if (meshRef.current) {
       meshRef.current.rotation.y += Math.PI/2;
       
-      // Get current rotation after change
+      // Get current rotation after change - convert from radians to degrees
       const newRotation: [number, number, number] = [
         Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
         Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
@@ -236,13 +236,21 @@ export function ModuleObject({
     <group>
       <mesh
         ref={meshRef}
-        position={[module.position[0], module.position[1], module.position[2]]}
-        rotation={[
-          module.rotation[0] * Math.PI / 180,
-          module.rotation[1] * Math.PI / 180,
-          module.rotation[2] * Math.PI / 180
+        position={[
+          Number(module.position[0]), 
+          Number(module.position[1]), 
+          Number(module.position[2])
         ]}
-        scale={[module.scale[0], module.scale[1], module.scale[2]]}
+        rotation={[
+          Number(module.rotation[0]) * Math.PI / 180,
+          Number(module.rotation[1]) * Math.PI / 180,
+          Number(module.rotation[2]) * Math.PI / 180
+        ]}
+        scale={[
+          Number(module.scale[0]), 
+          Number(module.scale[1]), 
+          Number(module.scale[2])
+        ]}
       >
         <ModuleMesh
           module={module}
