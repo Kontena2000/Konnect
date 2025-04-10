@@ -24,6 +24,7 @@ export default function ProjectsPage() {
   const [loadingLayoutCounts, setLoadingLayoutCounts] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
   const { toast } = useToast();
 
   const filteredAndSortedProjects = projects
@@ -93,6 +94,7 @@ export default function ProjectsPage() {
     }
     
     try {
+      setDeletingProjectId(projectId);
       await projectService.deleteProject(projectId, user.uid);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
       toast({
@@ -113,6 +115,8 @@ export default function ProjectsPage() {
         title: 'Error',
         description: error instanceof ProjectError ? error.message : 'Failed to delete project'
       });
+    } finally {
+      setDeletingProjectId(null);
     }
   };
 
@@ -282,8 +286,16 @@ export default function ProjectsPage() {
                             <AlertDialogAction
                               onClick={() => handleDeleteProject(project.id)}
                               className='bg-red-500 hover:bg-red-600'
+                              disabled={deletingProjectId === project.id}
                             >
-                              Delete
+                              {deletingProjectId === project.id ? (
+                                <>
+                                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                  Deleting...
+                                </>
+                              ) : (
+                                'Delete'
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
