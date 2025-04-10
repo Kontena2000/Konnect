@@ -29,6 +29,7 @@ export default function MatrixCalculatorPage() {
   const { toast } = useToast();
   const [initialResults, setInitialResults] = useState<any>(null);
   const [loadingCalculation, setLoadingCalculation] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const initializeMatrixCalculator = async () => {
@@ -171,6 +172,18 @@ export default function MatrixCalculatorPage() {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
 
+  // Handle save complete event
+  const handleSaveComplete = (calculationId: string, projectId: string) => {
+    console.log('Calculation saved with ID:', calculationId, 'to project:', projectId);
+    // Increment refresh trigger to reload calculations
+    setRefreshTrigger(prev => prev + 1);
+    
+    // Optionally redirect to project page
+    if (projectId) {
+      router.push(`/dashboard/projects/${projectId}?tab=calculations`);
+    }
+  };
+
   if (loading) {
     return (
       <div className='container mx-auto p-4 space-y-4'>
@@ -235,7 +248,7 @@ export default function MatrixCalculatorPage() {
                 userId={user?.uid || ''} 
                 userRole={user?.role || 'user'} 
                 initialResults={initialResults}
-                onSave={handleSaveCalculation}
+                onSaveComplete={handleSaveComplete}
               />
               <SavedCalculations 
                 userId={user.uid} 

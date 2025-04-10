@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -34,7 +34,7 @@ import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getFirestoreSafely } from "@/lib/firebase";
-import { collection, query, where, getDocs } from "firebase/firestore";
+import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -59,6 +59,9 @@ export default function ProjectDetailsPage() {
     plotWidth: 0,
     plotLength: 0
   });
+  
+  const [calculationsRefreshTrigger, setCalculationsRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState('layouts');
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -88,26 +91,7 @@ export default function ProjectDetailsPage() {
         setLayouts(projectLayouts);
 
         // Fetch calculations for this project
-        try {
-          const db = getFirestoreSafely();
-          if (!db) {
-            console.error('Firestore not available');
-            return;
-          }
-          
-          const calculationsQuery = query(
-            collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
-            where('projectId', '==', id)
-          );
-          const calculationsSnapshot = await getDocs(calculationsQuery);
-          const calculationsData = calculationsSnapshot.docs.map(doc => ({
-            id: doc.id,
-            ...doc.data()
-          }));
-          setCalculations(calculationsData);
-        } catch (error) {
-          console.error('Error fetching calculations:', error);
-        }
+        await refreshCalculations();
       } catch (error) {
         console.error("Error loading project:", error);
         toast({
@@ -122,6 +106,52 @@ export default function ProjectDetailsPage() {
     
     loadProjectData();
   }, [id, user, router, toast]);
+
+  const refreshCalculations = useCallback(async () => {
+    if (!id) return;
+    
+    try {
+      console.log('Refreshing calculations for project:', id);
+      const db = getFirestoreSafely();
+      if (!db) {
+        console.error('Firestore not available');
+        return;
+      }
+      
+      const calculationsQuery = query(
+        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+        where('projectId', '==', id),
+        orderBy('createdAt', 'desc')
+      );
+      const calculationsSnapshot = await getDocs(calculationsQuery);
+      const calculationsData = calculationsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
+        };
+      });
+      
+      console.log(`Found ${calculationsData.length} calculations for project ${id}`);
+      setCalculations(calculationsData);
+      setCalculationsRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error refreshing calculations:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to refresh calculations'
+      });
+    }
+  }, [id, toast]);
+
+  // Check for tab parameter in URL
+  useEffect(() => {
+    if (router.query.tab === 'calculations') {
+      setActiveTab('calculations');
+    }
+  }, [router.query.tab]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -263,7 +293,6 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  // Add a new function to refresh layouts
   const refreshLayouts = async () => {
     if (!id) return;
     
@@ -332,7 +361,7 @@ export default function ProjectDetailsPage() {
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           <div className='md:col-span-3 space-y-6'>
-            <Tabs defaultValue='layouts'>
+            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
               <TabsList>
                 <TabsTrigger value="layouts">Layouts</TabsTrigger>
                 <TabsTrigger value="calculations">Calculations</TabsTrigger>
@@ -400,6 +429,25 @@ export default function ProjectDetailsPage() {
               </TabsContent>
               
               <TabsContent value="calculations" className="space-y-4">
+                <div className='flex justify-end mb-4'>
+                  <Button 
+                    variant='outline' 
+                    size='sm'
+                    onClick={refreshCalculations}
+                    className='mr-2'
+                  >
+                    <Loader2 className='mr-2 h-4 w-4' />
+                    Refresh Calculations
+                  </Button>
+                  <Button 
+                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
+                    className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+                  >
+                    <Calculator className='mr-2 h-4 w-4' />
+                    New Calculation
+                  </Button>
+                </div>
+                
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                   {calculations.length > 0 ? (
                     calculations.map((calculation) => (
@@ -428,8 +476,10 @@ export default function ProjectDetailsPage() {
                             )}
                           </div>
                           <p className='text-xs text-muted-foreground mt-2'>
-                            Created: {calculation.createdAt || calculation.timestamp 
-                              ? new Date(((calculation.createdAt || calculation.timestamp) as any)?.seconds * 1000 || Date.now()).toLocaleString() 
+                            Created: {calculation.createdAt 
+                              ? new Date(calculation.createdAt instanceof Date 
+                                  ? calculation.createdAt 
+                                  : (calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() 
                               : 'Unknown'}
                           </p>
                         </CardContent>
