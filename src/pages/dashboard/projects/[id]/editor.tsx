@@ -19,6 +19,7 @@ import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import { debouncedSave } from '@/services/layout';
+import { AuthUser } from '@/services/auth';
 
 interface EditorState {
   modules: Module[];
@@ -171,9 +172,28 @@ export default function LayoutEditorPage() {
         timestamp: Date.now()
       });
       
+      // Trigger immediate save when position is updated
+      if (updates.position && currentLayout?.id && user) {
+        console.log('Position updated, triggering immediate save');
+        const updatedModule = { ...prev.find(m => m.id === moduleId), ...updates };
+        const updatedModules = prev.map(m => m.id === moduleId ? updatedModule : m);
+        
+        // Use immediate save for position updates to ensure they're saved
+        layoutService.updateLayout(currentLayout.id, {
+          modules: updatedModules,
+          connections
+        }, user as AuthUser)
+          .then(() => {
+            console.log('Module position saved:', moduleId);
+          })
+          .catch(error => {
+            console.error('Error saving module position:', error);
+          });
+      }
+      
       return newModules;
     });
-  }, []);
+  }, [connections, currentLayout, user]);
 
   // Auto-save when modules or connections change
   useEffect(() => {

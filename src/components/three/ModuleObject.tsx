@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -45,6 +44,7 @@ export function ModuleObject({
   editorPreferences
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
+  const group = useRef<Group>(null); // Added group ref
   const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
   const [shadowTransform, setShadowTransform] = useState({
@@ -114,8 +114,50 @@ export function ModuleObject({
     }
   }, [handleTransformChange, updateShadowTransform]);
 
+  // Update position, rotation, scale when changed
+  useEffect(() => {
+    if (group.current) {
+      // Update position
+      if (position && Array.isArray(position) && position.length === 3) {
+        group.current.position.set(position[0], position[1], position[2]);
+      }
+      
+      // Update rotation
+      if (rotation && Array.isArray(rotation) && rotation.length === 3) {
+        group.current.rotation.set(
+          rotation[0] * Math.PI / 180,
+          rotation[1] * Math.PI / 180,
+          rotation[2] * Math.PI / 180
+        );
+      }
+      
+      // Update scale
+      if (scale && Array.isArray(scale) && scale.length === 3) {
+        group.current.scale.set(scale[0], scale[1], scale[2]);
+      }
+      
+      // Ensure position is properly updated in the module data
+      if (onUpdate && !isTransforming) {
+        const currentPosition = [
+          group.current.position.x,
+          group.current.position.y,
+          group.current.position.z
+        ] as [number, number, number];
+        
+        // Only update if position has actually changed
+        if (!position || 
+            position[0] !== currentPosition[0] || 
+            position[1] !== currentPosition[1] || 
+            position[2] !== currentPosition[2]) {
+          console.log('Updating module position in ModuleObject:', id, currentPosition);
+          onUpdate(id, { position: currentPosition });
+        }
+      }
+    }
+  }, [id, position, rotation, scale, onUpdate, isTransforming]);
+
   return (
-    <group>
+    <group ref={group}>
       <ModuleMesh
         module={module}
         meshRef={meshRef}

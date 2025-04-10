@@ -160,7 +160,7 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     console.error('Error in debouncedSave:', error);
     throw new Error('Failed to save layout: ' + (error instanceof Error ? error.message : String(error)));
   }
-}, 2000);
+}, 1000); // Reduced from 2000ms to 1000ms for more responsive saving
 
 const layoutService = {
   async createLayout(data: Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
