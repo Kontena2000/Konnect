@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -448,7 +449,7 @@ export default function LayoutEditorPage() {
           {/* Toolbox */}
           <div className="w-80 border-l bg-card overflow-y-auto">
             <Toolbox 
-              selectedModules={modules.filter(m => m.selected)}
+              selectedModules={modules.filter(m => m.selected === true)}
               onUpdateModule={handleModuleUpdated}
               onDeleteModule={handleModuleRemoved}
               connectionTypes={["power", "water-supply", "water-return", "network", "cooling", "water", "gas", "security"]}
