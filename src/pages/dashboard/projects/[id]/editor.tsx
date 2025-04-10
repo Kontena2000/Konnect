@@ -1,9 +1,11 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SceneContainer } from '@/components/three/SceneContainer';
 import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
 import { Connection, Layout } from '@/services/layout';
@@ -16,10 +18,19 @@ import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
+import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import { AuthUser } from '@/services/auth';
-import { Dialog, DialogTrigger, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Share, Copy, Loader2 } from 'lucide-react';
@@ -36,6 +47,7 @@ export default function LayoutEditorPage() {
   const [layout, setLayout] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
@@ -53,6 +65,50 @@ export default function LayoutEditorPage() {
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
+
+  // Handle share project
+  const handleShareProject = async () => {
+    if (!projectId || !shareEmail) return;
+    
+    try {
+      await projectService.shareProject(projectId as string, shareEmail);
+      toast({
+        title: 'Success',
+        description: `Project shared with ${shareEmail}`
+      });
+      setShareEmail('');
+    } catch (error) {
+      console.error('Error sharing project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to share project'
+      });
+    }
+  };
+
+  // Handle duplicate project
+  const handleDuplicateProject = async () => {
+    if (!projectId || !user) return;
+    
+    setDuplicating(true);
+    try {
+      const newProjectId = await projectService.duplicateProject(projectId as string, user.uid);
+      toast({
+        title: 'Success',
+        description: 'Project duplicated successfully'
+      });
+      router.push(`/dashboard/projects/${newProjectId}`);
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to duplicate project'
+      });
+      setDuplicating(false);
+    }
+  };
 
   // Handle layout change
   const handleLayoutChange = useCallback((layout: Layout) => {
@@ -602,7 +658,7 @@ export default function LayoutEditorPage() {
             />
           </div>
           
-          {/* Layout selector - Improved positioning for better responsiveness */}
+          {/* Layout selector with project actions */}
           <div className='fixed top-4 left-0 right-0 z-10'>
             <div className='max-w-2xl mx-auto'>
               <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center flex-wrap gap-4'>
