@@ -35,12 +35,16 @@ export function useModuleState(param?: UseModuleStateProps) {
   const { toast } = useToast();
   const { user } = useAuth();
   const lastSavedStateRef = useRef<string>(JSON.stringify({ 
-    modules: initialModules, 
-    connections: initialConnections 
+    modules: initialModules || [], 
+    connections: initialConnections || [] 
   }));
 
   // History management for undo/redo
-  const [history, setHistory] = useState<ModuleState[]>([{ modules, connections, hasChanges: false }]);
+  const [history, setHistory] = useState<ModuleState[]>([{ 
+    modules: initialModules || [], 
+    connections: initialConnections || [], 
+    hasChanges: false 
+  }]);
   const [historyIndex, setHistoryIndex] = useState(0);
   const [isUndoRedoAction, setIsUndoRedoAction] = useState(false);
 
