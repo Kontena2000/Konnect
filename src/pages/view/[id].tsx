@@ -1,33 +1,45 @@
 
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ruler, Eye, MessageSquare, Camera } from "lucide-react";
-import { SceneContainer } from "@/components/three/SceneContainer";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Layout } from "@/services/layout";
 import layoutService from "@/services/layout";
-import { ViewControls } from "@/components/viewer/ViewControls";
-import { ViewMeasurements } from "@/components/viewer/ViewMeasurements";
-import { ViewComments } from "@/components/viewer/ViewComments";
+import { useAuth } from "@/contexts/AuthContext";
+import { AppLayout } from "@/components/layout/AppLayout";
+import { SceneContainer } from "@/components/three/SceneContainer";
 
 export default function ViewerPage() {
   const router = useRouter();
   const { id } = router.query;
-  const controlsRef = useRef<any>(null);
+  const { user } = useAuth();
   
   const [layout, setLayout] = useState<Layout | null>(null);
-  const [activeView, setActiveView] = useState<"normal" | "measure" | "comment">("normal");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const controlsRef = useRef(null);
 
   useEffect(() => {
     const loadLayout = async () => {
       if (id) {
+        console.log("Attempting to load layout with ID:", id);
         try {
-          const layoutData = await layoutService.getLayout(id as string);
-          setLayout(layoutData);
-        } catch (error) {
-          console.error("Error loading layout:", error);
+          // Pass the user to getLayout to handle authentication
+          const layoutData = await layoutService.getLayout(id as string, user || undefined);
+          console.log("Layout data loaded:", layoutData ? "success" : "null", layoutData);
+          
+          if (layoutData) {
+            setLayout(layoutData);
+            console.log("Layout set in state:", layoutData.name, "with", 
+              layoutData.modules?.length || 0, "modules and", 
+              layoutData.connections?.length || 0, "connections");
+          } else {
+            console.error("Layout data is null");
+            setError("Layout not found or you do not have permission to view it.");
+          }
+        } catch (err) {
+          console.error("Error loading layout:", err);
+          setError(err instanceof Error ? err.message : "Failed to load layout");
         } finally {
           setLoading(false);
         }
@@ -35,74 +47,67 @@ export default function ViewerPage() {
     };
 
     loadLayout();
-  }, [id]);
+  }, [id, user]);
 
-  if (loading) {
-    return <div>Loading...</div>;
-  }
-
-  if (!layout) {
-    return <div>Layout not found</div>;
-  }
-
-  // No-op handler for onDropPoint in view mode
-  const handleDropPoint = (point: [number, number, number]) => {
-    // This function is intentionally empty since we're in read-only mode
+  const handleBackToProject = () => {
+    if (layout && layout.projectId) {
+      router.push(`/dashboard/projects/${layout.projectId}`);
+    } else {
+      router.push("/dashboard/projects");
+    }
   };
 
-  return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{layout.name}</h1>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={activeView === "normal" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setActiveView("normal")}
-              >
-                <Eye className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={activeView === "measure" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setActiveView("measure")}
-              >
-                <Ruler className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={activeView === "comment" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setActiveView("comment")}
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <Camera className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-[1fr_300px] gap-4">
-            <Card className="h-[800px]">
-              <SceneContainer
-                modules={layout.modules}
-                connections={layout.connections}
-                readOnly={true}
-                onDropPoint={handleDropPoint}
-                controlsRef={controlsRef}
-              />
-            </Card>
-
-            <div className="space-y-4">
-              <ViewControls />
-              {activeView === "measure" && <ViewMeasurements />}
-              {activeView === "comment" && <ViewComments layoutId={layout.id} />}
-            </div>
-          </div>
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <p>Loading layout...</p>
         </div>
       </div>
-    </div>
+    );
+  }
+
+  if (error || !layout) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="w-full max-w-md p-6 bg-white rounded-lg shadow-md">
+          <h2 className="text-2xl font-bold mb-4">Layout Not Found</h2>
+          <p className="text-gray-600 mb-6">
+            {error || "The layout you are looking for could not be found."}
+          </p>
+          <Button onClick={() => router.push("/dashboard/projects")}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Projects
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AppLayout fullWidth>
+      <div className="flex flex-col h-screen">
+        <div className="flex items-center justify-between mb-4">
+          <div>
+            <h1 className="text-2xl font-bold">{layout.name}</h1>
+            <p className="text-muted-foreground">{layout.description || "No description available"}</p>
+          </div>
+          <Button onClick={handleBackToProject}>
+            <ArrowLeft className="mr-2 h-4 w-4" />
+            Back to Project
+          </Button>
+        </div>
+        
+        <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden h-[calc(100vh-120px)]">
+          <SceneContainer
+            modules={layout.modules || []}
+            connections={layout.connections || []}
+            readOnly={true}
+            controlsRef={controlsRef}
+          />
+        </div>
+      </div>
+    </AppLayout>
   );
 }

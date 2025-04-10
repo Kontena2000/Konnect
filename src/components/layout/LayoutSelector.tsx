@@ -1,13 +1,15 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 import { Layout } from "@/services/layout";
 import { Button } from "@/components/ui/button";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Settings } from "lucide-react";
+import { Plus, Settings, Loader2, Trash2 } from "lucide-react";
 import layoutService from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
+import { DeleteLayoutDialog } from './DeleteLayoutDialog';
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutSelectorProps {
   projectId: string;
@@ -15,6 +17,7 @@ interface LayoutSelectorProps {
   currentLayout: Layout | null;
   onLayoutChange: (layout: Layout) => void;
   onLayoutCreate: (layout: Layout) => void;
+  onDeleteComplete?: () => void;
 }
 
 export function LayoutSelector({
@@ -22,15 +25,36 @@ export function LayoutSelector({
   layouts,
   currentLayout,
   onLayoutChange,
-  onLayoutCreate
+  onLayoutCreate,
+  onDeleteComplete
 }: LayoutSelectorProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState("");
   const [newLayoutDescription, setNewLayoutDescription] = useState("");
+  const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
+
+  // Reset form when dialog opens/closes
+  useEffect(() => {
+    if (!isCreateOpen) {
+      setNewLayoutName("");
+      setNewLayoutDescription("");
+    }
+  }, [isCreateOpen]);
 
   const handleCreateLayout = async () => {
+    if (!newLayoutName.trim()) {
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a name for your layout'
+      });
+      return;
+    }
+
     try {
+      setIsCreating(true);
       const layoutId = await layoutService.createLayout({
         projectId,
         name: newLayoutName,
@@ -43,18 +67,68 @@ export function LayoutSelector({
       if (newLayout) {
         onLayoutCreate(newLayout);
         setIsCreateOpen(false);
-        setNewLayoutName("");
-        setNewLayoutDescription("");
         toast({
-          title: "Success",
-          description: "New layout created"
+          title: 'Success',
+          description: 'New layout created successfully'
         });
       }
     } catch (error) {
+      console.error('Error creating layout:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create layout"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create layout'
+      });
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const handleDeleteComplete = async () => {
+    try {
+      console.log('Layout deletion complete, refreshing layouts');
+      
+      // Call parent's onDeleteComplete if provided
+      if (onDeleteComplete) {
+        console.log('Calling parent onDeleteComplete callback');
+        onDeleteComplete();
+      } else {
+        // Fallback: refresh layouts after deletion
+        console.log('No parent callback, refreshing layouts manually');
+        const updatedLayouts = await layoutService.getProjectLayouts(projectId);
+        console.log('Fetched updated layouts:', updatedLayouts.length);
+        
+        // If the current layout was deleted, select another one if available
+        if (currentLayout && !updatedLayouts.some(l => l.id === currentLayout.id)) {
+          console.log('Current layout was deleted, selecting another one');
+          if (updatedLayouts.length > 0) {
+            onLayoutChange(updatedLayouts[0]);
+          } else {
+            // No layouts left, create empty state
+            console.log('No layouts left, creating empty state');
+            onLayoutChange({
+              id: '',
+              projectId,
+              name: '',
+              modules: [],
+              connections: [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
+        }
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Layout deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error refreshing layouts after deletion:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to refresh layouts'
       });
     }
   };
@@ -62,7 +136,7 @@ export function LayoutSelector({
   return (
     <div className='flex items-center gap-2'>
       <Select
-        value={currentLayout?.id}
+        value={currentLayout?.id || ''}
         onValueChange={(value) => {
           const layout = layouts.find((l) => l.id === value);
           if (layout) onLayoutChange(layout);
@@ -72,17 +146,23 @@ export function LayoutSelector({
           <SelectValue placeholder='Select layout' />
         </SelectTrigger>
         <SelectContent>
-          {layouts.map((layout) => (
-            <SelectItem key={layout.id} value={layout.id}>
-              {layout.name}
-            </SelectItem>
-          ))}
+          {layouts.length === 0 ? (
+            <div className='p-2 text-sm text-muted-foreground text-center'>
+              No layouts found
+            </div>
+          ) : (
+            layouts.map((layout) => (
+              <SelectItem key={layout.id} value={layout.id}>
+                {layout.name}
+              </SelectItem>
+            ))
+          )}
         </SelectContent>
       </Select>
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogTrigger asChild>
-          <Button variant='outline' size='icon'>
+          <Button variant='outline' size='icon' title='Create new layout'>
             <Plus className='h-4 w-4' />
           </Button>
         </DialogTrigger>
@@ -119,14 +199,29 @@ export function LayoutSelector({
             </Button>
             <Button 
               onClick={handleCreateLayout} 
-              disabled={!newLayoutName}
+              disabled={isCreating || !newLayoutName.trim()}
               className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
             >
-              Create Layout
+              {isCreating ? (
+                <>
+                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                  Creating...
+                </>
+              ) : (
+                'Create Layout'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {currentLayout?.id && (
+        <DeleteLayoutDialog 
+          layoutId={currentLayout.id}
+          layoutName={currentLayout.name}
+          onDeleteComplete={handleDeleteComplete}
+        />
+      )}
     </div>
   );
 }

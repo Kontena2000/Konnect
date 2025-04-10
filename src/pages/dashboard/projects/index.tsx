@@ -12,18 +12,23 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger, AlertDialogAction, AlertDialogCancel } from '@/components/ui/alert-dialog';
-import { useToastMessages } from "@/components/message/useToastMessages";
-import NewProjectModal from "./new";
+import { getFirestoreSafely } from '@/lib/firebase';
+import { collection, query, where, getDocs } from 'firebase/firestore';
+import layoutService from '@/services/layout';
+import { LoadingDialog } from '@/components/ui/loading-dialog';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
+  const [projectLayoutCounts, setProjectLayoutCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingLayoutCounts, setLoadingLayoutCounts] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
+  const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
+  const [deletingProjectName, setDeletingProjectName] = useState('');
   const { toast } = useToast();
-  const { Success, Warn, Errors } = useToastMessages();
-  const [openModal, setOpenModal] = useState(false);
 
   const filteredAndSortedProjects = projects
     .filter(project => 
@@ -43,26 +48,99 @@ export default function ProjectsPage() {
       }
     });
 
+  // Fetch layout counts for all projects individually
+  const fetchLayoutCounts = async () => {
+    if (!projects.length || !user) return;
+    
+    setLoadingLayoutCounts(true);
+    const counts: Record<string, number> = {};
+    
+    try {
+      console.log('Fetching layout counts for', projects.length, 'projects');
+      
+      // Fetch layout counts for each project individually
+      for (const project of projects) {
+        try {
+          const count = await layoutService.countProjectLayouts(project.id);
+          counts[project.id] = count;
+          console.log(`Project ${project.id} has ${count} layouts`);
+        } catch (error) {
+          console.error(`Error counting layouts for project ${project.id}:`, error);
+          counts[project.id] = 0;
+        }
+      }
+      
+      console.log('Final layout counts:', counts);
+      setProjectLayoutCounts(counts);
+    } catch (error) {
+      console.error('Error fetching layout counts:', error);
+    } finally {
+      setLoadingLayoutCounts(false);
+    }
+  };
+
+  // Call fetchLayoutCounts when projects change
+  useEffect(() => {
+    if (projects.length > 0 && user) {
+      fetchLayoutCounts();
+    }
+  }, [projects, user]);
+
   const handleDeleteProject = async (projectId: string) => {
     if (!user) {
-      Errors('You must be logged in to delete projects'); 
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to delete projects'
+      });
       return;
     }
     
     try {
-      // Fix for issue 1: The deleteProject function only needs projectId and userId
+      // Find project name for the loading dialog
+      const projectToDelete = projects.find(p => p.id === projectId);
+      if (projectToDelete) {
+        setDeletingProjectName(projectToDelete.name);
+      }
+      
+      setDeletingProjectId(projectId);
+      setShowLoadingDialog(true);
+      
       await projectService.deleteProject(projectId, user.uid);
+      
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
-      Success('Project deleted successfully'); 
+      
+      toast({
+        title: 'Success',
+        description: 'Project deleted successfully'
+      });
+      
+      // Update layout counts after deletion
+      setProjectLayoutCounts(prev => {
+        const updated = { ...prev };
+        delete updated[projectId];
+        return updated;
+      });
     } catch (error) {
       console.error('Error deleting project:', error);
-      Errors(error instanceof ProjectError ? error.message : 'Failed to delete project') 
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof ProjectError ? error.message : 'Failed to delete project'
+      });
+    } finally {
+      setDeletingProjectId(null);
+      setShowLoadingDialog(false);
     }
   };
 
   const handleDuplicateProject = async (projectId: string) => {
     if (!user) {
-      Errors('You must be logged in to duplicate projects') 
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'You must be logged in to duplicate projects'
+      });
       return;
     }
     
@@ -72,10 +150,21 @@ export default function ProjectsPage() {
       // Refresh the projects list
       const userProjects = await projectService.getUserProjects(user.uid);
       setProjects(userProjects);
-      Success('Project duplicated successfully'); 
+      
+      // Update layout counts after duplication
+      fetchLayoutCounts();
+      
+      toast({
+        title: 'Success',
+        description: 'Project duplicated successfully'
+      });
     } catch (error) {
       console.error('Error duplicating project:', error);
-      Errors(error instanceof ProjectError ? error.message : 'Failed to duplicate project') 
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof ProjectError ? error.message : 'Failed to duplicate project'
+      });
     }
   };
 
@@ -88,7 +177,11 @@ export default function ProjectsPage() {
         setProjects(userProjects);
       } catch (error) {
         console.error('Error loading projects:', error);
-        Errors('Failed to load projects. Please try again.'); 
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to load projects. Please try again.'
+        });
       } finally {
         setLoading(false);
       }
@@ -118,17 +211,23 @@ export default function ProjectsPage() {
 
   return (
     <AppLayout>
-      <div className='container space-y-8'>
+      <div className='space-y-8'>
+        {/* Loading dialog for project deletion */}
+        <LoadingDialog 
+          open={showLoadingDialog} 
+          title='Deleting Project' 
+          description={`Please wait while we delete ${deletingProjectName || 'the project'} and all its layouts...`}
+        />
+        
         <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
           <h1 className='text-2xl md:text-3xl font-bold tracking-tight'>Projects</h1>
-          <Button onClick={() => setOpenModal(true)} className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors'>
+          <Link href='/dashboard/projects/new'>
+            <Button className='bg-primary hover:bg-primary/90 text-primary-foreground shadow-sm transition-colors'>
               <Plus className='h-4 w-4 mr-2' />
               New Project
-          </Button>
+            </Button>
+          </Link>
         </div>
-
-        {/* Modal Component */}
-      <NewProjectModal open={openModal} setOpen={setOpenModal} />
 
         <div className='flex flex-col sm:flex-row gap-4'>
           <div className='relative flex-1'>
@@ -171,7 +270,7 @@ export default function ProjectsPage() {
           <div className='grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4'>
             {filteredAndSortedProjects.map((project) => (
               <Card key={project.id} className='flex flex-col h-full shadow-sm hover:shadow-md transition-shadow'>
-                <CardHeader className='pb-1'>
+                <CardHeader className='pb-4'>
                   <div className='flex justify-between items-start'>
                     <div className='space-y-2'>
                       <CardTitle className='text-xl'>{project.name}</CardTitle>
@@ -208,8 +307,16 @@ export default function ProjectsPage() {
                             <AlertDialogAction
                               onClick={() => handleDeleteProject(project.id)}
                               className='bg-red-500 hover:bg-red-600'
+                              disabled={deletingProjectId === project.id}
                             >
-                              Delete
+                              {deletingProjectId === project.id ? (
+                                <>
+                                  <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                                  Deleting...
+                                </>
+                              ) : (
+                                'Delete'
+                              )}
                             </AlertDialogAction>
                           </AlertDialogFooter>
                         </AlertDialogContent>
@@ -219,28 +326,36 @@ export default function ProjectsPage() {
                 </CardHeader>
                 <CardContent className='flex-1 space-y-6 p-6'>
                   <div className='space-y-4'>
-                    <p className='text-sm text-muted-foreground min-h-[1.5rem]'>
+                    <p className='text-sm text-muted-foreground min-h-[2.5rem]'>
                       {project.description || 'No description'}
                     </p>
                     
                     {/* Client Details Section */}
                     <div className='space-y-2 border-t pt-4'>
+                      {project.clientInfo?.name && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Building2 className='h-4 w-4 text-muted-foreground' />
-                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.name ? 'text-muted-foreground' : ''}`}>{project.clientInfo.name || 'No Company'}</span>
+                          <span>{project.clientInfo.name}</span>
                         </div>
+                      )}
+                      {project.clientInfo?.email && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Mail className='h-4 w-4 text-muted-foreground' />
-                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.email ? 'text-muted-foreground' : ''}`}>{project.clientInfo.email || 'No Email'}</span>
+                          <span>{project.clientInfo.email}</span>
                         </div>
+                      )}
+                      {project.clientInfo?.phone && (
                         <div className='flex items-center gap-2 text-sm'>
                           <Phone className='h-4 w-4 text-muted-foreground' />
-                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.phone ? 'text-muted-foreground' : ''}`}>{project.clientInfo.phone || 'No Phone'}</span>
+                          <span>{project.clientInfo.phone}</span>
                         </div>
-                        <div className='flex items-center gap-2 text-sm '>
+                      )}
+                      {project.clientInfo?.address && (
+                        <div className='flex items-center gap-2 text-sm'>
                           <MapPin className='h-4 w-4 text-muted-foreground' />
-                          <span className={`flex items-center gap-2 text-sm ${!project.clientInfo?.address ? 'text-muted-foreground' : ''}`}>{project.clientInfo.address || 'No Address'}</span>
+                          <span>{project.clientInfo.address}</span>
                         </div>
+                      )}
                     </div>
 
                     <div className='flex items-center gap-2 text-sm text-muted-foreground'>
@@ -248,7 +363,13 @@ export default function ProjectsPage() {
                       Last modified: {format(project.updatedAt.toDate(), 'MMM d, yyyy')}
                     </div>
                     <div className='flex gap-2'>
-                      <Badge variant='outline'>{(project.layouts || []).length} Layouts</Badge>
+                      <Badge variant='outline' className='bg-yellow-50'>
+                        {loadingLayoutCounts ? (
+                          <Loader2 className='h-3 w-3 mr-1 animate-spin' />
+                        ) : (
+                          <span>{projectLayoutCounts[project.id] || 0}</span>
+                        )} Layouts
+                      </Badge>
                       {project.status && (
                         <Badge variant='secondary'>{project.status}</Badge>
                       )}

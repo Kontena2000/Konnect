@@ -1,62 +1,174 @@
-
-import { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from "lucide-react";
-import { ModuleLibrary } from "@/components/three/ModuleLibrary";
-import { cn } from "@/lib/utils";
-import { Module } from "@/types/module";
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
+import { useState, useRef } from 'react';
+import { Button } from '@/components/ui/button';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/components/ui/collapsible';
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from 'lucide-react';
+import { ModuleLibrary } from '@/components/three/ModuleLibrary';
+import { cn } from '@/lib/utils';
+import { Module } from '@/types/module';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Separator } from '@/components/ui/separator';
 import { toast } from '@/hooks/use-toast';
+import { SaveLayoutDialog } from './SaveLayoutDialog';
+import { useRouter } from 'next/router';
 
 interface ToolboxProps {
   onModuleDragStart: (module: Module) => void;
-  onSave?: () => void;
-  onUndo?: () => void;
-  onRedo?: () => void;
-  controlsRef?: React.RefObject<any>;
+  onSave: () => void;
+  onUndo: () => void;
+  onRedo: () => void;
+  controlsRef: React.RefObject<any>;
+  currentLayout?: {
+    id?: string;
+    projectId?: string;
+    name?: string;
+    description?: string;
+  };
+  modules?: any[];
+  connections?: any[];
+  onSaveComplete?: (layoutId: string) => void;
 }
 
 export function Toolbox({ 
   onModuleDragStart, 
   onSave, 
   onUndo, 
-  onRedo,
-  controlsRef
+  onRedo, 
+  controlsRef,
+  currentLayout,
+  modules = [],
+  connections = [],
+  onSaveComplete
 }: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
-  const [expandedSection, setExpandedSection] = useState<string>("modules");
+  const [expandedSection, setExpandedSection] = useState<string>('modules');
+  const router = useRouter();
+  const { id: projectId } = router.query;
 
   const sections = [
     {
-      id: "modules",
-      title: "Module Library",
-      icon: <Box className="h-5 w-5" />,
+      id: 'modules',
+      title: 'Module Library',
+      icon: <Box className='h-5 w-5' />,
       content: <ModuleLibrary onDragStart={onModuleDragStart} />
     },
     {
-      id: "layers",
-      title: "Layers",
-      icon: <Layers className="h-5 w-5" />,
-      content: <div className="p-4 text-sm text-muted-foreground">Layer management coming soon</div>
+      id: 'layers',
+      title: 'Layers',
+      icon: <Layers className='h-5 w-5' />,
+      content: <div className='p-4 text-sm text-muted-foreground'>Layer management coming soon</div>
     },
     {
-      id: "settings",
-      title: "Scene Settings",
-      icon: <Settings className="h-5 w-5" />,
-      content: <div className="p-4 text-sm text-muted-foreground">Scene settings coming soon</div>
+      id: 'settings',
+      title: 'Scene Settings',
+      icon: <Settings className='h-5 w-5' />,
+      content: <div className='p-4 text-sm text-muted-foreground'>Scene settings coming soon</div>
     }
   ];
 
-  const handleSave = () => {
-    onSave?.();
+  const handleSaveComplete = (layoutId: string) => {
     toast({
       title: 'Layout Saved',
-      description: 'Your layout changes have been saved successfully.',
+      description: 'Your layout has been saved successfully.',
       duration: 2000
     });
+    
+    if (onSaveComplete) {
+      onSaveComplete(layoutId);
+    } else if (projectId) {
+      // Refresh the page with the new layout ID
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
+    }
+  };
+
+  const handleSave = () => {
+    // If we have a current layout, show the save dialog
+    if (currentLayout?.id) {
+      // Auto-save the current layout
+      if (modules.length > 0 || connections.length > 0) {
+        try {
+          onSave();
+          toast({
+            title: 'Layout Saved',
+            description: 'Your layout changes have been saved automatically.',
+            duration: 2000
+          });
+        } catch (error) {
+          console.error('Error auto-saving layout:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to save layout changes'
+          });
+        }
+      } else {
+        toast({
+          title: 'Nothing to Save',
+          description: 'Add some modules to your layout before saving.',
+          duration: 2000
+        });
+      }
+    } else {
+      // No current layout, show a message to create one first
+      toast({
+        variant: 'destructive',
+        title: 'No Layout Selected',
+        description: 'Please create or select a layout first.',
+        duration: 2000
+      });
+    }
+  };
+
+  const handle2DView = () => {
+    console.log('2D View button clicked', controlsRef?.current);
+    if (controlsRef?.current) {
+      // Call the reset method which sets the camera to 2D top-down view
+      controlsRef.current.reset();
+      toast({
+        title: '2D View',
+        description: 'Switched to 2D top-down view',
+        duration: 1500
+      });
+    } else {
+      console.error('Controls reference is not available');
+      toast({
+        title: 'Error',
+        description: 'Could not switch to 2D view',
+        variant: 'destructive',
+        duration: 1500
+      });
+    }
+  };
+
+  const handle3DView = () => {
+    console.log('3D View button clicked', controlsRef?.current);
+    if (controlsRef?.current) {
+      // Use the set3DView method for isometric view
+      if (typeof controlsRef.current.set3DView === 'function') {
+        controlsRef.current.set3DView();
+        toast({
+          title: '3D View',
+          description: 'Switched to 3D isometric view',
+          duration: 1500
+        });
+      } else {
+        console.error('set3DView method is not available');
+        toast({
+          title: 'Error',
+          description: 'Could not switch to 3D view',
+          variant: 'destructive',
+          duration: 1500
+        });
+      }
+    } else {
+      console.error('Controls reference is not available');
+      toast({
+        title: 'Error',
+        description: 'Could not switch to 3D view',
+        variant: 'destructive',
+        duration: 1500
+      });
+    }
   };
 
   return (
@@ -151,22 +263,27 @@ export function Toolbox({
         <TooltipProvider>
           <div className='space-y-2'>
             {/* Save button - Always visible and prominent */}
-            <Tooltip>
-              <TooltipTrigger asChild>
+            <SaveLayoutDialog
+              layoutData={{
+                id: currentLayout?.id,
+                projectId: (projectId as string) || '',
+                name: currentLayout?.name || '',
+                description: currentLayout?.description || '',
+                modules: modules,
+                connections: connections
+              }}
+              onSaveComplete={handleSaveComplete}
+              trigger={
                 <Button 
                   variant='default' 
                   size={collapsed ? 'icon' : 'default'}
-                  onClick={handleSave}
-                  className='w-full bg-primary hover:bg-primary/90'
+                  className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
                 >
                   <Save className='h-4 w-4' />
                   {!collapsed && <span className='ml-2'>Save Layout</span>}
                 </Button>
-              </TooltipTrigger>
-              <TooltipContent side='left'>
-                <p>Save current layout</p>
-              </TooltipContent>
-            </Tooltip>
+              }
+            />
 
             <Separator />
 
@@ -215,11 +332,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={() => {
-                      if (controlsRef?.current) {
-                        controlsRef.current.reset();
-                      }
-                    }}
+                    onClick={handle2DView}
                     className='w-full'
                   >
                     <View className='h-4 w-4' />
@@ -236,12 +349,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={() => {
-                      if (controlsRef?.current) {
-                        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
-                        controlsRef.current.setPolarAngle(Math.PI / 4);
-                      }
-                    }}
+                    onClick={handle3DView}
                     className='w-full'
                   >
                     <Grid className='h-4 w-4' />

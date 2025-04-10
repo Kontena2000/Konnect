@@ -6,7 +6,7 @@ import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
-import { Connection } from '@/services/layout';
+import { Connection, Layout } from '@/services/layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import firebaseMonitor from '@/services/firebase-monitor';
 import { getFirestoreSafely } from '@/lib/firebase';
@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
+import { LayoutSelector } from '@/components/layout/LayoutSelector';
 
 interface EditorState {
   modules: Module[];
@@ -42,32 +43,97 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
-  const [history, setHistory] = useState<Array<{ modules: Module[], connections: Connection[] }>>([]);
-  const [historyIndex, setHistoryIndex] = useState(-1);
+  const [layouts, setLayouts] = useState<Layout[]>([]);
+  const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
+
+  // Handle layout change
+  const handleLayoutChange = useCallback((layout: Layout) => {
+    setCurrentLayout(layout);
+    setModules(layout.modules || []);
+    setConnections(layout.connections || []);
+    
+    // Update URL to reflect the selected layout
+    if (projectId && layout.id) {
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layout.id}`, undefined, { shallow: true });
+    } else if (projectId) {
+      // If no layout ID (empty layout), just show the editor without layout ID in URL
+      router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
+    }
+  }, [projectId, router]);
+  
+  // Refresh layouts when needed
+  const refreshLayouts = useCallback(async () => {
+    if (!projectId || !user) return;
+    
+    try {
+      console.log('Refreshing layouts for project:', projectId);
+      const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
+      console.log('Fetched layouts:', projectLayouts.length);
+      setLayouts(projectLayouts);
+      
+      // If current layout was deleted, select another one
+      if (currentLayout && !projectLayouts.some(l => l.id === currentLayout.id)) {
+        console.log('Current layout was deleted, selecting another one');
+        if (projectLayouts.length > 0) {
+          handleLayoutChange(projectLayouts[0]);
+        } else {
+          // No layouts left, create empty state
+          console.log('No layouts left, creating empty state');
+          setCurrentLayout(null);
+          setModules([]);
+          setConnections([]);
+          router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing layouts:', error);
+    }
+  }, [projectId, user, currentLayout, handleLayoutChange, router]);
+
+  // Handle save layout
+  const handleSaveLayout = useCallback((layoutId: string) => {
+    // Refresh layouts list
+    if (projectId) {
+      // Fetch all layouts for this project
+      layoutService.getProjectLayouts(projectId as string)
+        .then(projectLayouts => {
+          setLayouts(projectLayouts);
+          
+          // Find the newly saved layout
+          const savedLayout = projectLayouts.find(l => l.id === layoutId);
+          if (savedLayout) {
+            setCurrentLayout(savedLayout);
+            
+            // Update modules and connections from the saved layout
+            if (savedLayout.modules) {
+              setModules(savedLayout.modules);
+            }
+            
+            if (savedLayout.connections) {
+              setConnections(savedLayout.connections);
+            }
+          }
+        })
+        .catch(err => {
+          console.error('Error refreshing layouts:', err);
+        });
+      
+      // Redirect to the layout editor with the saved layout
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
+    }
+  }, [projectId, router]);
+
+  // Handle layout create
+  const handleLayoutCreate = useCallback((layout: Layout) => {
+    setLayouts(prev => [...prev, layout]);
+    setCurrentLayout(layout);
+    setModules(layout.modules || []);
+    setConnections(layout.connections || []);
+  }, []);
+
   // Memoize heavy computations
   const memoizedModules = useMemo(() => modules, [modules]);
   const memoizedConnections = useMemo(() => connections, [connections]);
-
-  useEffect(() => {
-    if (modules.length > 0 || connections.length > 0) {
-      // Don't save if we're in the middle of an undo/redo operation
-      if (historyIndex >= 0 && 
-          history.length > 0 &&
-          JSON.stringify(history[historyIndex].modules) === JSON.stringify(modules) &&
-          JSON.stringify(history[historyIndex].connections) === JSON.stringify(connections)) {
-        return;
-      }
-      
-      // If we're not at the end of the history, truncate it
-      const newHistory = historyIndex < history.length - 1 
-        ? history.slice(0, historyIndex + 1) 
-        : [...history];
-      
-      newHistory.push({ modules: [...modules], connections: [...connections] });
-      setHistory(newHistory);
-      setHistoryIndex(newHistory.length - 1);
-    }
-  }, [modules, connections, history, historyIndex]);
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
@@ -247,34 +313,49 @@ export default function LayoutEditorPage() {
         
         setProject(projectData);
         
+        // Fetch all layouts for this project
+        const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
+        setLayouts(projectLayouts);
+        
         // If layoutId is provided, fetch the layout
         if (layoutId) {
-          const layoutRef = doc(db, 'layouts', layoutId as string);
-          const layoutSnap = await getDoc(layoutRef);
-          
-          if (layoutSnap.exists()) {
-            const layoutData = {
-              id: layoutSnap.id,
-              ...layoutSnap.data()
-            } as any; // Cast to any to avoid TypeScript errors
+          try {
+            const layoutRef = doc(db, 'layouts', layoutId as string);
+            const layoutSnap = await getDoc(layoutRef);
             
-            // Verify this layout belongs to the current project
-            if (layoutData.projectId === projectId) {
-              setLayout(layoutData);
+            if (layoutSnap.exists()) {
+              const layoutData = {
+                id: layoutSnap.id,
+                ...layoutSnap.data()
+              } as any; // Cast to any to avoid TypeScript errors
               
-              // Set modules and connections from layout data
-              if (layoutData.modules) {
-                setModules(layoutData.modules);
-              }
-              
-              if (layoutData.connections) {
-                setConnections(layoutData.connections);
+              // Verify this layout belongs to the current project
+              if (layoutData.projectId === projectId) {
+                setLayout(layoutData);
+                setCurrentLayout(layoutData);
+                
+                // Set modules and connections from layout data
+                if (layoutData.modules) {
+                  setModules(layoutData.modules);
+                }
+                
+                if (layoutData.connections) {
+                  setConnections(layoutData.connections);
+                }
+              } else {
+                console.error('Layout does not belong to this project:', {
+                  layoutId,
+                  layoutProjectId: layoutData.projectId,
+                  currentProjectId: projectId
+                });
+                setError('Layout does not belong to this project');
               }
             } else {
-              setError('Layout does not belong to this project');
+              setError('Layout not found');
             }
-          } else {
-            setError('Layout not found');
+          } catch (layoutError) {
+            console.error('Error fetching layout:', layoutError);
+            setError('Failed to load layout data');
           }
         }
       } catch (err) {
@@ -290,10 +371,10 @@ export default function LayoutEditorPage() {
   
   if (loading) {
     return (
-      <div className='flex items-center justify-center h-screen w-full'>
-        <div className='space-y-4 text-center'>
-          <Skeleton className='h-8 w-64 mx-auto' />
-          <Skeleton className='h-[calc(100vh-120px)] w-[90vw] max-w-5xl' />
+      <div className="flex items-center justify-center h-screen w-full">
+        <div className="space-y-4 text-center">
+          <Skeleton className="h-8 w-64 mx-auto" />
+          <Skeleton className="h-[calc(100vh-120px)] w-[90vw] max-w-5xl" />
         </div>
       </div>
     );
@@ -301,12 +382,12 @@ export default function LayoutEditorPage() {
   
   if (error) {
     return (
-      <div className='flex items-center justify-center h-screen w-full'>
-        <div className='bg-destructive/10 p-6 rounded-md max-w-md'>
-          <h2 className='text-lg font-medium text-destructive mb-2'>Error</h2>
-          <p className='mb-4'>{error}</p>
+      <div className="flex items-center justify-center h-screen w-full">
+        <div className="bg-destructive/10 p-6 rounded-md max-w-md">
+          <h2 className="text-lg font-medium text-destructive mb-2">Error</h2>
+          <p className="mb-4">{error}</p>
           <Button 
-            variant='outline' 
+            variant="outline" 
             onClick={() => router.push('/dashboard/projects')}
           >
             Back to Projects
@@ -318,17 +399,9 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout fullWidth noPadding>
-      <Toolbox 
-          onModuleDragStart={handleModuleDragStart}
-          onSave={handleSave}
-          onUndo={handleUndo}
-          onRedo={handleRedo}
-          controlsRef={controlsRef}
-        />
-        
-      <div className='h-screen w-screen overflow-hidden'>
+      <div className="h-screen w-screen overflow-hidden">
         <ErrorBoundary>
-          <div className='inset-0'>
+          <div className="absolute inset-0">
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -341,6 +414,57 @@ export default function LayoutEditorPage() {
               editorPreferences={editorPreferences}
             />
           </div>
+          
+          {/* Layout selector - Improved positioning for better responsiveness */}
+          <div className='fixed top-4 left-0 right-0 z-10'>
+            <div className='max-w-3xl mx-auto px-4'>
+              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center sm:justify-between flex-wrap gap-4'>
+                <div className='flex items-center justify-center flex-grow sm:flex-grow-0'>
+                  <LayoutSelector
+                    projectId={projectId as string}
+                    layouts={layouts}
+                    currentLayout={currentLayout}
+                    onLayoutChange={handleLayoutChange}
+                    onLayoutCreate={handleLayoutCreate}
+                    onDeleteComplete={refreshLayouts}
+                  />
+                </div>
+                
+                <div className='flex items-center justify-center'>
+                  <SaveLayoutDialog
+                    layoutData={{
+                      id: currentLayout?.id,
+                      projectId: projectId as string,
+                      name: currentLayout?.name || '',
+                      description: currentLayout?.description || '',
+                      modules: modules,
+                      connections: connections
+                    }}
+                    onSaveComplete={handleSaveLayout}
+                    trigger={
+                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                        <Save className='h-4 w-4 mr-2' />
+                        {currentLayout?.id ? 'Save As' : 'Save Layout'}
+                      </Button>
+                    }
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Add Toolbox component */}
+          <Toolbox 
+            onModuleDragStart={handleModuleDragStart}
+            onSave={handleSave}
+            onUndo={handleUndo}
+            onRedo={handleRedo}
+            controlsRef={controlsRef}
+            currentLayout={currentLayout || undefined}
+            modules={modules}
+            connections={connections}
+            onSaveComplete={handleSaveLayout}
+          />
         </ErrorBoundary>
       </div>
     </AppLayout>
