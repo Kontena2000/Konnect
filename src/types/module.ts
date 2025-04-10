@@ -41,6 +41,10 @@ export interface Module {
   modelUrl?: string;
   category?: string;
   selected?: boolean;
+  // Add missing properties that are used in the application
+  color?: string;
+  visibleInEditor?: boolean;
+  energy?: ModuleEnergyProperties;
 }
 
 export const defaultModules: Module[] = [
@@ -81,19 +85,23 @@ export const defaultModules: Module[] = [
     connectionPoints: [
       {
         id: "edge-container-power-east",
+        type: "power",
+        position: [6.096, 0, 1.219],
+        // Additional properties for compatibility with ConnectionPoint
         moduleId: "edge-container",
         side: "east",
         types: ["power"],
-        position: [6.096, 0, 1.219],
         isInput: true,
         isOutput: false
       },
       {
         id: "edge-container-water-west",
+        type: "water",
+        position: [-6.096, 0, 1.219],
+        // Additional properties for compatibility with ConnectionPoint
         moduleId: "edge-container",
         side: "west",
         types: ["water-supply", "water-return"],
-        position: [-6.096, 0, 1.219],
         isInput: true,
         isOutput: true
       }

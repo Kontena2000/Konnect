@@ -21,6 +21,7 @@ interface FormData {
   name: string;
   description: string;
   category: string;
+  type: string; // Add type property to FormData interface
   color: string;
   dimensions: {
     length: number;
@@ -42,10 +43,11 @@ export function CreateModuleDialog({
   const [isOpen, setIsOpen] = useState(propIsOpen || false);
   const [categories, setCategories] = useState<{ id: string; name: string; }[]>([]);
   const [formData, setFormData] = useState<FormData>({
-    name: "",
-    description: "",
-    category: "basic",
-    color: "#808080",
+    name: '',
+    description: '',
+    category: 'basic',
+    type: 'module', // Initialize type property
+    color: '#808080',
     dimensions: {
       length: 1,
       width: 1,
@@ -84,10 +86,11 @@ export function CreateModuleDialog({
 
   const resetForm = () => {
     setFormData({
-      name: "",
-      description: "",
-      category: "basic",
-      color: "#808080",
+      name: '',
+      description: '',
+      category: 'basic',
+      type: 'module', // Reset type property
+      color: '#808080',
       dimensions: {
         length: 1,
         width: 1,
