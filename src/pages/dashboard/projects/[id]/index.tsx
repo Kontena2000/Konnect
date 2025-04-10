@@ -57,6 +57,7 @@ export default function ProjectDetailsPage() {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
   const [creatingLayout, setCreatingLayout] = useState(false);
+  const [creatingCalculation, setCreatingCalculation] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -263,6 +264,11 @@ export default function ProjectDetailsPage() {
       });
       setCreatingLayout(false);
     }
+  };
+
+  const createNewCalculation = () => {
+    setCreatingCalculation(true);
+    router.push(`/dashboard/matrix-calculator?projectId=${id}`);
   };
 
   const handleEditLayout = (layoutId: string) => {
@@ -736,10 +742,20 @@ export default function ProjectDetailsPage() {
                 <h3 className="text-lg font-medium">Project Calculations</h3>
                 <Button 
                   className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
-                  onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
+                  onClick={createNewCalculation}
+                  disabled={creatingCalculation}
                 >
-                  <Plus className="h-4 w-4" />
-                  Create New Calculation
+                  {creatingCalculation ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Create New Calculation
+                    </>
+                  )}
                 </Button>
               </div>
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
@@ -796,10 +812,20 @@ export default function ProjectDetailsPage() {
                     <p className='text-muted-foreground mb-4'>No calculations found for this project</p>
                     <Button 
                       className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white transition-all duration-200 shadow-sm hover:shadow"
-                      onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
+                      onClick={createNewCalculation}
+                      disabled={creatingCalculation}
                     >
-                      <Plus className='mr-2 h-4 w-4' />
-                      Create First Calculation
+                      {creatingCalculation ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className='mr-2 h-4 w-4' />
+                          Create First Calculation
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
