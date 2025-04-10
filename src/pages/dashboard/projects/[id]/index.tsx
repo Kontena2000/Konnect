@@ -415,7 +415,7 @@ export default function ProjectDetailsPage() {
               <>
                 <Separator />
                 <div>
-                  <h3 className="text-sm font-medium mb-3">Project Actions</h3>
+                  <h3 className="text-lg font-medium mb-4">Project Actions</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
                     <Button 
                       className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-auto py-3 px-4"
