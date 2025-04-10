@@ -15,6 +15,7 @@ import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFoo
 import { getFirestoreSafely } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import layoutService from '@/services/layout';
+import { LoadingDialog } from '@/components/ui/loading-dialog';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
@@ -25,6 +26,8 @@ export default function ProjectsPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
+  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
+  const [deletingProjectName, setDeletingProjectName] = useState('');
   const { toast } = useToast();
 
   const filteredAndSortedProjects = projects
@@ -94,9 +97,19 @@ export default function ProjectsPage() {
     }
     
     try {
+      // Find project name for the loading dialog
+      const projectToDelete = projects.find(p => p.id === projectId);
+      if (projectToDelete) {
+        setDeletingProjectName(projectToDelete.name);
+      }
+      
       setDeletingProjectId(projectId);
+      setShowLoadingDialog(true);
+      
       await projectService.deleteProject(projectId, user.uid);
+      
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
+      
       toast({
         title: 'Success',
         description: 'Project deleted successfully'
@@ -117,6 +130,7 @@ export default function ProjectsPage() {
       });
     } finally {
       setDeletingProjectId(null);
+      setShowLoadingDialog(false);
     }
   };
 
@@ -198,6 +212,13 @@ export default function ProjectsPage() {
   return (
     <AppLayout>
       <div className='space-y-8'>
+        {/* Loading dialog for project deletion */}
+        <LoadingDialog 
+          open={showLoadingDialog} 
+          title='Deleting Project' 
+          description={`Please wait while we delete ${deletingProjectName || 'the project'} and all its layouts...`}
+        />
+        
         <div className='flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4'>
           <h1 className='text-2xl md:text-3xl font-bold tracking-tight'>Projects</h1>
           <Link href='/dashboard/projects/new'>
