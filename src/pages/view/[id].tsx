@@ -24,9 +24,15 @@ export default function ViewerPage() {
         try {
           // Pass the user to getLayout to handle authentication
           const layoutData = await layoutService.getLayout(id as string, user || undefined);
-          console.log("Layout data loaded:", layoutData ? "success" : "null");
-          setLayout(layoutData);
-          if (!layoutData) {
+          console.log("Layout data loaded:", layoutData ? "success" : "null", layoutData);
+          
+          if (layoutData) {
+            setLayout(layoutData);
+            console.log("Layout set in state:", layoutData.name, "with", 
+              layoutData.modules?.length || 0, "modules and", 
+              layoutData.connections?.length || 0, "connections");
+          } else {
+            console.error("Layout data is null");
             setError("Layout not found or you do not have permission to view it.");
           }
         } catch (err) {
@@ -81,6 +87,29 @@ export default function ViewerPage() {
     );
   }
 
+  // Format date for display
+  const formatDate = (date: any) => {
+    if (!date) return "Unknown";
+    
+    // Handle Firestore timestamp
+    if (date && typeof date === "object" && "seconds" in date) {
+      return new Date(date.seconds * 1000).toLocaleString();
+    }
+    
+    // Handle Date object
+    if (date instanceof Date) {
+      return date.toLocaleString();
+    }
+    
+    // Try to parse string date
+    try {
+      return new Date(date).toLocaleString();
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "Unknown date format";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <Card className="w-full max-w-2xl">
@@ -91,14 +120,30 @@ export default function ViewerPage() {
           </CardDescription>
         </CardHeader>
         
-        <CardContent className="text-center">
-          <p className="text-muted-foreground mb-4">
-            This layout contains {layout.modules?.length || 0} modules and {layout.connections?.length || 0} connections.
-          </p>
+        <CardContent className="space-y-6">
+          <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">Modules</p>
+              <p className="text-2xl font-bold">{layout.modules?.length || 0}</p>
+            </div>
+            
+            <div className="bg-muted/50 p-4 rounded-lg">
+              <p className="text-sm text-muted-foreground">Connections</p>
+              <p className="text-2xl font-bold">{layout.connections?.length || 0}</p>
+            </div>
+          </div>
           
-          <p className="text-sm text-muted-foreground">
-            To view or edit this layout in detail, please return to the project page.
-          </p>
+          <div className="text-center">
+            <p className="text-sm text-muted-foreground">
+              Last updated: {formatDate(layout.updatedAt)}
+            </p>
+          </div>
+          
+          <div className="text-center">
+            <p className="text-muted-foreground">
+              To view or edit this layout in detail, please return to the project page.
+            </p>
+          </div>
         </CardContent>
         
         <CardFooter className="flex justify-center pt-4">
