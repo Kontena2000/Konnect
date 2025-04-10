@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -14,7 +15,6 @@ import layoutService, { Layout } from '@/services/layout';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { useModuleState } from '@/hooks/use-module-state';
 import { useKeyboardShortcuts } from '@/hooks/use-keyboard-shortcuts';
-import { ConnectionType } from '@/types/connection';
 import { Module } from '@/types/module';
 
 export default function LayoutEditorPage() {
@@ -452,7 +452,7 @@ export default function LayoutEditorPage() {
               selectedModules={modules.filter(m => m.selected)}
               onUpdateModule={handleModuleUpdated}
               onDeleteModule={handleModuleRemoved}
-              connectionTypes={Object.values(ConnectionType)}
+              connectionTypes={["power", "water-supply", "water-return", "network", "cooling", "water", "gas", "security"]}
             />
           </div>
         </div>
