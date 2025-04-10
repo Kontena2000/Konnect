@@ -1,4 +1,3 @@
-
 import { useEffect } from "react";
 import { Mesh, MeshStandardMaterial } from "three";
 import * as THREE from "three";
@@ -17,8 +16,7 @@ export function ModuleMesh({
   module,
   meshRef,
   editorPreferences,
-  onClick,
-  onContextMenu
+  ...props
 }: ModuleMeshProps) {
   useEffect(() => {
     if (meshRef.current) {
@@ -38,21 +36,17 @@ export function ModuleMesh({
       position={module.position}
       rotation={module.rotation}
       scale={module.scale}
-      onClick={onClick}
-      onContextMenu={onContextMenu}
+      onClick={props.onClick}
+      onContextMenu={props.onContextMenu}
       castShadow
       receiveShadow
     >
-      <boxGeometry args={[
-        module.dimensions.length,
-        module.dimensions.height,
-        module.dimensions.width
-      ]} />
+      <boxGeometry args={[module.width, module.height, module.depth]} />
       <meshStandardMaterial
         color={module.color || '#888888'}
         transparent={true}
         opacity={editorPreferences?.objects.transparency || 0.85}
-        wireframe={module.wireframe}
+        wireframe={false}
       />
     </mesh>
   );

@@ -20,12 +20,16 @@ import { CalculationConfig, CalculationOptions } from './matrixCalculatorService
  */
 export async function saveCalculationResult(
   userId: string, 
-  config: CalculationConfig, 
+  config: {
+    kwPerRack: number;
+    coolingType: string;
+    totalRacks: number;
+  },
   results: any, 
   name: string, 
   options: CalculationOptions = {},
   projectId?: string
-) {
+): Promise<{ success: boolean; id?: string; error?: string }> {
   try {
     console.log('[Matrix Calculator] Starting save calculation process...');
     calculatorDebug.log('Starting save calculation process', { userId, config, name, projectId });
@@ -113,31 +117,32 @@ export async function saveCalculationResult(
       console.log('[Matrix Calculator] Saving calculation to Firestore...');
       calculatorDebug.log('Saving calculation to Firestore');
       
-      // Create a direct reference to the configs subcollection
-      const configsCollection = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
-      
-      // Add the document to the collection
-      const docRef = await addDoc(configsCollection, {
+      // Prepare calculation data
+      const calculationData = {
+        name: name || `${config.kwPerRack}kW ${config.coolingType} configuration`,
+        description: `${config.totalRacks} racks at ${config.kwPerRack}kW per rack`,
         userId,
-        name,
-        description: `${config.kwPerRack}kW per rack, ${config.coolingType} cooling, ${config.totalRacks || 28} racks`,
+        projectId: projectId || null,
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp(),
         kwPerRack: config.kwPerRack,
         coolingType: config.coolingType,
-        totalRacks: config.totalRacks || 28,
-        redundancyMode,
-        includeGenerator,
-        sustainabilityOptions,
-        location,
-        projectId, // Add projectId to the saved calculation
-        results,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
-      });
+        totalRacks: config.totalRacks,
+        options: options ? JSON.parse(JSON.stringify(options)) : null,
+        results: JSON.parse(JSON.stringify(results))
+      };
+      
+      // Create a direct reference to the configs subcollection
+      const calculationsRef = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
+      const docRef = await addDoc(calculationsRef, calculationData);
       
       console.log('[Matrix Calculator] Calculation saved successfully with ID:', docRef.id);
       calculatorDebug.log('Calculation saved successfully', { id: docRef.id });
       
-      return { id: docRef.id, success: true, projectId };
+      return { 
+        success: true,
+        id: docRef.id
+      };
     } catch (error) {
       console.error('[Matrix Calculator] Error saving calculation to Firestore:', error);
       calculatorDebug.error('Error saving calculation to Firestore', error);
