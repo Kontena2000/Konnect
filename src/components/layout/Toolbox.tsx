@@ -1,3 +1,4 @@
+
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -271,7 +272,7 @@ export function Toolbox({
                   className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
                 >
                   <Save className='h-4 w-4' />
-                  {!collapsed && <span className='ml-2'>{currentLayout?.id ? 'Save Layout' : 'Create Layout'}</span>}
+                  {!collapsed && <span className='ml-2'>Save Layout</span>}
                 </Button>
               }
             />
