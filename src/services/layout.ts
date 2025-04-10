@@ -408,19 +408,28 @@ const layoutService = {
 
   async getLayout(id: string, user?: AuthUser): Promise<Layout | null> {
     try {
+      console.log('Getting layout:', id);
       const firestore = ensureFirestore();
       const layoutRef = doc(firestore, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
       
       if (!snapshot.exists()) {
+        console.log('Layout not found:', id);
         return null;
       }
 
       const data = snapshot.data();
+      console.log('Layout data retrieved:', { 
+        id, 
+        projectId: data.projectId,
+        name: data.name,
+        modules: data.modules?.length || 0
+      });
       
       if (user) {
         // Special case for ruud@kontena.eu - always has full access
         if (user.email === 'ruud@kontena.eu') {
+          console.log('Admin user detected, granting full access');
           return {
             id: snapshot.id,
             ...data,
@@ -435,11 +444,13 @@ const layoutService = {
         const projectSnap = await getDoc(projectRef);
         
         if (!projectSnap.exists()) {
+          console.error('Associated project not found:', data.projectId);
           throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
         }
 
         const project = projectSnap.data();
         if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+          console.error('Unauthorized access to layout:', id, 'by user:', user.uid);
           throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
         }
       }
@@ -453,6 +464,7 @@ const layoutService = {
         updatedAt: data.updatedAt?.toDate() || new Date()
       } as Layout;
     } catch (error) {
+      console.error('Error fetching layout:', error);
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to fetch layout', 'FETCH_FAILED', error);
     }

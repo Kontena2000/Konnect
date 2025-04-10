@@ -141,7 +141,8 @@ export function SaveLayoutDialog({
       console.log('Saving layout with data:', { 
         ...saveData, 
         modules: saveData.modules?.length || 0, 
-        connections: saveData.connections?.length || 0 
+        connections: saveData.connections?.length || 0,
+        projectId: selectedProjectId
       });
       
       // Save or update layout
@@ -166,6 +167,7 @@ export function SaveLayoutDialog({
         // Create new layout - either it's a new layout or we're saving to a different project
         try {
           console.log('Creating new layout or saving to different project');
+          console.log('Selected project ID:', selectedProjectId);
           
           // Always create a new layout when saving to a different project
           layoutId = await layoutService.saveLayoutToProject(
@@ -185,11 +187,16 @@ export function SaveLayoutDialog({
         }
       }
       
-      if (onSaveComplete && layoutId) {
-        onSaveComplete(layoutId);
-      }
-      
+      // Close dialog first to prevent any UI issues
       setOpen(false);
+      
+      // Then call the callback with the new layout ID
+      if (onSaveComplete && layoutId) {
+        console.log('Calling onSaveComplete with layoutId:', layoutId);
+        setTimeout(() => {
+          onSaveComplete(layoutId);
+        }, 100); // Small delay to ensure dialog is closed first
+      }
       
     } catch (error) {
       console.error('Error saving layout:', error);

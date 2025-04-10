@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -203,15 +202,26 @@ export default function LayoutEditorPage() {
   
   // Handle save completion
   const handleSaveComplete = useCallback((newLayoutId: string) => {
+    console.log('Save complete with new layout ID:', newLayoutId);
+    
+    // Set the new layout ID in state
     setLayoutId(newLayoutId);
     setHasUnsavedChanges(false);
     
     // Update URL to include the layout ID without full page reload
-    const newUrl = `/dashboard/projects/${projectId}/editor?layoutId=${newLayoutId}`;
+    // Use the current projectId from the URL to ensure consistency
+    const currentProjectId = router.query.id as string;
+    const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
+    
+    console.log('Updating URL to:', newUrl);
     router.push(newUrl, undefined, { shallow: true });
     
-    console.log('Layout saved with ID:', newLayoutId);
-  }, [projectId, router]);
+    // Show success toast
+    toast({
+      title: 'Success',
+      description: 'Layout saved successfully'
+    });
+  }, [router, toast]);
   
   // Handle camera zoom
   const handleZoomIn = useCallback(() => {
