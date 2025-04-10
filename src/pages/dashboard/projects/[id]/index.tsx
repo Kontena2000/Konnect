@@ -682,7 +682,7 @@ export default function ProjectDetailsPage() {
                       <CardHeader className='pb-2 bg-muted/20'>
                         <CardTitle>{calculation.name || 'Unnamed Calculation'}</CardTitle>
                         <CardDescription>
-                          {calculation.description || `${calculation.kwPerRack}kW per rack, ${calculation.totalRacks} racks`}
+                          {calculation.description || `${calculation.kwPerRack || 0}kW per rack, ${calculation.totalRacks || 0} racks`}
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4">
