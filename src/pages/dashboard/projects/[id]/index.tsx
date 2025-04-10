@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -374,20 +373,24 @@ export default function ProjectDetailsPage() {
               </div>
               
               {/* Client Information */}
-              {(project as any).client && (
+              {project.clientInfo && (
                 <>
                   <div>
                     <h3 className='text-sm font-medium text-muted-foreground'>Client Name</h3>
-                    <p>{(project as any).client.name || 'Not specified'}</p>
+                    <p>{project.clientInfo.name || 'Not specified'}</p>
                   </div>
                   <div>
-                    <h3 className='text-sm font-medium text-muted-foreground'>Client Contact</h3>
-                    <p>{(project as any).client.contact || 'Not specified'}</p>
+                    <h3 className='text-sm font-medium text-muted-foreground'>Client Email</h3>
+                    <p>{project.clientInfo.email || 'Not specified'}</p>
                   </div>
-                  {(project as any).client.email && (
-                    <div>
-                      <h3 className='text-sm font-medium text-muted-foreground'>Client Email</h3>
-                      <p>{(project as any).client.email}</p>
+                  <div>
+                    <h3 className='text-sm font-medium text-muted-foreground'>Client Phone</h3>
+                    <p>{project.clientInfo.phone || 'Not specified'}</p>
+                  </div>
+                  {project.clientInfo.address && (
+                    <div className='md:col-span-3'>
+                      <h3 className='text-sm font-medium text-muted-foreground'>Client Address</h3>
+                      <p>{project.clientInfo.address}</p>
                     </div>
                   )}
                 </>
