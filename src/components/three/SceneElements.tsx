@@ -120,7 +120,11 @@ export function SceneElements({
           modules={modules}
           selected={module.id === selectedModuleId}
           onClick={() => onModuleSelect?.(module.id)}
-          onUpdate={updates => onModuleUpdate?.(module.id, updates)}
+          onUpdate={(moduleUpdates) => {
+            if (onModuleUpdate) {
+              onModuleUpdate(module.id, moduleUpdates as Partial<Module>);
+            }
+          }}
           onDelete={() => onModuleDelete?.(module.id)}
           transformMode={transformMode}
           gridSnap={gridSnap}
