@@ -262,6 +262,24 @@ export default function ProjectDetailsPage() {
       });
     }
   };
+
+  // Add a new function to refresh layouts
+  const refreshLayouts = async () => {
+    if (!id) return;
+    
+    try {
+      console.log('Refreshing layouts for project:', id);
+      const projectLayouts = await layoutService.getProjectLayouts(id as string);
+      setLayouts(projectLayouts);
+    } catch (error) {
+      console.error('Error refreshing layouts:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to refresh layouts'
+      });
+    }
+  };
   
   const handleEditCalculation = (calculationId: string) => {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
@@ -357,8 +375,9 @@ export default function ProjectDetailsPage() {
                             View
                           </Button>
                           <DeleteLayoutDialog 
-                            layoutId={layout.id} 
-                            onDelete={() => handleDeleteLayout(layout.id)} 
+                            layoutId={layout.id}
+                            layoutName={layout.name}
+                            onDeleteComplete={refreshLayouts}
                           />
                         </CardFooter>
                       </Card>
