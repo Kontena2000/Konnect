@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -29,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users, Plus, Copy, User, Mail, Phone, Building } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users, Plus, Copy, User, Mail, Phone, Building, MapPin } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -67,6 +66,7 @@ export default function ProjectDetailsPage() {
     clientName: '',
     clientEmail: '',
     clientPhone: '',
+    clientAddress: '',
     clientCompany: ''
   });
 
@@ -95,6 +95,7 @@ export default function ProjectDetailsPage() {
           clientName: projectData.clientInfo?.name || '',
           clientEmail: projectData.clientInfo?.email || '',
           clientPhone: projectData.clientInfo?.phone || '',
+          clientAddress: projectData.clientInfo?.address || '',
           clientCompany: projectData.clientInfo?.name || '' // Using name as company for now
         });
         
@@ -155,7 +156,7 @@ export default function ProjectDetailsPage() {
         name: formData.clientName,
         email: formData.clientEmail,
         phone: formData.clientPhone,
-        address: '' // Keeping empty for now
+        address: formData.clientAddress
       };
       
       await projectService.updateProject(id as string, {
@@ -176,7 +177,8 @@ export default function ProjectDetailsPage() {
           ...prev.clientInfo,
           name: formData.clientName,
           email: formData.clientEmail,
-          phone: formData.clientPhone
+          phone: formData.clientPhone,
+          address: formData.clientAddress
         }
       } : null);
       
@@ -810,6 +812,17 @@ export default function ProjectDetailsPage() {
                             onChange={handleInputChange}
                           />
                         </div>
+                        <div className='space-y-2'>
+                          <Label htmlFor='clientAddress'>Address</Label>
+                          <Textarea 
+                            id='clientAddress' 
+                            name='clientAddress'
+                            placeholder='Enter client address' 
+                            value={formData.clientAddress}
+                            onChange={handleInputChange}
+                            rows={3}
+                          />
+                        </div>
                       </div>
                     </div>
                     <DialogFooter>
@@ -882,9 +895,17 @@ export default function ProjectDetailsPage() {
                           <p>Not specified</p>
                         )}
                       </div>
+
+                      <div className='space-y-1 md:col-span-2'>
+                        <div className='flex items-center gap-2'>
+                          <MapPin className='h-4 w-4 text-muted-foreground' />
+                          <h4 className='text-sm font-medium text-muted-foreground'>Address</h4>
+                        </div>
+                        <p className='whitespace-pre-line'>{project.clientInfo?.address || 'Not specified'}</p>
+                      </div>
                     </div>
                     
-                    {!project.clientInfo?.name && !project.clientInfo?.email && !project.clientInfo?.phone && (
+                    {!project.clientInfo?.name && !project.clientInfo?.email && !project.clientInfo?.phone && !project.clientInfo?.address && (
                       <div className='py-4 text-center'>
                         <User className='h-12 w-12 mx-auto text-muted-foreground mb-2' />
                         <p className='text-muted-foreground'>No client information has been added yet</p>
