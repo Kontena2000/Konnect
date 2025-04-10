@@ -151,8 +151,16 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     // Ensure data is serializable for Firestore
     const cleanData = safeSerialize(data);
     
-    // Log modules and their positions/rotations for debugging
+    // Ensure all module positions and rotations are numbers
     if (cleanData.modules && Array.isArray(cleanData.modules)) {
+      cleanData.modules = cleanData.modules.map((module: any) => ({
+        ...module,
+        position: module.position.map(Number),
+        rotation: module.rotation.map(Number),
+        scale: module.scale.map(Number)
+      }));
+      
+      // Log modules and their positions/rotations for debugging
       console.log('Saving modules with positions/rotations:');
       cleanData.modules.forEach((module: any) => {
         if (module.id) {
@@ -252,8 +260,16 @@ const layoutService = {
         // Ensure data is serializable for Firestore
         const cleanData = safeSerialize(data);
         
-        // Log modules and their positions/rotations for debugging
+        // Ensure all module positions and rotations are numbers
         if (cleanData.modules && Array.isArray(cleanData.modules)) {
+          cleanData.modules = cleanData.modules.map((module: any) => ({
+            ...module,
+            position: module.position.map(Number),
+            rotation: module.rotation.map(Number),
+            scale: module.scale.map(Number)
+          }));
+          
+          // Log modules and their positions/rotations for debugging
           console.log('Admin saving modules with positions/rotations:');
           cleanData.modules.forEach((module: any) => {
             if (module.id) {
@@ -466,6 +482,16 @@ const layoutService = {
       if (!validateLayout(newLayout)) {
         console.error('Invalid layout data:', newLayout);
         throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
+      }
+
+      // Ensure all module positions and rotations are numbers
+      if (newLayout.modules && Array.isArray(newLayout.modules)) {
+        newLayout.modules = newLayout.modules.map((module: any) => ({
+          ...module,
+          position: module.position.map(Number),
+          rotation: module.rotation.map(Number),
+          scale: module.scale.map(Number)
+        }));
       }
 
       // Ensure data is serializable for Firestore

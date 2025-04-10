@@ -177,23 +177,23 @@ export function ModuleObject({
     
     // Get final position after transform
     const finalPosition: [number, number, number] = [
-      meshRef.current.position.x,
-      meshRef.current.position.y,
-      meshRef.current.position.z
+      Number(meshRef.current.position.x),
+      Number(meshRef.current.position.y),
+      Number(meshRef.current.position.z)
     ];
     
     // Get final rotation after transform
     const finalRotation: [number, number, number] = [
-      meshRef.current.rotation.x * 180 / Math.PI,
-      meshRef.current.rotation.y * 180 / Math.PI,
-      meshRef.current.rotation.z * 180 / Math.PI
+      Number(meshRef.current.rotation.x * 180 / Math.PI),
+      Number(meshRef.current.rotation.y * 180 / Math.PI),
+      Number(meshRef.current.rotation.z * 180 / Math.PI)
     ];
     
     // Get final scale after transform
     const finalScale: [number, number, number] = [
-      meshRef.current.scale.x,
-      meshRef.current.scale.y,
-      meshRef.current.scale.z
+      Number(meshRef.current.scale.x),
+      Number(meshRef.current.scale.y),
+      Number(meshRef.current.scale.z)
     ];
     
     console.log('Transform ended, updating module with final position:', module.id, finalPosition, 'rotation:', finalRotation);
@@ -288,23 +288,23 @@ export function ModuleObject({
             if (meshRef.current) {
               // Get current position during transform
               const currentPosition: [number, number, number] = [
-                meshRef.current.position.x,
-                meshRef.current.position.y,
-                meshRef.current.position.z
+                Number(meshRef.current.position.x),
+                Number(meshRef.current.position.y),
+                Number(meshRef.current.position.z)
               ];
               
               // Get current rotation during transform
               const currentRotation: [number, number, number] = [
-                meshRef.current.rotation.x * 180 / Math.PI,
-                meshRef.current.rotation.y * 180 / Math.PI,
-                meshRef.current.rotation.z * 180 / Math.PI
+                Number(meshRef.current.rotation.x * 180 / Math.PI),
+                Number(meshRef.current.rotation.y * 180 / Math.PI),
+                Number(meshRef.current.rotation.z * 180 / Math.PI)
               ];
               
               // Get current scale during transform
               const currentScale: [number, number, number] = [
-                meshRef.current.scale.x,
-                meshRef.current.scale.y,
-                meshRef.current.scale.z
+                Number(meshRef.current.scale.x),
+                Number(meshRef.current.scale.y),
+                Number(meshRef.current.scale.z)
               ];
               
               // Update position in real-time during transform

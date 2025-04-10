@@ -284,8 +284,16 @@ export default function LayoutEditorPage() {
     saveTimeout.current = setTimeout(() => {
       // Save current layout if available
       if (currentLayout?.id && user) {
+        // Ensure all module positions and rotations are numbers
+        const modulesToSave = modules.map(module => ({
+          ...module,
+          position: module.position.map(Number) as [number, number, number],
+          rotation: module.rotation.map(Number) as [number, number, number],
+          scale: module.scale.map(Number) as [number, number, number]
+        }));
+        
         layoutService.updateLayout(currentLayout.id, {
-          modules,
+          modules: modulesToSave,
           connections
         }, user as AuthUser)
           .then(() => {
