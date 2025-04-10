@@ -400,10 +400,6 @@ export default function ProjectDetailsPage() {
                 </Badge>
               </div>
               <div>
-                <h3 className='text-sm font-medium text-muted-foreground'>Project ID</h3>
-                <p className='font-mono text-sm'>{project.id}</p>
-              </div>
-              <div>
                 <h3 className='text-sm font-medium text-muted-foreground'>Created</h3>
                 <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
               </div>
@@ -411,44 +407,6 @@ export default function ProjectDetailsPage() {
                 <h3 className='text-sm font-medium text-muted-foreground'>Last Updated</h3>
                 <p>{project.updatedAt ? new Date((project.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
               </div>
-              
-              {/* Plot Information */}
-              <div>
-                <h3 className='text-sm font-medium text-muted-foreground'>Plot Width</h3>
-                <p>{project.plotWidth ? `${project.plotWidth} m` : 'Not specified'}</p>
-              </div>
-              <div>
-                <h3 className='text-sm font-medium text-muted-foreground'>Plot Length</h3>
-                <p>{project.plotLength ? `${project.plotLength} m` : 'Not specified'}</p>
-              </div>
-              <div>
-                <h3 className='text-sm font-medium text-muted-foreground'>Plot Area</h3>
-                <p>{project.plotWidth && project.plotLength ? `${(project.plotWidth * project.plotLength).toFixed(2)} m²` : 'Not specified'}</p>
-              </div>
-              
-              {/* Client Information */}
-              {project.clientInfo && (
-                <>
-                  <div>
-                    <h3 className='text-sm font-medium text-muted-foreground'>Client Name</h3>
-                    <p>{project.clientInfo.name || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <h3 className='text-sm font-medium text-muted-foreground'>Client Email</h3>
-                    <p>{project.clientInfo.email || 'Not specified'}</p>
-                  </div>
-                  <div>
-                    <h3 className='text-sm font-medium text-muted-foreground'>Client Phone</h3>
-                    <p>{project.clientInfo.phone || 'Not specified'}</p>
-                  </div>
-                  {project.clientInfo.address && (
-                    <div className='md:col-span-3'>
-                      <h3 className='text-sm font-medium text-muted-foreground'>Client Address</h3>
-                      <p>{project.clientInfo.address}</p>
-                    </div>
-                  )}
-                </>
-              )}
               
               {/* Shared With */}
               {project.sharedWith && project.sharedWith.length > 0 && (
