@@ -130,6 +130,7 @@ export default function ProjectDetailsPage() {
       if (!id || !user) return;
       
       try {
+        setLoading(true);
         const projectData = await projectService.getProject(id as string);
         if (!projectData) {
           toast({
@@ -169,12 +170,12 @@ export default function ProjectDetailsPage() {
     loadProjectData();
   }, [id, user, router, toast, refreshCalculations]);
 
-  // Check for tab parameter in URL
+  // Add this useEffect to refresh calculations when tab changes to 'calculations'
   useEffect(() => {
-    if (router.query.tab === 'calculations') {
-      setActiveTab('calculations');
+    if (activeTab === 'calculations') {
+      refreshCalculations();
     }
-  }, [router.query.tab]);
+  }, [activeTab, refreshCalculations, calculationsRefreshTrigger]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -337,13 +338,6 @@ export default function ProjectDetailsPage() {
   const handleEditCalculation = (calculationId: string) => {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
-
-  // Add this useEffect to refresh calculations when tab changes to 'calculations'
-  useEffect(() => {
-    if (activeTab === 'calculations') {
-      refreshCalculations();
-    }
-  }, [activeTab, refreshCalculations, calculationsRefreshTrigger]);
 
   if (loading) {
     return (
