@@ -520,9 +520,6 @@ const layoutService = {
         }
       }
 
-      // When saving to a different project, we don't need to check the original layout's project
-      // We're creating a new layout in the target project, not modifying the original
-
       // Create a new layout with the specified project ID
       const newLayout = {
         projectId, // Use the target project ID
