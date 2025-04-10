@@ -135,7 +135,51 @@ const ensureFirestore = (): Firestore => {
 // Helper function to safely serialize data for Firestore
 const safeSerialize = (data: any): any => {
   try {
-    return JSON.parse(JSON.stringify(data));
+    if (data === null || data === undefined) {
+      console.warn('Attempting to serialize null or undefined data');
+      return {};
+    }
+    
+    // Handle arrays specially to avoid issues with null/undefined items
+    if (Array.isArray(data)) {
+      return data.map(item => {
+        if (item === null || item === undefined) {
+          return {};
+        }
+        try {
+          return typeof item === 'object' ? JSON.parse(JSON.stringify(item)) : item;
+        } catch (err) {
+          console.warn('Error serializing array item:', err);
+          return {};
+        }
+      }).filter(Boolean); // Filter out any falsy values
+    }
+    
+    // Handle objects
+    if (typeof data === 'object') {
+      try {
+        const result: Record<string, any> = {};
+        // Safely copy properties
+        Object.keys(data || {}).forEach(key => {
+          if (data[key] !== undefined && data[key] !== null) {
+            if (Array.isArray(data[key])) {
+              result[key] = safeSerialize(data[key]); // Recursively handle arrays
+            } else if (typeof data[key] === 'object') {
+              result[key] = safeSerialize(data[key]); // Recursively handle objects
+            } else {
+              result[key] = data[key]; // Direct assignment for primitives
+            }
+          }
+        });
+        return result;
+      } catch (err) {
+        console.warn('Error serializing object, returning empty object:', err);
+        return {};
+      }
+    }
+    
+    // Return primitives as is
+    return data;
   } catch (error) {
     console.error('Error serializing data for Firestore:', error);
     throw new LayoutError('Failed to serialize data for Firestore', 'SERIALIZATION_FAILED', error);
@@ -408,19 +452,28 @@ const layoutService = {
 
   async getLayout(id: string, user?: AuthUser): Promise<Layout | null> {
     try {
+      console.log('Getting layout:', id);
       const firestore = ensureFirestore();
       const layoutRef = doc(firestore, 'layouts', id);
       const snapshot = await getDoc(layoutRef);
       
       if (!snapshot.exists()) {
+        console.log('Layout not found:', id);
         return null;
       }
 
       const data = snapshot.data();
+      console.log('Layout data retrieved:', { 
+        id, 
+        projectId: data.projectId,
+        name: data.name,
+        modules: data.modules?.length || 0
+      });
       
       if (user) {
         // Special case for ruud@kontena.eu - always has full access
         if (user.email === 'ruud@kontena.eu') {
+          console.log('Admin user detected, granting full access');
           return {
             id: snapshot.id,
             ...data,
@@ -435,11 +488,13 @@ const layoutService = {
         const projectSnap = await getDoc(projectRef);
         
         if (!projectSnap.exists()) {
+          console.error('Associated project not found:', data.projectId);
           throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
         }
 
         const project = projectSnap.data();
         if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+          console.error('Unauthorized access to layout:', id, 'by user:', user.uid);
           throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
         }
       }
@@ -453,6 +508,7 @@ const layoutService = {
         updatedAt: data.updatedAt?.toDate() || new Date()
       } as Layout;
     } catch (error) {
+      console.error('Error fetching layout:', error);
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to fetch layout', 'FETCH_FAILED', error);
     }
@@ -498,26 +554,31 @@ const layoutService = {
       });
       
       const firestore = ensureFirestore();
+      
+      // First, verify the target project exists
       const projectRef = doc(firestore, 'projects', projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
-        console.error('Project not found:', projectId);
-        throw new LayoutError('Project not found', 'PROJECT_NOT_FOUND');
+        console.error('Target project not found:', projectId);
+        throw new LayoutError('Target project not found', 'PROJECT_NOT_FOUND');
       }
 
       // Special case for ruud@kontena.eu - always has full access
-      if (user.email !== 'ruud@kontena.eu') {
+      if (user.email === 'ruud@kontena.eu') {
+        console.log('Admin user detected, proceeding with save');
+      } else {
         const project = projectSnap.data();
+        // Check if user has access to the target project
         if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
-          console.error('Unauthorized access to project:', projectId, 'by user:', user.uid);
-          throw new LayoutError('Unauthorized access to project', 'UNAUTHORIZED');
+          console.error('Unauthorized access to target project:', projectId, 'by user:', user.uid);
+          throw new LayoutError('Unauthorized access to target project', 'UNAUTHORIZED');
         }
       }
 
       // Create a new layout with the specified project ID
       const newLayout = {
-        projectId, // Ensure we use the provided projectId
+        projectId, // Use the target project ID
         name: layoutData.name || 'Untitled Layout',
         description: layoutData.description || `Created on ${new Date().toLocaleDateString()}`,
         modules: layoutData.modules || [],
@@ -531,17 +592,33 @@ const layoutService = {
 
       // Ensure all module positions and rotations are numbers
       if (newLayout.modules && Array.isArray(newLayout.modules)) {
-        newLayout.modules = newLayout.modules.map((module: any) => ({
-          ...module,
-          position: module.position.map(Number),
-          rotation: module.rotation.map(Number),
-          scale: module.scale.map(Number)
-        }));
+        newLayout.modules = newLayout.modules.map((module: any) => {
+          // Create a deep copy to avoid modifying the original
+          const moduleCopy = JSON.parse(JSON.stringify(module));
+          
+          // Ensure position values are numbers
+          if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+            moduleCopy.position = moduleCopy.position.map(Number);
+          }
+          
+          // Ensure rotation values are numbers
+          if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+            moduleCopy.rotation = moduleCopy.rotation.map(Number);
+          }
+          
+          // Ensure scale values are numbers
+          if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+            moduleCopy.scale = moduleCopy.scale.map(Number);
+          }
+          
+          return moduleCopy;
+        });
       }
 
       // Ensure data is serializable for Firestore
       const cleanData = safeSerialize(newLayout);
       
+      // Create a new layout document in Firestore
       const layoutRef = await addDoc(collection(firestore, 'layouts'), {
         ...cleanData,
         createdAt: serverTimestamp(),
@@ -553,7 +630,11 @@ const layoutService = {
     } catch (error) {
       console.error('Failed to save layout to project:', error);
       if (error instanceof LayoutError) throw error;
-      throw new LayoutError('Failed to save layout to project', 'SAVE_FAILED', error);
+      throw new LayoutError(
+        'Failed to save layout to project: ' + (error instanceof Error ? error.message : String(error)), 
+        'SAVE_FAILED', 
+        error
+      );
     }
   },
 

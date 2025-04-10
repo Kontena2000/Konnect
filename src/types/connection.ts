@@ -1,15 +1,14 @@
-
 export type ConnectionType = "power" | "water-supply" | "water-return" | "network" | "cooling" | "water" | "gas" | "security";
 
 export type ConnectionSide = "north" | "east" | "south" | "west";
 
 export interface ConnectionPoint {
   id: string;
-  moduleId: string;
-  side: ConnectionSide;
-  types: ConnectionType[];
+  moduleId?: string; // Updated to be optional
+  side?: string; // Updated to be optional
+  types?: string[]; // Updated to be optional
   position: [number, number, number];
-  type?: ConnectionType; // Added for backward compatibility
+  type?: string; // Updated to be a string
   isInput?: boolean;
   isOutput?: boolean;
 }

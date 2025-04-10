@@ -1,4 +1,3 @@
-
 import { ConnectionType, ConnectionPoint } from "./connection";
 
 export type ModuleCategory = string;
@@ -22,24 +21,30 @@ export interface ModuleEnergyProperties {
 
 export interface Module {
   id: string;
-  name: string;
-  description: string;
-  category: ModuleCategory;
   type: string;
-  color: string;
-  dimensions: ModuleDimensions;
+  name: string;
+  description?: string;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
-  visibleInEditor?: boolean;
-  connectionPoints: ConnectionPoint[];
-  energy?: ModuleEnergyProperties;
-  createdAt?: string;
-  updatedAt?: string;
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  connectionPoints?: {
+    id: string;
+    type: string;
+    position: [number, number, number];
+  }[];
+  properties?: Record<string, any>;
   modelUrl?: string;
-  castShadow?: boolean;
-  receiveShadow?: boolean;
-  wireframe?: boolean;
+  category?: string;
+  selected?: boolean;
+  // Add missing properties that are used in the application
+  color?: string;
+  visibleInEditor?: boolean;
+  energy?: ModuleEnergyProperties;
 }
 
 export const defaultModules: Module[] = [
@@ -80,19 +85,23 @@ export const defaultModules: Module[] = [
     connectionPoints: [
       {
         id: "edge-container-power-east",
+        type: "power",
+        position: [6.096, 0, 1.219],
+        // Additional properties for compatibility with ConnectionPoint
         moduleId: "edge-container",
         side: "east",
         types: ["power"],
-        position: [6.096, 0, 1.219],
         isInput: true,
         isOutput: false
       },
       {
         id: "edge-container-water-west",
+        type: "water",
+        position: [-6.096, 0, 1.219],
+        // Additional properties for compatibility with ConnectionPoint
         moduleId: "edge-container",
         side: "west",
         types: ["water-supply", "water-return"],
-        position: [-6.096, 0, 1.219],
         isInput: true,
         isOutput: true
       }

@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -20,6 +19,7 @@ import { ProjectSelector } from "@/components/common/ProjectSelector";
 import layoutService, { Layout } from "@/services/layout";
 import { AuthUser } from "@/services/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from 'next/router';
 
 interface SaveLayoutDialogProps {
   layoutData: {
@@ -30,7 +30,7 @@ interface SaveLayoutDialogProps {
     modules?: any[];
     connections?: any[];
   };
-  onSaveComplete?: (layoutId: string) => void;
+  onSaveComplete?: (layoutId: string, projectId: string) => void;
   trigger: React.ReactNode;
 }
 
@@ -48,6 +48,7 @@ export function SaveLayoutDialog({
   
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
   
   // Update form values when layoutData changes or dialog opens
   useEffect(() => {
@@ -95,6 +96,7 @@ export function SaveLayoutDialog({
     return true;
   };
   
+  // Handle save operation
   const handleSave = async () => {
     setError(null);
     
@@ -118,7 +120,7 @@ export function SaveLayoutDialog({
       if (saveData.modules && Array.isArray(saveData.modules)) {
         saveData.modules = saveData.modules.map(module => {
           // Create a deep copy to avoid modifying the original
-          const moduleCopy = JSON.parse(JSON.stringify(module));
+          const moduleCopy = JSON.parse(JSON.stringify(module || {}));
           
           // Ensure position values are numbers
           if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
@@ -128,12 +130,16 @@ export function SaveLayoutDialog({
           // Ensure rotation values are numbers
           if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
             moduleCopy.rotation = moduleCopy.rotation.map(Number);
-            console.log(`Module ${moduleCopy.id} rotation before save:`, moduleCopy.rotation);
           }
           
           // Ensure scale values are numbers
           if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
             moduleCopy.scale = moduleCopy.scale.map(Number);
+          }
+          
+          // Add selected property if it doesn't exist
+          if (moduleCopy.selected === undefined) {
+            moduleCopy.selected = false;
           }
           
           return moduleCopy;
@@ -143,27 +149,23 @@ export function SaveLayoutDialog({
       console.log('Saving layout with data:', { 
         ...saveData, 
         modules: saveData.modules?.length || 0, 
-        connections: saveData.connections?.length || 0 
+        connections: saveData.connections?.length || 0,
+        projectId: selectedProjectId
       });
-      
-      // Log all module rotations before saving
-      if (saveData.modules && Array.isArray(saveData.modules)) {
-        console.log('Module rotations before saving:');
-        saveData.modules.forEach(module => {
-          console.log(`Module ${module.id}: rotation=${JSON.stringify(module.rotation)}`);
-        });
-      }
       
       // Save or update layout
       let layoutId;
+      let isSameProject = layoutData.projectId === selectedProjectId;
       
       // If we're updating an existing layout in the same project
-      if (layoutData.id && layoutData.projectId === selectedProjectId) {
+      if (layoutData.id && isSameProject) {
         try {
           console.log('Updating existing layout in the same project:', layoutData.id);
           await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
           layoutId = layoutData.id;
           console.log('Layout updated successfully:', layoutId);
+          
+          // Show success toast
           toast({
             title: 'Success',
             description: 'Layout updated successfully'
@@ -176,6 +178,7 @@ export function SaveLayoutDialog({
         // Create new layout - either it's a new layout or we're saving to a different project
         try {
           console.log('Creating new layout or saving to different project');
+          console.log('Selected project ID:', selectedProjectId);
           
           // Always create a new layout when saving to a different project
           layoutId = await layoutService.saveLayoutToProject(
@@ -185,21 +188,43 @@ export function SaveLayoutDialog({
           );
           
           console.log('New layout created successfully:', layoutId);
+          
+          // Show success toast
           toast({
             title: 'Success',
-            description: 'New layout created successfully'
+            description: isSameProject ? 'New layout created successfully' : 'Layout saved to different project successfully'
           });
+          
+          // If saving to a different project, prepare for redirect
+          if (!isSameProject) {
+            console.log('Preparing to redirect to new project:', selectedProjectId);
+          }
         } catch (createError) {
           console.error('Error creating layout:', createError);
           throw new Error(createError instanceof Error ? createError.message : 'Failed to create new layout');
         }
       }
       
+      // Close dialog first
+      setOpen(false);
+      
+      // Call the callback with the new layout ID and project ID after a short delay
       if (onSaveComplete && layoutId) {
-        onSaveComplete(layoutId);
+        console.log('Calling onSaveComplete with layoutId:', layoutId, 'projectId:', selectedProjectId);
+        // Use a small delay to ensure dialog is closed first
+        setTimeout(() => {
+          onSaveComplete(layoutId, selectedProjectId);
+        }, 300);
       }
       
-      setOpen(false);
+      // If saving to a different project (Save As), redirect to that project
+      if (!isSameProject && selectedProjectId) {
+        console.log('Redirecting to project page:', selectedProjectId);
+        // Add a slight delay to ensure the dialog is closed and any state updates are processed
+        setTimeout(() => {
+          router.push(`/dashboard/projects/${selectedProjectId}`);
+        }, 500);
+      }
       
     } catch (error) {
       console.error('Error saving layout:', error);
@@ -220,7 +245,7 @@ export function SaveLayoutDialog({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className='sm:max-w-[500px]'>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Save Layout</DialogTitle>
           <DialogDescription>
@@ -229,35 +254,35 @@ export function SaveLayoutDialog({
         </DialogHeader>
         
         {error && (
-          <Alert variant='destructive' className='mt-2'>
-            <AlertCircle className='h-4 w-4' />
+          <Alert variant="destructive" className="mt-2">
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         
-        <div className='grid gap-4 py-4'>
-          <div className='grid gap-2'>
-            <Label htmlFor='project'>Project</Label>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="project">Project</Label>
             <ProjectSelector
               selectedProjectId={selectedProjectId}
               onSelect={setSelectedProjectId}
             />
           </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='name'>Name</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Name</Label>
             <Input
-              id='name'
-              placeholder='Layout name'
+              id="name"
+              placeholder="Layout name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='description'>Description</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id='description'
-              placeholder='Layout description'
+              id="description"
+              placeholder="Layout description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -265,17 +290,17 @@ export function SaveLayoutDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant='outline' onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button 
             onClick={handleSave} 
             disabled={saving || !name.trim() || !selectedProjectId}
-            className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+            className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
           >
             {saving ? (
               <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (
