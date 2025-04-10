@@ -44,7 +44,7 @@ export default function ProjectsPage() {
       }
     });
 
-  // Fetch layout counts for all projects
+  // Fetch layout counts for all projects individually
   const fetchLayoutCounts = async () => {
     if (!projects.length || !user) return;
     
@@ -54,26 +54,17 @@ export default function ProjectsPage() {
     try {
       console.log('Fetching layout counts for', projects.length, 'projects');
       
-      // Fetch layout counts for each project
-      const db = getFirestoreSafely();
-      if (!db) {
-        console.error('Firestore not available');
-        return;
-      }
-      
-      // Get all layouts from Firestore directly
-      const layoutsCollection = collection(db, 'layouts');
-      const layoutsSnapshot = await getDocs(layoutsCollection);
-      
-      // Group layouts by projectId
-      layoutsSnapshot.forEach(doc => {
-        const layoutData = doc.data();
-        const projectId = layoutData.projectId;
-        
-        if (projectId) {
-          counts[projectId] = (counts[projectId] || 0) + 1;
+      // Fetch layout counts for each project individually
+      for (const project of projects) {
+        try {
+          const count = await layoutService.countProjectLayouts(project.id);
+          counts[project.id] = count;
+          console.log(`Project ${project.id} has ${count} layouts`);
+        } catch (error) {
+          console.error(`Error counting layouts for project ${project.id}:`, error);
+          counts[project.id] = 0;
         }
-      });
+      }
       
       console.log('Final layout counts:', counts);
       setProjectLayoutCounts(counts);
@@ -110,7 +101,11 @@ export default function ProjectsPage() {
       });
       
       // Update layout counts after deletion
-      fetchLayoutCounts();
+      setProjectLayoutCounts(prev => {
+        const updated = { ...prev };
+        delete updated[projectId];
+        return updated;
+      });
     } catch (error) {
       console.error('Error deleting project:', error);
       toast({
