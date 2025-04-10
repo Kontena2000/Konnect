@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -8,7 +7,6 @@ import layoutService from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { SceneContainer } from "@/components/three/SceneContainer";
-import { ViewControls } from "@/components/viewer/ViewControls";
 
 export default function ViewerPage() {
   const router = useRouter();
@@ -111,7 +109,6 @@ export default function ViewerPage() {
           </div>
           
           <div className="w-80 shrink-0">
-            <ViewControls />
           </div>
         </div>
       </div>
