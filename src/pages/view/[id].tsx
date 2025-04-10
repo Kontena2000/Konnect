@@ -1,7 +1,7 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Layout } from "@/services/layout";
@@ -24,7 +24,7 @@ export default function ViewerPage() {
         try {
           // Pass the user to getLayout to handle authentication
           const layoutData = await layoutService.getLayout(id as string, user || undefined);
-          console.log("Layout data loaded:", layoutData ? "success" : "null", layoutData);
+          console.log("Layout data loaded:", layoutData ? "success" : "null");
           setLayout(layoutData);
           if (!layoutData) {
             setError("Layout not found or you do not have permission to view it.");
@@ -81,80 +81,36 @@ export default function ViewerPage() {
     );
   }
 
-  // Format date for display
-  const formatDate = (date: any) => {
-    if (!date) return "Unknown";
-    
-    // Handle Firestore timestamp
-    if (date && typeof date === "object" && "seconds" in date) {
-      return new Date(date.seconds * 1000).toLocaleString();
-    }
-    
-    // Handle Date object
-    if (date instanceof Date) {
-      return date.toLocaleString();
-    }
-    
-    // Try to parse string date
-    try {
-      return new Date(date).toLocaleString();
-    } catch (e) {
-      console.error("Error formatting date:", e);
-      return "Unknown date format";
-    }
-  };
-
   return (
-    <div className="min-h-screen bg-background">
-      <div className="container mx-auto p-4">
-        <Card className="w-full max-w-4xl mx-auto">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <div>
-                <CardTitle className="text-2xl font-bold">{layout.name}</CardTitle>
-                <CardDescription>
-                  {layout.description || "No description available"}
-                </CardDescription>
-              </div>
-              <Button 
-                variant="outline" 
-                onClick={handleBackToProject}
-              >
-                <ArrowLeft className="mr-2 h-4 w-4" />
-                Back to Project
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <h3 className="text-sm font-medium">Project ID</h3>
-                  <p>{layout.projectId}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium">Last Updated</h3>
-                  <p>{formatDate(layout.updatedAt)}</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium">Modules</h3>
-                  <p>{layout.modules?.length || 0} modules</p>
-                </div>
-                <div>
-                  <h3 className="text-sm font-medium">Connections</h3>
-                  <p>{layout.connections?.length || 0} connections</p>
-                </div>
-              </div>
-              
-              <div className="text-center py-4 mt-4">
-                <p className="text-muted-foreground">
-                  This is a simplified view of the layout details.
-                </p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+    <div className="min-h-screen bg-background flex items-center justify-center">
+      <Card className="w-full max-w-2xl">
+        <CardHeader className="text-center">
+          <CardTitle className="text-3xl font-bold">{layout.name}</CardTitle>
+          <CardDescription className="text-lg mt-2">
+            {layout.description || "No description available"}
+          </CardDescription>
+        </CardHeader>
+        
+        <CardContent className="text-center">
+          <p className="text-muted-foreground mb-4">
+            This layout contains {layout.modules?.length || 0} modules and {layout.connections?.length || 0} connections.
+          </p>
+          
+          <p className="text-sm text-muted-foreground">
+            To view or edit this layout in detail, please return to the project page.
+          </p>
+        </CardContent>
+        
+        <CardFooter className="flex justify-center pt-4">
+          <Button 
+            size="lg"
+            onClick={handleBackToProject}
+          >
+            <ArrowLeft className="mr-2 h-5 w-5" />
+            Back to Project
+          </Button>
+        </CardFooter>
+      </Card>
     </div>
   );
 }
