@@ -149,7 +149,13 @@ export function SaveLayoutDialog({
             connections: layoutData.connections || []
           };
           
-          layoutId = await layoutService.createLayout(newLayoutData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
+          // Use saveLayoutToProject to ensure proper validation
+          layoutId = await layoutService.saveLayoutToProject(
+            newLayoutData, 
+            selectedProjectId, 
+            user as AuthUser
+          );
+          
           console.log('New layout created successfully:', layoutId);
           toast({
             title: 'Success',
