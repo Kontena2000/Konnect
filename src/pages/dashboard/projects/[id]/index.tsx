@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -416,45 +417,27 @@ export default function ProjectDetailsPage() {
                 <Separator className="my-6" />
                 <div>
                   <h3 className="text-lg font-medium mb-4">Project Actions</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Button 
-                      className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-auto py-3 px-4"
-                      onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
-                    >
-                      <div className="flex flex-col items-center text-center">
-                        <LayoutGrid className="h-6 w-6 mb-1" />
-                        <span>Create New Layout</span>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/90 text-white h-auto py-3 px-4"
-                      onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
-                    >
-                      <div className="flex flex-col items-center text-center">
-                        <Calculator className="h-6 w-6 mb-1" />
-                        <span>Create Calculation</span>
-                      </div>
-                    </Button>
-                    
-                    <Button 
-                      className="bg-[#6E56CF] hover:bg-[#6E56CF]/90 text-white h-auto py-3 px-4"
+                      className="bg-[#6E56CF] hover:bg-[#6E56CF]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#6E56CF]/30"
                       onClick={() => setEditMode(true)}
                     >
-                      <div className="flex flex-col items-center text-center">
-                        <FileEdit className="h-6 w-6 mb-1" />
-                        <span>Edit Project Details</span>
+                      <div className="flex flex-col items-center text-center w-full">
+                        <FileEdit className="h-8 w-8 mb-2" />
+                        <span className="font-medium">Edit Project Details</span>
+                        <span className="text-xs mt-1 text-white/70">Update project information</span>
                       </div>
                     </Button>
                     
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
-                          className="bg-[#3CB371] hover:bg-[#3CB371]/90 text-white h-auto py-3 px-4"
+                          className="bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30"
                         >
-                          <div className="flex flex-col items-center text-center">
-                            <Share className="h-6 w-6 mb-1" />
-                            <span>Share Project</span>
+                          <div className="flex flex-col items-center text-center w-full">
+                            <Share className="h-8 w-8 mb-2" />
+                            <span className="font-medium">Share Project</span>
+                            <span className="text-xs mt-1 text-white/70">Collaborate with others</span>
                           </div>
                         </Button>
                       </DialogTrigger>
@@ -477,7 +460,8 @@ export default function ProjectDetailsPage() {
                           </div>
                         </div>
                         <DialogFooter>
-                          <Button onClick={handleShareProject}>
+                          <Button onClick={handleShareProject} className="bg-[#3CB371] hover:bg-[#3CB371]/80 text-white">
+                            <Share className="mr-2 h-4 w-4" />
                             Share
                           </Button>
                         </DialogFooter>
@@ -487,11 +471,12 @@ export default function ProjectDetailsPage() {
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
                         <Button 
-                          className="bg-red-500 hover:bg-red-600 text-white h-auto py-3 px-4"
+                          className="bg-red-500 hover:bg-red-600/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400"
                         >
-                          <div className="flex flex-col items-center text-center">
-                            <Trash2 className="h-6 w-6 mb-1" />
-                            <span>Delete Project</span>
+                          <div className="flex flex-col items-center text-center w-full">
+                            <Trash2 className="h-8 w-8 mb-2" />
+                            <span className="font-medium">Delete Project</span>
+                            <span className="text-xs mt-1 text-white/70">Remove permanently</span>
                           </div>
                         </Button>
                       </AlertDialogTrigger>
@@ -506,6 +491,7 @@ export default function ProjectDetailsPage() {
                         <AlertDialogFooter>
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction onClick={handleDeleteProject} className="bg-red-500 hover:bg-red-600">
+                            <Trash2 className="mr-2 h-4 w-4" />
                             Delete
                           </AlertDialogAction>
                         </AlertDialogFooter>
@@ -604,10 +590,20 @@ export default function ProjectDetailsPage() {
             </TabsList>
             
             <TabsContent value="layouts" className="space-y-4 mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Project Layouts</h3>
+                <Button 
+                  className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
+                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create New Layout
+                </Button>
+              </div>
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                 {layouts.length > 0 ? (
                   layouts.map((layout) => (
-                    <Card key={layout.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                    <Card key={layout.id} className="overflow-hidden hover:shadow-md transition-shadow border border-muted">
                       <CardHeader className='pb-2 bg-muted/20'>
                         <CardTitle>{layout.name}</CardTitle>
                         <CardDescription>
@@ -615,18 +611,24 @@ export default function ProjectDetailsPage() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4">
-                        <p className='text-sm'>
-                          {layout.modules?.length || 0} modules, {layout.connections?.length || 0} connections
-                        </p>
+                        <div className="flex items-center gap-2 mb-2">
+                          <Badge variant="outline" className="bg-muted/30">
+                            {layout.modules?.length || 0} modules
+                          </Badge>
+                          <Badge variant="outline" className="bg-muted/30">
+                            {layout.connections?.length || 0} connections
+                          </Badge>
+                        </div>
                         <p className='text-xs text-muted-foreground mt-1'>
                           Last updated: {layout.updatedAt ? new Date((layout.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
                         </p>
                       </CardContent>
-                      <CardFooter className='flex justify-end gap-2'>
+                      <CardFooter className='flex justify-end gap-2 pt-2 border-t bg-muted/10'>
                         <Button 
                           variant='outline' 
                           size='sm'
                           onClick={() => handleEditLayout(layout.id)}
+                          className="hover:bg-[#F1B73A]/10"
                         >
                           <Edit className='mr-2 h-4 w-4' />
                           Edit
@@ -635,6 +637,7 @@ export default function ProjectDetailsPage() {
                           variant='outline' 
                           size='sm'
                           onClick={() => handleViewLayout(layout.id)}
+                          className="hover:bg-[#9333EA]/10"
                         >
                           <Eye className='mr-2 h-4 w-4' />
                           View
@@ -648,15 +651,15 @@ export default function ProjectDetailsPage() {
                     </Card>
                   ))
                 ) : (
-                  <div className='col-span-full text-center py-8'>
-                    <p className='text-muted-foreground'>No layouts found for this project</p>
+                  <div className='col-span-full text-center py-12 bg-muted/10 rounded-lg border border-dashed border-muted'>
+                    <LayoutGrid className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
+                    <p className='text-muted-foreground mb-4'>No layouts found for this project</p>
                     <Button 
-                      variant='outline' 
-                      className='mt-4'
+                      className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow"
                       onClick={() => router.push(`/dashboard/projects/${project.id}/editor`)}
                     >
-                      <LayoutGrid className='mr-2 h-4 w-4' />
-                      Create Layout
+                      <Plus className='mr-2 h-4 w-4' />
+                      Create First Layout
                     </Button>
                   </div>
                 )}
@@ -664,10 +667,20 @@ export default function ProjectDetailsPage() {
             </TabsContent>
             
             <TabsContent value="calculations" className="space-y-4 mt-6">
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium">Project Calculations</h3>
+                <Button 
+                  className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
+                  onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
+                >
+                  <Plus className="h-4 w-4" />
+                  Create New Calculation
+                </Button>
+              </div>
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                 {calculations.length > 0 ? (
                   calculations.map((calculation) => (
-                    <Card key={calculation.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                    <Card key={calculation.id} className="overflow-hidden hover:shadow-md transition-shadow border border-muted">
                       <CardHeader className='pb-2 bg-muted/20'>
                         <CardTitle>{calculation.name || 'Unnamed Calculation'}</CardTitle>
                         <CardDescription>
@@ -675,13 +688,15 @@ export default function ProjectDetailsPage() {
                         </CardDescription>
                       </CardHeader>
                       <CardContent className="pt-4">
-                        <div className='space-y-1'>
-                          <p className='text-sm'>
-                            <span className='font-medium'>Cooling:</span> {calculation.coolingType || calculation.results?.rack?.coolingType || 'Unknown'}
-                          </p>
-                          <p className='text-sm'>
-                            <span className='font-medium'>Power:</span> {calculation.kwPerRack || calculation.results?.rack?.powerDensity || 0} kW/rack
-                          </p>
+                        <div className='space-y-2'>
+                          <div className="flex flex-wrap gap-2">
+                            <Badge variant="outline" className="bg-muted/30">
+                              Cooling: {calculation.coolingType || calculation.results?.rack?.coolingType || 'Unknown'}
+                            </Badge>
+                            <Badge variant="outline" className="bg-muted/30">
+                              Power: {calculation.kwPerRack || calculation.results?.rack?.powerDensity || 0} kW/rack
+                            </Badge>
+                          </div>
                           {(calculation.results?.costs?.tco?.total5Years || calculation.results?.cost?.totalProjectCost) && (
                             <p className='text-sm'>
                               <span className='font-medium'>Total Cost:</span> $
@@ -697,28 +712,29 @@ export default function ProjectDetailsPage() {
                             : 'Unknown'}
                         </p>
                       </CardContent>
-                      <CardFooter className='flex justify-end gap-2'>
+                      <CardFooter className='flex justify-end gap-2 pt-2 border-t bg-muted/10'>
                         <Button 
                           variant='outline' 
                           size='sm'
                           onClick={() => handleEditCalculation(calculation.id)}
+                          className="hover:bg-[#4A7AFF]/10"
                         >
-                          <Edit className='mr-2 h-4 w-4' />
-                          View
+                          <Calculator className='mr-2 h-4 w-4' />
+                          View Details
                         </Button>
                       </CardFooter>
                     </Card>
                   ))
                 ) : (
-                  <div className='col-span-full text-center py-8'>
-                    <p className='text-muted-foreground'>No calculations found for this project</p>
+                  <div className='col-span-full text-center py-12 bg-muted/10 rounded-lg border border-dashed border-muted'>
+                    <Calculator className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
+                    <p className='text-muted-foreground mb-4'>No calculations found for this project</p>
                     <Button 
-                      variant='outline' 
-                      className='mt-4'
+                      className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white transition-all duration-200 shadow-sm hover:shadow"
                       onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
                     >
-                      <Calculator className='mr-2 h-4 w-4' />
-                      Create Calculation
+                      <Plus className='mr-2 h-4 w-4' />
+                      Create First Calculation
                     </Button>
                   </div>
                 )}
