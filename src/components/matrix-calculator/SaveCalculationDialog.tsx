@@ -52,9 +52,10 @@ export function SaveCalculationDialog({
   
   // If we're on a project page, pre-select that project
   useEffect(() => {
-    const { id } = router.query;
-    if (id && typeof id === 'string') {
-      setSelectedProjectId(id);
+    const { projectId } = router.query;
+    if (projectId && typeof projectId === 'string') {
+      setSelectedProjectId(projectId);
+      console.log('Pre-selected project ID from URL:', projectId);
     }
   }, [router.query]);
   

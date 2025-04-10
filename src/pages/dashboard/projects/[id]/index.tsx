@@ -63,7 +63,7 @@ export default function ProjectDetailsPage() {
   const [calculationsRefreshTrigger, setCalculationsRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('layouts');
 
-  // Refresh calculations function with better error handling
+  // Refresh calculations function with better error handling and logging
   const refreshCalculations = useCallback(async () => {
     if (!id) return;
     
@@ -93,15 +93,24 @@ export default function ProjectDetailsPage() {
       
       const calculationsData = calculationsSnapshot.docs.map(doc => {
         const data = doc.data();
+        // Ensure we have a valid date object for createdAt
+        let createdAt;
+        try {
+          createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+        } catch (e) {
+          console.error('Error converting timestamp:', e);
+          createdAt = new Date();
+        }
+        
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
+          createdAt
         };
       });
       
+      console.log('Calculations data:', calculationsData);
       setCalculations(calculationsData);
-      setCalculationsRefreshTrigger(prev => prev + 1);
       
       if (calculationsData.length > 0) {
         console.log('First calculation:', calculationsData[0]);
