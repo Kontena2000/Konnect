@@ -102,15 +102,18 @@ export function SaveLayoutDialog({
         // Update existing layout if we're saving to the same project
         await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
         layoutId = layoutData.id;
+        toast({
+          title: 'Success',
+          description: 'Layout updated successfully'
+        });
       } else {
         // Create new layout if it's a new layout or we're saving to a different project
-        layoutId = await layoutService.createLayout(saveData as Omit<Layout, "id" | "createdAt" | "updatedAt">);
+        layoutId = await layoutService.createLayout(saveData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
+        toast({
+          title: 'Success',
+          description: 'New layout created successfully'
+        });
       }
-      
-      toast({
-        title: 'Success',
-        description: 'Layout saved successfully'
-      });
       
       if (onSaveComplete && layoutId) {
         onSaveComplete(layoutId);

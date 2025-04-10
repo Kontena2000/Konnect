@@ -26,6 +26,7 @@ interface ToolboxProps {
   };
   modules?: any[];
   connections?: any[];
+  onSaveComplete?: (layoutId: string) => void;
 }
 
 export function Toolbox({ 
@@ -36,7 +37,8 @@ export function Toolbox({
   controlsRef,
   currentLayout,
   modules = [],
-  connections = []
+  connections = [],
+  onSaveComplete
 }: ToolboxProps) {
   const [collapsed, setCollapsed] = useState(false);
   const [expandedSection, setExpandedSection] = useState<string>('modules');
@@ -71,7 +73,9 @@ export function Toolbox({
       duration: 2000
     });
     
-    if (projectId) {
+    if (onSaveComplete) {
+      onSaveComplete(layoutId);
+    } else if (projectId) {
       // Refresh the page with the new layout ID
       router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
     }
@@ -267,7 +271,7 @@ export function Toolbox({
                   className='w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
                 >
                   <Save className='h-4 w-4' />
-                  {!collapsed && <span className='ml-2'>Save Layout</span>}
+                  {!collapsed && <span className='ml-2'>{currentLayout?.id ? 'Save Layout' : 'Create Layout'}</span>}
                 </Button>
               }
             />

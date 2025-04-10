@@ -284,6 +284,42 @@ const layoutService = {
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to save layout to project', 'SAVE_FAILED', error);
     }
+  },
+
+  async deleteLayout(layoutId: string, user: AuthUser): Promise<void> {
+    try {
+      const firestore = ensureFirestore();
+      const layoutRef = doc(firestore, 'layouts', layoutId);
+      const layoutSnap = await getDoc(layoutRef);
+      
+      if (!layoutSnap.exists()) {
+        throw new LayoutError('Layout not found', 'NOT_FOUND');
+      }
+      
+      const layoutData = layoutSnap.data();
+      const projectRef = doc(firestore, 'projects', layoutData.projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
+      }
+      
+      // Special case for ruud@kontena.eu - always has full access
+      if (user.email === 'ruud@kontena.eu') {
+        await deleteDoc(layoutRef);
+        return;
+      }
+      
+      const project = projectSnap.data();
+      if (project.userId !== user.uid) {
+        throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
+      }
+      
+      await deleteDoc(layoutRef);
+    } catch (error) {
+      if (error instanceof LayoutError) throw error;
+      throw new LayoutError('Failed to delete layout', 'DELETE_FAILED', error);
+    }
   }
 };
 

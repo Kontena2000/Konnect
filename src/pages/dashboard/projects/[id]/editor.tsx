@@ -84,7 +84,12 @@ export default function LayoutEditorPage() {
     setCurrentLayout(layout);
     setModules(layout.modules || []);
     setConnections(layout.connections || []);
-  }, []);
+    
+    // Update URL to reflect the selected layout
+    if (projectId) {
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layout.id}`, undefined, { shallow: true });
+    }
+  }, [projectId, router]);
 
   // Handle layout create
   const handleLayoutCreate = useCallback((layout: Layout) => {
@@ -392,7 +397,7 @@ export default function LayoutEditorPage() {
                 trigger={
                   <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
                     <Save className='h-4 w-4 mr-2' />
-                    Save Layout
+                    {currentLayout?.id ? 'Save As' : 'Save Layout'}
                   </Button>
                 }
               />
@@ -409,6 +414,7 @@ export default function LayoutEditorPage() {
             currentLayout={currentLayout || undefined}
             modules={modules}
             connections={connections}
+            onSaveComplete={handleSaveLayout}
           />
         </ErrorBoundary>
       </div>
