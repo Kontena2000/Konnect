@@ -202,11 +202,11 @@ export function ModuleObject({
       Number(meshRef.current.position.z)
     ];
     
-    // Get final rotation after transform
+    // Get final rotation after transform - convert from radians to degrees
     const finalRotation: [number, number, number] = [
-      Number(meshRef.current.rotation.x * 180 / Math.PI),
-      Number(meshRef.current.rotation.y * 180 / Math.PI),
-      Number(meshRef.current.rotation.z * 180 / Math.PI)
+      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
     ];
     
     // Get final scale after transform

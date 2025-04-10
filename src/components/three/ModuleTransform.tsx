@@ -1,6 +1,6 @@
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 
 interface ModuleTransformProps {
   meshRef: React.RefObject<Mesh>;
@@ -21,21 +21,39 @@ export function ModuleTransform({
 }: ModuleTransformProps) {
   if (!meshRef.current) return null;
 
+  // Create a handler for the dragging-changed event
+  const handleDraggingChanged = useCallback((e: any) => {
+    // This ensures we capture the end of transform operations
+    if (e.type === 'dragging-changed') {
+      if (e.value === true) {
+        // Dragging started
+        onTransformStart?.();
+      } else if (e.value === false) {
+        // Dragging ended
+        console.log('Transform dragging ended, calling onTransformEnd');
+        
+        // Make sure to update one last time before ending transform
+        onUpdate();
+        
+        // Call the transform end handler
+        onTransformEnd?.();
+      }
+    }
+  }, [onTransformStart, onTransformEnd, onUpdate]);
+
   return (
     <TransformControls
       object={meshRef.current as Object3D}
       mode={transformMode}
-      onMouseDown={onTransformStart}
-      onMouseUp={onTransformEnd}
-      onChange={onUpdate}
-      onObjectChange={onUpdate} // Ensure position updates are captured during transformation
-      onUpdate={(e: any) => {
-        // This ensures we capture the end of transform operations
-        if (e.type === 'dragging-changed' && e.value === false && onTransformEnd) {
-          console.log('Transform dragging ended, calling onTransformEnd');
-          onTransformEnd();
-        }
+      onChange={() => {
+        // Called during continuous transform
+        onUpdate();
       }}
+      onObjectChange={() => {
+        // Called when the object being transformed changes
+        onUpdate();
+      }}
+      onUpdate={handleDraggingChanged}
       size={0.75}
       showX={true}
       showY={true}

@@ -164,6 +164,7 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
         // Ensure rotation values are numbers
         if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
           moduleCopy.rotation = moduleCopy.rotation.map(Number);
+          console.log(`Module ${moduleCopy.id || 'unknown'} rotation in debouncedSave:`, moduleCopy.rotation);
         }
         
         // Ensure scale values are numbers
