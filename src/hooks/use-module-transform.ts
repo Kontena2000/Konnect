@@ -1,3 +1,4 @@
+
 import { useCallback, useState } from "react";
 import { Vector3, Euler, Mesh, Box3 } from "three";
 import * as THREE from "three";
@@ -35,10 +36,11 @@ export function useModuleTransform({
       Number(meshRef.current.position.z)
     ];
 
+    // Convert rotation from radians to degrees for storage
     const rotation: [number, number, number] = [
-      Number(meshRef.current.rotation.x * 180 / Math.PI),
-      Number(meshRef.current.rotation.y * 180 / Math.PI),
-      Number(meshRef.current.rotation.z * 180 / Math.PI)
+      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
     ];
 
     const scale: [number, number, number] = [
@@ -134,9 +136,9 @@ export function useModuleTransform({
             // Always update rotation after animation completes
             if (onUpdate && meshRef.current) {
               const newRotation: [number, number, number] = [
-                Number(meshRef.current.rotation.x * 180 / Math.PI),
-                Number(meshRef.current.rotation.y * 180 / Math.PI),
-                Number(meshRef.current.rotation.z * 180 / Math.PI)
+                Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+                Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+                Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
               ];
               
               console.log('Rotation animation complete, updating to:', newRotation);
@@ -196,9 +198,9 @@ export function useModuleTransform({
             ];
             
             const finalRotation: [number, number, number] = [
-              Number(meshRef.current.rotation.x * 180 / Math.PI), 
-              Number(meshRef.current.rotation.y * 180 / Math.PI), 
-              Number(meshRef.current.rotation.z * 180 / Math.PI)
+              Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)), 
+              Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)), 
+              Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
             ];
             
             const finalScale: [number, number, number] = [
@@ -207,7 +209,7 @@ export function useModuleTransform({
               Number(meshRef.current.scale.z)
             ];
             
-            console.log('Height animation complete, updating to position:', finalPosition);
+            console.log('Height animation complete, updating to position:', finalPosition, 'rotation:', finalRotation);
             
             onUpdate({
               position: finalPosition,
@@ -234,9 +236,9 @@ export function useModuleTransform({
             ];
             
             const finalRotation: [number, number, number] = [
-              Number(meshRef.current.rotation.x * 180 / Math.PI), 
-              Number(meshRef.current.rotation.y * 180 / Math.PI), 
-              Number(meshRef.current.rotation.z * 180 / Math.PI)
+              Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)), 
+              Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)), 
+              Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
             ];
             
             const finalScale: [number, number, number] = [
@@ -245,7 +247,7 @@ export function useModuleTransform({
               Number(meshRef.current.scale.z)
             ];
             
-            console.log('Height animation complete, updating to position:', finalPosition);
+            console.log('Height animation complete, updating to position:', finalPosition, 'rotation:', finalRotation);
             
             onUpdate({
               position: finalPosition,
@@ -266,9 +268,9 @@ export function useModuleTransform({
     ];
     
     const immediateRotation: [number, number, number] = [
-      Number(rotation.x * 180 / Math.PI), 
-      Number(rotation.y * 180 / Math.PI), 
-      Number(rotation.z * 180 / Math.PI)
+      Number((rotation.x * 180 / Math.PI).toFixed(2)), 
+      Number((rotation.y * 180 / Math.PI).toFixed(2)), 
+      Number((rotation.z * 180 / Math.PI).toFixed(2))
     ];
     
     const immediateScale: [number, number, number] = [

@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -113,11 +114,45 @@ export function SaveLayoutDialog({
         connections: layoutData.connections || []
       };
       
+      // Ensure all module positions and rotations are numbers
+      if (saveData.modules && Array.isArray(saveData.modules)) {
+        saveData.modules = saveData.modules.map(module => {
+          // Create a deep copy to avoid modifying the original
+          const moduleCopy = JSON.parse(JSON.stringify(module));
+          
+          // Ensure position values are numbers
+          if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+            moduleCopy.position = moduleCopy.position.map(Number);
+          }
+          
+          // Ensure rotation values are numbers
+          if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+            moduleCopy.rotation = moduleCopy.rotation.map(Number);
+            console.log(`Module ${moduleCopy.id} rotation before save:`, moduleCopy.rotation);
+          }
+          
+          // Ensure scale values are numbers
+          if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+            moduleCopy.scale = moduleCopy.scale.map(Number);
+          }
+          
+          return moduleCopy;
+        });
+      }
+      
       console.log('Saving layout with data:', { 
         ...saveData, 
         modules: saveData.modules?.length || 0, 
         connections: saveData.connections?.length || 0 
       });
+      
+      // Log all module rotations before saving
+      if (saveData.modules && Array.isArray(saveData.modules)) {
+        console.log('Module rotations before saving:');
+        saveData.modules.forEach(module => {
+          console.log(`Module ${module.id}: rotation=${JSON.stringify(module.rotation)}`);
+        });
+      }
       
       // Save or update layout
       let layoutId;

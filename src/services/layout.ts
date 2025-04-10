@@ -148,18 +148,44 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     const firestore = ensureFirestore();
     const layoutRef = doc(firestore, 'layouts', layoutId);
     
-    // Ensure data is serializable for Firestore
-    const cleanData = safeSerialize(data);
+    // Create a deep copy of the data to avoid modifying the original
+    const dataCopy = JSON.parse(JSON.stringify(data));
     
-    // Log modules and their positions/rotations for debugging
-    if (cleanData.modules && Array.isArray(cleanData.modules)) {
+    // Ensure all module positions and rotations are numbers
+    if (dataCopy.modules && Array.isArray(dataCopy.modules)) {
+      dataCopy.modules = dataCopy.modules.map((module: any) => {
+        const moduleCopy = { ...module };
+        
+        // Ensure position values are numbers
+        if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+          moduleCopy.position = moduleCopy.position.map(Number);
+        }
+        
+        // Ensure rotation values are numbers
+        if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+          moduleCopy.rotation = moduleCopy.rotation.map(Number);
+          console.log(`Module ${moduleCopy.id || 'unknown'} rotation in debouncedSave:`, moduleCopy.rotation);
+        }
+        
+        // Ensure scale values are numbers
+        if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+          moduleCopy.scale = moduleCopy.scale.map(Number);
+        }
+        
+        return moduleCopy;
+      });
+      
+      // Log modules and their positions/rotations for debugging
       console.log('Saving modules with positions/rotations:');
-      cleanData.modules.forEach((module: any) => {
+      dataCopy.modules.forEach((module: any) => {
         if (module.id) {
           console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
         }
       });
     }
+    
+    // Ensure data is serializable for Firestore
+    const cleanData = safeSerialize(dataCopy);
     
     await updateDoc(layoutRef, {
       ...cleanData,
@@ -170,7 +196,7 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     console.error('Error in debouncedSave:', error);
     throw new Error('Failed to save layout: ' + (error instanceof Error ? error.message : String(error)));
   }
-}, 250); // Reduced from 500ms to 250ms for more responsive saving
+}, 100); // Reduced from 250ms to 100ms for more responsive saving
 
 const layoutService = {
   async createLayout(data: Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -252,8 +278,32 @@ const layoutService = {
         // Ensure data is serializable for Firestore
         const cleanData = safeSerialize(data);
         
-        // Log modules and their positions/rotations for debugging
+        // Ensure all module positions and rotations are numbers
         if (cleanData.modules && Array.isArray(cleanData.modules)) {
+          cleanData.modules = cleanData.modules.map((module: any) => {
+            // Create a deep copy to avoid modifying the original
+            const moduleCopy = { ...module };
+            
+            // Ensure position values are numbers
+            if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+              moduleCopy.position = moduleCopy.position.map(Number);
+            }
+            
+            // Ensure rotation values are numbers
+            if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+              moduleCopy.rotation = moduleCopy.rotation.map(Number);
+              console.log(`Admin saving module ${moduleCopy.id} with rotation:`, moduleCopy.rotation);
+            }
+            
+            // Ensure scale values are numbers
+            if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+              moduleCopy.scale = moduleCopy.scale.map(Number);
+            }
+            
+            return moduleCopy;
+          });
+          
+          // Log modules and their positions/rotations for debugging
           console.log('Admin saving modules with positions/rotations:');
           cleanData.modules.forEach((module: any) => {
             if (module.id) {
@@ -291,6 +341,7 @@ const layoutService = {
           if (module.rotation && Array.isArray(module.rotation)) {
             // Ensure rotation values are numbers, not strings
             module.rotation = module.rotation.map(Number);
+            console.log(`Saving module ${module.id} with rotation:`, module.rotation);
           }
           
           if (module.scale && Array.isArray(module.scale)) {
@@ -327,6 +378,16 @@ const layoutService = {
 
       // Ensure data is serializable for Firestore
       const cleanData = safeSerialize(data);
+      
+      // Log final data before saving
+      if (cleanData.modules && Array.isArray(cleanData.modules)) {
+        console.log('Final module data before saving:');
+        cleanData.modules.forEach((module: any) => {
+          if (module.id) {
+            console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
+          }
+        });
+      }
       
       await updateDoc(layoutRef, {
         ...cleanData,
@@ -466,6 +527,16 @@ const layoutService = {
       if (!validateLayout(newLayout)) {
         console.error('Invalid layout data:', newLayout);
         throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
+      }
+
+      // Ensure all module positions and rotations are numbers
+      if (newLayout.modules && Array.isArray(newLayout.modules)) {
+        newLayout.modules = newLayout.modules.map((module: any) => ({
+          ...module,
+          position: module.position.map(Number),
+          rotation: module.rotation.map(Number),
+          scale: module.scale.map(Number)
+        }));
       }
 
       // Ensure data is serializable for Firestore

@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -18,7 +19,6 @@ import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
-import { debouncedSave } from '@/services/layout';
 import { AuthUser } from '@/services/auth';
 
 interface EditorState {
@@ -36,6 +36,7 @@ export default function LayoutEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -51,7 +52,31 @@ export default function LayoutEditorPage() {
   // Handle layout change
   const handleLayoutChange = useCallback((layout: Layout) => {
     setCurrentLayout(layout);
-    setModules(layout.modules || []);
+    
+    // Ensure all module positions and rotations are properly converted to numbers
+    if (layout.modules && Array.isArray(layout.modules)) {
+      const processedModules = layout.modules.map(module => {
+        // Create a deep copy to avoid modifying the original
+        const moduleCopy = JSON.parse(JSON.stringify(module));
+        
+        // Ensure position values are numbers
+        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+        
+        // Ensure rotation values are numbers
+        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+        
+        // Ensure scale values are numbers
+        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+        
+        return moduleCopy;
+      });
+      
+      console.log('Setting modules with processed rotations:', processedModules.map(m => ({ id: m.id, rotation: m.rotation })));
+      setModules(processedModules);
+    } else {
+      setModules([]);
+    }
+    
     setConnections(layout.connections || []);
     
     // Update URL to reflect the selected layout
@@ -108,7 +133,24 @@ export default function LayoutEditorPage() {
             
             // Update modules and connections from the saved layout
             if (savedLayout.modules) {
-              setModules(savedLayout.modules);
+              // Ensure all module positions and rotations are properly converted to numbers
+              const processedModules = savedLayout.modules.map(module => {
+                // Create a deep copy to avoid modifying the original
+                const moduleCopy = JSON.parse(JSON.stringify(module));
+                
+                // Ensure position values are numbers
+                moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+                
+                // Ensure rotation values are numbers
+                moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+                
+                // Ensure scale values are numbers
+                moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+                
+                return moduleCopy;
+              });
+              
+              setModules(processedModules);
             }
             
             if (savedLayout.connections) {
@@ -129,7 +171,30 @@ export default function LayoutEditorPage() {
   const handleLayoutCreate = useCallback((layout: Layout) => {
     setLayouts(prev => [...prev, layout]);
     setCurrentLayout(layout);
-    setModules(layout.modules || []);
+    
+    // Ensure all module positions and rotations are properly converted to numbers
+    if (layout.modules && Array.isArray(layout.modules)) {
+      const processedModules = layout.modules.map(module => {
+        // Create a deep copy to avoid modifying the original
+        const moduleCopy = JSON.parse(JSON.stringify(module));
+        
+        // Ensure position values are numbers
+        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+        
+        // Ensure rotation values are numbers
+        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+        
+        // Ensure scale values are numbers
+        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+        
+        return moduleCopy;
+      });
+      
+      setModules(processedModules);
+    } else {
+      setModules([]);
+    }
+    
     setConnections(layout.connections || []);
   }, []);
 
@@ -157,6 +222,49 @@ export default function LayoutEditorPage() {
     setSelectedModuleId(moduleId);
   }, []);
 
+  // Function to save layout immediately
+  const saveLayoutImmediately = useCallback(() => {
+    if (!currentLayout?.id || !user) return;
+    
+    console.log('Saving layout immediately...');
+    
+    // Ensure all module positions and rotations are numbers before saving
+    const modulesToSave = modules.map(module => {
+      // Create a deep copy to avoid modifying the original
+      const moduleCopy = JSON.parse(JSON.stringify(module));
+      
+      // Ensure position values are numbers
+      if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+        moduleCopy.position = moduleCopy.position.map(Number);
+      }
+      
+      // Ensure rotation values are numbers
+      if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+        moduleCopy.rotation = moduleCopy.rotation.map(Number);
+        console.log(`Module ${moduleCopy.id} rotation for immediate save:`, moduleCopy.rotation);
+      }
+      
+      // Ensure scale values are numbers
+      if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+        moduleCopy.scale = moduleCopy.scale.map(Number);
+      }
+      
+      return moduleCopy;
+    });
+    
+    // Use immediate save to ensure changes are persisted
+    layoutService.updateLayout(currentLayout.id, {
+      modules: modulesToSave,
+      connections
+    }, user as AuthUser)
+      .then(() => {
+        console.log('Layout saved successfully');
+      })
+      .catch(error => {
+        console.error('Error saving layout:', error);
+      });
+  }, [currentLayout, modules, connections, user]);
+
   // Handle module updates
   const handleModuleUpdate = useCallback((moduleId: string, updates: Partial<Module>) => {
     const startTime = performance.now();
@@ -165,7 +273,7 @@ export default function LayoutEditorPage() {
       const newModules = prev.map(module => {
         if (module.id === moduleId) {
           // Create a new module object with the updates
-          const updatedModule = { ...module, ...updates };
+          const updatedModule = { ...module };
           
           // Ensure position, rotation, and scale are properly formatted as numbers
           if (updates.position) {
@@ -174,13 +282,14 @@ export default function LayoutEditorPage() {
           
           if (updates.rotation) {
             updatedModule.rotation = updates.rotation.map(Number) as [number, number, number];
+            console.log('Updated module rotation:', updatedModule.rotation);
           }
           
           if (updates.scale) {
             updatedModule.scale = updates.scale.map(Number) as [number, number, number];
           }
           
-          return updatedModule;
+          return { ...updatedModule, ...updates };
         }
         return module;
       });
@@ -191,28 +300,21 @@ export default function LayoutEditorPage() {
         timestamp: Date.now()
       });
       
-      // Always trigger immediate save when position or rotation is updated
-      if ((updates.position || updates.rotation) && currentLayout?.id && user) {
-        console.log('Position or rotation updated, triggering immediate save for module:', moduleId, 
-          'position:', updates.position, 
-          'rotation:', updates.rotation);
-        
-        // Use immediate save for position/rotation updates to ensure they're saved
-        layoutService.updateLayout(currentLayout.id, {
-          modules: newModules,
-          connections
-        }, user as AuthUser)
-          .then(() => {
-            console.log('Module position/rotation saved successfully:', moduleId);
-          })
-          .catch(error => {
-            console.error('Error saving module position/rotation:', error);
-          });
+      // Clear any existing save timeout
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
+      
+      // Set a new timeout to save changes after a short delay
+      saveTimeoutRef.current = setTimeout(() => {
+        if (currentLayout?.id && user) {
+          saveLayoutImmediately();
+        }
+      }, 250); // Reduced from 500ms for more responsive saving
       
       return newModules;
     });
-  }, [connections, currentLayout, user]);
+  }, [currentLayout, user, saveLayoutImmediately]);
 
   // Auto-save when modules or connections change
   useEffect(() => {
@@ -222,14 +324,23 @@ export default function LayoutEditorPage() {
     // Skip if no current layout or user
     if (!currentLayout?.id || !user) return;
     
-    console.log('Auto-saving layout changes...');
+    // Clear any existing save timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
     
-    // Use debounced save to avoid too many Firestore writes
-    debouncedSave(currentLayout.id, {
-      modules,
-      connections
-    });
-  }, [modules, connections, currentLayout, user]);
+    // Set a new timeout to save changes after a short delay
+    saveTimeoutRef.current = setTimeout(() => {
+      saveLayoutImmediately();
+    }, 1000);
+    
+    // Cleanup function to clear timeout
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [modules, connections, currentLayout, user, saveLayoutImmediately]);
 
   // Handle module deletion
   const handleModuleDelete = useCallback((moduleId: string) => {
@@ -251,9 +362,13 @@ export default function LayoutEditorPage() {
       
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
+        // Save the undone state
+        if (currentLayout?.id && user) {
+          saveLayoutImmediately();
+        }
       }, 50);
     }
-  }, [undoStack, modules, connections]);
+  }, [undoStack, modules, connections, currentLayout, user, saveLayoutImmediately]);
 
   // Redo handler
   const handleRedo = useCallback(() => {
@@ -269,46 +384,26 @@ export default function LayoutEditorPage() {
       
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
+        // Save the redone state
+        if (currentLayout?.id && user) {
+          saveLayoutImmediately();
+        }
       }, 50);
     }
-  }, [redoStack, modules, connections]);
+  }, [redoStack, modules, connections, currentLayout, user, saveLayoutImmediately]);
 
-  // Debounced save with performance monitoring
-  const saveTimeout = useRef<NodeJS.Timeout>();
+  // Manual save handler
   const handleSave = useCallback(() => {
-    if (saveTimeout.current) {
-      clearTimeout(saveTimeout.current);
+    if (currentLayout?.id && user) {
+      saveLayoutImmediately();
     }
-
-    const startTime = performance.now();
-    saveTimeout.current = setTimeout(() => {
-      // Save current layout if available
-      if (currentLayout?.id && user) {
-        layoutService.updateLayout(currentLayout.id, {
-          modules,
-          connections
-        }, user as AuthUser)
-          .then(() => {
-            console.log('Layout saved manually:', currentLayout.id);
-          })
-          .catch(error => {
-            console.error('Error saving layout:', error);
-          });
-      }
-      
-      const duration = performance.now() - startTime;
-      firebaseMonitor.logPerformanceMetric({
-        operationDuration: duration,
-        timestamp: Date.now()
-      });
-    }, 1000);
-  }, [currentLayout, modules, connections, user]);
+  }, [currentLayout, user, saveLayoutImmediately]);
 
   // Cleanup timeouts
   useEffect(() => {
     return () => {
-      if (saveTimeout.current) {
-        clearTimeout(saveTimeout.current);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
     };
   }, []);
@@ -406,7 +501,24 @@ export default function LayoutEditorPage() {
                 
                 // Set modules and connections from layout data
                 if (layoutData.modules) {
-                  setModules(layoutData.modules);
+                  // Ensure all module positions and rotations are properly converted to numbers
+                  const processedModules = layoutData.modules.map((module: any) => {
+                    // Create a deep copy to avoid modifying the original
+                    const moduleCopy = JSON.parse(JSON.stringify(module));
+                    
+                    // Ensure position values are numbers
+                    moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+                    
+                    // Ensure rotation values are numbers
+                    moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+                    
+                    // Ensure scale values are numbers
+                    moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+                    
+                    return moduleCopy;
+                  });
+                  
+                  setModules(processedModules);
                 }
                 
                 if (layoutData.connections) {
