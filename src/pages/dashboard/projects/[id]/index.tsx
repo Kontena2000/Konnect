@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users, Plus, Copy } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users, Plus, Copy, User, Mail, Phone, Building } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -59,10 +59,14 @@ export default function ProjectDetailsPage() {
   const [creatingCalculation, setCreatingCalculation] = useState(false);
   
   const [formData, setFormData] = useState({
-    name: "",
-    description: "",
+    name: '',
+    description: '',
     plotWidth: 0,
-    plotLength: 0
+    plotLength: 0,
+    clientName: '',
+    clientEmail: '',
+    clientPhone: '',
+    clientCompany: ''
   });
 
   useEffect(() => {
@@ -73,20 +77,24 @@ export default function ProjectDetailsPage() {
         const projectData = await projectService.getProject(id as string);
         if (!projectData) {
           toast({
-            variant: "destructive",
-            title: "Error",
-            description: "Project not found"
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Project not found'
           });
-          router.push("/dashboard/projects");
+          router.push('/dashboard/projects');
           return;
         }
         
         setProject(projectData);
         setFormData({
           name: projectData.name,
-          description: projectData.description || "",
+          description: projectData.description || '',
           plotWidth: projectData.plotWidth || 0,
-          plotLength: projectData.plotLength || 0
+          plotLength: projectData.plotLength || 0,
+          clientName: projectData.clientName || '',
+          clientEmail: projectData.clientEmail || '',
+          clientPhone: projectData.clientPhone || '',
+          clientCompany: projectData.clientCompany || ''
         });
         
         const projectLayouts = await layoutService.getProjectLayouts(id as string);
@@ -145,7 +153,11 @@ export default function ProjectDetailsPage() {
         name: formData.name,
         description: formData.description,
         plotWidth: formData.plotWidth,
-        plotLength: formData.plotLength
+        plotLength: formData.plotLength,
+        clientName: formData.clientName,
+        clientEmail: formData.clientEmail,
+        clientPhone: formData.clientPhone,
+        clientCompany: formData.clientCompany
       }, user.uid);
       
       setProject(prev => prev ? {
@@ -153,7 +165,11 @@ export default function ProjectDetailsPage() {
         name: formData.name,
         description: formData.description,
         plotWidth: formData.plotWidth,
-        plotLength: formData.plotLength
+        plotLength: formData.plotLength,
+        clientName: formData.clientName,
+        clientEmail: formData.clientEmail,
+        clientPhone: formData.clientPhone,
+        clientCompany: formData.clientCompany
       } : null);
       
       setEditMode(false);
@@ -516,19 +532,23 @@ export default function ProjectDetailsPage() {
         </Card>
 
         <div className='space-y-6'>
-          <Tabs defaultValue="layouts" className="w-full">
-            <TabsList className="w-full justify-start">
-              <TabsTrigger value="layouts" className="flex-1 max-w-[200px]">
-                <LayoutGrid className="mr-2 h-4 w-4" />
+          <Tabs defaultValue='layouts' className='w-full'>
+            <TabsList className='w-full justify-start'>
+              <TabsTrigger value='layouts' className='flex-1 max-w-[200px]'>
+                <LayoutGrid className='mr-2 h-4 w-4' />
                 Layouts
               </TabsTrigger>
-              <TabsTrigger value="calculations" className="flex-1 max-w-[200px]">
-                <Calculator className="mr-2 h-4 w-4" />
+              <TabsTrigger value='calculations' className='flex-1 max-w-[200px]'>
+                <Calculator className='mr-2 h-4 w-4' />
                 Calculations
+              </TabsTrigger>
+              <TabsTrigger value='client-info' className='flex-1 max-w-[200px]'>
+                <User className='mr-2 h-4 w-4' />
+                Client Information
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="layouts" className="space-y-4 mt-6">
+            <TabsContent value='layouts' className='space-y-4 mt-6'>
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium">Project Layouts</h3>
                 <Button 
@@ -625,7 +645,7 @@ export default function ProjectDetailsPage() {
               </div>
             </TabsContent>
             
-            <TabsContent value="calculations" className="space-y-4 mt-6">
+            <TabsContent value='calculations' className="space-y-4 mt-6">
               <div className="flex justify-between items-center mb-4">
                 <h3 className="text-lg font-medium">Project Calculations</h3>
                 <Button 
@@ -718,6 +738,154 @@ export default function ProjectDetailsPage() {
                   </div>
                 )}
               </div>
+            </TabsContent>
+
+            <TabsContent value='client-info' className='space-y-4 mt-6'>
+              <div className='flex justify-between items-center mb-4'>
+                <h3 className='text-lg font-medium'>Client Information</h3>
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className='bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2'
+                    >
+                      <Edit className='h-4 w-4' />
+                      Edit Client Info
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent className='sm:max-w-[500px]'>
+                    <DialogHeader>
+                      <DialogTitle>Edit Client Information</DialogTitle>
+                      <DialogDescription>
+                        Update the client details for this project
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4 py-4'>
+                      <div className='grid grid-cols-1 gap-4'>
+                        <div className='space-y-2'>
+                          <Label htmlFor='clientName'>Client Name</Label>
+                          <Input 
+                            id='clientName' 
+                            name='clientName'
+                            placeholder='Enter client name' 
+                            value={formData.clientName}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className='space-y-2'>
+                          <Label htmlFor='clientCompany'>Company</Label>
+                          <Input 
+                            id='clientCompany' 
+                            name='clientCompany'
+                            placeholder='Enter company name' 
+                            value={formData.clientCompany}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className='space-y-2'>
+                          <Label htmlFor='clientEmail'>Email</Label>
+                          <Input 
+                            id='clientEmail' 
+                            name='clientEmail'
+                            type='email'
+                            placeholder='client@example.com' 
+                            value={formData.clientEmail}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                        <div className='space-y-2'>
+                          <Label htmlFor='clientPhone'>Phone</Label>
+                          <Input 
+                            id='clientPhone' 
+                            name='clientPhone'
+                            placeholder='Enter phone number' 
+                            value={formData.clientPhone}
+                            onChange={handleInputChange}
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleSaveProject} disabled={saving} className='bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black'>
+                        {saving ? (
+                          <>
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className='mr-2 h-4 w-4' />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+              </div>
+              
+              <Card className='overflow-hidden border border-muted shadow-sm'>
+                <CardHeader className='bg-muted/20 pb-3'>
+                  <CardTitle className='text-lg'>Client Details</CardTitle>
+                  <CardDescription>Contact information for this project's client</CardDescription>
+                </CardHeader>
+                <CardContent className='pt-4'>
+                  <div className='space-y-4'>
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
+                      <div className='space-y-1'>
+                        <div className='flex items-center gap-2'>
+                          <User className='h-4 w-4 text-muted-foreground' />
+                          <h4 className='text-sm font-medium text-muted-foreground'>Client Name</h4>
+                        </div>
+                        <p className='font-medium'>{project.clientName || 'Not specified'}</p>
+                      </div>
+                      
+                      <div className='space-y-1'>
+                        <div className='flex items-center gap-2'>
+                          <Building className='h-4 w-4 text-muted-foreground' />
+                          <h4 className='text-sm font-medium text-muted-foreground'>Company</h4>
+                        </div>
+                        <p className='font-medium'>{project.clientCompany || 'Not specified'}</p>
+                      </div>
+                      
+                      <div className='space-y-1'>
+                        <div className='flex items-center gap-2'>
+                          <Mail className='h-4 w-4 text-muted-foreground' />
+                          <h4 className='text-sm font-medium text-muted-foreground'>Email</h4>
+                        </div>
+                        {project.clientEmail ? (
+                          <a href={`mailto:${project.clientEmail}`} className='text-blue-600 hover:underline'>
+                            {project.clientEmail}
+                          </a>
+                        ) : (
+                          <p>Not specified</p>
+                        )}
+                      </div>
+                      
+                      <div className='space-y-1'>
+                        <div className='flex items-center gap-2'>
+                          <Phone className='h-4 w-4 text-muted-foreground' />
+                          <h4 className='text-sm font-medium text-muted-foreground'>Phone</h4>
+                        </div>
+                        {project.clientPhone ? (
+                          <a href={`tel:${project.clientPhone}`} className='text-blue-600 hover:underline'>
+                            {project.clientPhone}
+                          </a>
+                        ) : (
+                          <p>Not specified</p>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {!project.clientName && !project.clientCompany && !project.clientEmail && !project.clientPhone && (
+                      <div className='py-4 text-center'>
+                        <User className='h-12 w-12 mx-auto text-muted-foreground mb-2' />
+                        <p className='text-muted-foreground'>No client information has been added yet</p>
+                        <p className='text-sm text-muted-foreground mt-1'>Click the 'Edit Client Info' button to add client details</p>
+                      </div>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             </TabsContent>
           </Tabs>
         </div>
