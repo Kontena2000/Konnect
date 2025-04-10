@@ -118,16 +118,24 @@ export function CreateModuleDialog({
       
       const newModule: Module = {
         id: moduleId,
-        type: "basic",
         name: formData.name,
-        description: formData.description,
+        description: formData.description || '',
         category: formData.category,
+        type: formData.type,
         color: formData.color,
-        dimensions: formData.dimensions,
+        dimensions: {
+          length: parseFloat(formData.dimensions.length.toString()),
+          width: parseFloat(formData.dimensions.width.toString()),
+          height: parseFloat(formData.dimensions.height.toString())
+        },
         position: [0, 0, 0],
         rotation: [0, 0, 0],
         scale: [1, 1, 1],
-        connectionPoints: connectionPoints,
+        connectionPoints: connectionPoints.map(cp => ({
+          id: cp.id,
+          type: cp.type || '',
+          position: cp.position
+        })),
         visibleInEditor: formData.visibleInEditor
       };
 
