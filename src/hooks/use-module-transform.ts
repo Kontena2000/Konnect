@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import { Vector3, Euler, Mesh, Box3 } from "three";
 import * as THREE from "three";
@@ -25,7 +24,62 @@ export function useModuleTransform({
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
 
-  const handleTransformChange = useCallback((meshRef: React.RefObject<Mesh>, updateShadowTransform: () => void) => {
+  // Handle transform change
+  const handleTransformChange = useCallback((meshRef: React.RefObject<Mesh>, onComplete?: () => void) => {
+    if (!meshRef.current || !module || !onUpdate || readOnly) return;
+
+    // Get current position, rotation, and scale from the mesh
+    const position: [number, number, number] = [
+      meshRef.current.position.x,
+      meshRef.current.position.y,
+      meshRef.current.position.z
+    ];
+
+    const rotation: [number, number, number] = [
+      meshRef.current.rotation.x * 180 / Math.PI,
+      meshRef.current.rotation.y * 180 / Math.PI,
+      meshRef.current.rotation.z * 180 / Math.PI
+    ];
+
+    const scale: [number, number, number] = [
+      meshRef.current.scale.x,
+      meshRef.current.scale.y,
+      meshRef.current.scale.z
+    ];
+
+    // Check if position has actually changed to avoid unnecessary updates
+    const positionChanged = 
+      Math.abs(position[0] - module.position[0]) > 0.001 ||
+      Math.abs(position[1] - module.position[1]) > 0.001 ||
+      Math.abs(position[2] - module.position[2]) > 0.001;
+
+    const rotationChanged = 
+      Math.abs(rotation[0] - module.rotation[0]) > 0.001 ||
+      Math.abs(rotation[1] - module.rotation[1]) > 0.001 ||
+      Math.abs(rotation[2] - module.rotation[2]) > 0.001;
+
+    const scaleChanged = 
+      Math.abs(scale[0] - module.scale[0]) > 0.001 ||
+      Math.abs(scale[1] - module.scale[1]) > 0.001 ||
+      Math.abs(scale[2] - module.scale[2]) > 0.001;
+
+    // Only update if something has changed
+    if (positionChanged || rotationChanged || scaleChanged) {
+      console.log('Module transform changed, updating:', module.id, position);
+      
+      onUpdate({
+        position,
+        rotation,
+        scale
+      });
+    }
+
+    if (onComplete) {
+      onComplete();
+    }
+  }, [module, onUpdate, readOnly]);
+
+  const handleTransformChangeOriginal = useCallback((meshRef: React.RefObject<Mesh>, updateShadowTransform: () => void) => {
     if (!meshRef.current || readOnly) return;
     
     const position = meshRef.current.position.clone();
@@ -130,6 +184,6 @@ export function useModuleTransform({
     setIsShiftPressed,
     isTransforming,
     setIsTransforming,
-    handleTransformChange
+    handleTransformChange: handleTransformChangeOriginal
   };
 }

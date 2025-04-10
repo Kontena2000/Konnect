@@ -1,6 +1,6 @@
-
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
+import { useEffect } from "react";
 
 interface ModuleTransformProps {
   meshRef: React.RefObject<Mesh>;
@@ -28,6 +28,7 @@ export function ModuleTransform({
       onMouseDown={onTransformStart}
       onMouseUp={onTransformEnd}
       onChange={onUpdate}
+      onObjectChange={onUpdate} // Add this to ensure position updates are captured
       size={0.75}
       showX={true}
       showY={true}
