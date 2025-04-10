@@ -83,10 +83,15 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
   try {
     const firestore = ensureFirestore();
     const layoutRef = doc(firestore, 'layouts', layoutId);
+    
+    // Ensure data is serializable for Firestore
+    const cleanData = JSON.parse(JSON.stringify(data));
+    
     await updateDoc(layoutRef, {
-      ...data,
+      ...cleanData,
       updatedAt: serverTimestamp()
     });
+    console.log('Layout saved successfully:', layoutId);
   } catch (error) {
     console.error('Error saving layout:', error);
     throw new Error('Failed to save layout');
@@ -94,22 +99,32 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
 }, 2000);
 
 const layoutService = {
-  async createLayout(data: Omit<Layout, "id" | "createdAt" | "updatedAt">): Promise<string> {
+  async createLayout(data: Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
     if (!validateLayout(data)) {
+      console.error('Invalid layout data:', data);
       throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
     }
 
     try {
       const firestore = ensureFirestore();
-      const layoutRef = await addDoc(collection(firestore, 'layouts'), {
+      
+      // Ensure data is serializable for Firestore
+      const cleanData = JSON.parse(JSON.stringify({
         ...data,
         modules: data.modules || [],
-        connections: data.connections || [],
+        connections: data.connections || []
+      }));
+      
+      const layoutRef = await addDoc(collection(firestore, 'layouts'), {
+        ...cleanData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
+      
+      console.log('Layout created successfully:', layoutRef.id);
       return layoutRef.id;
     } catch (error) {
+      console.error('Failed to create layout:', error);
       throw new LayoutError('Failed to create layout', 'CREATE_FAILED', error);
     }
   },
@@ -134,10 +149,14 @@ const layoutService = {
 
       // Special case for ruud@kontena.eu - always has full access
       if (user.email === 'ruud@kontena.eu') {
+        // Ensure data is serializable for Firestore
+        const cleanData = JSON.parse(JSON.stringify(data));
+        
         await updateDoc(layoutRef, {
-          ...data,
+          ...cleanData,
           updatedAt: serverTimestamp()
         });
+        console.log('Layout updated successfully by admin:', id);
         return;
       }
 
@@ -153,11 +172,17 @@ const layoutService = {
         throw new LayoutError('Invalid connection data', 'VALIDATION_FAILED');
       }
 
+      // Ensure data is serializable for Firestore
+      const cleanData = JSON.parse(JSON.stringify(data));
+      
       await updateDoc(layoutRef, {
-        ...data,
+        ...cleanData,
         updatedAt: serverTimestamp()
       });
+      
+      console.log('Layout updated successfully:', id);
     } catch (error) {
+      console.error('Failed to update layout:', error);
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to update layout', 'UPDATE_FAILED', error);
     }
@@ -273,14 +298,19 @@ const layoutService = {
         throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
       }
 
+      // Ensure data is serializable for Firestore
+      const cleanData = JSON.parse(JSON.stringify(newLayout));
+      
       const layoutRef = await addDoc(collection(firestore, 'layouts'), {
-        ...newLayout,
+        ...cleanData,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-
+      
+      console.log('Layout saved to project successfully:', layoutRef.id);
       return layoutRef.id;
     } catch (error) {
+      console.error('Failed to save layout to project:', error);
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to save layout to project', 'SAVE_FAILED', error);
     }

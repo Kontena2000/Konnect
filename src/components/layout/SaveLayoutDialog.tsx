@@ -74,17 +74,6 @@ export function SaveLayoutDialog({
       return false;
     }
     
-    // Validate modules and connections if needed
-    if (layoutData.modules && !Array.isArray(layoutData.modules)) {
-      setError('Invalid modules data');
-      return false;
-    }
-    
-    if (layoutData.connections && !Array.isArray(layoutData.connections)) {
-      setError('Invalid connections data');
-      return false;
-    }
-    
     return true;
   };
   
@@ -117,6 +106,7 @@ export function SaveLayoutDialog({
         try {
           await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
           layoutId = layoutData.id;
+          console.log('Layout updated successfully:', layoutId);
           toast({
             title: 'Success',
             description: 'Layout updated successfully'
@@ -129,6 +119,7 @@ export function SaveLayoutDialog({
         // Create new layout if it's a new layout or we're saving to a different project
         try {
           layoutId = await layoutService.createLayout(saveData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
+          console.log('New layout created successfully:', layoutId);
           toast({
             title: 'Success',
             description: 'New layout created successfully'
@@ -164,7 +155,7 @@ export function SaveLayoutDialog({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[500px]">
+      <DialogContent className='sm:max-w-[500px]'>
         <DialogHeader>
           <DialogTitle>Save Layout</DialogTitle>
           <DialogDescription>
@@ -173,35 +164,35 @@ export function SaveLayoutDialog({
         </DialogHeader>
         
         {error && (
-          <Alert variant="destructive" className="mt-2">
-            <AlertCircle className="h-4 w-4" />
+          <Alert variant='destructive' className='mt-2'>
+            <AlertCircle className='h-4 w-4' />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         
-        <div className="grid gap-4 py-4">
-          <div className="grid gap-2">
-            <Label htmlFor="project">Project</Label>
+        <div className='grid gap-4 py-4'>
+          <div className='grid gap-2'>
+            <Label htmlFor='project'>Project</Label>
             <ProjectSelector
               selectedProjectId={selectedProjectId}
               onSelect={setSelectedProjectId}
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="name">Name</Label>
+          <div className='grid gap-2'>
+            <Label htmlFor='name'>Name</Label>
             <Input
-              id="name"
-              placeholder="Layout name"
+              id='name'
+              placeholder='Layout name'
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <div className="grid gap-2">
-            <Label htmlFor="description">Description</Label>
+          <div className='grid gap-2'>
+            <Label htmlFor='description'>Description</Label>
             <Textarea
-              id="description"
-              placeholder="Layout description"
+              id='description'
+              placeholder='Layout description'
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -209,7 +200,7 @@ export function SaveLayoutDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
+          <Button variant='outline' onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button 
@@ -219,11 +210,11 @@ export function SaveLayoutDialog({
           >
             {saving ? (
               <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
                 Saving...
               </>
             ) : (
-              "Save Layout"
+              'Save Layout'
             )}
           </Button>
         </DialogFooter>
