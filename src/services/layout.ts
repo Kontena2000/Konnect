@@ -129,12 +129,21 @@ const ensureFirestore = (): Firestore => {
     console.error('Firestore is not available');
     throw new LayoutError('Firestore is not available', 'FIRESTORE_UNAVAILABLE');
   }
-  return firestore;
 };
 
 // Helper function to safely serialize data for Firestore
 const safeSerialize = (data: any): any => {
   try {
+    if (data === null || data === undefined) {
+      console.warn('Attempting to serialize null or undefined data');
+      return {};
+    }
+    
+    // Handle arrays specially to avoid issues with null/undefined items
+    if (Array.isArray(data)) {
+      return data.map(item => item === null || item === undefined ? {} : JSON.parse(JSON.stringify(item)));
+    }
+    
     return JSON.parse(JSON.stringify(data));
   } catch (error) {
     console.error('Error serializing data for Firestore:', error);
