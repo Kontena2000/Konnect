@@ -152,8 +152,8 @@ export function LayoutSelector({
             </div>
           ) : (
             layouts.map((layout) => (
-              <SelectItem key={layout.id} value={layout.id} className='flex justify-between items-center'>
-                <span>{layout.name}</span>
+              <SelectItem key={layout.id} value={layout.id}>
+                {layout.name}
               </SelectItem>
             ))
           )}
