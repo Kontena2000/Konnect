@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -115,19 +114,29 @@ export function SaveLayoutDialog({
       let layoutId;
       if (layoutData.id && layoutData.projectId === selectedProjectId) {
         // Update existing layout if we're saving to the same project
-        await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
-        layoutId = layoutData.id;
-        toast({
-          title: 'Success',
-          description: 'Layout updated successfully'
-        });
+        try {
+          await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
+          layoutId = layoutData.id;
+          toast({
+            title: 'Success',
+            description: 'Layout updated successfully'
+          });
+        } catch (updateError) {
+          console.error('Error updating layout:', updateError);
+          throw new Error(updateError instanceof Error ? updateError.message : 'Failed to update layout');
+        }
       } else {
         // Create new layout if it's a new layout or we're saving to a different project
-        layoutId = await layoutService.createLayout(saveData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
-        toast({
-          title: 'Success',
-          description: 'New layout created successfully'
-        });
+        try {
+          layoutId = await layoutService.createLayout(saveData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
+          toast({
+            title: 'Success',
+            description: 'New layout created successfully'
+          });
+        } catch (createError) {
+          console.error('Error creating layout:', createError);
+          throw new Error(createError instanceof Error ? createError.message : 'Failed to create new layout');
+        }
       }
       
       if (onSaveComplete && layoutId) {
