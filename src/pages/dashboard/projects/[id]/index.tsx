@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -410,19 +409,19 @@ export default function ProjectDetailsPage() {
             </div>
 
             {/* Project Actions */}
-            <Separator className="my-6" />
+            <Separator className='my-6' />
             <div>
-              <h3 className="text-lg font-medium mb-4">Project Actions</h3>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <h3 className='text-lg font-medium mb-4'>Project Actions</h3>
+              <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
-                      className="bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30"
+                      className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white py-2 px-3 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30 h-auto'
                     >
-                      <div className="flex flex-col items-center text-center w-full">
-                        <Share className="h-8 w-8 mb-2" />
-                        <span className="font-medium">Share Project</span>
-                        <span className="text-xs mt-1 text-white/70">Collaborate with others</span>
+                      <div className='flex flex-col items-center text-center w-full'>
+                        <Share className='h-5 w-5 mb-1' />
+                        <span className='font-medium text-sm'>Share Project</span>
+                        <span className='text-xs mt-0.5 text-white/70'>Collaborate with others</span>
                       </div>
                     </Button>
                   </DialogTrigger>
@@ -433,20 +432,20 @@ export default function ProjectDetailsPage() {
                         Enter the email address of the user you want to share this project with.
                       </DialogDescription>
                     </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
+                    <div className='space-y-4 py-4'>
+                      <div className='space-y-2'>
+                        <Label htmlFor='email'>Email Address</Label>
                         <Input 
-                          id="email" 
-                          placeholder="user@example.com" 
+                          id='email' 
+                          placeholder='user@example.com' 
                           value={shareEmail}
                           onChange={(e) => setShareEmail(e.target.value)}
                         />
                       </div>
                     </div>
                     <DialogFooter>
-                      <Button onClick={handleShareProject} className="bg-[#3CB371] hover:bg-[#3CB371]/80 text-white">
-                        <Share className="mr-2 h-4 w-4" />
+                      <Button onClick={handleShareProject} className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white'>
+                        <Share className='mr-2 h-4 w-4' />
                         Share
                       </Button>
                     </DialogFooter>
@@ -454,30 +453,30 @@ export default function ProjectDetailsPage() {
                 </Dialog>
                 
                 <Button 
-                  className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30"
+                  className='bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white py-2 px-3 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30 h-auto'
                   onClick={handleDuplicateProject}
                   disabled={duplicating}
                 >
-                  <div className="flex flex-col items-center text-center w-full">
+                  <div className='flex flex-col items-center text-center w-full'>
                     {duplicating ? (
-                      <Loader2 className="h-8 w-8 mb-2 animate-spin" />
+                      <Loader2 className='h-5 w-5 mb-1 animate-spin' />
                     ) : (
-                      <Copy className="h-8 w-8 mb-2" />
+                      <Copy className='h-5 w-5 mb-1' />
                     )}
-                    <span className="font-medium">Duplicate Project</span>
-                    <span className="text-xs mt-1 text-white/70">Create a copy with all layouts</span>
+                    <span className='font-medium text-sm'>Duplicate Project</span>
+                    <span className='text-xs mt-0.5 text-white/70'>Create a copy with all layouts</span>
                   </div>
                 </Button>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
-                      className="bg-red-500 hover:bg-red-600/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400"
+                      className='bg-red-500 hover:bg-red-600/80 text-white py-2 px-3 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400 h-auto'
                     >
-                      <div className="flex flex-col items-center text-center w-full">
-                        <Trash2 className="h-8 w-8 mb-2" />
-                        <span className="font-medium">Delete Project</span>
-                        <span className="text-xs mt-1 text-white/70">Remove permanently</span>
+                      <div className='flex flex-col items-center text-center w-full'>
+                        <Trash2 className='h-5 w-5 mb-1' />
+                        <span className='font-medium text-sm'>Delete Project</span>
+                        <span className='text-xs mt-0.5 text-white/70'>Remove permanently</span>
                       </div>
                     </Button>
                   </AlertDialogTrigger>
@@ -491,8 +490,8 @@ export default function ProjectDetailsPage() {
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteProject} className="bg-red-500 hover:bg-red-600">
-                        <Trash2 className="mr-2 h-4 w-4" />
+                      <AlertDialogAction onClick={handleDeleteProject} className='bg-red-500 hover:bg-red-600'>
+                        <Trash2 className='mr-2 h-4 w-4' />
                         Delete
                       </AlertDialogAction>
                     </AlertDialogFooter>
