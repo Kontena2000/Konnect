@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -522,7 +523,7 @@ export default function ProjectDetailsPage() {
                       <AlertDialogDescription>
                         This action cannot be undone. This will permanently delete the project
                         and all associated layouts and calculations.
-                      </AlertDialogDescription>
+                      </DialogDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
