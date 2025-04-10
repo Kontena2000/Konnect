@@ -374,11 +374,18 @@ const layoutService = {
 
   async saveLayoutToProject(layoutData: Partial<Layout>, projectId: string, user: AuthUser): Promise<string> {
     try {
+      console.log('Saving layout to project:', projectId, 'with data:', { 
+        ...layoutData, 
+        modules: layoutData.modules?.length || 0, 
+        connections: layoutData.connections?.length || 0 
+      });
+      
       const firestore = ensureFirestore();
       const projectRef = doc(firestore, 'projects', projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
+        console.error('Project not found:', projectId);
         throw new LayoutError('Project not found', 'PROJECT_NOT_FOUND');
       }
 
@@ -386,20 +393,22 @@ const layoutService = {
       if (user.email !== 'ruud@kontena.eu') {
         const project = projectSnap.data();
         if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+          console.error('Unauthorized access to project:', projectId, 'by user:', user.uid);
           throw new LayoutError('Unauthorized access to project', 'UNAUTHORIZED');
         }
       }
 
-      // Always create a new layout with the specified project ID
+      // Create a new layout with the specified project ID
       const newLayout = {
-        ...layoutData,
         projectId, // Ensure we use the provided projectId
         name: layoutData.name || 'Untitled Layout',
+        description: layoutData.description || `Created on ${new Date().toLocaleDateString()}`,
         modules: layoutData.modules || [],
         connections: layoutData.connections || []
       };
 
       if (!validateLayout(newLayout)) {
+        console.error('Invalid layout data:', newLayout);
         throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
       }
 

@@ -106,7 +106,6 @@ export function SaveLayoutDialog({
       
       // Prepare layout data
       const saveData = {
-        ...layoutData,
         projectId: selectedProjectId, // Always use the selected project ID
         name: name.trim(),
         description: description || `Created on ${new Date().toLocaleDateString()}`,
@@ -126,6 +125,7 @@ export function SaveLayoutDialog({
       // If we're updating an existing layout in the same project
       if (layoutData.id && layoutData.projectId === selectedProjectId) {
         try {
+          console.log('Updating existing layout in the same project:', layoutData.id);
           await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
           layoutId = layoutData.id;
           console.log('Layout updated successfully:', layoutId);
@@ -140,18 +140,11 @@ export function SaveLayoutDialog({
       } else {
         // Create new layout - either it's a new layout or we're saving to a different project
         try {
-          // Always create a new layout when saving to a different project
-          const newLayoutData = {
-            projectId: selectedProjectId,
-            name: name.trim(),
-            description: description || `Created on ${new Date().toLocaleDateString()}`,
-            modules: layoutData.modules || [],
-            connections: layoutData.connections || []
-          };
+          console.log('Creating new layout or saving to different project');
           
-          // Use saveLayoutToProject to ensure proper validation
+          // Always create a new layout when saving to a different project
           layoutId = await layoutService.saveLayoutToProject(
-            newLayoutData, 
+            saveData, 
             selectedProjectId, 
             user as AuthUser
           );

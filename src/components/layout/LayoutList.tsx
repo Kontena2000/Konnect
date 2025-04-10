@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Layout } from '@/services/layout';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -93,15 +92,15 @@ export function LayoutList({ projectId, onRefresh }: LayoutListProps) {
 
   if (layouts.length === 0) {
     return (
-      <Card className="bg-muted/50">
-        <CardContent className="flex flex-col items-center justify-center py-8">
-          <p className="text-muted-foreground mb-4">No layouts found for this project</p>
+      <Card className='bg-muted/50'>
+        <CardContent className='flex flex-col items-center justify-center py-8'>
+          <p className='text-muted-foreground mb-4'>No layouts found for this project</p>
           <Button 
             onClick={() => router.push(`/dashboard/projects/${projectId}/editor`)}
-            className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
+            className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
           >
-            <Save className="mr-2 h-4 w-4" />
-            Create New Layout
+            <Save className='mr-2 h-4 w-4' />
+            Save Layout
           </Button>
         </CardContent>
       </Card>
