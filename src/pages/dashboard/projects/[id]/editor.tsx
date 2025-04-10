@@ -174,7 +174,9 @@ export default function LayoutEditorPage() {
       
       // Always trigger immediate save when position or rotation is updated
       if ((updates.position || updates.rotation) && currentLayout?.id && user) {
-        console.log('Position or rotation updated, triggering immediate save for module:', moduleId);
+        console.log('Position or rotation updated, triggering immediate save for module:', moduleId, 
+          'position:', updates.position, 
+          'rotation:', updates.rotation);
         
         // Use immediate save for position/rotation updates to ensure they're saved
         layoutService.updateLayout(currentLayout.id, {

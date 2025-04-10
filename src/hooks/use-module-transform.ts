@@ -133,12 +133,16 @@ export function useModuleTransform({
           onComplete: () => {
             // Always update rotation after animation completes
             if (onUpdate && meshRef.current) {
+              const newRotation: [number, number, number] = [
+                meshRef.current.rotation.x * 180 / Math.PI,
+                meshRef.current.rotation.y * 180 / Math.PI,
+                meshRef.current.rotation.z * 180 / Math.PI
+              ];
+              
+              console.log('Rotation animation complete, updating to:', newRotation);
+              
               onUpdate({
-                rotation: [
-                  meshRef.current.rotation.x * 180 / Math.PI,
-                  meshRef.current.rotation.y * 180 / Math.PI,
-                  meshRef.current.rotation.z * 180 / Math.PI
-                ]
+                rotation: newRotation
               });
             }
           }
@@ -185,10 +189,30 @@ export function useModuleTransform({
         onComplete: () => {
           // Always update position after animation completes
           if (onUpdate && meshRef.current) {
+            const finalPosition: [number, number, number] = [
+              meshRef.current.position.x, 
+              meshRef.current.position.y, 
+              meshRef.current.position.z
+            ];
+            
+            const finalRotation: [number, number, number] = [
+              meshRef.current.rotation.x * 180 / Math.PI, 
+              meshRef.current.rotation.y * 180 / Math.PI, 
+              meshRef.current.rotation.z * 180 / Math.PI
+            ];
+            
+            const finalScale: [number, number, number] = [
+              meshRef.current.scale.x, 
+              meshRef.current.scale.y, 
+              meshRef.current.scale.z
+            ];
+            
+            console.log('Height animation complete, updating to position:', finalPosition);
+            
             onUpdate({
-              position: [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
-              rotation: [rotation.x * 180 / Math.PI, rotation.y * 180 / Math.PI, rotation.z * 180 / Math.PI],
-              scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+              position: finalPosition,
+              rotation: finalRotation,
+              scale: finalScale
             });
           }
         }
@@ -203,10 +227,30 @@ export function useModuleTransform({
         onComplete: () => {
           // Always update position after animation completes
           if (onUpdate && meshRef.current) {
+            const finalPosition: [number, number, number] = [
+              meshRef.current.position.x, 
+              meshRef.current.position.y, 
+              meshRef.current.position.z
+            ];
+            
+            const finalRotation: [number, number, number] = [
+              meshRef.current.rotation.x * 180 / Math.PI, 
+              meshRef.current.rotation.y * 180 / Math.PI, 
+              meshRef.current.rotation.z * 180 / Math.PI
+            ];
+            
+            const finalScale: [number, number, number] = [
+              meshRef.current.scale.x, 
+              meshRef.current.scale.y, 
+              meshRef.current.scale.z
+            ];
+            
+            console.log('Height animation complete, updating to position:', finalPosition);
+            
             onUpdate({
-              position: [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
-              rotation: [rotation.x * 180 / Math.PI, rotation.y * 180 / Math.PI, rotation.z * 180 / Math.PI],
-              scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+              position: finalPosition,
+              rotation: finalRotation,
+              scale: finalScale
             });
           }
         }
@@ -215,10 +259,30 @@ export function useModuleTransform({
     }
     
     // Update immediately with current position
+    const immediatePosition: [number, number, number] = [
+      adjustedPosition.x, 
+      adjustedPosition.y, 
+      adjustedPosition.z
+    ];
+    
+    const immediateRotation: [number, number, number] = [
+      rotation.x * 180 / Math.PI, 
+      rotation.y * 180 / Math.PI, 
+      rotation.z * 180 / Math.PI
+    ];
+    
+    const immediateScale: [number, number, number] = [
+      meshRef.current.scale.x, 
+      meshRef.current.scale.y, 
+      meshRef.current.scale.z
+    ];
+    
+    console.log('Immediate update with position:', immediatePosition, 'rotation:', immediateRotation);
+    
     onUpdate?.({
-      position: [adjustedPosition.x, adjustedPosition.y, adjustedPosition.z],
-      rotation: [rotation.x * 180 / Math.PI, rotation.y * 180 / Math.PI, rotation.z * 180 / Math.PI],
-      scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+      position: immediatePosition,
+      rotation: immediateRotation,
+      scale: immediateScale
     });
     
     updateShadowTransform();

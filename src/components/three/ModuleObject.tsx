@@ -174,7 +174,6 @@ export function ModuleObject({
     if (!meshRef.current || !onUpdate) return;
     
     setIsTransforming(false);
-    onTransformEnd?.();
     
     // Get final position after transform
     const finalPosition: [number, number, number] = [
@@ -208,7 +207,10 @@ export function ModuleObject({
     
     // Update shadow
     updateShadowTransform();
-  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
+    
+    // Call the parent onTransformEnd after our updates
+    onTransformEnd?.();
+  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform]);
 
   return (
     <group>
