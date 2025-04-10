@@ -127,7 +127,6 @@ export function SaveLayoutDialog({
           // Ensure rotation values are numbers
           if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
             moduleCopy.rotation = moduleCopy.rotation.map(Number);
-            console.log(`Module ${moduleCopy.id} rotation before save:`, moduleCopy.rotation);
           }
           
           // Ensure scale values are numbers
@@ -144,14 +143,6 @@ export function SaveLayoutDialog({
         modules: saveData.modules?.length || 0, 
         connections: saveData.connections?.length || 0 
       });
-      
-      // Log all module rotations before saving
-      if (saveData.modules && Array.isArray(saveData.modules)) {
-        console.log('Module rotations before saving:');
-        saveData.modules.forEach(module => {
-          console.log(`Module ${module.id}: rotation=${JSON.stringify(module.rotation)}`);
-        });
-      }
       
       // Save or update layout
       let layoutId;
