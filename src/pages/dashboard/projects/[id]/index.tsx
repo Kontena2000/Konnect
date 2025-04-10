@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -38,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
+import { CalculationDetailsModal } from '@/components/matrix-calculator/CalculationDetailsModal';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -54,6 +54,8 @@ export default function ProjectDetailsPage() {
   const [duplicating, setDuplicating] = useState(false);
   const [creatingLayout, setCreatingLayout] = useState(false);
   const [creatingCalculation, setCreatingCalculation] = useState(false);
+  const [selectedCalculationId, setSelectedCalculationId] = useState<string | null>(null);
+  const [calculationModalOpen, setCalculationModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -311,6 +313,11 @@ export default function ProjectDetailsPage() {
   
   const handleEditCalculation = (calculationId: string) => {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
+  };
+
+  const handleViewCalculation = (calculationId: string) => {
+    setSelectedCalculationId(calculationId);
+    setCalculationModalOpen(true);
   };
 
   if (loading) {
@@ -602,6 +609,15 @@ export default function ProjectDetailsPage() {
                           <Edit className='mr-2 h-4 w-4' />
                           Edit
                         </Button>
+                        <Button 
+                          variant='outline' 
+                          size='sm'
+                          onClick={() => handleViewCalculation(calculation.id)}
+                          className='hover:bg-[#9333EA]/10'
+                        >
+                          <Eye className='mr-2 h-4 w-4' />
+                          View
+                        </Button>
                       </CardFooter>
                     </Card>
                   ))
@@ -660,6 +676,15 @@ export default function ProjectDetailsPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Calculation Details Modal */}
+      {selectedCalculationId && (
+        <CalculationDetailsModal
+          calculationId={selectedCalculationId}
+          isOpen={calculationModalOpen}
+          onOpenChange={setCalculationModalOpen}
+        />
+      )}
     </AppLayout>
   );
 }
