@@ -221,8 +221,11 @@ export default function LayoutEditorPage() {
         description: 'Layout saved to different project successfully'
       });
       
-      // Redirect to the editor page for the new project with the new layout ID
-      router.push(`/dashboard/projects/${savedProjectId}/editor?layoutId=${newLayoutId}`);
+      // Use setTimeout to ensure the toast is shown before redirecting
+      setTimeout(() => {
+        // Redirect to the editor page for the new project with the new layout ID
+        window.location.href = `/dashboard/projects/${savedProjectId}/editor?layoutId=${newLayoutId}`;
+      }, 500);
       return;
     }
     
