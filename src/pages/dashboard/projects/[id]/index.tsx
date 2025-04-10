@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye } from "lucide-react";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -36,6 +36,8 @@ import { useToast } from "@/hooks/use-toast";
 import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { LayoutList } from '@/components/layout/LayoutList';
+import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
+import { formatDistanceToNow } from 'date-fns';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -234,6 +236,34 @@ export default function ProjectDetailsPage() {
     router.push(`/dashboard/projects/${id}/editor?layoutId=${layoutId}`);
   };
   
+  const handleViewLayout = (layoutId: string) => {
+    router.push(`/view/${layoutId}`);
+  };
+  
+  const handleDeleteLayout = async (layoutId: string) => {
+    if (!user) return;
+    
+    try {
+      await layoutService.deleteLayout(layoutId, user);
+      
+      // Refresh layouts after deletion
+      const projectLayouts = await layoutService.getProjectLayouts(id as string);
+      setLayouts(projectLayouts);
+      
+      toast({
+        title: 'Success',
+        description: 'Layout deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error deleting layout:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to delete layout'
+      });
+    }
+  };
+  
   const handleEditCalculation = (calculationId: string) => {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
@@ -324,6 +354,18 @@ export default function ProjectDetailsPage() {
                             <Edit className='mr-2 h-4 w-4' />
                             Edit
                           </Button>
+                          <Button 
+                            variant='outline' 
+                            size='sm'
+                            onClick={() => handleViewLayout(layout.id)}
+                          >
+                            <Eye className='mr-2 h-4 w-4' />
+                            View
+                          </Button>
+                          <DeleteLayoutDialog 
+                            layoutId={layout.id} 
+                            onDelete={() => handleDeleteLayout(layout.id)} 
+                          />
                         </CardFooter>
                       </Card>
                     ))
