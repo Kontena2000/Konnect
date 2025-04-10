@@ -1,7 +1,7 @@
 
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 interface ModuleTransformProps {
   meshRef: React.RefObject<Mesh>;
@@ -40,20 +40,38 @@ export function ModuleTransform({
     }
   }, [onTransformStart, onTransformEnd, onUpdate]);
 
+  // Ensure we update on every change during transform
+  const handleChange = useCallback(() => {
+    if (meshRef.current) {
+      // Called during continuous transform
+      onUpdate();
+    }
+  }, [meshRef, onUpdate]);
+
+  // Ensure we update on object change
+  const handleObjectChange = useCallback(() => {
+    if (meshRef.current) {
+      // Called when the object being transformed changes
+      onUpdate();
+    }
+  }, [meshRef, onUpdate]);
+
+  // Force update when transform mode changes
+  useEffect(() => {
+    if (meshRef.current) {
+      // Update when transform mode changes
+      onUpdate();
+    }
+  }, [transformMode, meshRef, onUpdate]);
+
   if (!meshRef.current) return null;
 
   return (
     <TransformControls
       object={meshRef.current as Object3D}
       mode={transformMode}
-      onChange={() => {
-        // Called during continuous transform
-        onUpdate();
-      }}
-      onObjectChange={() => {
-        // Called when the object being transformed changes
-        onUpdate();
-      }}
+      onChange={handleChange}
+      onObjectChange={handleObjectChange}
       onUpdate={handleDraggingChanged}
       size={0.75}
       showX={true}
