@@ -91,10 +91,10 @@ export default function ProjectDetailsPage() {
           description: projectData.description || '',
           plotWidth: projectData.plotWidth || 0,
           plotLength: projectData.plotLength || 0,
-          clientName: projectData.clientName || '',
-          clientEmail: projectData.clientEmail || '',
-          clientPhone: projectData.clientPhone || '',
-          clientCompany: projectData.clientCompany || ''
+          clientName: projectData.clientInfo?.name || '',
+          clientEmail: projectData.clientInfo?.email || '',
+          clientPhone: projectData.clientInfo?.phone || '',
+          clientCompany: projectData.clientInfo?.name || '' // Using name as company for now
         });
         
         const projectLayouts = await layoutService.getProjectLayouts(id as string);
@@ -149,15 +149,20 @@ export default function ProjectDetailsPage() {
     
     setSaving(true);
     try {
+      // Create updated clientInfo object
+      const updatedClientInfo = {
+        name: formData.clientName,
+        email: formData.clientEmail,
+        phone: formData.clientPhone,
+        address: '' // Keeping empty for now
+      };
+      
       await projectService.updateProject(id as string, {
         name: formData.name,
         description: formData.description,
         plotWidth: formData.plotWidth,
         plotLength: formData.plotLength,
-        clientName: formData.clientName,
-        clientEmail: formData.clientEmail,
-        clientPhone: formData.clientPhone,
-        clientCompany: formData.clientCompany
+        clientInfo: updatedClientInfo
       }, user.uid);
       
       setProject(prev => prev ? {
@@ -166,10 +171,12 @@ export default function ProjectDetailsPage() {
         description: formData.description,
         plotWidth: formData.plotWidth,
         plotLength: formData.plotLength,
-        clientName: formData.clientName,
-        clientEmail: formData.clientEmail,
-        clientPhone: formData.clientPhone,
-        clientCompany: formData.clientCompany
+        clientInfo: {
+          ...prev.clientInfo,
+          name: formData.clientName,
+          email: formData.clientEmail,
+          phone: formData.clientPhone
+        }
       } : null);
       
       setEditMode(false);
@@ -836,7 +843,7 @@ export default function ProjectDetailsPage() {
                           <User className='h-4 w-4 text-muted-foreground' />
                           <h4 className='text-sm font-medium text-muted-foreground'>Client Name</h4>
                         </div>
-                        <p className='font-medium'>{project.clientName || 'Not specified'}</p>
+                        <p className='font-medium'>{project.clientInfo?.name || 'Not specified'}</p>
                       </div>
                       
                       <div className='space-y-1'>
@@ -844,7 +851,7 @@ export default function ProjectDetailsPage() {
                           <Building className='h-4 w-4 text-muted-foreground' />
                           <h4 className='text-sm font-medium text-muted-foreground'>Company</h4>
                         </div>
-                        <p className='font-medium'>{project.clientCompany || 'Not specified'}</p>
+                        <p className='font-medium'>{project.clientInfo?.name || 'Not specified'}</p>
                       </div>
                       
                       <div className='space-y-1'>
@@ -852,9 +859,9 @@ export default function ProjectDetailsPage() {
                           <Mail className='h-4 w-4 text-muted-foreground' />
                           <h4 className='text-sm font-medium text-muted-foreground'>Email</h4>
                         </div>
-                        {project.clientEmail ? (
-                          <a href={`mailto:${project.clientEmail}`} className='text-blue-600 hover:underline'>
-                            {project.clientEmail}
+                        {project.clientInfo?.email ? (
+                          <a href={`mailto:${project.clientInfo.email}`} className='text-blue-600 hover:underline'>
+                            {project.clientInfo.email}
                           </a>
                         ) : (
                           <p>Not specified</p>
@@ -866,9 +873,9 @@ export default function ProjectDetailsPage() {
                           <Phone className='h-4 w-4 text-muted-foreground' />
                           <h4 className='text-sm font-medium text-muted-foreground'>Phone</h4>
                         </div>
-                        {project.clientPhone ? (
-                          <a href={`tel:${project.clientPhone}`} className='text-blue-600 hover:underline'>
-                            {project.clientPhone}
+                        {project.clientInfo?.phone ? (
+                          <a href={`tel:${project.clientInfo.phone}`} className='text-blue-600 hover:underline'>
+                            {project.clientInfo.phone}
                           </a>
                         ) : (
                           <p>Not specified</p>
@@ -876,7 +883,7 @@ export default function ProjectDetailsPage() {
                       </div>
                     </div>
                     
-                    {!project.clientName && !project.clientCompany && !project.clientEmail && !project.clientPhone && (
+                    {!project.clientInfo?.name && !project.clientInfo?.email && !project.clientInfo?.phone && (
                       <div className='py-4 text-center'>
                         <User className='h-12 w-12 mx-auto text-muted-foreground mb-2' />
                         <p className='text-muted-foreground'>No client information has been added yet</p>
