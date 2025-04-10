@@ -33,8 +33,10 @@ export function ModuleTransform({
         // Make sure to update one last time before ending transform
         onUpdate();
         
-        // Call the transform end handler
-        onTransformEnd?.();
+        // Call the transform end handler after a small delay to ensure all updates are processed
+        setTimeout(() => {
+          onTransformEnd?.();
+        }, 50);
       }
     }
   }, [onTransformStart, onTransformEnd, onUpdate]);

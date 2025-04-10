@@ -54,12 +54,23 @@ export default function LayoutEditorPage() {
     
     // Ensure all module positions and rotations are properly converted to numbers
     if (layout.modules && Array.isArray(layout.modules)) {
-      const processedModules = layout.modules.map(module => ({
-        ...module,
-        position: module.position.map(Number) as [number, number, number],
-        rotation: module.rotation.map(Number) as [number, number, number],
-        scale: module.scale.map(Number) as [number, number, number]
-      }));
+      const processedModules = layout.modules.map(module => {
+        // Create a deep copy to avoid modifying the original
+        const moduleCopy = { ...module };
+        
+        // Ensure position values are numbers
+        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+        
+        // Ensure rotation values are numbers
+        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+        
+        // Ensure scale values are numbers
+        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+        
+        return moduleCopy;
+      });
+      
+      console.log('Setting modules with processed rotations:', processedModules.map(m => ({ id: m.id, rotation: m.rotation })));
       setModules(processedModules);
     } else {
       setModules([]);

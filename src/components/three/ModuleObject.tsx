@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -201,22 +200,18 @@ export function ModuleObject({
       
       // Update rotation
       if (module.rotation && Array.isArray(module.rotation) && module.rotation.length === 3) {
-        // Ensure rotation values are numbers
+        // Ensure rotation values are numbers and convert from degrees to radians
         const numRotation = module.rotation.map(Number) as [number, number, number];
-        meshRef.current.rotation.set(
-          numRotation[0] * Math.PI / 180,
-          numRotation[1] * Math.PI / 180,
-          numRotation[2] * Math.PI / 180
-        );
+        const radX = numRotation[0] * Math.PI / 180;
+        const radY = numRotation[1] * Math.PI / 180;
+        const radZ = numRotation[2] * Math.PI / 180;
+        
+        meshRef.current.rotation.set(radX, radY, radZ);
         
         // Log rotation values for debugging
         console.log(`Module ${module.id} rotation set to:`, 
           numRotation, 
-          'radians:', [
-            numRotation[0] * Math.PI / 180,
-            numRotation[1] * Math.PI / 180,
-            numRotation[2] * Math.PI / 180
-          ]
+          'radians:', [radX, radY, radZ]
         );
       }
       
