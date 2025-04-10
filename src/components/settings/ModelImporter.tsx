@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
@@ -107,11 +106,11 @@ export default function ModelImporter() {
       
       // Switch to the library tab
       setActiveTab("library");
-    } catch (error) {
+    } catch (error: any) {
       console.error("Import error:", error);
       toast({
         title: "Import Failed",
-        description: error.message || "Could not import the model",
+        description: error?.message || "Could not import the model",
         variant: "destructive",
       });
     } finally {
