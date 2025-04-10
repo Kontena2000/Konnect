@@ -82,13 +82,13 @@ export function LayoutSelector({
     }
   };
 
-  const handleDeleteLayout = async (layoutId: string) => {
+  const handleDeleteComplete = async () => {
     try {
       // Refresh layouts after deletion
       const updatedLayouts = await layoutService.getProjectLayouts(projectId);
       
       // If the current layout was deleted, select another one if available
-      if (currentLayout?.id === layoutId) {
+      if (currentLayout && !updatedLayouts.some(l => l.id === currentLayout.id)) {
         if (updatedLayouts.length > 0) {
           onLayoutChange(updatedLayouts[0]);
         } else {
@@ -205,7 +205,7 @@ export function LayoutSelector({
         <DeleteLayoutDialog 
           layoutId={currentLayout.id}
           layoutName={currentLayout.name}
-          onDeleteComplete={() => handleDeleteLayout(currentLayout.id)}
+          onDeleteComplete={handleDeleteComplete}
         />
       )}
     </div>

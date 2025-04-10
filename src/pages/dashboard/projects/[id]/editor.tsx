@@ -86,8 +86,11 @@ export default function LayoutEditorPage() {
     setConnections(layout.connections || []);
     
     // Update URL to reflect the selected layout
-    if (projectId) {
+    if (projectId && layout.id) {
       router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layout.id}`, undefined, { shallow: true });
+    } else if (projectId) {
+      // If no layout ID (empty layout), just show the editor without layout ID in URL
+      router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
     }
   }, [projectId, router]);
 
