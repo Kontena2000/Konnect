@@ -24,7 +24,7 @@ export function useModuleTransform({
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
 
-  // Handle transform change
+  // Handle transform change - this is used during continuous transform updates
   const handleTransformChange = useCallback((meshRef: React.RefObject<Mesh>, onComplete?: () => void) => {
     if (!meshRef.current || !module || !onUpdate || readOnly) return;
 
@@ -47,38 +47,19 @@ export function useModuleTransform({
       meshRef.current.scale.z
     ];
 
-    // Check if position has actually changed to avoid unnecessary updates
-    const positionChanged = 
-      Math.abs(position[0] - module.position[0]) > 0.001 ||
-      Math.abs(position[1] - module.position[1]) > 0.001 ||
-      Math.abs(position[2] - module.position[2]) > 0.001;
-
-    const rotationChanged = 
-      Math.abs(rotation[0] - module.rotation[0]) > 0.001 ||
-      Math.abs(rotation[1] - module.rotation[1]) > 0.001 ||
-      Math.abs(rotation[2] - module.rotation[2]) > 0.001;
-
-    const scaleChanged = 
-      Math.abs(scale[0] - module.scale[0]) > 0.001 ||
-      Math.abs(scale[1] - module.scale[1]) > 0.001 ||
-      Math.abs(scale[2] - module.scale[2]) > 0.001;
-
-    // Only update if something has changed
-    if (positionChanged || rotationChanged || scaleChanged) {
-      console.log('Module transform changed, updating:', module.id, position);
-      
-      onUpdate({
-        position,
-        rotation,
-        scale
-      });
-    }
+    // Always update position during transform to ensure real-time updates
+    onUpdate({
+      position,
+      rotation,
+      scale
+    });
 
     if (onComplete) {
       onComplete();
     }
   }, [module, onUpdate, readOnly]);
 
+  // This is the original implementation that handles collision detection and snapping
   const handleTransformChangeOriginal = useCallback((meshRef: React.RefObject<Mesh>, updateShadowTransform: () => void) => {
     if (!meshRef.current || readOnly) return;
     
@@ -153,7 +134,17 @@ export function useModuleTransform({
         y: maxCollisionHeight,
         duration: 0.15,
         ease: 'power2.out',
-        onUpdate: updateShadowTransform
+        onUpdate: updateShadowTransform,
+        onComplete: () => {
+          // Always update position after animation completes
+          if (onUpdate && meshRef.current) {
+            onUpdate({
+              position: [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
+              rotation: [rotation.x * 180 / Math.PI, rotation.y * 180 / Math.PI, rotation.z * 180 / Math.PI],
+              scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+            });
+          }
+        }
       });
       adjustedPosition.y = maxCollisionHeight;
     } else {
@@ -161,14 +152,25 @@ export function useModuleTransform({
         y: minHeight,
         duration: 0.15,
         ease: 'power2.out',
-        onUpdate: updateShadowTransform
+        onUpdate: updateShadowTransform,
+        onComplete: () => {
+          // Always update position after animation completes
+          if (onUpdate && meshRef.current) {
+            onUpdate({
+              position: [meshRef.current.position.x, meshRef.current.position.y, meshRef.current.position.z],
+              rotation: [rotation.x * 180 / Math.PI, rotation.y * 180 / Math.PI, rotation.z * 180 / Math.PI],
+              scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+            });
+          }
+        }
       });
       adjustedPosition.y = minHeight;
     }
     
+    // Update immediately with current position
     onUpdate?.({
       position: [adjustedPosition.x, adjustedPosition.y, adjustedPosition.z],
-      rotation: [rotation.x, rotation.y, rotation.z],
+      rotation: [rotation.x * 180 / Math.PI, rotation.y * 180 / Math.PI, rotation.z * 180 / Math.PI],
       scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
     });
     

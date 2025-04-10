@@ -177,7 +177,7 @@ export function ModuleObject({
     
     // Update shadow
     updateShadowTransform();
-  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform]);
+  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
 
   return (
     <group ref={groupRef}>
@@ -230,7 +230,33 @@ export function ModuleObject({
             onTransformStart?.();
           }}
           onTransformEnd={handleTransformEnd}
-          onUpdate={() => handleTransformChange(meshRef, updateShadowTransform)}
+          onUpdate={() => {
+            // This is called continuously during transform
+            if (meshRef.current) {
+              // Get current position during transform
+              const currentPosition: [number, number, number] = [
+                meshRef.current.position.x,
+                meshRef.current.position.y,
+                meshRef.current.position.z
+              ];
+              
+              // Get current rotation during transform
+              const currentRotation: [number, number, number] = [
+                meshRef.current.rotation.x * 180 / Math.PI,
+                meshRef.current.rotation.y * 180 / Math.PI,
+                meshRef.current.rotation.z * 180 / Math.PI
+              ];
+              
+              // Update position in real-time during transform
+              onUpdate?.(module.id, {
+                position: currentPosition,
+                rotation: currentRotation
+              });
+              
+              // Update shadow
+              updateShadowTransform();
+            }
+          }}
         />
       )}
       
