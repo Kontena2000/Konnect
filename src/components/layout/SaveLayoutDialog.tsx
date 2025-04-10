@@ -19,6 +19,7 @@ import { ProjectSelector } from "@/components/common/ProjectSelector";
 import layoutService, { Layout } from "@/services/layout";
 import { AuthUser } from "@/services/auth";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import { useRouter } from 'next/router';
 
 interface SaveLayoutDialogProps {
   layoutData: {
@@ -47,6 +48,7 @@ export function SaveLayoutDialog({
   
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
   
   // Update form values when layoutData changes or dialog opens
   useEffect(() => {
@@ -192,6 +194,11 @@ export function SaveLayoutDialog({
             title: 'Success',
             description: isSameProject ? 'New layout created successfully' : 'Layout saved to different project successfully'
           });
+          
+          // If saving to a different project, prepare for redirect
+          if (!isSameProject) {
+            console.log('Preparing to redirect to new project:', selectedProjectId);
+          }
         } catch (createError) {
           console.error('Error creating layout:', createError);
           throw new Error(createError instanceof Error ? createError.message : 'Failed to create new layout');
@@ -208,6 +215,15 @@ export function SaveLayoutDialog({
         setTimeout(() => {
           onSaveComplete(layoutId, selectedProjectId);
         }, 300);
+      }
+      
+      // If saving to a different project (Save As), redirect to that project
+      if (!isSameProject && selectedProjectId) {
+        console.log('Redirecting to project page:', selectedProjectId);
+        // Add a slight delay to ensure the dialog is closed and any state updates are processed
+        setTimeout(() => {
+          router.push(`/dashboard/projects/${selectedProjectId}`);
+        }, 500);
       }
       
     } catch (error) {
