@@ -1,4 +1,3 @@
-
 import { useCallback, useState } from "react";
 import { Vector3, Euler, Mesh, Box3 } from "three";
 import * as THREE from "three";
@@ -25,7 +24,66 @@ export function useModuleTransform({
   const [isShiftPressed, setIsShiftPressed] = useState(false);
   const [isTransforming, setIsTransforming] = useState(false);
 
-  const handleTransformChange = useCallback((meshRef: React.RefObject<Mesh>, updateShadowTransform: () => void) => {
+  // Handle transform change - this is used during continuous transform updates
+  const handleTransformChange = useCallback((meshRef: React.RefObject<Mesh>, onComplete?: () => void) => {
+    if (!meshRef.current || !module || !onUpdate || readOnly) return;
+
+    // Get current position, rotation, and scale from the mesh
+    const position: [number, number, number] = [
+      Number(meshRef.current.position.x),
+      Number(meshRef.current.position.y),
+      Number(meshRef.current.position.z)
+    ];
+
+    const rotation: [number, number, number] = [
+      Number(meshRef.current.rotation.x * 180 / Math.PI),
+      Number(meshRef.current.rotation.y * 180 / Math.PI),
+      Number(meshRef.current.rotation.z * 180 / Math.PI)
+    ];
+
+    const scale: [number, number, number] = [
+      Number(meshRef.current.scale.x),
+      Number(meshRef.current.scale.y),
+      Number(meshRef.current.scale.z)
+    ];
+
+    // Check if position has actually changed to avoid unnecessary updates
+    const positionChanged = 
+      Math.abs(position[0] - module.position[0]) > 0.001 ||
+      Math.abs(position[1] - module.position[1]) > 0.001 ||
+      Math.abs(position[2] - module.position[2]) > 0.001;
+
+    const rotationChanged = 
+      Math.abs(rotation[0] - module.rotation[0]) > 0.001 ||
+      Math.abs(rotation[1] - module.rotation[1]) > 0.001 ||
+      Math.abs(rotation[2] - module.rotation[2]) > 0.001;
+
+    const scaleChanged = 
+      Math.abs(scale[0] - module.scale[0]) > 0.001 ||
+      Math.abs(scale[1] - module.scale[1]) > 0.001 ||
+      Math.abs(scale[2] - module.scale[2]) > 0.001;
+
+    // Only update if something has changed
+    if (positionChanged || rotationChanged || scaleChanged) {
+      console.log('Module transform changed, updating:', module.id, 
+        'position:', position, 
+        'rotation:', rotation,
+        'scale:', scale);
+      
+      onUpdate({
+        position,
+        rotation,
+        scale
+      });
+    }
+
+    if (onComplete) {
+      onComplete();
+    }
+  }, [module, onUpdate, readOnly]);
+
+  // This is the original implementation that handles collision detection and snapping
+  const handleTransformChangeOriginal = useCallback((meshRef: React.RefObject<Mesh>, updateShadowTransform: () => void) => {
     if (!meshRef.current || readOnly) return;
     
     const position = meshRef.current.position.clone();
@@ -47,7 +105,19 @@ export function useModuleTransform({
           z: snappedPosition.z,
           duration: 0.1,
           ease: 'power1.out',
-          onUpdate: updateShadowTransform
+          onUpdate: updateShadowTransform,
+          onComplete: () => {
+            // Always update position after animation completes
+            if (onUpdate && meshRef.current) {
+              onUpdate({
+                position: [
+                  Number(meshRef.current.position.x),
+                  Number(meshRef.current.position.y),
+                  Number(meshRef.current.position.z)
+                ]
+              });
+            }
+          }
         });
         
         position.copy(snappedPosition);
@@ -59,7 +129,23 @@ export function useModuleTransform({
           y: targetRotation,
           duration: 0.1,
           ease: 'power1.out',
-          onUpdate: updateShadowTransform
+          onUpdate: updateShadowTransform,
+          onComplete: () => {
+            // Always update rotation after animation completes
+            if (onUpdate && meshRef.current) {
+              const newRotation: [number, number, number] = [
+                Number(meshRef.current.rotation.x * 180 / Math.PI),
+                Number(meshRef.current.rotation.y * 180 / Math.PI),
+                Number(meshRef.current.rotation.z * 180 / Math.PI)
+              ];
+              
+              console.log('Rotation animation complete, updating to:', newRotation);
+              
+              onUpdate({
+                rotation: newRotation
+              });
+            }
+          }
         });
         rotation.y = targetRotation;
       }
@@ -94,28 +180,109 @@ export function useModuleTransform({
       }
     });
     
-    // if (maxCollisionHeight > minHeight) {
-    //   gsap.to(meshRef.current.position, {
-    //     y: maxCollisionHeight,
-    //     duration: 0.15,
-    //     ease: 'power2.out',
-    //     onUpdate: updateShadowTransform
-    //   });
-    //   adjustedPosition.y = maxCollisionHeight;
-    // } else {
-    //   gsap.to(meshRef.current.position, {
-    //     y: minHeight,
-    //     duration: 0.15,
-    //     ease: 'power2.out',
-    //     onUpdate: updateShadowTransform
-    //   });
-    //   adjustedPosition.y = minHeight;
-    // }
+    if (maxCollisionHeight > minHeight) {
+      gsap.to(meshRef.current.position, {
+        y: maxCollisionHeight,
+        duration: 0.15,
+        ease: 'power2.out',
+        onUpdate: updateShadowTransform,
+        onComplete: () => {
+          // Always update position after animation completes
+          if (onUpdate && meshRef.current) {
+            const finalPosition: [number, number, number] = [
+              Number(meshRef.current.position.x), 
+              Number(meshRef.current.position.y), 
+              Number(meshRef.current.position.z)
+            ];
+            
+            const finalRotation: [number, number, number] = [
+              Number(meshRef.current.rotation.x * 180 / Math.PI), 
+              Number(meshRef.current.rotation.y * 180 / Math.PI), 
+              Number(meshRef.current.rotation.z * 180 / Math.PI)
+            ];
+            
+            const finalScale: [number, number, number] = [
+              Number(meshRef.current.scale.x), 
+              Number(meshRef.current.scale.y), 
+              Number(meshRef.current.scale.z)
+            ];
+            
+            console.log('Height animation complete, updating to position:', finalPosition);
+            
+            onUpdate({
+              position: finalPosition,
+              rotation: finalRotation,
+              scale: finalScale
+            });
+          }
+        }
+      });
+      adjustedPosition.y = maxCollisionHeight;
+    } else {
+      gsap.to(meshRef.current.position, {
+        y: minHeight,
+        duration: 0.15,
+        ease: 'power2.out',
+        onUpdate: updateShadowTransform,
+        onComplete: () => {
+          // Always update position after animation completes
+          if (onUpdate && meshRef.current) {
+            const finalPosition: [number, number, number] = [
+              Number(meshRef.current.position.x), 
+              Number(meshRef.current.position.y), 
+              Number(meshRef.current.position.z)
+            ];
+            
+            const finalRotation: [number, number, number] = [
+              Number(meshRef.current.rotation.x * 180 / Math.PI), 
+              Number(meshRef.current.rotation.y * 180 / Math.PI), 
+              Number(meshRef.current.rotation.z * 180 / Math.PI)
+            ];
+            
+            const finalScale: [number, number, number] = [
+              Number(meshRef.current.scale.x), 
+              Number(meshRef.current.scale.y), 
+              Number(meshRef.current.scale.z)
+            ];
+            
+            console.log('Height animation complete, updating to position:', finalPosition);
+            
+            onUpdate({
+              position: finalPosition,
+              rotation: finalRotation,
+              scale: finalScale
+            });
+          }
+        }
+      });
+      adjustedPosition.y = minHeight;
+    }
+    
+    // Update immediately with current position
+    const immediatePosition: [number, number, number] = [
+      Number(adjustedPosition.x), 
+      Number(adjustedPosition.y), 
+      Number(adjustedPosition.z)
+    ];
+    
+    const immediateRotation: [number, number, number] = [
+      Number(rotation.x * 180 / Math.PI), 
+      Number(rotation.y * 180 / Math.PI), 
+      Number(rotation.z * 180 / Math.PI)
+    ];
+    
+    const immediateScale: [number, number, number] = [
+      Number(meshRef.current.scale.x), 
+      Number(meshRef.current.scale.y), 
+      Number(meshRef.current.scale.z)
+    ];
+    
+    console.log('Immediate update with position:', immediatePosition, 'rotation:', immediateRotation);
     
     onUpdate?.({
-      position: [adjustedPosition.x, adjustedPosition.y, adjustedPosition.z],
-      rotation: [rotation.x, rotation.y, rotation.z],
-      scale: [meshRef.current.scale.x, meshRef.current.scale.y, meshRef.current.scale.z]
+      position: immediatePosition,
+      rotation: immediateRotation,
+      scale: immediateScale
     });
     
     updateShadowTransform();
@@ -130,6 +297,6 @@ export function useModuleTransform({
     setIsShiftPressed,
     isTransforming,
     setIsTransforming,
-    handleTransformChange
+    handleTransformChange: handleTransformChangeOriginal
   };
 }

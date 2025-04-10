@@ -18,6 +18,8 @@ import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
+import { debouncedSave } from '@/services/layout';
+import { AuthUser } from '@/services/auth';
 
 interface EditorState {
   modules: Module[];
@@ -160,9 +162,28 @@ export default function LayoutEditorPage() {
     const startTime = performance.now();
     
     setModules(prev => {
-      const newModules = prev.map(module => 
-        module.id === moduleId ? { ...module, ...updates } : module
-      );
+      const newModules = prev.map(module => {
+        if (module.id === moduleId) {
+          // Create a new module object with the updates
+          const updatedModule = { ...module, ...updates };
+          
+          // Ensure position, rotation, and scale are properly formatted as numbers
+          if (updates.position) {
+            updatedModule.position = updates.position.map(Number) as [number, number, number];
+          }
+          
+          if (updates.rotation) {
+            updatedModule.rotation = updates.rotation.map(Number) as [number, number, number];
+          }
+          
+          if (updates.scale) {
+            updatedModule.scale = updates.scale.map(Number) as [number, number, number];
+          }
+          
+          return updatedModule;
+        }
+        return module;
+      });
       
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
@@ -170,9 +191,45 @@ export default function LayoutEditorPage() {
         timestamp: Date.now()
       });
       
+      // Always trigger immediate save when position or rotation is updated
+      if ((updates.position || updates.rotation) && currentLayout?.id && user) {
+        console.log('Position or rotation updated, triggering immediate save for module:', moduleId, 
+          'position:', updates.position, 
+          'rotation:', updates.rotation);
+        
+        // Use immediate save for position/rotation updates to ensure they're saved
+        layoutService.updateLayout(currentLayout.id, {
+          modules: newModules,
+          connections
+        }, user as AuthUser)
+          .then(() => {
+            console.log('Module position/rotation saved successfully:', moduleId);
+          })
+          .catch(error => {
+            console.error('Error saving module position/rotation:', error);
+          });
+      }
+      
       return newModules;
     });
-  }, []);
+  }, [connections, currentLayout, user]);
+
+  // Auto-save when modules or connections change
+  useEffect(() => {
+    // Skip auto-save during undo/redo operations
+    if (isUndoingOrRedoing.current) return;
+    
+    // Skip if no current layout or user
+    if (!currentLayout?.id || !user) return;
+    
+    console.log('Auto-saving layout changes...');
+    
+    // Use debounced save to avoid too many Firestore writes
+    debouncedSave(currentLayout.id, {
+      modules,
+      connections
+    });
+  }, [modules, connections, currentLayout, user]);
 
   // Handle module deletion
   const handleModuleDelete = useCallback((moduleId: string) => {
@@ -225,14 +282,27 @@ export default function LayoutEditorPage() {
 
     const startTime = performance.now();
     saveTimeout.current = setTimeout(() => {
-      // Implement save logic here
+      // Save current layout if available
+      if (currentLayout?.id && user) {
+        layoutService.updateLayout(currentLayout.id, {
+          modules,
+          connections
+        }, user as AuthUser)
+          .then(() => {
+            console.log('Layout saved manually:', currentLayout.id);
+          })
+          .catch(error => {
+            console.error('Error saving layout:', error);
+          });
+      }
+      
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
         operationDuration: duration,
         timestamp: Date.now()
       });
     }, 1000);
-  }, []);
+  }, [currentLayout, modules, connections, user]);
 
   // Cleanup timeouts
   useEffect(() => {

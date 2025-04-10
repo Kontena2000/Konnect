@@ -1,6 +1,6 @@
-
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
+import { useEffect } from "react";
 
 interface ModuleTransformProps {
   meshRef: React.RefObject<Mesh>;
@@ -28,6 +28,13 @@ export function ModuleTransform({
       onMouseDown={onTransformStart}
       onMouseUp={onTransformEnd}
       onChange={onUpdate}
+      onObjectChange={onUpdate} // Ensure position updates are captured during transformation
+      onUpdate={(e) => {
+        // This ensures we capture the end of transform operations
+        if (e.type === 'dragging-changed' && e.value === false && onTransformEnd) {
+          onTransformEnd();
+        }
+      }}
       size={0.75}
       showX={true}
       showY={true}
@@ -36,7 +43,7 @@ export function ModuleTransform({
       translationSnap={gridSnap ? 1 : null}
       rotationSnap={gridSnap ? Math.PI / 4 : null}
       scaleSnap={gridSnap ? 0.25 : null}
-      space="world"
+      space='world'
     />
   );
 }
