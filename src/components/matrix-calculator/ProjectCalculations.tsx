@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useCallback } from "react";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { getFirestoreSafely } from "@/lib/firebase";
@@ -56,13 +55,23 @@ export function ProjectCalculations({
       
       const projectCalculations = snapshot.docs.map((doc) => {
         const data = doc.data();
+        // Ensure we have a valid date object for createdAt
+        let createdAt;
+        try {
+          createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
+        } catch (e) {
+          console.error('Error converting timestamp:', e);
+          createdAt = new Date();
+        }
+        
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
+          createdAt
         };
       });
 
+      console.log('Project calculations:', projectCalculations);
       setCalculations(projectCalculations);
     } catch (error) {
       console.error('Error loading project calculations:', error);

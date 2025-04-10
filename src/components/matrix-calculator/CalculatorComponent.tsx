@@ -94,6 +94,7 @@ export function CalculatorComponent({
   useEffect(() => {
     const { projectId } = router.query;
     if (projectId && typeof projectId === 'string') {
+      console.log('Setting projectId from URL:', projectId);
       setProjectId(projectId);
     }
   }, [router.query]);

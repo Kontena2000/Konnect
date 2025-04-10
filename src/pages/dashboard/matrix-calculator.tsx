@@ -68,6 +68,7 @@ export default function MatrixCalculatorPage() {
         
         // If projectId is provided, fetch project data
         if (projectId) {
+          console.log('Fetching project data for projectId:', projectId);
           const projectRef = doc(db, 'projects', projectId as string);
           const projectSnap = await getDoc(projectRef);
           
@@ -88,6 +89,7 @@ export default function MatrixCalculatorPage() {
               return;
             }
             
+            console.log('Project data loaded:', projectData);
             setProject(projectData);
           } else {
             setError('Project not found');
@@ -97,7 +99,8 @@ export default function MatrixCalculatorPage() {
         
         // If calculationId is provided, fetch the calculation
         if (calculationId) {
-          loadCalculation(calculationId as string);
+          console.log('Loading calculation with ID:', calculationId);
+          await loadCalculation(calculationId as string);
         }
       } catch (err) {
         console.error('Error fetching data:', err);

@@ -132,7 +132,7 @@ class ModelImporterService {
       return importedModel;
     } catch (error) {
       console.error('Error importing model:', error);
-      throw new Error(`Failed to import model: ${error.message}`);
+      throw new Error(`Failed to import model: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
