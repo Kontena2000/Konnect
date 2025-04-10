@@ -60,8 +60,12 @@ export function DeleteLayoutDialog({
         description: 'Layout deleted successfully'
       });
       
+      // Ensure we call the onDeleteComplete callback
       if (onDeleteComplete) {
-        onDeleteComplete();
+        console.log('Calling onDeleteComplete callback after successful deletion');
+        setTimeout(() => {
+          onDeleteComplete();
+        }, 100); // Small delay to ensure Firebase operations complete
       }
     } catch (error) {
       console.error('Error deleting layout:', error);

@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -69,6 +68,7 @@ export default function LayoutEditorPage() {
     try {
       console.log('Refreshing layouts for project:', projectId);
       const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
+      console.log('Fetched layouts:', projectLayouts.length);
       setLayouts(projectLayouts);
       
       // If current layout was deleted, select another one
@@ -78,6 +78,7 @@ export default function LayoutEditorPage() {
           handleLayoutChange(projectLayouts[0]);
         } else {
           // No layouts left, create empty state
+          console.log('No layouts left, creating empty state');
           setCurrentLayout(null);
           setModules([]);
           setConnections([]);
@@ -415,10 +416,10 @@ export default function LayoutEditorPage() {
           </div>
           
           {/* Layout selector - Improved positioning for better responsiveness */}
-          <div className="fixed top-4 left-0 right-0 z-10">
-            <div className="max-w-3xl mx-auto px-4">
-              <div className="bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center sm:justify-between flex-wrap gap-4">
-                <div className="flex items-center justify-center flex-grow sm:flex-grow-0">
+          <div className='fixed top-4 left-0 right-0 z-10'>
+            <div className='max-w-3xl mx-auto px-4'>
+              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center sm:justify-between flex-wrap gap-4'>
+                <div className='flex items-center justify-center flex-grow sm:flex-grow-0'>
                   <LayoutSelector
                     projectId={projectId as string}
                     layouts={layouts}
@@ -429,7 +430,7 @@ export default function LayoutEditorPage() {
                   />
                 </div>
                 
-                <div className="flex items-center justify-center">
+                <div className='flex items-center justify-center'>
                   <SaveLayoutDialog
                     layoutData={{
                       id: currentLayout?.id,
@@ -441,8 +442,8 @@ export default function LayoutEditorPage() {
                     }}
                     onSaveComplete={handleSaveLayout}
                     trigger={
-                      <Button size="sm" className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black">
-                        <Save className="h-4 w-4 mr-2" />
+                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                        <Save className='h-4 w-4 mr-2' />
                         {currentLayout?.id ? 'Save As' : 'Save Layout'}
                       </Button>
                     }
