@@ -1,4 +1,3 @@
-
 import { ConnectionType, ConnectionPoint } from "./connection";
 
 export type ModuleCategory = string;
@@ -22,24 +21,26 @@ export interface ModuleEnergyProperties {
 
 export interface Module {
   id: string;
-  name: string;
-  description: string;
-  category: ModuleCategory;
   type: string;
-  color: string;
-  dimensions: ModuleDimensions;
+  name: string;
+  description?: string;
   position: [number, number, number];
   rotation: [number, number, number];
   scale: [number, number, number];
-  visibleInEditor?: boolean;
-  connectionPoints: ConnectionPoint[];
-  energy?: ModuleEnergyProperties;
-  createdAt?: string;
-  updatedAt?: string;
+  dimensions: {
+    length: number;
+    width: number;
+    height: number;
+  };
+  connectionPoints?: {
+    id: string;
+    type: string;
+    position: [number, number, number];
+  }[];
+  properties?: Record<string, any>;
   modelUrl?: string;
-  castShadow?: boolean;
-  receiveShadow?: boolean;
-  wireframe?: boolean;
+  category?: string;
+  selected?: boolean;
 }
 
 export const defaultModules: Module[] = [

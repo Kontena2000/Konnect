@@ -203,7 +203,7 @@ export function useModuleState(param?: UseModuleStateProps) {
     // Ensure module has selected property
     const moduleWithSelected = {
       ...module,
-      selected: module.selected === undefined ? false : module.selected
+      selected: typeof module.selected === 'boolean' ? module.selected : false
     };
     
     setModules(prev => [...prev, moduleWithSelected]);
