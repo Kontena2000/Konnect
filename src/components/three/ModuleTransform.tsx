@@ -29,9 +29,9 @@ export function ModuleTransform({
       onMouseUp={onTransformEnd}
       onChange={onUpdate}
       onObjectChange={onUpdate} // Ensure position updates are captured during transformation
-      onUpdate={(e: any) => {
+      onUpdate={(e) => {
         // This ensures we capture the end of transform operations
-        if (e.type === "dragging-changed" && e.value === false && onTransformEnd) {
+        if (e.type === 'dragging-changed' && e.value === false && onTransformEnd) {
           onTransformEnd();
         }
       }}
@@ -43,7 +43,7 @@ export function ModuleTransform({
       translationSnap={gridSnap ? 1 : null}
       rotationSnap={gridSnap ? Math.PI / 4 : null}
       scaleSnap={gridSnap ? 0.25 : null}
-      space="world"
+      space='world'
     />
   );
 }

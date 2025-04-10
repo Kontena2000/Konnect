@@ -162,9 +162,28 @@ export default function LayoutEditorPage() {
     const startTime = performance.now();
     
     setModules(prev => {
-      const newModules = prev.map(module => 
-        module.id === moduleId ? { ...module, ...updates } : module
-      );
+      const newModules = prev.map(module => {
+        if (module.id === moduleId) {
+          // Create a new module object with the updates
+          const updatedModule = { ...module, ...updates };
+          
+          // Ensure position, rotation, and scale are properly formatted as numbers
+          if (updates.position) {
+            updatedModule.position = updates.position.map(Number) as [number, number, number];
+          }
+          
+          if (updates.rotation) {
+            updatedModule.rotation = updates.rotation.map(Number) as [number, number, number];
+          }
+          
+          if (updates.scale) {
+            updatedModule.scale = updates.scale.map(Number) as [number, number, number];
+          }
+          
+          return updatedModule;
+        }
+        return module;
+      });
       
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({

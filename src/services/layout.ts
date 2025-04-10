@@ -170,7 +170,7 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     console.error('Error in debouncedSave:', error);
     throw new Error('Failed to save layout: ' + (error instanceof Error ? error.message : String(error)));
   }
-}, 500); // Reduced from 1000ms to 500ms for more responsive saving
+}, 250); // Reduced from 500ms to 250ms for more responsive saving
 
 const layoutService = {
   async createLayout(data: Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -278,7 +278,28 @@ const layoutService = {
 
       // Validate modules and connections if they exist
       if (data.modules) {
-        const invalidModules = data.modules.filter(m => !validateModuleData(m));
+        // Make a deep copy of modules to ensure we don't modify the original data
+        const modulesCopy = JSON.parse(JSON.stringify(data.modules));
+        
+        // Ensure all modules have proper position and rotation values
+        modulesCopy.forEach((module: any) => {
+          if (module.position && Array.isArray(module.position)) {
+            // Ensure position values are numbers, not strings
+            module.position = module.position.map(Number);
+          }
+          
+          if (module.rotation && Array.isArray(module.rotation)) {
+            // Ensure rotation values are numbers, not strings
+            module.rotation = module.rotation.map(Number);
+          }
+          
+          if (module.scale && Array.isArray(module.scale)) {
+            // Ensure scale values are numbers, not strings
+            module.scale = module.scale.map(Number);
+          }
+        });
+        
+        const invalidModules = modulesCopy.filter((m: any) => !validateModuleData(m));
         if (invalidModules.length > 0) {
           console.error('Invalid module data found:', invalidModules);
           throw new LayoutError('Invalid module data', 'VALIDATION_FAILED');
@@ -286,11 +307,14 @@ const layoutService = {
         
         // Log modules and their positions/rotations for debugging
         console.log('Saving modules with positions/rotations:');
-        data.modules.forEach((module: any) => {
+        modulesCopy.forEach((module: any) => {
           if (module.id) {
             console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
           }
         });
+        
+        // Replace original modules with the validated copy
+        data.modules = modulesCopy;
       }
       
       if (data.connections) {

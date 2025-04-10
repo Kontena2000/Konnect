@@ -210,7 +210,7 @@ export function ModuleObject({
     
     // Call the parent onTransformEnd after our updates
     onTransformEnd?.();
-  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform]);
+  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
 
   return (
     <group>
