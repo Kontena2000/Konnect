@@ -241,7 +241,7 @@ export default function LayoutEditorPage() {
       const newModules = prev.map(module => {
         if (module.id === moduleId) {
           // Create a new module object with the updates
-          const updatedModule = { ...module, ...updates };
+          const updatedModule = { ...module };
           
           // Ensure position, rotation, and scale are properly formatted as numbers
           if (updates.position) {
@@ -257,7 +257,7 @@ export default function LayoutEditorPage() {
             updatedModule.scale = updates.scale.map(Number) as [number, number, number];
           }
           
-          return updatedModule;
+          return { ...updatedModule, ...updates };
         }
         return module;
       });

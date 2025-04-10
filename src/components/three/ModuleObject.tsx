@@ -100,15 +100,58 @@ export function ModuleObject({
     onClick?.();
   }, [onClick]);
 
+  // Handle transform end - ensure position is saved
+  const handleTransformEnd = useCallback(() => {
+    if (!meshRef.current || !onUpdate) return;
+    
+    setIsTransforming(false);
+    
+    // Get final position after transform
+    const finalPosition: [number, number, number] = [
+      Number(meshRef.current.position.x),
+      Number(meshRef.current.position.y),
+      Number(meshRef.current.position.z)
+    ];
+    
+    // Get final rotation after transform - convert from radians to degrees
+    const finalRotation: [number, number, number] = [
+      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
+    ];
+    
+    // Get final scale after transform
+    const finalScale: [number, number, number] = [
+      Number(meshRef.current.scale.x),
+      Number(meshRef.current.scale.y),
+      Number(meshRef.current.scale.z)
+    ];
+    
+    console.log('Transform ended, updating module with final position:', module.id, finalPosition, 'rotation:', finalRotation);
+    
+    // Force immediate update with final transform values to ensure they're saved
+    onUpdate(module.id, {
+      position: finalPosition,
+      rotation: finalRotation,
+      scale: finalScale
+    });
+    
+    // Update shadow
+    updateShadowTransform();
+    
+    // Call the parent onTransformEnd after our updates
+    onTransformEnd?.();
+  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
+
   const handleRotateLeft = useCallback(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y -= Math.PI/2;
       
       // Get current rotation after change
       const newRotation: [number, number, number] = [
-        Number(meshRef.current.rotation.x * 180 / Math.PI),
-        Number(meshRef.current.rotation.y * 180 / Math.PI),
-        Number(meshRef.current.rotation.z * 180 / Math.PI)
+        Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+        Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+        Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
       ];
       
       console.log('Rotate left, new rotation:', newRotation);
@@ -129,9 +172,9 @@ export function ModuleObject({
       
       // Get current rotation after change
       const newRotation: [number, number, number] = [
-        Number(meshRef.current.rotation.x * 180 / Math.PI),
-        Number(meshRef.current.rotation.y * 180 / Math.PI),
-        Number(meshRef.current.rotation.z * 180 / Math.PI)
+        Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+        Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+        Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
       ];
       
       console.log('Rotate right, new rotation:', newRotation);
@@ -188,49 +231,6 @@ export function ModuleObject({
       updateShadowTransform();
     }
   }, [module.position, module.rotation, module.scale, updateShadowTransform, module.id]);
-
-  // Handle transform end - ensure position is saved
-  const handleTransformEnd = useCallback(() => {
-    if (!meshRef.current || !onUpdate) return;
-    
-    setIsTransforming(false);
-    
-    // Get final position after transform
-    const finalPosition: [number, number, number] = [
-      Number(meshRef.current.position.x),
-      Number(meshRef.current.position.y),
-      Number(meshRef.current.position.z)
-    ];
-    
-    // Get final rotation after transform - convert from radians to degrees
-    const finalRotation: [number, number, number] = [
-      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
-      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
-      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
-    ];
-    
-    // Get final scale after transform
-    const finalScale: [number, number, number] = [
-      Number(meshRef.current.scale.x),
-      Number(meshRef.current.scale.y),
-      Number(meshRef.current.scale.z)
-    ];
-    
-    console.log('Transform ended, updating module with final position:', module.id, finalPosition, 'rotation:', finalRotation);
-    
-    // Force immediate update with final transform values to ensure they're saved
-    onUpdate(module.id, {
-      position: finalPosition,
-      rotation: finalRotation,
-      scale: finalScale
-    });
-    
-    // Update shadow
-    updateShadowTransform();
-    
-    // Call the parent onTransformEnd after our updates
-    onTransformEnd?.();
-  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
 
   return (
     <group>

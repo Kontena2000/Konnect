@@ -1,4 +1,3 @@
-
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
 import { useCallback, useEffect } from "react";
