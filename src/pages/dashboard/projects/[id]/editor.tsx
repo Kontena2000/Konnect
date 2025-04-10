@@ -59,6 +59,15 @@ export default function LayoutEditorPage() {
           const savedLayout = projectLayouts.find(l => l.id === layoutId);
           if (savedLayout) {
             setCurrentLayout(savedLayout);
+            
+            // Update modules and connections from the saved layout
+            if (savedLayout.modules) {
+              setModules(savedLayout.modules);
+            }
+            
+            if (savedLayout.connections) {
+              setConnections(savedLayout.connections);
+            }
           }
         })
         .catch(err => {
@@ -66,7 +75,7 @@ export default function LayoutEditorPage() {
         });
       
       // Redirect to the layout editor with the saved layout
-      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
     }
   }, [projectId, router]);
 

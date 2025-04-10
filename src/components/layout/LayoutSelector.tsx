@@ -41,9 +41,9 @@ export function LayoutSelector({
   const handleCreateLayout = async () => {
     if (!newLayoutName.trim()) {
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Please enter a name for your layout"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Please enter a name for your layout'
       });
       return;
     }
@@ -63,16 +63,16 @@ export function LayoutSelector({
         onLayoutCreate(newLayout);
         setIsCreateOpen(false);
         toast({
-          title: "Success",
-          description: "New layout created"
+          title: 'Success',
+          description: 'New layout created successfully'
         });
       }
     } catch (error) {
-      console.error("Error creating layout:", error);
+      console.error('Error creating layout:', error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create layout"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create layout'
       });
     } finally {
       setIsCreating(false);
@@ -108,7 +108,7 @@ export function LayoutSelector({
 
       <Dialog open={isCreateOpen} onOpenChange={setIsCreateOpen}>
         <DialogTrigger asChild>
-          <Button variant='outline' size='icon'>
+          <Button variant='outline' size='icon' title='Create new layout'>
             <Plus className='h-4 w-4' />
           </Button>
         </DialogTrigger>

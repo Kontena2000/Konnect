@@ -13,11 +13,13 @@ interface Project {
   name: string;
   description?: string;
   userId: string;
+  sharedWith?: string[];
 }
 
 interface ProjectSelectorProps {
-  selectedProjectId?: string;
+  selectedProjectId: string;
   onSelect: (projectId: string) => void;
+  excludeCurrentProject?: boolean;
   className?: string;
   showCreateButton?: boolean;
 }
@@ -25,76 +27,69 @@ interface ProjectSelectorProps {
 export function ProjectSelector({ 
   selectedProjectId, 
   onSelect, 
+  excludeCurrentProject = false, 
   className = "", 
   showCreateButton = true 
 }: ProjectSelectorProps) {
   const [projects, setProjects] = useState<Project[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const { user } = useAuth();
   const router = useRouter();
 
   useEffect(() => {
     const fetchProjects = async () => {
       if (!user) return;
-
+      
       try {
         setLoading(true);
-        setError(null);
+        const db = getFirestoreSafely();
         
-        // Get Firestore instance safely
-        const safeDb = getFirestoreSafely() || db;
-        if (!safeDb) {
-          throw new Error('Firestore is not available');
+        if (!db) {
+          console.error('Firestore is not available');
+          return;
         }
         
         // Query projects owned by the user
         const userProjectsQuery = query(
-          collection(safeDb, "projects"),
-          where("userId", "==", user.uid),
-          orderBy("createdAt", "desc")
+          collection(db, 'projects'),
+          where('userId', '==', user.uid)
         );
         
         const userProjectsSnapshot = await getDocs(userProjectsQuery);
-        
-        // Query projects shared with the user (if user has email)
-        const sharedProjectsDocs: QueryDocumentSnapshot<DocumentData>[] = [];
-        if (user.email) {
-          const sharedProjectsQuery = query(
-            collection(safeDb, "projects"),
-            where("sharedWith", "array-contains", user.email),
-            orderBy("createdAt", "desc")
-          );
-          
-          const sharedProjectsSnapshot = await getDocs(sharedProjectsQuery);
-          sharedProjectsSnapshot.docs.forEach(doc => sharedProjectsDocs.push(doc));
-        }
-        
-        // Combine both sets of projects
-        const projectsList = [
-          ...userProjectsSnapshot.docs,
-          ...sharedProjectsDocs
-        ].map(doc => ({
+        const userProjects = userProjectsSnapshot.docs.map(doc => ({
           id: doc.id,
           ...doc.data()
-        })) as Project[];
+        } as Project));
         
-        setProjects(projectsList);
+        // Query projects shared with the user
+        const sharedProjectsQuery = query(
+          collection(db, 'projects'),
+          where('sharedWith', 'array-contains', user.email)
+        );
         
-        // If no project is selected and we have projects, select the first one
-        if (!selectedProjectId && projectsList.length > 0) {
-          onSelect(projectsList[0].id);
+        const sharedProjectsSnapshot = await getDocs(sharedProjectsQuery);
+        const sharedProjects = sharedProjectsSnapshot.docs.map(doc => ({
+          id: doc.id,
+          ...doc.data()
+        } as Project));
+        
+        // Combine and filter out the current project if needed
+        let allProjects = [...userProjects, ...sharedProjects];
+        
+        if (excludeCurrentProject) {
+          allProjects = allProjects.filter(project => project.id !== selectedProjectId);
         }
+        
+        setProjects(allProjects);
       } catch (error) {
-        console.error("Error fetching projects:", error);
-        setError(error instanceof Error ? error.message : 'Failed to fetch projects');
+        console.error('Error fetching projects:', error);
       } finally {
         setLoading(false);
       }
     };
-
+    
     fetchProjects();
-  }, [user, selectedProjectId, onSelect]);
+  }, [user, selectedProjectId, excludeCurrentProject]);
 
   const handleCreateProject = () => {
     router.push("/dashboard/projects/new");
@@ -104,31 +99,30 @@ export function ProjectSelector({
     return <Skeleton className={`h-10 w-full ${className}`} />;
   }
 
-  if (error) {
-    return <div className='text-sm text-red-500'>{error}</div>;
-  }
-
   return (
     <div className={`flex gap-2 items-center ${className}`}>
-      {projects.length > 0 ? (
-        <Select 
-          value={selectedProjectId} 
-          onValueChange={onSelect}
-        >
-          <SelectTrigger className="w-full">
-            <SelectValue placeholder="Select a project" />
-          </SelectTrigger>
-          <SelectContent>
-            {projects.map((project) => (
+      <Select
+        value={selectedProjectId}
+        onValueChange={onSelect}
+        disabled={loading}
+      >
+        <SelectTrigger className='w-full'>
+          <SelectValue placeholder='Select a project' />
+        </SelectTrigger>
+        <SelectContent>
+          {projects.length === 0 ? (
+            <div className='p-2 text-sm text-muted-foreground text-center'>
+              {loading ? 'Loading projects...' : 'No projects found'}
+            </div>
+          ) : (
+            projects.map((project) => (
               <SelectItem key={project.id} value={project.id}>
                 {project.name}
               </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      ) : (
-        <div className="text-sm text-muted-foreground">No projects found</div>
-      )}
+            ))
+          )}
+        </SelectContent>
+      </Select>
       
       {showCreateButton && (
         <Button 

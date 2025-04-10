@@ -72,17 +72,38 @@ export function Toolbox({
     });
     
     if (projectId) {
-      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`);
+      // Refresh the page with the new layout ID
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
     }
   };
 
   const handleSave = () => {
-    onSave();
-    toast({
-      title: 'Layout Saved',
-      description: 'Your layout changes have been saved successfully.',
-      duration: 2000
-    });
+    // If we have a current layout, show the save dialog
+    if (currentLayout?.id) {
+      // Auto-save the current layout
+      if (modules.length > 0 || connections.length > 0) {
+        onSave();
+        toast({
+          title: 'Layout Saved',
+          description: 'Your layout changes have been saved automatically.',
+          duration: 2000
+        });
+      } else {
+        toast({
+          title: 'Nothing to Save',
+          description: 'Add some modules to your layout before saving.',
+          duration: 2000
+        });
+      }
+    } else {
+      // No current layout, show a message to create one first
+      toast({
+        variant: 'destructive',
+        title: 'No Layout Selected',
+        description: 'Please create or select a layout first.',
+        duration: 2000
+      });
+    }
   };
 
   const handle2DView = () => {

@@ -98,12 +98,12 @@ export function SaveLayoutDialog({
       
       // Save or update layout
       let layoutId;
-      if (layoutData.id) {
-        // Update existing layout - pass the user object as AuthUser
+      if (layoutData.id && layoutData.projectId === selectedProjectId) {
+        // Update existing layout if we're saving to the same project
         await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
         layoutId = layoutData.id;
       } else {
-        // Create new layout - doesn't need user object
+        // Create new layout if it's a new layout or we're saving to a different project
         layoutId = await layoutService.createLayout(saveData as Omit<Layout, "id" | "createdAt" | "updatedAt">);
       }
       
