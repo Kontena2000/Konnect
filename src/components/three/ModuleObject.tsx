@@ -1,5 +1,5 @@
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
+import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
 import { TransformControls } from "@react-three/drei";
 import { Module } from "@/types/module";
@@ -19,7 +19,7 @@ interface ModuleObjectProps {
   modules?: Module[];
   selected?: boolean;
   onClick?: () => void;
-  onUpdate?: (updates: Partial<Module>) => void;
+  onUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onDelete?: () => void;
   transformMode?: "translate" | "rotate" | "scale";
   gridSnap?: boolean;
@@ -44,7 +44,7 @@ export function ModuleObject({
   editorPreferences
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
-  const group = useRef<Group>(null); // Added group ref
+  const groupRef = useRef<Group>(null);
   const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
   const [shadowTransform, setShadowTransform] = useState({
@@ -64,7 +64,7 @@ export function ModuleObject({
     gridSnap,
     readOnly,
     transformMode,
-    onUpdate
+    onUpdate: (updates) => onUpdate?.(module.id, updates)
   });
 
   const initialPosition = useMemo(() => new Vector3(
@@ -114,50 +114,73 @@ export function ModuleObject({
     }
   }, [handleTransformChange, updateShadowTransform]);
 
-  // Update position, rotation, scale when changed
+  // Update position, rotation, scale when module props change
   useEffect(() => {
-    if (group.current) {
+    if (groupRef.current) {
       // Update position
-      if (position && Array.isArray(position) && position.length === 3) {
-        group.current.position.set(position[0], position[1], position[2]);
+      if (module.position && Array.isArray(module.position) && module.position.length === 3) {
+        groupRef.current.position.set(module.position[0], module.position[1], module.position[2]);
       }
       
       // Update rotation
-      if (rotation && Array.isArray(rotation) && rotation.length === 3) {
-        group.current.rotation.set(
-          rotation[0] * Math.PI / 180,
-          rotation[1] * Math.PI / 180,
-          rotation[2] * Math.PI / 180
+      if (module.rotation && Array.isArray(module.rotation) && module.rotation.length === 3) {
+        groupRef.current.rotation.set(
+          module.rotation[0] * Math.PI / 180,
+          module.rotation[1] * Math.PI / 180,
+          module.rotation[2] * Math.PI / 180
         );
       }
       
       // Update scale
-      if (scale && Array.isArray(scale) && scale.length === 3) {
-        group.current.scale.set(scale[0], scale[1], scale[2]);
-      }
-      
-      // Ensure position is properly updated in the module data
-      if (onUpdate && !isTransforming) {
-        const currentPosition = [
-          group.current.position.x,
-          group.current.position.y,
-          group.current.position.z
-        ] as [number, number, number];
-        
-        // Only update if position has actually changed
-        if (!position || 
-            position[0] !== currentPosition[0] || 
-            position[1] !== currentPosition[1] || 
-            position[2] !== currentPosition[2]) {
-          console.log('Updating module position in ModuleObject:', id, currentPosition);
-          onUpdate(id, { position: currentPosition });
-        }
+      if (module.scale && Array.isArray(module.scale) && module.scale.length === 3) {
+        groupRef.current.scale.set(module.scale[0], module.scale[1], module.scale[2]);
       }
     }
-  }, [id, position, rotation, scale, onUpdate, isTransforming]);
+  }, [module.position, module.rotation, module.scale]);
+
+  // Handle transform end - ensure position is saved
+  const handleTransformEnd = useCallback(() => {
+    if (!groupRef.current || !onUpdate) return;
+    
+    setIsTransforming(false);
+    onTransformEnd?.();
+    
+    // Get final position after transform
+    const finalPosition: [number, number, number] = [
+      groupRef.current.position.x,
+      groupRef.current.position.y,
+      groupRef.current.position.z
+    ];
+    
+    // Get final rotation after transform
+    const finalRotation: [number, number, number] = [
+      groupRef.current.rotation.x * 180 / Math.PI,
+      groupRef.current.rotation.y * 180 / Math.PI,
+      groupRef.current.rotation.z * 180 / Math.PI
+    ];
+    
+    // Get final scale after transform
+    const finalScale: [number, number, number] = [
+      groupRef.current.scale.x,
+      groupRef.current.scale.y,
+      groupRef.current.scale.z
+    ];
+    
+    console.log('Transform ended, updating module with final position:', module.id, finalPosition);
+    
+    // Update module with final transform values
+    onUpdate(module.id, {
+      position: finalPosition,
+      rotation: finalRotation,
+      scale: finalScale
+    });
+    
+    // Update shadow
+    updateShadowTransform();
+  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform]);
 
   return (
-    <group ref={group}>
+    <group ref={groupRef}>
       <ModuleMesh
         module={module}
         meshRef={meshRef}
@@ -206,11 +229,7 @@ export function ModuleObject({
             setIsTransforming(true);
             onTransformStart?.();
           }}
-          onTransformEnd={() => {
-            setIsTransforming(false);
-            onTransformEnd?.();
-            handleTransformChange(meshRef, updateShadowTransform);
-          }}
+          onTransformEnd={handleTransformEnd}
           onUpdate={() => handleTransformChange(meshRef, updateShadowTransform)}
         />
       )}
