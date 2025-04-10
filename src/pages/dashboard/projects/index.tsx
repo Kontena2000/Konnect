@@ -45,39 +45,50 @@ export default function ProjectsPage() {
     });
 
   // Fetch layout counts for all projects
-  useEffect(() => {
-    const fetchLayoutCounts = async () => {
-      if (!projects.length || !user) return;
-      
-      setLoadingLayoutCounts(true);
-      const counts: Record<string, number> = {};
-      
-      try {
-        console.log('Fetching layout counts for', projects.length, 'projects');
-        
-        // Fetch layout counts for each project
-        for (const project of projects) {
-          try {
-            console.log('Fetching layouts for project:', project.id);
-            const layouts = await layoutService.getProjectLayouts(project.id);
-            console.log('Found', layouts.length, 'layouts for project:', project.id);
-            counts[project.id] = layouts.length;
-          } catch (error) {
-            console.error(`Error fetching layouts for project ${project.id}:`, error);
-            counts[project.id] = 0;
-          }
-        }
-        
-        console.log('Final layout counts:', counts);
-        setProjectLayoutCounts(counts);
-      } catch (error) {
-        console.error('Error fetching layout counts:', error);
-      } finally {
-        setLoadingLayoutCounts(false);
-      }
-    };
+  const fetchLayoutCounts = async () => {
+    if (!projects.length || !user) return;
     
-    fetchLayoutCounts();
+    setLoadingLayoutCounts(true);
+    const counts: Record<string, number> = {};
+    
+    try {
+      console.log('Fetching layout counts for', projects.length, 'projects');
+      
+      // Fetch layout counts for each project
+      const db = getFirestoreSafely();
+      if (!db) {
+        console.error('Firestore not available');
+        return;
+      }
+      
+      // Get all layouts from Firestore directly
+      const layoutsCollection = collection(db, 'layouts');
+      const layoutsSnapshot = await getDocs(layoutsCollection);
+      
+      // Group layouts by projectId
+      layoutsSnapshot.forEach(doc => {
+        const layoutData = doc.data();
+        const projectId = layoutData.projectId;
+        
+        if (projectId) {
+          counts[projectId] = (counts[projectId] || 0) + 1;
+        }
+      });
+      
+      console.log('Final layout counts:', counts);
+      setProjectLayoutCounts(counts);
+    } catch (error) {
+      console.error('Error fetching layout counts:', error);
+    } finally {
+      setLoadingLayoutCounts(false);
+    }
+  };
+
+  // Call fetchLayoutCounts when projects change
+  useEffect(() => {
+    if (projects.length > 0 && user) {
+      fetchLayoutCounts();
+    }
   }, [projects, user]);
 
   const handleDeleteProject = async (projectId: string) => {
@@ -97,6 +108,9 @@ export default function ProjectsPage() {
         title: 'Success',
         description: 'Project deleted successfully'
       });
+      
+      // Update layout counts after deletion
+      fetchLayoutCounts();
     } catch (error) {
       console.error('Error deleting project:', error);
       toast({
@@ -123,6 +137,9 @@ export default function ProjectsPage() {
       // Refresh the projects list
       const userProjects = await projectService.getUserProjects(user.uid);
       setProjects(userProjects);
+      
+      // Update layout counts after duplication
+      fetchLayoutCounts();
       
       toast({
         title: 'Success',

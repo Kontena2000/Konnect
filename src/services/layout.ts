@@ -346,6 +346,7 @@ const layoutService = {
 
   async getProjectLayouts(projectId: string): Promise<Layout[]> {
     try {
+      console.log(`Getting layouts for project: ${projectId}`);
       const firestore = ensureFirestore();
       const layoutsQuery = query(
         collection(firestore, 'layouts'),
@@ -353,6 +354,8 @@ const layoutService = {
       );
       
       const snapshot = await getDocs(layoutsQuery);
+      console.log(`Found ${snapshot.size} layouts for project ${projectId}`);
+      
       const layouts = snapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -367,8 +370,8 @@ const layoutService = {
 
       return layouts;
     } catch (error) {
-      console.error('Error fetching project layouts:', error);
-      throw new Error('Failed to load project layouts');
+      console.error(`Error fetching project layouts for project ${projectId}:`, error);
+      throw new Error(`Failed to load project layouts: ${error instanceof Error ? error.message : String(error)}`);
     }
   },
 
@@ -463,6 +466,26 @@ const layoutService = {
     } catch (error) {
       if (error instanceof LayoutError) throw error;
       throw new LayoutError('Failed to delete layout', 'DELETE_FAILED', error);
+    }
+  },
+  
+  // Count layouts for a specific project
+  async countProjectLayouts(projectId: string): Promise<number> {
+    try {
+      console.log(`Counting layouts for project: ${projectId}`);
+      const firestore = ensureFirestore();
+      const layoutsQuery = query(
+        collection(firestore, 'layouts'),
+        where('projectId', '==', projectId)
+      );
+      
+      const snapshot = await getDocs(layoutsQuery);
+      console.log(`Found ${snapshot.size} layouts for project ${projectId}`);
+      
+      return snapshot.size;
+    } catch (error) {
+      console.error(`Error counting project layouts for project ${projectId}:`, error);
+      return 0;
     }
   }
 };
