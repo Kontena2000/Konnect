@@ -1,3 +1,4 @@
+
 import axios from 'axios';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -218,6 +219,12 @@ class ModelImporterService {
    */
   async getUserModels(userId: string): Promise<ImportedModel[]> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        console.error('Firestore is not available');
+        return [];
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       const userModelsQuery = query(modelsCollection, where('userId', '==', userId));
       const snapshot = await getDocs(userModelsQuery);
@@ -242,6 +249,12 @@ class ModelImporterService {
    */
   async getProjectModels(projectId: string): Promise<ImportedModel[]> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        console.error('Firestore is not available');
+        return [];
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       const projectModelsQuery = query(modelsCollection, where('projectId', '==', projectId));
       const snapshot = await getDocs(projectModelsQuery);
@@ -266,6 +279,11 @@ class ModelImporterService {
    */
   async assignModelToProject(modelId: string, projectId: string): Promise<void> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        throw new Error('Firestore is not available');
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       const modelQuery = query(modelsCollection, where('id', '==', modelId));
       const snapshot = await getDocs(modelQuery);
@@ -280,7 +298,7 @@ class ModelImporterService {
       });
     } catch (error) {
       console.error('Error assigning model to project:', error);
-      throw new Error(`Failed to assign model to project: ${error.message}`);
+      throw new Error(`Failed to assign model to project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }
