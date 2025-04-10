@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -126,7 +127,12 @@ export function ModuleObject({
       Number(meshRef.current.scale.z)
     ];
     
-    console.log('Transform ended, updating module with final position:', module.id, finalPosition, 'rotation:', finalRotation);
+    console.log('Transform ended, updating module with final values:', {
+      id: module.id,
+      position: finalPosition,
+      rotation: finalRotation,
+      scale: finalScale
+    });
     
     // Force immediate update with final transform values to ensure they're saved
     onUpdate(module.id, {
@@ -227,6 +233,45 @@ export function ModuleObject({
     }
   }, [module.position, module.rotation, module.scale, updateShadowTransform, module.id]);
 
+  // This function is called continuously during transform
+  const handleContinuousUpdate = useCallback(() => {
+    if (!meshRef.current || !onUpdate) return;
+    
+    // Get current position during transform
+    const currentPosition: [number, number, number] = [
+      Number(meshRef.current.position.x),
+      Number(meshRef.current.position.y),
+      Number(meshRef.current.position.z)
+    ];
+    
+    // Get current rotation during transform - convert from radians to degrees
+    const currentRotation: [number, number, number] = [
+      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
+    ];
+    
+    // Get current scale during transform
+    const currentScale: [number, number, number] = [
+      Number(meshRef.current.scale.x),
+      Number(meshRef.current.scale.y),
+      Number(meshRef.current.scale.z)
+    ];
+    
+    // Log rotation values for debugging
+    console.log(`Module ${module.id} rotation during transform:`, currentRotation);
+    
+    // Update position in real-time during transform
+    onUpdate(module.id, {
+      position: currentPosition,
+      rotation: currentRotation,
+      scale: currentScale
+    });
+    
+    // Update shadow
+    updateShadowTransform();
+  }, [module.id, onUpdate, updateShadowTransform]);
+
   return (
     <group>
       <mesh
@@ -306,44 +351,7 @@ export function ModuleObject({
             onTransformStart?.();
           }}
           onTransformEnd={handleTransformEnd}
-          onUpdate={() => {
-            // This is called continuously during transform
-            if (meshRef.current) {
-              // Get current position during transform
-              const currentPosition: [number, number, number] = [
-                Number(meshRef.current.position.x),
-                Number(meshRef.current.position.y),
-                Number(meshRef.current.position.z)
-              ];
-              
-              // Get current rotation during transform - convert from radians to degrees
-              const currentRotation: [number, number, number] = [
-                Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
-                Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
-                Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
-              ];
-              
-              // Get current scale during transform
-              const currentScale: [number, number, number] = [
-                Number(meshRef.current.scale.x),
-                Number(meshRef.current.scale.y),
-                Number(meshRef.current.scale.z)
-              ];
-              
-              // Log rotation values for debugging
-              console.log(`Module ${module.id} rotation during transform:`, currentRotation);
-              
-              // Update position in real-time during transform
-              onUpdate?.(module.id, {
-                position: currentPosition,
-                rotation: currentRotation,
-                scale: currentScale
-              });
-              
-              // Update shadow
-              updateShadowTransform();
-            }
-          }}
+          onUpdate={handleContinuousUpdate}
         />
       )}
     </group>

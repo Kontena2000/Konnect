@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -56,7 +57,7 @@ export default function LayoutEditorPage() {
     if (layout.modules && Array.isArray(layout.modules)) {
       const processedModules = layout.modules.map(module => {
         // Create a deep copy to avoid modifying the original
-        const moduleCopy = { ...module };
+        const moduleCopy = JSON.parse(JSON.stringify(module));
         
         // Ensure position values are numbers
         moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
@@ -133,12 +134,22 @@ export default function LayoutEditorPage() {
             // Update modules and connections from the saved layout
             if (savedLayout.modules) {
               // Ensure all module positions and rotations are properly converted to numbers
-              const processedModules = savedLayout.modules.map(module => ({
-                ...module,
-                position: module.position.map(Number) as [number, number, number],
-                rotation: module.rotation.map(Number) as [number, number, number],
-                scale: module.scale.map(Number) as [number, number, number]
-              }));
+              const processedModules = savedLayout.modules.map(module => {
+                // Create a deep copy to avoid modifying the original
+                const moduleCopy = JSON.parse(JSON.stringify(module));
+                
+                // Ensure position values are numbers
+                moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+                
+                // Ensure rotation values are numbers
+                moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+                
+                // Ensure scale values are numbers
+                moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+                
+                return moduleCopy;
+              });
+              
               setModules(processedModules);
             }
             
@@ -163,12 +174,22 @@ export default function LayoutEditorPage() {
     
     // Ensure all module positions and rotations are properly converted to numbers
     if (layout.modules && Array.isArray(layout.modules)) {
-      const processedModules = layout.modules.map(module => ({
-        ...module,
-        position: module.position.map(Number) as [number, number, number],
-        rotation: module.rotation.map(Number) as [number, number, number],
-        scale: module.scale.map(Number) as [number, number, number]
-      }));
+      const processedModules = layout.modules.map(module => {
+        // Create a deep copy to avoid modifying the original
+        const moduleCopy = JSON.parse(JSON.stringify(module));
+        
+        // Ensure position values are numbers
+        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+        
+        // Ensure rotation values are numbers
+        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+        
+        // Ensure scale values are numbers
+        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+        
+        return moduleCopy;
+      });
+      
       setModules(processedModules);
     } else {
       setModules([]);
@@ -481,12 +502,22 @@ export default function LayoutEditorPage() {
                 // Set modules and connections from layout data
                 if (layoutData.modules) {
                   // Ensure all module positions and rotations are properly converted to numbers
-                  const processedModules = layoutData.modules.map((module: any) => ({
-                    ...module,
-                    position: module.position.map(Number) as [number, number, number],
-                    rotation: module.rotation.map(Number) as [number, number, number],
-                    scale: module.scale.map(Number) as [number, number, number]
-                  }));
+                  const processedModules = layoutData.modules.map((module: any) => {
+                    // Create a deep copy to avoid modifying the original
+                    const moduleCopy = JSON.parse(JSON.stringify(module));
+                    
+                    // Ensure position values are numbers
+                    moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+                    
+                    // Ensure rotation values are numbers
+                    moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+                    
+                    // Ensure scale values are numbers
+                    moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+                    
+                    return moduleCopy;
+                  });
+                  
                   setModules(processedModules);
                 }
                 

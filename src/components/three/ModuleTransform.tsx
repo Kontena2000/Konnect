@@ -1,3 +1,4 @@
+
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
 import { useCallback, useEffect } from "react";
@@ -36,7 +37,7 @@ export function ModuleTransform({
         // Call the transform end handler after a small delay to ensure all updates are processed
         setTimeout(() => {
           onTransformEnd?.();
-        }, 50);
+        }, 100); // Increased from 50ms to 100ms for more reliable updates
       }
     }
   }, [onTransformStart, onTransformEnd, onUpdate]);
