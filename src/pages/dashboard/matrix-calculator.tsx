@@ -173,28 +173,10 @@ export default function MatrixCalculatorPage() {
     }
   };
 
-  const handleSaveCalculation = (savedCalculation: any) => {
-    toast({
-      title: 'Calculation Saved',
-      description: 'Your calculation has been saved successfully.',
-    });
-    
-    // If we have a projectId in the URL, refresh the page to show the updated calculations
-    const { projectId } = router.query;
-    if (projectId && typeof projectId === 'string') {
-      router.push(`/dashboard/projects/${projectId}?tab=calculations`);
-    }
-  };
-  
-  const handleLoadCalculation = (calculationId: string) => {
-    console.log('Loading calculation:', calculationId);
-    // Instead of directly loading the calculation, redirect to the page with the calculationId
-    router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
-  };
-
-  // Handle save complete event
+  // Handle save complete event with improved logging
   const handleSaveComplete = (calculationId: string, projectId: string) => {
     console.log('Calculation saved with ID:', calculationId, 'to project:', projectId);
+    
     // Increment refresh trigger to reload calculations
     setRefreshTrigger(prev => prev + 1);
     
@@ -210,6 +192,12 @@ export default function MatrixCalculatorPage() {
         router.push(`/dashboard/projects/${projectId}?tab=calculations`);
       }, 1500);
     }
+  };
+
+  const handleLoadCalculation = (calculationId: string) => {
+    console.log('Loading calculation:', calculationId);
+    // Instead of directly loading the calculation, redirect to the page with the calculationId
+    router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
 
   if (loading) {

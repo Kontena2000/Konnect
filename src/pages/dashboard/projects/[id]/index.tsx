@@ -63,6 +63,7 @@ export default function ProjectDetailsPage() {
   const [calculationsRefreshTrigger, setCalculationsRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('layouts');
 
+  // Refresh calculations function with better error handling
   const refreshCalculations = useCallback(async () => {
     if (!id) return;
     
@@ -71,15 +72,25 @@ export default function ProjectDetailsPage() {
       const db = getFirestoreSafely();
       if (!db) {
         console.error('Firestore not available');
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Could not connect to database'
+        });
         return;
       }
       
+      // Create a direct reference to the configs subcollection
+      const calculationsRef = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
       const calculationsQuery = query(
-        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+        calculationsRef,
         where('projectId', '==', id),
         orderBy('createdAt', 'desc')
       );
+      
       const calculationsSnapshot = await getDocs(calculationsQuery);
+      console.log(`Found ${calculationsSnapshot.docs.length} calculations for project ${id}`);
+      
       const calculationsData = calculationsSnapshot.docs.map(doc => {
         const data = doc.data();
         return {
@@ -89,9 +100,12 @@ export default function ProjectDetailsPage() {
         };
       });
       
-      console.log(`Found ${calculationsData.length} calculations for project ${id}`);
       setCalculations(calculationsData);
       setCalculationsRefreshTrigger(prev => prev + 1);
+      
+      if (calculationsData.length > 0) {
+        console.log('First calculation:', calculationsData[0]);
+      }
     } catch (error) {
       console.error('Error refreshing calculations:', error);
       toast({
@@ -254,7 +268,7 @@ export default function ProjectDetailsPage() {
     } catch (error) {
       console.error("Error creating layout:", error);
       toast({
-        variant: "destructive",
+        variant: 'destructive',
         title: "Error",
         description: "Failed to create new layout"
       });

@@ -81,6 +81,7 @@ export function SaveCalculationDialog({
       setSaving(true);
       console.log('Saving calculation with config:', config);
       console.log('Results to save:', results);
+      console.log('Selected project ID:', selectedProjectId);
       
       // Get Firestore instance safely
       const safeDb = getFirestoreSafely();
