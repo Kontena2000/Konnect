@@ -5,9 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Plus, Settings, Loader2 } from "lucide-react";
+import { Plus, Settings, Loader2, Trash2 } from "lucide-react";
 import layoutService from "@/services/layout";
 import { useToast } from "@/hooks/use-toast";
+import { DeleteLayoutDialog } from './DeleteLayoutDialog';
+import { useAuth } from "@/contexts/AuthContext";
 
 interface LayoutSelectorProps {
   projectId: string;
@@ -29,6 +31,7 @@ export function LayoutSelector({
   const [newLayoutDescription, setNewLayoutDescription] = useState("");
   const [isCreating, setIsCreating] = useState(false);
   const { toast } = useToast();
+  const { user } = useAuth();
 
   // Reset form when dialog opens/closes
   useEffect(() => {
@@ -79,10 +82,47 @@ export function LayoutSelector({
     }
   };
 
+  const handleDeleteLayout = async (layoutId: string) => {
+    try {
+      // Refresh layouts after deletion
+      const updatedLayouts = await layoutService.getProjectLayouts(projectId);
+      
+      // If the current layout was deleted, select another one if available
+      if (currentLayout?.id === layoutId) {
+        if (updatedLayouts.length > 0) {
+          onLayoutChange(updatedLayouts[0]);
+        } else {
+          // No layouts left, create empty state
+          onLayoutChange({
+            id: '',
+            projectId,
+            name: '',
+            modules: [],
+            connections: [],
+            createdAt: new Date(),
+            updatedAt: new Date()
+          });
+        }
+      }
+      
+      toast({
+        title: 'Success',
+        description: 'Layout deleted successfully'
+      });
+    } catch (error) {
+      console.error('Error refreshing layouts after deletion:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to refresh layouts'
+      });
+    }
+  };
+
   return (
     <div className='flex items-center gap-2'>
       <Select
-        value={currentLayout?.id}
+        value={currentLayout?.id || ''}
         onValueChange={(value) => {
           const layout = layouts.find((l) => l.id === value);
           if (layout) onLayoutChange(layout);
@@ -98,8 +138,8 @@ export function LayoutSelector({
             </div>
           ) : (
             layouts.map((layout) => (
-              <SelectItem key={layout.id} value={layout.id}>
-                {layout.name}
+              <SelectItem key={layout.id} value={layout.id} className='flex justify-between items-center'>
+                <span>{layout.name}</span>
               </SelectItem>
             ))
           )}
@@ -160,6 +200,14 @@ export function LayoutSelector({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {currentLayout?.id && (
+        <DeleteLayoutDialog 
+          layoutId={currentLayout.id}
+          layoutName={currentLayout.name}
+          onDeleteComplete={() => handleDeleteLayout(currentLayout.id)}
+        />
+      )}
     </div>
   );
 }
