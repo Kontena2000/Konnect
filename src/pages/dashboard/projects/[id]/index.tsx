@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -38,6 +37,7 @@ import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { formatDistanceToNow } from 'date-fns';
+import { formatDistance } from 'date-fns';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
