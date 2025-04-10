@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -14,10 +15,11 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Loader2 } from "lucide-react";
+import { Loader2, AlertCircle } from "lucide-react";
 import { ProjectSelector } from "@/components/common/ProjectSelector";
 import layoutService, { Layout } from "@/services/layout";
 import { AuthUser } from "@/services/auth";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 interface SaveLayoutDialogProps {
   layoutData: {
@@ -42,6 +44,7 @@ export function SaveLayoutDialog({
   const [description, setDescription] = useState(layoutData.description || '');
   const [selectedProjectId, setSelectedProjectId] = useState<string>(layoutData.projectId || '');
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -52,34 +55,44 @@ export function SaveLayoutDialog({
       setName(layoutData.name || '');
       setDescription(layoutData.description || '');
       setSelectedProjectId(layoutData.projectId || '');
+      setError(null);
     }
   }, [layoutData, open]);
   
-  const handleSave = async () => {
+  const validateForm = () => {
     if (!user) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'You must be logged in to save layouts'
-      });
-      return;
+      setError('You must be logged in to save layouts');
+      return false;
     }
     
     if (!selectedProjectId) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Please select a project to save to'
-      });
-      return;
+      setError('Please select a project to save to');
+      return false;
     }
     
     if (!name.trim()) {
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Please enter a name for your layout'
-      });
+      setError('Please enter a name for your layout');
+      return false;
+    }
+    
+    // Validate modules and connections if needed
+    if (layoutData.modules && !Array.isArray(layoutData.modules)) {
+      setError('Invalid modules data');
+      return false;
+    }
+    
+    if (layoutData.connections && !Array.isArray(layoutData.connections)) {
+      setError('Invalid connections data');
+      return false;
+    }
+    
+    return true;
+  };
+  
+  const handleSave = async () => {
+    setError(null);
+    
+    if (!validateForm()) {
       return;
     }
     
@@ -90,11 +103,13 @@ export function SaveLayoutDialog({
       const saveData = {
         ...layoutData,
         projectId: selectedProjectId,
-        name: name || 'Untitled Layout',
+        name: name.trim(),
         description: description || `Created on ${new Date().toLocaleDateString()}`,
         modules: layoutData.modules || [],
         connections: layoutData.connections || []
       };
+      
+      console.log('Saving layout with data:', JSON.stringify(saveData));
       
       // Save or update layout
       let layoutId;
@@ -123,10 +138,12 @@ export function SaveLayoutDialog({
       
     } catch (error) {
       console.error('Error saving layout:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to save layout';
+      setError(errorMessage);
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to save layout'
+        description: errorMessage
       });
     } finally {
       setSaving(false);
@@ -145,6 +162,15 @@ export function SaveLayoutDialog({
             Save this layout to a project for future reference.
           </DialogDescription>
         </DialogHeader>
+        
+        {error && (
+          <Alert variant="destructive" className="mt-2">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        )}
+        
         <div className="grid gap-4 py-4">
           <div className="grid gap-2">
             <Label htmlFor="project">Project</Label>
