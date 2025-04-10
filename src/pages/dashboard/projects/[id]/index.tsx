@@ -413,7 +413,7 @@ export default function ProjectDetailsPage() {
             {/* Project Actions */}
             {!editMode && (
               <>
-                <Separator />
+                <Separator className="my-6" />
                 <div>
                   <h3 className="text-lg font-medium mb-4">Project Actions</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
