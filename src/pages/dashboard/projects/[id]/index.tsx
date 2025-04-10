@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -554,3 +555,111 @@ export default function ProjectDetailsPage() {
                 )}
               </div>
             </TabsContent>
+            
+            <TabsContent value='calculations' className='space-y-4 mt-6'>
+              <div className='flex justify-between items-center mb-4'>
+                <h3 className='text-lg font-medium'>Project Calculations</h3>
+                <Button 
+                  className='bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2'
+                  onClick={createNewCalculation}
+                  disabled={creatingCalculation}
+                >
+                  {creatingCalculation ? (
+                    <>
+                      <Loader2 className='h-4 w-4 animate-spin' />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className='h-4 w-4' />
+                      Create New Calculation
+                    </>
+                  )}
+                </Button>
+              </div>
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                {calculations.length > 0 ? (
+                  calculations.map((calculation) => (
+                    <Card key={calculation.id} className='overflow-hidden hover:shadow-md transition-shadow border border-muted'>
+                      <CardHeader className='pb-2 bg-muted/20'>
+                        <CardTitle>{calculation.name || 'Untitled Calculation'}</CardTitle>
+                        <CardDescription>
+                          {calculation.description || 'No description'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className='pt-4'>
+                        <p className='text-xs text-muted-foreground mt-1'>
+                          Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
+                        </p>
+                      </CardContent>
+                      <CardFooter className='flex justify-end gap-2 pt-2 border-t bg-muted/10'>
+                        <Button 
+                          variant='outline' 
+                          size='sm'
+                          onClick={() => handleEditCalculation(calculation.id)}
+                          className='hover:bg-[#F1B73A]/10'
+                        >
+                          <Edit className='mr-2 h-4 w-4' />
+                          Edit
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))
+                ) : (
+                  <div className='col-span-full text-center py-12 bg-muted/10 rounded-lg border border-dashed border-muted'>
+                    <Calculator className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
+                    <p className='text-muted-foreground mb-4'>No calculations found for this project</p>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value='client-info' className='space-y-4 mt-6'>
+              <Card>
+                <CardHeader>
+                  <CardTitle>Client Information</CardTitle>
+                  <CardDescription>Details about the client for this project</CardDescription>
+                </CardHeader>
+                <CardContent className='space-y-6'>
+                  <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
+                    <div className='space-y-2'>
+                      <div className='flex items-center gap-2'>
+                        <Building className='h-4 w-4 text-muted-foreground' />
+                        <h3 className='text-sm font-medium'>Company Name</h3>
+                      </div>
+                      <p>{project.clientInfo?.name || 'Not specified'}</p>
+                    </div>
+                    
+                    <div className='space-y-2'>
+                      <div className='flex items-center gap-2'>
+                        <Mail className='h-4 w-4 text-muted-foreground' />
+                        <h3 className='text-sm font-medium'>Email</h3>
+                      </div>
+                      <p>{project.clientInfo?.email || 'Not specified'}</p>
+                    </div>
+                    
+                    <div className='space-y-2'>
+                      <div className='flex items-center gap-2'>
+                        <Phone className='h-4 w-4 text-muted-foreground' />
+                        <h3 className='text-sm font-medium'>Phone</h3>
+                      </div>
+                      <p>{project.clientInfo?.phone || 'Not specified'}</p>
+                    </div>
+                    
+                    <div className='space-y-2'>
+                      <div className='flex items-center gap-2'>
+                        <MapPin className='h-4 w-4 text-muted-foreground' />
+                        <h3 className='text-sm font-medium'>Address</h3>
+                      </div>
+                      <p>{project.clientInfo?.address || 'Not specified'}</p>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
+            </TabsContent>
+          </Tabs>
+        </div>
+      </div>
+    </AppLayout>
+  );
+}
