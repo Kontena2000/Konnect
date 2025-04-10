@@ -1,6 +1,7 @@
+
 import { TransformControls } from "@react-three/drei";
 import { Mesh, Object3D } from "three";
-import { useEffect, useCallback } from "react";
+import { useCallback } from "react";
 
 interface ModuleTransformProps {
   meshRef: React.RefObject<Mesh>;
@@ -19,8 +20,6 @@ export function ModuleTransform({
   onTransformEnd,
   onUpdate
 }: ModuleTransformProps) {
-  if (!meshRef.current) return null;
-
   // Create a handler for the dragging-changed event
   const handleDraggingChanged = useCallback((e: any) => {
     // This ensures we capture the end of transform operations
@@ -40,6 +39,8 @@ export function ModuleTransform({
       }
     }
   }, [onTransformStart, onTransformEnd, onUpdate]);
+
+  if (!meshRef.current) return null;
 
   return (
     <TransformControls
@@ -62,7 +63,7 @@ export function ModuleTransform({
       translationSnap={gridSnap ? 1 : null}
       rotationSnap={gridSnap ? Math.PI / 4 : null}
       scaleSnap={gridSnap ? 0.25 : null}
-      space='world'
+      space="world"
     />
   );
 }

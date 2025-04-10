@@ -292,6 +292,7 @@ const layoutService = {
             // Ensure rotation values are numbers
             if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
               moduleCopy.rotation = moduleCopy.rotation.map(Number);
+              console.log(`Admin saving module ${moduleCopy.id} with rotation:`, moduleCopy.rotation);
             }
             
             // Ensure scale values are numbers
@@ -377,6 +378,16 @@ const layoutService = {
 
       // Ensure data is serializable for Firestore
       const cleanData = safeSerialize(data);
+      
+      // Log final data before saving
+      if (cleanData.modules && Array.isArray(cleanData.modules)) {
+        console.log('Final module data before saving:');
+        cleanData.modules.forEach((module: any) => {
+          if (module.id) {
+            console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
+          }
+        });
+      }
       
       await updateDoc(layoutRef, {
         ...cleanData,

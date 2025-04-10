@@ -36,9 +36,9 @@ export function useModuleTransform({
     ];
 
     const rotation: [number, number, number] = [
-      Number(meshRef.current.rotation.x * 180 / Math.PI),
-      Number(meshRef.current.rotation.y * 180 / Math.PI),
-      Number(meshRef.current.rotation.z * 180 / Math.PI)
+      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
     ];
 
     const scale: [number, number, number] = [

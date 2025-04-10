@@ -145,6 +145,14 @@ export function SaveLayoutDialog({
         connections: saveData.connections?.length || 0 
       });
       
+      // Log all module rotations before saving
+      if (saveData.modules && Array.isArray(saveData.modules)) {
+        console.log('Module rotations before saving:');
+        saveData.modules.forEach(module => {
+          console.log(`Module ${module.id}: rotation=${JSON.stringify(module.rotation)}`);
+        });
+      }
+      
       // Save or update layout
       let layoutId;
       

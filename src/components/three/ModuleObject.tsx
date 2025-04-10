@@ -313,11 +313,11 @@ export function ModuleObject({
                 Number(meshRef.current.position.z)
               ];
               
-              // Get current rotation during transform
+              // Get current rotation during transform - convert from radians to degrees
               const currentRotation: [number, number, number] = [
-                Number(meshRef.current.rotation.x * 180 / Math.PI),
-                Number(meshRef.current.rotation.y * 180 / Math.PI),
-                Number(meshRef.current.rotation.z * 180 / Math.PI)
+                Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
+                Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
+                Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
               ];
               
               // Get current scale during transform
@@ -326,6 +326,9 @@ export function ModuleObject({
                 Number(meshRef.current.scale.y),
                 Number(meshRef.current.scale.z)
               ];
+              
+              // Log rotation values for debugging
+              console.log(`Module ${module.id} rotation during transform:`, currentRotation);
               
               // Update position in real-time during transform
               onUpdate?.(module.id, {
