@@ -46,6 +46,7 @@ export function DeleteLayoutDialog({
     
     try {
       setDeleting(true);
+      console.log(`Attempting to delete layout: ${layoutId} (${layoutName})`);
       
       await layoutService.deleteLayout(layoutId, user as AuthUser);
       
@@ -61,10 +62,43 @@ export function DeleteLayoutDialog({
       setOpen(false);
     } catch (error) {
       console.error('Error deleting layout:', error);
+      
+      // Extract more specific error message if available
+      let errorMessage = 'Failed to delete layout';
+      
+      if (error instanceof Error) {
+        if ('code' in error && typeof (error as any).code === 'string') {
+          const errorCode = (error as any).code;
+          
+          // Provide more user-friendly error messages based on error code
+          switch (errorCode) {
+            case 'UNAUTHORIZED':
+              errorMessage = 'You do not have permission to delete this layout';
+              break;
+            case 'PERMISSION_DENIED':
+              errorMessage = 'You have access to this project but not permission to delete layouts';
+              break;
+            case 'NOT_FOUND':
+              errorMessage = 'Layout not found. It may have been already deleted';
+              break;
+            case 'PROJECT_NOT_FOUND':
+              errorMessage = 'The project associated with this layout was not found';
+              break;
+            case 'DELETE_OPERATION_FAILED':
+              errorMessage = 'Database operation failed. Please try again later';
+              break;
+            default:
+              errorMessage = `Failed to delete layout: ${error.message}`;
+          }
+        } else {
+          errorMessage = `Failed to delete layout: ${error.message}`;
+        }
+      }
+      
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to delete layout'
+        description: errorMessage
       });
     } finally {
       setDeleting(false);

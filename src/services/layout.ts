@@ -10,7 +10,8 @@ import {
   where,
   getDoc,
   serverTimestamp,
-  Firestore
+  Firestore,
+  DocumentReference
 } from "firebase/firestore";
 import { ConnectionType } from '@/types/connection';
 import { debounce } from "lodash";
@@ -434,38 +435,93 @@ const layoutService = {
   },
 
   async deleteLayout(layoutId: string, user: AuthUser): Promise<void> {
+    console.log('Attempting to delete layout:', layoutId, 'by user:', user.uid, 'email:', user.email);
     try {
       const firestore = ensureFirestore();
       const layoutRef = doc(firestore, 'layouts', layoutId);
       const layoutSnap = await getDoc(layoutRef);
       
       if (!layoutSnap.exists()) {
+        console.error('Layout not found:', layoutId);
         throw new LayoutError('Layout not found', 'NOT_FOUND');
       }
       
       const layoutData = layoutSnap.data();
+      console.log('Layout data retrieved:', { 
+        id: layoutId, 
+        projectId: layoutData.projectId,
+        name: layoutData.name,
+        modules: layoutData.modules?.length || 0
+      });
+      
       const projectRef = doc(firestore, 'projects', layoutData.projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
+        console.error('Associated project not found:', layoutData.projectId);
         throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
       }
       
       // Special case for ruud@kontena.eu - always has full access
       if (user.email === 'ruud@kontena.eu') {
-        await deleteDoc(layoutRef);
-        return;
+        console.log('Admin user detected, proceeding with deletion');
+        try {
+          await deleteDoc(layoutRef);
+          console.log('Layout successfully deleted by admin:', layoutId);
+          return;
+        } catch (deleteError) {
+          console.error('Error during admin deletion:', deleteError);
+          throw new LayoutError(
+            'Failed to delete layout: ' + (deleteError instanceof Error ? deleteError.message : String(deleteError)),
+            'DELETE_OPERATION_FAILED',
+            deleteError
+          );
+        }
       }
       
       const project = projectSnap.data();
-      if (project.userId !== user.uid) {
+      console.log('Project data:', { 
+        id: layoutData.projectId, 
+        userId: project.userId,
+        currentUserId: user.uid,
+        sharedWith: project.sharedWith || []
+      });
+      
+      // Check if user is owner or has shared access
+      const isOwner = project.userId === user.uid;
+      const hasSharedAccess = project.sharedWith?.includes(user.email!);
+      
+      if (!isOwner && !hasSharedAccess) {
+        console.error('Unauthorized access to delete layout:', layoutId, 'by user:', user.uid);
         throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
       }
       
-      await deleteDoc(layoutRef);
+      // Check if user has shared access but not delete permission
+      if (!isOwner && hasSharedAccess && !project.allowSharedDelete) {
+        console.error('User has shared access but not delete permission:', user.uid);
+        throw new LayoutError('You do not have permission to delete layouts in this project', 'PERMISSION_DENIED');
+      }
+      
+      try {
+        console.log('Proceeding with layout deletion:', layoutId);
+        await deleteDoc(layoutRef);
+        console.log('Layout successfully deleted:', layoutId);
+      } catch (deleteError) {
+        console.error('Error during layout deletion operation:', deleteError);
+        throw new LayoutError(
+          'Failed to delete layout: ' + (deleteError instanceof Error ? deleteError.message : String(deleteError)),
+          'DELETE_OPERATION_FAILED',
+          deleteError
+        );
+      }
     } catch (error) {
+      console.error('Failed to delete layout:', error);
       if (error instanceof LayoutError) throw error;
-      throw new LayoutError('Failed to delete layout', 'DELETE_FAILED', error);
+      throw new LayoutError(
+        'Failed to delete layout: ' + (error instanceof Error ? error.message : String(error)), 
+        'DELETE_FAILED', 
+        error
+      );
     }
   },
   
