@@ -416,12 +416,12 @@ export default function ProjectDetailsPage() {
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
-                      className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-auto py-2 px-3 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30'
+                      className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-10 py-1 px-2 rounded-md shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30 text-xs'
                     >
                       <div className='flex flex-col items-center text-center w-full'>
-                        <Share className='h-4 w-4 mb-1' />
-                        <span className='font-medium text-sm'>Share Project</span>
-                        <span className='text-xs mt-0.5 text-white/70'>Collaborate with others</span>
+                        <Share className='h-3 w-3 mb-0.5' />
+                        <span className='font-medium text-xs'>Share Project</span>
+                        <span className='text-[10px] mt-0.5 text-white/70'>Collaborate with others</span>
                       </div>
                     </Button>
                   </DialogTrigger>
@@ -453,30 +453,30 @@ export default function ProjectDetailsPage() {
                 </Dialog>
                 
                 <Button 
-                  className='bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-auto py-2 px-3 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30'
+                  className='bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-10 py-1 px-2 rounded-md shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30 text-xs'
                   onClick={handleDuplicateProject}
                   disabled={duplicating}
                 >
                   <div className='flex flex-col items-center text-center w-full'>
                     {duplicating ? (
-                      <Loader2 className='h-4 w-4 mb-1 animate-spin' />
+                      <Loader2 className='h-3 w-3 mb-0.5 animate-spin' />
                     ) : (
-                      <Copy className='h-4 w-4 mb-1' />
+                      <Copy className='h-3 w-3 mb-0.5' />
                     )}
-                    <span className='font-medium text-sm'>Duplicate Project</span>
-                    <span className='text-xs mt-0.5 text-white/70'>Create a copy with all layouts</span>
+                    <span className='font-medium text-xs'>Duplicate Project</span>
+                    <span className='text-[10px] mt-0.5 text-white/70'>Create a copy with all layouts</span>
                   </div>
                 </Button>
                 
                 <AlertDialog>
                   <AlertDialogTrigger asChild>
                     <Button 
-                      className='bg-red-500 hover:bg-red-600/80 text-white h-auto py-2 px-3 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400'
+                      className='bg-red-500 hover:bg-red-600/80 text-white h-10 py-1 px-2 rounded-md shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400 text-xs'
                     >
                       <div className='flex flex-col items-center text-center w-full'>
-                        <Trash2 className='h-4 w-4 mb-1' />
-                        <span className='font-medium text-sm'>Delete Project</span>
-                        <span className='text-xs mt-0.5 text-white/70'>Remove permanently</span>
+                        <Trash2 className='h-3 w-3 mb-0.5' />
+                        <span className='font-medium text-xs'>Delete Project</span>
+                        <span className='text-[10px] mt-0.5 text-white/70'>Remove permanently</span>
                       </div>
                     </Button>
                   </AlertDialogTrigger>
