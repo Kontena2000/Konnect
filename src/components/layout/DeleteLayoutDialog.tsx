@@ -63,9 +63,11 @@ export function DeleteLayoutDialog({
       // Ensure we call the onDeleteComplete callback
       if (onDeleteComplete) {
         console.log('Calling onDeleteComplete callback after successful deletion');
+        // Use a small timeout to ensure Firebase operations complete
+        // and the UI has time to update
         setTimeout(() => {
           onDeleteComplete();
-        }, 100); // Small delay to ensure Firebase operations complete
+        }, 300);
       }
     } catch (error) {
       console.error('Error deleting layout:', error);

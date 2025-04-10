@@ -86,19 +86,26 @@ export function LayoutSelector({
 
   const handleDeleteComplete = async () => {
     try {
+      console.log('Layout deletion complete, refreshing layouts');
+      
       // Call parent's onDeleteComplete if provided
       if (onDeleteComplete) {
+        console.log('Calling parent onDeleteComplete callback');
         onDeleteComplete();
       } else {
         // Fallback: refresh layouts after deletion
+        console.log('No parent callback, refreshing layouts manually');
         const updatedLayouts = await layoutService.getProjectLayouts(projectId);
+        console.log('Fetched updated layouts:', updatedLayouts.length);
         
         // If the current layout was deleted, select another one if available
         if (currentLayout && !updatedLayouts.some(l => l.id === currentLayout.id)) {
+          console.log('Current layout was deleted, selecting another one');
           if (updatedLayouts.length > 0) {
             onLayoutChange(updatedLayouts[0]);
           } else {
             // No layouts left, create empty state
+            console.log('No layouts left, creating empty state');
             onLayoutChange({
               id: '',
               projectId,
