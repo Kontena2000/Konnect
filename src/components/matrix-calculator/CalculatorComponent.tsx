@@ -52,7 +52,7 @@ interface CalculatorComponentProps {
 
 export function CalculatorComponent({ 
   calculationId, 
-  projectId,
+  projectId: initialProjectId,
   userId, 
   userRole = 'user',
   initialResults = null,
@@ -71,7 +71,7 @@ export function CalculatorComponent({
   const [calculationName, setCalculationName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [projectId, setProjectId] = useState<string | undefined>(undefined);
+  const [projectId, setProjectId] = useState<string | undefined>(initialProjectId);
   
   // Advanced options
   const [redundancyMode, setRedundancyMode] = useState('N+1');
@@ -461,6 +461,13 @@ export function CalculatorComponent({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Handle save calculation complete
+  const handleSaveComplete = (calculationId: string, savedProjectId: string | undefined) => {
+    if (onSaveComplete) {
+      onSaveComplete(calculationId, savedProjectId || '');
     }
   };
 
@@ -855,7 +862,16 @@ export function CalculatorComponent({
       
       {results && (
         <>
-          <ResultsDisplay results={results} onSave={onSaveComplete} userId={userId} />
+          <ResultsDisplay 
+            results={results} 
+            onSave={(savedResults) => {
+              // This is a compatibility wrapper for the old onSave interface
+              if (onSaveComplete && projectId) {
+                onSaveComplete('temp-id', projectId);
+              }
+            }} 
+            userId={userId} 
+          />
           
           <div className='flex justify-end mt-4'>
             <SaveCalculationDialog
