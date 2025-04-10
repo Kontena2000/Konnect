@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -8,7 +9,7 @@ import { Toolbox } from '@/components/layout/Toolbox';
 import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
-import { Save, Undo, Redo, ZoomIn, ZoomOut, Grid3X3, Cube } from 'lucide-react';
+import { Save, Undo, Redo, ZoomIn, ZoomOut, Grid3X3 } from 'lucide-react';
 import { debouncedSave } from '@/services/layout';
 import layoutService, { Layout } from '@/services/layout';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
@@ -204,40 +205,38 @@ export default function LayoutEditorPage() {
   const handleSaveComplete = useCallback((newLayoutId: string) => {
     console.log('Save complete with new layout ID:', newLayoutId);
     
-    // Set the new layout ID in state
+    // Set the new layout ID in state first
     setLayoutId(newLayoutId);
     setHasUnsavedChanges(false);
     
-    // Update URL to include the layout ID without full page reload
-    // Use the current projectId from the URL to ensure consistency
+    // Get the current project ID from the URL
     const currentProjectId = router.query.id as string;
     
-    // Only update URL if we're still on the editor page
-    if (router.pathname.includes('/editor')) {
-      const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
-      console.log('Updating URL to:', newUrl);
+    // Construct the new URL with the layout ID
+    const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
+    console.log('Updating URL to:', newUrl);
+    
+    // Use router.push with shallow option to update URL without full page reload
+    router.push(newUrl, undefined, { 
+      shallow: true,
+      scroll: false
+    }).then(() => {
+      console.log('URL updated successfully');
       
-      // Use shallow routing to avoid full page reload
-      router.replace(newUrl, undefined, { shallow: true })
-        .then(() => {
-          console.log('URL updated successfully');
-          
-          // Show success toast after URL update
-          toast({
-            title: 'Success',
-            description: 'Layout saved successfully'
-          });
-        })
-        .catch(err => {
-          console.error('Error updating URL:', err);
-        });
-    } else {
-      // Just show success toast if we're not on the editor page
+      // Show success toast after URL update
       toast({
         title: 'Success',
         description: 'Layout saved successfully'
       });
-    }
+    }).catch(err => {
+      console.error('Error updating URL:', err);
+      
+      // Still show success toast even if URL update fails
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully, but URL could not be updated'
+      });
+    });
   }, [router, toast]);
   
   // Handle camera zoom
@@ -263,7 +262,7 @@ export default function LayoutEditorPage() {
     'ctrl+y': () => {
       if (canRedo) redoLastAction();
     },
-    'ctrl+s': (e) => {
+    'ctrl+s': (e: any) => {
       e.preventDefault();
       // Open save dialog
       document.getElementById('save-layout-button')?.click();
@@ -293,7 +292,7 @@ export default function LayoutEditorPage() {
                     onClick={() => setIs3DView(true)}
                     className={is3DView ? 'bg-primary/10' : ''}
                   >
-                    <Cube className="h-4 w-4" />
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4"><path d="m21 16-4 4-4-4"></path><path d="M17 20V4"></path><path d="m3 8 4-4 4 4"></path><path d="M7 4v16"></path></svg>
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent>3D View</TooltipContent>
