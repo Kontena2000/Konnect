@@ -147,21 +147,39 @@ const safeSerialize = (data: any): any => {
           return {};
         }
         try {
-          return JSON.parse(JSON.stringify(item));
+          return typeof item === 'object' ? JSON.parse(JSON.stringify(item)) : item;
         } catch (err) {
           console.warn('Error serializing array item:', err);
           return {};
         }
-      });
+      }).filter(Boolean); // Filter out any falsy values
     }
     
     // Handle objects
-    try {
-      return JSON.parse(JSON.stringify(data));
-    } catch (err) {
-      console.warn('Error serializing data, returning empty object:', err);
-      return {};
+    if (typeof data === 'object') {
+      try {
+        const result = {};
+        // Safely copy properties
+        Object.keys(data || {}).forEach(key => {
+          if (data[key] !== undefined && data[key] !== null) {
+            if (Array.isArray(data[key])) {
+              result[key] = safeSerialize(data[key]); // Recursively handle arrays
+            } else if (typeof data[key] === 'object') {
+              result[key] = safeSerialize(data[key]); // Recursively handle objects
+            } else {
+              result[key] = data[key]; // Direct assignment for primitives
+            }
+          }
+        });
+        return result;
+      } catch (err) {
+        console.warn('Error serializing object, returning empty object:', err);
+        return {};
+      }
     }
+    
+    // Return primitives as is
+    return data;
   } catch (error) {
     console.error('Error serializing data for Firestore:', error);
     throw new LayoutError('Failed to serialize data for Firestore', 'SERIALIZATION_FAILED', error);

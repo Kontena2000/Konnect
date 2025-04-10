@@ -224,7 +224,7 @@ export default function LayoutEditorPage() {
       // Use setTimeout to ensure the toast is shown before redirecting
       setTimeout(() => {
         // Redirect to the editor page for the new project with the new layout ID
-        window.location.href = `/dashboard/projects/${savedProjectId}/editor?layoutId=${newLayoutId}`;
+        router.push(`/dashboard/projects/${savedProjectId}/editor?layoutId=${newLayoutId}`);
       }, 500);
       return;
     }
