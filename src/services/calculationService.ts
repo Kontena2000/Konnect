@@ -125,7 +125,7 @@ export async function saveCalculationResult(
       const calculationData = {
         name: name || `${config.kwPerRack}kW ${config.coolingType} configuration`,
         description: `${config.totalRacks} racks at ${config.kwPerRack}kW per rack`,
-        userId: userId,
+        userId,
         projectId: projectId || null,
         createdAt: now,
         updatedAt: now,
