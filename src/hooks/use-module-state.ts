@@ -20,12 +20,15 @@ interface UseModuleStateProps {
   autoSave?: boolean;
 }
 
-export function useModuleState({
-  layoutId,
-  initialModules = [],
-  initialConnections = [],
-  autoSave = true
-}: UseModuleStateProps) {
+export function useModuleState(param?: UseModuleStateProps) {
+  // Provide default values if param is undefined
+  const {
+    layoutId,
+    initialModules = [],
+    initialConnections = [],
+    autoSave = true
+  } = param || {};
+
   const [modules, setModules] = useState<Module[]>(initialModules);
   const [connections, setConnections] = useState<Connection[]>(initialConnections);
   const [selectedModuleId, setSelectedModuleId] = useState<string | undefined>();
@@ -37,6 +40,47 @@ export function useModuleState({
     modules: initialModules, 
     connections: initialConnections 
   }));
+
+  // History management for undo/redo
+  const [history, setHistory] = useState<ModuleState[]>([{ modules, connections, hasChanges: false }]);
+  const [historyIndex, setHistoryIndex] = useState(0);
+  const [isUndoRedoAction, setIsUndoRedoAction] = useState(false);
+
+  // Save current state to history when modules or connections change
+  useEffect(() => {
+    if (isUndoRedoAction) {
+      setIsUndoRedoAction(false);
+      return;
+    }
+
+    const newState = { 
+      modules, 
+      connections, 
+      selectedModuleId, 
+      hasChanges 
+    };
+    
+    // Only add to history if something actually changed
+    const currentStateStr = JSON.stringify({ modules, connections });
+    const lastHistoryStateStr = JSON.stringify({ 
+      modules: history[historyIndex].modules, 
+      connections: history[historyIndex].connections 
+    });
+    
+    if (currentStateStr !== lastHistoryStateStr) {
+      // Remove any future history states if we're not at the end
+      const newHistory = history.slice(0, historyIndex + 1);
+      newHistory.push(newState);
+      
+      // Limit history size to prevent memory issues
+      if (newHistory.length > 50) {
+        newHistory.shift();
+      }
+      
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [modules, connections, selectedModuleId, hasChanges, history, historyIndex, isUndoRedoAction]);
 
   const saveToLayout = useCallback(async (modules: Module[], connections: Connection[]) => {
     if (!layoutId || !user) return;
@@ -104,17 +148,17 @@ export function useModuleState({
     return () => clearTimeout(saveTimer);
   }, [modules, connections, layoutId, autoSave, hasChanges, user, toast]);
 
-  const updateModule = useCallback((moduleId: string, updates: Partial<Module>) => {
-    setModules(prev => prev.map(module =>
-      module.id === moduleId ? { ...module, ...updates } : module
+  const updateModule = useCallback((module: Module) => {
+    setModules(prev => prev.map(m => 
+      m.id === module.id ? { ...m, ...module } : m
     ));
   }, []);
 
-  const addModule = useCallback((module: Module) => {
+  const addModule = useCallback((module: Module, addToHistory = true) => {
     setModules(prev => [...prev, module]);
   }, []);
 
-  const deleteModule = useCallback((moduleId: string) => {
+  const removeModule = useCallback((moduleId: string) => {
     setModules(prev => prev.filter(m => m.id !== moduleId));
     setConnections(prev => prev.filter(
       c => c.sourceModuleId !== moduleId && c.targetModuleId !== moduleId
@@ -122,23 +166,50 @@ export function useModuleState({
     setSelectedModuleId(prev => (prev === moduleId ? undefined : prev));
   }, []);
 
-  const addConnection = useCallback((connection: Connection) => {
+  const addConnection = useCallback((connection: Connection, addToHistory = true) => {
     setConnections(prev => [...prev, connection]);
   }, []);
 
-  const updateConnection = useCallback((connectionId: string, updates: Partial<Connection>) => {
-    setConnections(prev => prev.map(conn =>
-      conn.id === connectionId ? { ...conn, ...updates } : conn
-    ));
-  }, []);
-
-  const deleteConnection = useCallback((connectionId: string) => {
+  const removeConnection = useCallback((connectionId: string) => {
     setConnections(prev => prev.filter(c => c.id !== connectionId));
   }, []);
 
-  const selectModule = useCallback((moduleId: string | undefined) => {
-    setSelectedModuleId(moduleId);
+  const clearModules = useCallback(() => {
+    setModules([]);
+    setConnections([]);
+    setSelectedModuleId(undefined);
   }, []);
+
+  const undoLastAction = useCallback(() => {
+    if (historyIndex > 0) {
+      setIsUndoRedoAction(true);
+      const prevState = history[historyIndex - 1];
+      setModules(prevState.modules);
+      setConnections(prevState.connections);
+      setSelectedModuleId(prevState.selectedModuleId);
+      setHistoryIndex(historyIndex - 1);
+    }
+  }, [history, historyIndex]);
+
+  const redoLastAction = useCallback(() => {
+    if (historyIndex < history.length - 1) {
+      setIsUndoRedoAction(true);
+      const nextState = history[historyIndex + 1];
+      setModules(nextState.modules);
+      setConnections(nextState.connections);
+      setSelectedModuleId(nextState.selectedModuleId);
+      setHistoryIndex(historyIndex + 1);
+    }
+  }, [history, historyIndex]);
+
+  const resetHistory = useCallback(() => {
+    setHistory([{ modules, connections, hasChanges: false }]);
+    setHistoryIndex(0);
+  }, [modules, connections]);
+
+  // Computed properties for undo/redo
+  const canUndo = historyIndex > 0;
+  const canRedo = historyIndex < history.length - 1;
 
   const saveChanges = useCallback(async () => {
     if (!layoutId || !hasChanges || !user) return;
@@ -182,11 +253,15 @@ export function useModuleState({
     setSelectedModuleId,
     updateModule,
     addModule,
-    deleteModule,
+    removeModule,
     addConnection,
-    updateConnection,
-    deleteConnection,
-    selectModule,
+    removeConnection,
+    clearModules,
+    undoLastAction,
+    redoLastAction,
+    canUndo,
+    canRedo,
+    resetHistory,
     saveChanges
   };
 }
