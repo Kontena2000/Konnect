@@ -147,21 +147,27 @@ export function ModuleObject({
     if (meshRef.current) {
       // Update position
       if (module.position && Array.isArray(module.position) && module.position.length === 3) {
-        meshRef.current.position.set(module.position[0], module.position[1], module.position[2]);
+        // Ensure position values are numbers
+        const numPosition = module.position.map(Number) as [number, number, number];
+        meshRef.current.position.set(numPosition[0], numPosition[1], numPosition[2]);
       }
       
       // Update rotation
       if (module.rotation && Array.isArray(module.rotation) && module.rotation.length === 3) {
+        // Ensure rotation values are numbers
+        const numRotation = module.rotation.map(Number) as [number, number, number];
         meshRef.current.rotation.set(
-          module.rotation[0] * Math.PI / 180,
-          module.rotation[1] * Math.PI / 180,
-          module.rotation[2] * Math.PI / 180
+          numRotation[0] * Math.PI / 180,
+          numRotation[1] * Math.PI / 180,
+          numRotation[2] * Math.PI / 180
         );
       }
       
       // Update scale
       if (module.scale && Array.isArray(module.scale) && module.scale.length === 3) {
-        meshRef.current.scale.set(module.scale[0], module.scale[1], module.scale[2]);
+        // Ensure scale values are numbers
+        const numScale = module.scale.map(Number) as [number, number, number];
+        meshRef.current.scale.set(numScale[0], numScale[1], numScale[2]);
       }
       
       // Update shadow

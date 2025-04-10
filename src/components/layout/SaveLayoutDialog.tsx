@@ -113,6 +113,16 @@ export function SaveLayoutDialog({
         connections: layoutData.connections || []
       };
       
+      // Ensure all module positions and rotations are numbers
+      if (saveData.modules && Array.isArray(saveData.modules)) {
+        saveData.modules = saveData.modules.map(module => ({
+          ...module,
+          position: module.position.map(Number),
+          rotation: module.rotation.map(Number),
+          scale: module.scale.map(Number)
+        }));
+      }
+      
       console.log('Saving layout with data:', { 
         ...saveData, 
         modules: saveData.modules?.length || 0, 

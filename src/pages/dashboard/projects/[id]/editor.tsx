@@ -224,9 +224,17 @@ export default function LayoutEditorPage() {
     
     console.log('Auto-saving layout changes...');
     
+    // Ensure all module positions and rotations are numbers before saving
+    const modulesToSave = modules.map(module => ({
+      ...module,
+      position: module.position.map(Number) as [number, number, number],
+      rotation: module.rotation.map(Number) as [number, number, number],
+      scale: module.scale.map(Number) as [number, number, number]
+    }));
+    
     // Use debounced save to avoid too many Firestore writes
     debouncedSave(currentLayout.id, {
-      modules,
+      modules: modulesToSave,
       connections
     });
   }, [modules, connections, currentLayout, user]);

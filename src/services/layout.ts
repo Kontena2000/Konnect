@@ -148,26 +148,41 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     const firestore = ensureFirestore();
     const layoutRef = doc(firestore, 'layouts', layoutId);
     
-    // Ensure data is serializable for Firestore
-    const cleanData = safeSerialize(data);
+    // Create a deep copy of the data to avoid modifying the original
+    const dataCopy = JSON.parse(JSON.stringify(data));
     
     // Ensure all module positions and rotations are numbers
-    if (cleanData.modules && Array.isArray(cleanData.modules)) {
-      cleanData.modules = cleanData.modules.map((module: any) => ({
-        ...module,
-        position: module.position.map(Number),
-        rotation: module.rotation.map(Number),
-        scale: module.scale.map(Number)
-      }));
+    if (dataCopy.modules && Array.isArray(dataCopy.modules)) {
+      dataCopy.modules = dataCopy.modules.map((module: any) => {
+        // Ensure position values are numbers
+        if (module.position && Array.isArray(module.position)) {
+          module.position = module.position.map(Number);
+        }
+        
+        // Ensure rotation values are numbers
+        if (module.rotation && Array.isArray(module.rotation)) {
+          module.rotation = module.rotation.map(Number);
+        }
+        
+        // Ensure scale values are numbers
+        if (module.scale && Array.isArray(module.scale)) {
+          module.scale = module.scale.map(Number);
+        }
+        
+        return module;
+      });
       
       // Log modules and their positions/rotations for debugging
       console.log('Saving modules with positions/rotations:');
-      cleanData.modules.forEach((module: any) => {
+      dataCopy.modules.forEach((module: any) => {
         if (module.id) {
           console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
         }
       });
     }
+    
+    // Ensure data is serializable for Firestore
+    const cleanData = safeSerialize(dataCopy);
     
     await updateDoc(layoutRef, {
       ...cleanData,
