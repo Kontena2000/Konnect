@@ -287,33 +287,43 @@ export default function LayoutEditorPage() {
         
         // If layoutId is provided, fetch the layout
         if (layoutId) {
-          const layoutRef = doc(db, 'layouts', layoutId as string);
-          const layoutSnap = await getDoc(layoutRef);
-          
-          if (layoutSnap.exists()) {
-            const layoutData = {
-              id: layoutSnap.id,
-              ...layoutSnap.data()
-            } as any; // Cast to any to avoid TypeScript errors
+          try {
+            const layoutRef = doc(db, 'layouts', layoutId as string);
+            const layoutSnap = await getDoc(layoutRef);
             
-            // Verify this layout belongs to the current project
-            if (layoutData.projectId === projectId) {
-              setLayout(layoutData);
-              setCurrentLayout(layoutData);
+            if (layoutSnap.exists()) {
+              const layoutData = {
+                id: layoutSnap.id,
+                ...layoutSnap.data()
+              } as any; // Cast to any to avoid TypeScript errors
               
-              // Set modules and connections from layout data
-              if (layoutData.modules) {
-                setModules(layoutData.modules);
-              }
-              
-              if (layoutData.connections) {
-                setConnections(layoutData.connections);
+              // Verify this layout belongs to the current project
+              if (layoutData.projectId === projectId) {
+                setLayout(layoutData);
+                setCurrentLayout(layoutData);
+                
+                // Set modules and connections from layout data
+                if (layoutData.modules) {
+                  setModules(layoutData.modules);
+                }
+                
+                if (layoutData.connections) {
+                  setConnections(layoutData.connections);
+                }
+              } else {
+                console.error('Layout does not belong to this project:', {
+                  layoutId,
+                  layoutProjectId: layoutData.projectId,
+                  currentProjectId: projectId
+                });
+                setError('Layout does not belong to this project');
               }
             } else {
-              setError('Layout does not belong to this project');
+              setError('Layout not found');
             }
-          } else {
-            setError('Layout not found');
+          } catch (layoutError) {
+            console.error('Error fetching layout:', layoutError);
+            setError('Failed to load layout data');
           }
         }
       } catch (err) {

@@ -107,7 +107,7 @@ export function SaveLayoutDialog({
       // Prepare layout data
       const saveData = {
         ...layoutData,
-        projectId: selectedProjectId,
+        projectId: selectedProjectId, // Always use the selected project ID
         name: name.trim(),
         description: description || `Created on ${new Date().toLocaleDateString()}`,
         modules: layoutData.modules || [],
@@ -122,8 +122,9 @@ export function SaveLayoutDialog({
       
       // Save or update layout
       let layoutId;
+      
+      // If we're updating an existing layout in the same project
       if (layoutData.id && layoutData.projectId === selectedProjectId) {
-        // Update existing layout if we're saving to the same project
         try {
           await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
           layoutId = layoutData.id;
@@ -137,9 +138,18 @@ export function SaveLayoutDialog({
           throw new Error(updateError instanceof Error ? updateError.message : 'Failed to update layout');
         }
       } else {
-        // Create new layout if it's a new layout or we're saving to a different project
+        // Create new layout - either it's a new layout or we're saving to a different project
         try {
-          layoutId = await layoutService.createLayout(saveData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
+          // Always create a new layout when saving to a different project
+          const newLayoutData = {
+            projectId: selectedProjectId,
+            name: name.trim(),
+            description: description || `Created on ${new Date().toLocaleDateString()}`,
+            modules: layoutData.modules || [],
+            connections: layoutData.connections || []
+          };
+          
+          layoutId = await layoutService.createLayout(newLayoutData as Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>);
           console.log('New layout created successfully:', layoutId);
           toast({
             title: 'Success',

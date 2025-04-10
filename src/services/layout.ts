@@ -173,6 +173,15 @@ const layoutService = {
     try {
       const firestore = ensureFirestore();
       
+      // Verify the project exists
+      const projectRef = doc(firestore, 'projects', data.projectId);
+      const projectSnap = await getDoc(projectRef);
+      
+      if (!projectSnap.exists()) {
+        console.error('Project not found:', data.projectId);
+        throw new LayoutError('Project not found', 'PROJECT_NOT_FOUND');
+      }
+      
       // Ensure data is serializable for Firestore
       const cleanData = safeSerialize({
         ...data,
@@ -212,6 +221,13 @@ const layoutService = {
       }
 
       const layout = currentLayout.data();
+      
+      // Verify the projectId hasn't changed
+      if (data.projectId && data.projectId !== layout.projectId) {
+        console.error('Cannot change project ID of an existing layout');
+        throw new LayoutError('Cannot change project ID of an existing layout', 'INVALID_OPERATION');
+      }
+      
       const projectRef = doc(firestore, 'projects', layout.projectId);
       const projectSnap = await getDoc(projectRef);
       
@@ -374,9 +390,10 @@ const layoutService = {
         }
       }
 
+      // Always create a new layout with the specified project ID
       const newLayout = {
         ...layoutData,
-        projectId,
+        projectId, // Ensure we use the provided projectId
         name: layoutData.name || 'Untitled Layout',
         modules: layoutData.modules || [],
         connections: layoutData.connections || []
