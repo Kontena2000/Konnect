@@ -53,39 +53,102 @@ class LayoutError extends Error {
 }
 
 const validateLayout = (data: Partial<Layout>): boolean => {
-  if (!data.projectId) return false;
-  if (!data.name || data.name.trim().length === 0) return false;
+  if (!data.projectId) {
+    console.error('Layout validation failed: missing projectId');
+    return false;
+  }
+  if (!data.name || data.name.trim().length === 0) {
+    console.error('Layout validation failed: missing or empty name');
+    return false;
+  }
   return true;
 };
 
 const validateModuleData = (module: Partial<Module>): boolean => {
-  if (!module.type || !module.position || !module.rotation || !module.scale) return false;
-  if (!module.dimensions || !module.dimensions.length || !module.dimensions.width || !module.dimensions.height) return false;
-  return true;
+  try {
+    if (!module.type) {
+      console.error('Module validation failed: missing type');
+      return false;
+    }
+    if (!module.position || !Array.isArray(module.position) || module.position.length !== 3) {
+      console.error('Module validation failed: invalid position', module.position);
+      return false;
+    }
+    if (!module.rotation || !Array.isArray(module.rotation) || module.rotation.length !== 3) {
+      console.error('Module validation failed: invalid rotation', module.rotation);
+      return false;
+    }
+    if (!module.scale || !Array.isArray(module.scale) || module.scale.length !== 3) {
+      console.error('Module validation failed: invalid scale', module.scale);
+      return false;
+    }
+    if (!module.dimensions || 
+        typeof module.dimensions.length !== 'number' || 
+        typeof module.dimensions.width !== 'number' || 
+        typeof module.dimensions.height !== 'number') {
+      console.error('Module validation failed: invalid dimensions', module.dimensions);
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Module validation error:', error);
+    return false;
+  }
 };
 
 const validateConnectionData = (connection: Partial<Connection>): boolean => {
-  if (!connection.sourceModuleId || !connection.targetModuleId) return false;
-  if (!connection.sourcePoint || !connection.targetPoint || !connection.type) return false;
-  return true;
+  try {
+    if (!connection.sourceModuleId || !connection.targetModuleId) {
+      console.error('Connection validation failed: missing source or target module ID');
+      return false;
+    }
+    if (!connection.sourcePoint || !Array.isArray(connection.sourcePoint) || connection.sourcePoint.length !== 3) {
+      console.error('Connection validation failed: invalid sourcePoint', connection.sourcePoint);
+      return false;
+    }
+    if (!connection.targetPoint || !Array.isArray(connection.targetPoint) || connection.targetPoint.length !== 3) {
+      console.error('Connection validation failed: invalid targetPoint', connection.targetPoint);
+      return false;
+    }
+    if (connection.type === undefined) {
+      console.error('Connection validation failed: missing type');
+      return false;
+    }
+    return true;
+  } catch (error) {
+    console.error('Connection validation error:', error);
+    return false;
+  }
 };
 
 // Helper function to ensure Firestore is available
 const ensureFirestore = (): Firestore => {
   const firestore = db || getFirestoreSafely();
   if (!firestore) {
+    console.error('Firestore is not available');
     throw new LayoutError('Firestore is not available', 'FIRESTORE_UNAVAILABLE');
   }
   return firestore;
 };
 
+// Helper function to safely serialize data for Firestore
+const safeSerialize = (data: any): any => {
+  try {
+    return JSON.parse(JSON.stringify(data));
+  } catch (error) {
+    console.error('Error serializing data for Firestore:', error);
+    throw new LayoutError('Failed to serialize data for Firestore', 'SERIALIZATION_FAILED', error);
+  }
+};
+
 export const debouncedSave = debounce(async (layoutId: string, data: Partial<Layout>): Promise<void> => {
   try {
+    console.log('Debounced save triggered for layout:', layoutId);
     const firestore = ensureFirestore();
     const layoutRef = doc(firestore, 'layouts', layoutId);
     
     // Ensure data is serializable for Firestore
-    const cleanData = JSON.parse(JSON.stringify(data));
+    const cleanData = safeSerialize(data);
     
     await updateDoc(layoutRef, {
       ...cleanData,
@@ -93,13 +156,15 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     });
     console.log('Layout saved successfully:', layoutId);
   } catch (error) {
-    console.error('Error saving layout:', error);
-    throw new Error('Failed to save layout');
+    console.error('Error in debouncedSave:', error);
+    throw new Error('Failed to save layout: ' + (error instanceof Error ? error.message : String(error)));
   }
 }, 2000);
 
 const layoutService = {
   async createLayout(data: Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
+    console.log('Creating new layout with data:', { ...data, modules: data.modules?.length || 0, connections: data.connections?.length || 0 });
+    
     if (!validateLayout(data)) {
       console.error('Invalid layout data:', data);
       throw new LayoutError('Invalid layout data', 'VALIDATION_FAILED');
@@ -109,11 +174,11 @@ const layoutService = {
       const firestore = ensureFirestore();
       
       // Ensure data is serializable for Firestore
-      const cleanData = JSON.parse(JSON.stringify({
+      const cleanData = safeSerialize({
         ...data,
         modules: data.modules || [],
         connections: data.connections || []
-      }));
+      });
       
       const layoutRef = await addDoc(collection(firestore, 'layouts'), {
         ...cleanData,
@@ -125,17 +190,24 @@ const layoutService = {
       return layoutRef.id;
     } catch (error) {
       console.error('Failed to create layout:', error);
-      throw new LayoutError('Failed to create layout', 'CREATE_FAILED', error);
+      throw new LayoutError(
+        'Failed to create layout: ' + (error instanceof Error ? error.message : String(error)), 
+        'CREATE_FAILED', 
+        error
+      );
     }
   },
 
   async updateLayout(id: string, data: Partial<Layout>, user: AuthUser): Promise<void> {
+    console.log('Updating layout:', id, 'with data:', { ...data, modules: data.modules?.length || 0, connections: data.connections?.length || 0 });
+    
     try {
       const firestore = ensureFirestore();
       const layoutRef = doc(firestore, 'layouts', id);
       const currentLayout = await getDoc(layoutRef);
       
       if (!currentLayout.exists()) {
+        console.error('Layout not found:', id);
         throw new LayoutError('Layout not found', 'NOT_FOUND');
       }
 
@@ -144,13 +216,14 @@ const layoutService = {
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
+        console.error('Associated project not found:', layout.projectId);
         throw new LayoutError('Associated project not found', 'PROJECT_NOT_FOUND');
       }
 
       // Special case for ruud@kontena.eu - always has full access
       if (user.email === 'ruud@kontena.eu') {
         // Ensure data is serializable for Firestore
-        const cleanData = JSON.parse(JSON.stringify(data));
+        const cleanData = safeSerialize(data);
         
         await updateDoc(layoutRef, {
           ...cleanData,
@@ -162,18 +235,29 @@ const layoutService = {
 
       const project = projectSnap.data();
       if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
+        console.error('Unauthorized access to layout:', id, 'by user:', user.uid);
         throw new LayoutError('Unauthorized access', 'UNAUTHORIZED');
       }
 
-      if (data.modules?.some(m => !validateModuleData(m))) {
-        throw new LayoutError('Invalid module data', 'VALIDATION_FAILED');
+      // Validate modules and connections if they exist
+      if (data.modules) {
+        const invalidModules = data.modules.filter(m => !validateModuleData(m));
+        if (invalidModules.length > 0) {
+          console.error('Invalid module data found:', invalidModules);
+          throw new LayoutError('Invalid module data', 'VALIDATION_FAILED');
+        }
       }
-      if (data.connections?.some(c => !validateConnectionData(c))) {
-        throw new LayoutError('Invalid connection data', 'VALIDATION_FAILED');
+      
+      if (data.connections) {
+        const invalidConnections = data.connections.filter(c => !validateConnectionData(c));
+        if (invalidConnections.length > 0) {
+          console.error('Invalid connection data found:', invalidConnections);
+          throw new LayoutError('Invalid connection data', 'VALIDATION_FAILED');
+        }
       }
 
       // Ensure data is serializable for Firestore
-      const cleanData = JSON.parse(JSON.stringify(data));
+      const cleanData = safeSerialize(data);
       
       await updateDoc(layoutRef, {
         ...cleanData,
@@ -184,7 +268,11 @@ const layoutService = {
     } catch (error) {
       console.error('Failed to update layout:', error);
       if (error instanceof LayoutError) throw error;
-      throw new LayoutError('Failed to update layout', 'UPDATE_FAILED', error);
+      throw new LayoutError(
+        'Failed to update layout: ' + (error instanceof Error ? error.message : String(error)), 
+        'UPDATE_FAILED', 
+        error
+      );
     }
   },
 
@@ -299,7 +387,7 @@ const layoutService = {
       }
 
       // Ensure data is serializable for Firestore
-      const cleanData = JSON.parse(JSON.stringify(newLayout));
+      const cleanData = safeSerialize(newLayout);
       
       const layoutRef = await addDoc(collection(firestore, 'layouts'), {
         ...cleanData,

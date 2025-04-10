@@ -1,4 +1,3 @@
-
 import { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -87,12 +86,21 @@ export function Toolbox({
     if (currentLayout?.id) {
       // Auto-save the current layout
       if (modules.length > 0 || connections.length > 0) {
-        onSave();
-        toast({
-          title: 'Layout Saved',
-          description: 'Your layout changes have been saved automatically.',
-          duration: 2000
-        });
+        try {
+          onSave();
+          toast({
+            title: 'Layout Saved',
+            description: 'Your layout changes have been saved automatically.',
+            duration: 2000
+          });
+        } catch (error) {
+          console.error('Error auto-saving layout:', error);
+          toast({
+            variant: 'destructive',
+            title: 'Error',
+            description: 'Failed to save layout changes'
+          });
+        }
       } else {
         toast({
           title: 'Nothing to Save',

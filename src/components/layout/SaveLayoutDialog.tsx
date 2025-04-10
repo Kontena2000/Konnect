@@ -76,11 +76,28 @@ export function SaveLayoutDialog({
     
     return true;
   };
+
+  // Validate modules and connections
+  const validateData = () => {
+    // Check if modules is an array
+    if (layoutData.modules && !Array.isArray(layoutData.modules)) {
+      setError('Invalid modules data format');
+      return false;
+    }
+    
+    // Check if connections is an array
+    if (layoutData.connections && !Array.isArray(layoutData.connections)) {
+      setError('Invalid connections data format');
+      return false;
+    }
+    
+    return true;
+  };
   
   const handleSave = async () => {
     setError(null);
     
-    if (!validateForm()) {
+    if (!validateForm() || !validateData()) {
       return;
     }
     
@@ -97,7 +114,11 @@ export function SaveLayoutDialog({
         connections: layoutData.connections || []
       };
       
-      console.log('Saving layout with data:', JSON.stringify(saveData));
+      console.log('Saving layout with data:', { 
+        ...saveData, 
+        modules: saveData.modules?.length || 0, 
+        connections: saveData.connections?.length || 0 
+      });
       
       // Save or update layout
       let layoutId;
