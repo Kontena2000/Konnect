@@ -7,7 +7,8 @@ import {
   getDoc,
   getDocs,
   query,
-  where
+  where,
+  Timestamp
 } from 'firebase/firestore';
 import { getFirestoreSafely, ensureFirebaseInitializedAsync } from '@/lib/firebase';
 import { calculatorDebug } from './calculatorDebug';
@@ -112,6 +113,9 @@ export async function saveCalculationResult(
       // Continue anyway, as the collection will be created implicitly
     }
     
+    // Create a timestamp for createdAt and updatedAt
+    const now = Timestamp.now();
+    
     // Save the calculation
     try {
       console.log('[Matrix Calculator] Saving calculation to Firestore...');
@@ -121,10 +125,10 @@ export async function saveCalculationResult(
       const calculationData = {
         name: name || `${config.kwPerRack}kW ${config.coolingType} configuration`,
         description: `${config.totalRacks} racks at ${config.kwPerRack}kW per rack`,
-        userId,
+        userId: userId,
         projectId: projectId || null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
         kwPerRack: config.kwPerRack,
         coolingType: config.coolingType,
         totalRacks: config.totalRacks,

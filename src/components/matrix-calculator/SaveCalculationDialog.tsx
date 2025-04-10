@@ -14,7 +14,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { getFirestoreSafely } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
+import { collection, addDoc, serverTimestamp, doc, setDoc, Timestamp } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { ProjectSelector } from "@/components/common/ProjectSelector";
@@ -103,14 +103,17 @@ export function SaveCalculationDialog({
         // Continue anyway as the collection might already exist
       }
 
+      // Create a timestamp for createdAt and updatedAt
+      const now = Timestamp.now();
+
       // Prepare calculation data - ensure all data is serializable
       const calculationData = {
         name: name || `${config.kwPerRack}kW ${config.coolingType} configuration`,
         description: description || `${config.totalRacks} racks at ${config.kwPerRack}kW per rack`,
         userId: user.uid,
         projectId: selectedProjectId,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
+        createdAt: now,
+        updatedAt: now,
         kwPerRack: config.kwPerRack,
         coolingType: config.coolingType,
         totalRacks: config.totalRacks,

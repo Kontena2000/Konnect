@@ -455,7 +455,7 @@ export function CalculatorComponent({
       } else {
         toast({
           title: 'Error',
-          description: 'Failed to save calculation',
+          description: result.error || 'Failed to save calculation',
           variant: 'destructive'
         });
       }
