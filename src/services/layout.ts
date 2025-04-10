@@ -154,22 +154,24 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     // Ensure all module positions and rotations are numbers
     if (dataCopy.modules && Array.isArray(dataCopy.modules)) {
       dataCopy.modules = dataCopy.modules.map((module: any) => {
+        const moduleCopy = { ...module };
+        
         // Ensure position values are numbers
-        if (module.position && Array.isArray(module.position)) {
-          module.position = module.position.map(Number);
+        if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+          moduleCopy.position = moduleCopy.position.map(Number);
         }
         
         // Ensure rotation values are numbers
-        if (module.rotation && Array.isArray(module.rotation)) {
-          module.rotation = module.rotation.map(Number);
+        if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+          moduleCopy.rotation = moduleCopy.rotation.map(Number);
         }
         
         // Ensure scale values are numbers
-        if (module.scale && Array.isArray(module.scale)) {
-          module.scale = module.scale.map(Number);
+        if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+          moduleCopy.scale = moduleCopy.scale.map(Number);
         }
         
-        return module;
+        return moduleCopy;
       });
       
       // Log modules and their positions/rotations for debugging

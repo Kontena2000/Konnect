@@ -106,10 +106,12 @@ export function ModuleObject({
       
       // Get current rotation after change
       const newRotation: [number, number, number] = [
-        meshRef.current.rotation.x * 180 / Math.PI,
-        meshRef.current.rotation.y * 180 / Math.PI,
-        meshRef.current.rotation.z * 180 / Math.PI
+        Number(meshRef.current.rotation.x * 180 / Math.PI),
+        Number(meshRef.current.rotation.y * 180 / Math.PI),
+        Number(meshRef.current.rotation.z * 180 / Math.PI)
       ];
+      
+      console.log('Rotate left, new rotation:', newRotation);
       
       // Update module with new rotation
       onUpdate?.(module.id, {
@@ -127,10 +129,12 @@ export function ModuleObject({
       
       // Get current rotation after change
       const newRotation: [number, number, number] = [
-        meshRef.current.rotation.x * 180 / Math.PI,
-        meshRef.current.rotation.y * 180 / Math.PI,
-        meshRef.current.rotation.z * 180 / Math.PI
+        Number(meshRef.current.rotation.x * 180 / Math.PI),
+        Number(meshRef.current.rotation.y * 180 / Math.PI),
+        Number(meshRef.current.rotation.z * 180 / Math.PI)
       ];
+      
+      console.log('Rotate right, new rotation:', newRotation);
       
       // Update module with new rotation
       onUpdate?.(module.id, {

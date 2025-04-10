@@ -174,6 +174,7 @@ export default function LayoutEditorPage() {
           
           if (updates.rotation) {
             updatedModule.rotation = updates.rotation.map(Number) as [number, number, number];
+            console.log('Updated module rotation:', updatedModule.rotation);
           }
           
           if (updates.scale) {

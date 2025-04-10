@@ -115,12 +115,28 @@ export function SaveLayoutDialog({
       
       // Ensure all module positions and rotations are numbers
       if (saveData.modules && Array.isArray(saveData.modules)) {
-        saveData.modules = saveData.modules.map(module => ({
-          ...module,
-          position: module.position.map(Number),
-          rotation: module.rotation.map(Number),
-          scale: module.scale.map(Number)
-        }));
+        saveData.modules = saveData.modules.map(module => {
+          // Create a deep copy to avoid modifying the original
+          const moduleCopy = { ...module };
+          
+          // Ensure position values are numbers
+          if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+            moduleCopy.position = moduleCopy.position.map(Number);
+          }
+          
+          // Ensure rotation values are numbers
+          if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+            moduleCopy.rotation = moduleCopy.rotation.map(Number);
+            console.log(`Module ${moduleCopy.id} rotation before save:`, moduleCopy.rotation);
+          }
+          
+          // Ensure scale values are numbers
+          if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+            moduleCopy.scale = moduleCopy.scale.map(Number);
+          }
+          
+          return moduleCopy;
+        });
       }
       
       console.log('Saving layout with data:', { 
