@@ -56,6 +56,7 @@ export default function ProjectDetailsPage() {
   const [shareEmail, setShareEmail] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [duplicating, setDuplicating] = useState(false);
+  const [creatingLayout, setCreatingLayout] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -145,7 +146,7 @@ export default function ProjectDetailsPage() {
         description: formData.description,
         plotWidth: formData.plotWidth,
         plotLength: formData.plotLength
-      }, user.uid);  // Add the missing userId argument
+      }, user.uid);
       
       setProject(prev => prev ? {
         ...prev,
@@ -237,6 +238,7 @@ export default function ProjectDetailsPage() {
   const createNewLayout = async () => {
     if (!id) return;
     
+    setCreatingLayout(true);
     try {
       const layoutId = await layoutService.createLayout({
         projectId: id as string,
@@ -246,7 +248,12 @@ export default function ProjectDetailsPage() {
         connections: []
       });
       
-      router.push(`/dashboard/projects/${id}/editor?layout=${layoutId}`);
+      toast({
+        title: 'Success',
+        description: 'New layout created successfully'
+      });
+      
+      router.push(`/dashboard/projects/${id}/editor?layoutId=${layoutId}`);
     } catch (error) {
       console.error("Error creating layout:", error);
       toast({
@@ -254,6 +261,7 @@ export default function ProjectDetailsPage() {
         title: 'Error',
         description: 'Failed to create new layout'
       });
+      setCreatingLayout(false);
     }
   };
 
@@ -632,9 +640,19 @@ export default function ProjectDetailsPage() {
                 <Button 
                   className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
                   onClick={createNewLayout}
+                  disabled={creatingLayout}
                 >
-                  <Plus className="h-4 w-4" />
-                  Create New Layout
+                  {creatingLayout ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                      Creating...
+                    </>
+                  ) : (
+                    <>
+                      <Plus className="h-4 w-4" />
+                      Create New Layout
+                    </>
+                  )}
                 </Button>
               </div>
               <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
@@ -694,9 +712,19 @@ export default function ProjectDetailsPage() {
                     <Button 
                       className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow"
                       onClick={createNewLayout}
+                      disabled={creatingLayout}
                     >
-                      <Plus className='mr-2 h-4 w-4' />
-                      Create First Layout
+                      {creatingLayout ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Creating...
+                        </>
+                      ) : (
+                        <>
+                          <Plus className='mr-2 h-4 w-4' />
+                          Create First Layout
+                        </>
+                      )}
                     </Button>
                   </div>
                 )}
