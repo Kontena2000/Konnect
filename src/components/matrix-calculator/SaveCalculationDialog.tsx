@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { 
   Dialog, 
@@ -19,6 +19,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { ProjectSelector } from "@/components/common/ProjectSelector";
 import { CalculationOptions } from "@/services/matrixCalculatorService";
+import { useRouter } from 'next/router';
 
 interface SaveCalculationDialogProps {
   config: {
@@ -40,13 +41,22 @@ export function SaveCalculationDialog({
   trigger 
 }: SaveCalculationDialogProps) {
   const [open, setOpen] = useState(false);
-  const [name, setName] = useState("");
-  const [description, setDescription] = useState("");
-  const [selectedProjectId, setSelectedProjectId] = useState<string>("");
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [selectedProjectId, setSelectedProjectId] = useState<string>('');
   const [saving, setSaving] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
+  const router = useRouter();
+  
+  // If we're on a project page, pre-select that project
+  useEffect(() => {
+    const { id } = router.query;
+    if (id && typeof id === 'string') {
+      setSelectedProjectId(id);
+    }
+  }, [router.query]);
   
   const handleSave = async () => {
     if (!user) {

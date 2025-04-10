@@ -37,6 +37,7 @@ import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { formatDistanceToNow } from 'date-fns';
+import { ProjectCalculations } from '@/components/matrix-calculator/ProjectCalculations';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -509,7 +510,13 @@ export default function ProjectDetailsPage() {
             </Tabs>
           </div>
           
-          ... existing code ...
+          {/* Add the ProjectCalculations component to display saved calculations */}
+          <ProjectCalculations 
+            projectId={id as string} 
+            onLoadCalculation={(calculationId) => {
+              router.push(`/dashboard/matrix-calculator?projectId=${id}&calculationId=${calculationId}`);
+            }}
+          />
         </div>
       </div>
     </AppLayout>

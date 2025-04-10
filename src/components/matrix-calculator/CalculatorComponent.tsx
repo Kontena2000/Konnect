@@ -23,6 +23,7 @@ import { getFirestoreSafely } from '@/lib/firebase';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
 import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
+import { useRouter } from 'next/router';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -83,6 +84,15 @@ export function CalculatorComponent({
   const [preferredCoolingTypes, setPreferredCoolingTypes] = useState<string[]>(['air', 'dlc', 'hybrid', 'immersion']);
   
   const { toast } = useToast();
+  const router = useRouter();
+  
+  // Set projectId from URL if available
+  useEffect(() => {
+    const { projectId } = router.query;
+    if (projectId && typeof projectId === 'string') {
+      setProjectId(projectId);
+    }
+  }, [router.query]);
   
   // Check if Firebase is already initialized when component mounts
   useEffect(() => {
