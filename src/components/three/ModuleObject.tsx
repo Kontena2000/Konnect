@@ -165,6 +165,16 @@ export function ModuleObject({
           numRotation[1] * Math.PI / 180,
           numRotation[2] * Math.PI / 180
         );
+        
+        // Log rotation values for debugging
+        console.log(`Module ${module.id} rotation set to:`, 
+          numRotation, 
+          'radians:', [
+            numRotation[0] * Math.PI / 180,
+            numRotation[1] * Math.PI / 180,
+            numRotation[2] * Math.PI / 180
+          ]
+        );
       }
       
       // Update scale
@@ -177,7 +187,7 @@ export function ModuleObject({
       // Update shadow
       updateShadowTransform();
     }
-  }, [module.position, module.rotation, module.scale, updateShadowTransform]);
+  }, [module.position, module.rotation, module.scale, updateShadowTransform, module.id]);
 
   // Handle transform end - ensure position is saved
   const handleTransformEnd = useCallback(() => {

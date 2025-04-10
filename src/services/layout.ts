@@ -279,12 +279,27 @@ const layoutService = {
         
         // Ensure all module positions and rotations are numbers
         if (cleanData.modules && Array.isArray(cleanData.modules)) {
-          cleanData.modules = cleanData.modules.map((module: any) => ({
-            ...module,
-            position: module.position.map(Number),
-            rotation: module.rotation.map(Number),
-            scale: module.scale.map(Number)
-          }));
+          cleanData.modules = cleanData.modules.map((module: any) => {
+            // Create a deep copy to avoid modifying the original
+            const moduleCopy = { ...module };
+            
+            // Ensure position values are numbers
+            if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+              moduleCopy.position = moduleCopy.position.map(Number);
+            }
+            
+            // Ensure rotation values are numbers
+            if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+              moduleCopy.rotation = moduleCopy.rotation.map(Number);
+            }
+            
+            // Ensure scale values are numbers
+            if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+              moduleCopy.scale = moduleCopy.scale.map(Number);
+            }
+            
+            return moduleCopy;
+          });
           
           // Log modules and their positions/rotations for debugging
           console.log('Admin saving modules with positions/rotations:');
@@ -324,6 +339,7 @@ const layoutService = {
           if (module.rotation && Array.isArray(module.rotation)) {
             // Ensure rotation values are numbers, not strings
             module.rotation = module.rotation.map(Number);
+            console.log(`Saving module ${module.id} with rotation:`, module.rotation);
           }
           
           if (module.scale && Array.isArray(module.scale)) {

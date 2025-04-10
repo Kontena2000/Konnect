@@ -226,18 +226,40 @@ export default function LayoutEditorPage() {
     console.log('Auto-saving layout changes...');
     
     // Ensure all module positions and rotations are numbers before saving
-    const modulesToSave = modules.map(module => ({
-      ...module,
-      position: module.position.map(Number) as [number, number, number],
-      rotation: module.rotation.map(Number) as [number, number, number],
-      scale: module.scale.map(Number) as [number, number, number]
-    }));
+    const modulesToSave = modules.map(module => {
+      // Create a deep copy to avoid modifying the original
+      const moduleCopy = { ...module };
+      
+      // Ensure position values are numbers
+      if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
+      }
+      
+      // Ensure rotation values are numbers
+      if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
+        console.log(`Auto-save: Module ${moduleCopy.id} rotation:`, moduleCopy.rotation);
+      }
+      
+      // Ensure scale values are numbers
+      if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
+      }
+      
+      return moduleCopy;
+    });
     
-    // Use debounced save to avoid too many Firestore writes
-    debouncedSave(currentLayout.id, {
+    // Use immediate save instead of debounced save to ensure rotations are saved
+    layoutService.updateLayout(currentLayout.id, {
       modules: modulesToSave,
       connections
-    });
+    }, user as AuthUser)
+      .then(() => {
+        console.log('Layout auto-saved successfully');
+      })
+      .catch(error => {
+        console.error('Error auto-saving layout:', error);
+      });
   }, [modules, connections, currentLayout, user]);
 
   // Handle module deletion
