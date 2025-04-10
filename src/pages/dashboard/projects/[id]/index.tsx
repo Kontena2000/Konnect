@@ -38,6 +38,7 @@ import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { formatDistanceToNow } from 'date-fns';
+import { formatDistance } from 'date-fns';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -331,13 +332,82 @@ export default function ProjectDetailsPage() {
 
         <Separator />
 
+        {/* Project Details Card - Moved above tabs */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Project Information</CardTitle>
+            <CardDescription>Detailed information about this project</CardDescription>
+          </CardHeader>
+          <CardContent className='space-y-4'>
+            <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Project ID</h3>
+                <p className='font-mono text-sm'>{project.id}</p>
+              </div>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Created</h3>
+                <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
+              </div>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Last Updated</h3>
+                <p>{project.updatedAt ? new Date((project.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
+              </div>
+              
+              {/* Plot Information */}
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Plot Width</h3>
+                <p>{project.plotWidth ? `${project.plotWidth} m` : 'Not specified'}</p>
+              </div>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Plot Length</h3>
+                <p>{project.plotLength ? `${project.plotLength} m` : 'Not specified'}</p>
+              </div>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Plot Area</h3>
+                <p>{project.plotWidth && project.plotLength ? `${(project.plotWidth * project.plotLength).toFixed(2)} m²` : 'Not specified'}</p>
+              </div>
+              
+              {/* Client Information */}
+              {(project as any).client && (
+                <>
+                  <div>
+                    <h3 className='text-sm font-medium text-muted-foreground'>Client Name</h3>
+                    <p>{(project as any).client.name || 'Not specified'}</p>
+                  </div>
+                  <div>
+                    <h3 className='text-sm font-medium text-muted-foreground'>Client Contact</h3>
+                    <p>{(project as any).client.contact || 'Not specified'}</p>
+                  </div>
+                  {(project as any).client.email && (
+                    <div>
+                      <h3 className='text-sm font-medium text-muted-foreground'>Client Email</h3>
+                      <p>{(project as any).client.email}</p>
+                    </div>
+                  )}
+                </>
+              )}
+              
+              {/* Shared With */}
+              {project.sharedWith && project.sharedWith.length > 0 && (
+                <div className='md:col-span-3'>
+                  <h3 className='text-sm font-medium text-muted-foreground'>Shared With</h3>
+                  <div className='flex flex-wrap gap-2 mt-1'>
+                    {project.sharedWith.map((email: string) => (
+                      <span key={email} className='px-2 py-1 bg-muted rounded-md text-sm'>{email}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
           <div className='md:col-span-2 space-y-6'>
             <Tabs defaultValue="layouts">
               <TabsList>
                 <TabsTrigger value="layouts">Layouts</TabsTrigger>
                 <TabsTrigger value="calculations">Calculations</TabsTrigger>
-                <TabsTrigger value="details">Project Details</TabsTrigger>
               </TabsList>
               
               <TabsContent value="layouts" className="space-y-4">
@@ -460,52 +530,6 @@ export default function ProjectDetailsPage() {
                     </div>
                   )}
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="details">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Project Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className='space-y-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                      <div>
-                        <h3 className='text-sm font-medium'>Project Name</h3>
-                        <p>{project.name}</p>
-                      </div>
-                      <div>
-                        <h3 className='text-sm font-medium'>Created</h3>
-                        <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
-                      </div>
-                      <div className='md:col-span-2'>
-                        <h3 className='text-sm font-medium'>Description</h3>
-                        <p>{project.description || 'No description'}</p>
-                      </div>
-                      {(project as any).client && (
-                        <>
-                          <div>
-                            <h3 className='text-sm font-medium'>Client Name</h3>
-                            <p>{(project as any).client.name || 'Not specified'}</p>
-                          </div>
-                          <div>
-                            <h3 className='text-sm font-medium'>Client Contact</h3>
-                            <p>{(project as any).client.contact || 'Not specified'}</p>
-                          </div>
-                        </>
-                      )}
-                      {project.sharedWith && project.sharedWith.length > 0 && (
-                        <div className='md:col-span-2'>
-                          <h3 className='text-sm font-medium'>Shared With</h3>
-                          <ul className='list-disc list-inside'>
-                            {project.sharedWith.map((email: string) => (
-                              <li key={email}>{email}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           </div>
