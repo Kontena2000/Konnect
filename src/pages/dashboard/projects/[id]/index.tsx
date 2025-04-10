@@ -270,6 +270,7 @@ export default function ProjectDetailsPage() {
     try {
       console.log('Refreshing layouts for project:', id);
       const projectLayouts = await layoutService.getProjectLayouts(id as string);
+      console.log('Fetched updated layouts:', projectLayouts.length);
       setLayouts(projectLayouts);
     } catch (error) {
       console.error('Error refreshing layouts:', error);

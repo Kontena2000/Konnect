@@ -67,7 +67,7 @@ export function DeleteLayoutDialog({
         // and the UI has time to update
         setTimeout(() => {
           onDeleteComplete();
-        }, 300);
+        }, 500); // Increased timeout to ensure Firebase operations complete
       }
     } catch (error) {
       console.error('Error deleting layout:', error);
