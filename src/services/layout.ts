@@ -498,12 +498,14 @@ const layoutService = {
       });
       
       const firestore = ensureFirestore();
+      
+      // First, verify the target project exists
       const projectRef = doc(firestore, 'projects', projectId);
       const projectSnap = await getDoc(projectRef);
       
       if (!projectSnap.exists()) {
-        console.error('Project not found:', projectId);
-        throw new LayoutError('Project not found', 'PROJECT_NOT_FOUND');
+        console.error('Target project not found:', projectId);
+        throw new LayoutError('Target project not found', 'PROJECT_NOT_FOUND');
       }
 
       // Special case for ruud@kontena.eu - always has full access
@@ -513,14 +515,17 @@ const layoutService = {
         const project = projectSnap.data();
         // Check if user has access to the target project
         if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
-          console.error('Unauthorized access to project:', projectId, 'by user:', user.uid);
-          throw new LayoutError('Unauthorized access to project', 'UNAUTHORIZED');
+          console.error('Unauthorized access to target project:', projectId, 'by user:', user.uid);
+          throw new LayoutError('Unauthorized access to target project', 'UNAUTHORIZED');
         }
       }
 
+      // When saving to a different project, we don't need to check the original layout's project
+      // We're creating a new layout in the target project, not modifying the original
+
       // Create a new layout with the specified project ID
       const newLayout = {
-        projectId, // Ensure we use the provided projectId
+        projectId, // Use the target project ID
         name: layoutData.name || 'Untitled Layout',
         description: layoutData.description || `Created on ${new Date().toLocaleDateString()}`,
         modules: layoutData.modules || [],
@@ -534,17 +539,33 @@ const layoutService = {
 
       // Ensure all module positions and rotations are numbers
       if (newLayout.modules && Array.isArray(newLayout.modules)) {
-        newLayout.modules = newLayout.modules.map((module: any) => ({
-          ...module,
-          position: module.position.map(Number),
-          rotation: module.rotation.map(Number),
-          scale: module.scale.map(Number)
-        }));
+        newLayout.modules = newLayout.modules.map((module: any) => {
+          // Create a deep copy to avoid modifying the original
+          const moduleCopy = JSON.parse(JSON.stringify(module));
+          
+          // Ensure position values are numbers
+          if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
+            moduleCopy.position = moduleCopy.position.map(Number);
+          }
+          
+          // Ensure rotation values are numbers
+          if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
+            moduleCopy.rotation = moduleCopy.rotation.map(Number);
+          }
+          
+          // Ensure scale values are numbers
+          if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
+            moduleCopy.scale = moduleCopy.scale.map(Number);
+          }
+          
+          return moduleCopy;
+        });
       }
 
       // Ensure data is serializable for Firestore
       const cleanData = safeSerialize(newLayout);
       
+      // Create a new layout document in Firestore
       const layoutRef = await addDoc(collection(firestore, 'layouts'), {
         ...cleanData,
         createdAt: serverTimestamp(),
@@ -556,7 +577,11 @@ const layoutService = {
     } catch (error) {
       console.error('Failed to save layout to project:', error);
       if (error instanceof LayoutError) throw error;
-      throw new LayoutError('Failed to save layout to project', 'SAVE_FAILED', error);
+      throw new LayoutError(
+        'Failed to save layout to project: ' + (error instanceof Error ? error.message : String(error)), 
+        'SAVE_FAILED', 
+        error
+      );
     }
   },
 
