@@ -18,6 +18,7 @@ import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
+import { debouncedSave } from '@/services/layout';
 
 interface EditorState {
   modules: Module[];
@@ -174,6 +175,23 @@ export default function LayoutEditorPage() {
     });
   }, []);
 
+  // Auto-save when modules or connections change
+  useEffect(() => {
+    // Skip auto-save during undo/redo operations
+    if (isUndoingOrRedoing.current) return;
+    
+    // Skip if no current layout or user
+    if (!currentLayout?.id || !user) return;
+    
+    console.log('Auto-saving layout changes...');
+    
+    // Use debounced save to avoid too many Firestore writes
+    debouncedSave(currentLayout.id, {
+      modules,
+      connections
+    });
+  }, [modules, connections, currentLayout, user]);
+
   // Handle module deletion
   const handleModuleDelete = useCallback((moduleId: string) => {
     setModules(prev => prev.filter(module => module.id !== moduleId));
@@ -225,14 +243,27 @@ export default function LayoutEditorPage() {
 
     const startTime = performance.now();
     saveTimeout.current = setTimeout(() => {
-      // Implement save logic here
+      // Save current layout if available
+      if (currentLayout?.id && user) {
+        layoutService.updateLayout(currentLayout.id, {
+          modules,
+          connections
+        }, user as AuthUser)
+          .then(() => {
+            console.log('Layout saved manually:', currentLayout.id);
+          })
+          .catch(error => {
+            console.error('Error saving layout:', error);
+          });
+      }
+      
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
         operationDuration: duration,
         timestamp: Date.now()
       });
     }, 1000);
-  }, []);
+  }, [currentLayout, modules, connections, user]);
 
   // Cleanup timeouts
   useEffect(() => {
