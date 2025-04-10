@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/router";
 import { Button } from "@/components/ui/button";
@@ -98,18 +99,13 @@ export default function ViewerPage() {
           </Button>
         </div>
         
-        <div className="flex flex-1 gap-4 h-[calc(100vh-120px)]">
-          <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden">
-            <SceneContainer
-              modules={layout.modules || []}
-              connections={layout.connections || []}
-              readOnly={true}
-              controlsRef={controlsRef}
-            />
-          </div>
-          
-          <div className="w-80 shrink-0">
-          </div>
+        <div className="flex-1 relative bg-gray-100 rounded-lg overflow-hidden h-[calc(100vh-120px)]">
+          <SceneContainer
+            modules={layout.modules || []}
+            connections={layout.connections || []}
+            readOnly={true}
+            controlsRef={controlsRef}
+          />
         </div>
       </div>
     </AppLayout>
