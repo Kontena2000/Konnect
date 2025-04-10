@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -95,6 +94,7 @@ export function SaveLayoutDialog({
     return true;
   };
   
+  // Handle save operation
   const handleSave = async () => {
     setError(null);
     
@@ -148,9 +148,10 @@ export function SaveLayoutDialog({
       
       // Save or update layout
       let layoutId;
+      let isSameProject = layoutData.projectId === selectedProjectId;
       
       // If we're updating an existing layout in the same project
-      if (layoutData.id && layoutData.projectId === selectedProjectId) {
+      if (layoutData.id && isSameProject) {
         try {
           console.log('Updating existing layout in the same project:', layoutData.id);
           await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
@@ -184,7 +185,7 @@ export function SaveLayoutDialog({
           // Show success toast
           toast({
             title: 'Success',
-            description: 'New layout created successfully'
+            description: isSameProject ? 'New layout created successfully' : 'Layout saved to different project successfully'
           });
         } catch (createError) {
           console.error('Error creating layout:', createError);
@@ -192,16 +193,16 @@ export function SaveLayoutDialog({
         }
       }
       
-      // Close dialog
+      // Close dialog first
       setOpen(false);
       
-      // Call the callback with the new layout ID
+      // Call the callback with the new layout ID after a short delay
       if (onSaveComplete && layoutId) {
         console.log('Calling onSaveComplete with layoutId:', layoutId);
         // Use a small delay to ensure dialog is closed first
         setTimeout(() => {
           onSaveComplete(layoutId);
-        }, 100);
+        }, 300);
       }
       
     } catch (error) {

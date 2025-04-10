@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import Head from 'next/head';
@@ -216,8 +215,8 @@ export default function LayoutEditorPage() {
     const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
     console.log('Updating URL to:', newUrl);
     
-    // Use router.push with shallow option to update URL without full page reload
-    router.push(newUrl, undefined, { 
+    // Use router.replace instead of push to avoid adding to history stack
+    router.replace(newUrl, undefined, { 
       shallow: true,
       scroll: false
     }).then(() => {
