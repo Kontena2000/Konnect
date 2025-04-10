@@ -49,6 +49,8 @@ export function DeleteLayoutDialog({
     try {
       setDeleting(true);
       setShowLoadingDialog(true);
+      setOpen(false); // Close the confirmation dialog
+      
       console.log(`Attempting to delete layout: ${layoutId} (${layoutName})`);
       
       await layoutService.deleteLayout(layoutId, user as AuthUser);
@@ -61,8 +63,6 @@ export function DeleteLayoutDialog({
       if (onDeleteComplete) {
         onDeleteComplete();
       }
-      
-      setOpen(false);
     } catch (error) {
       console.error('Error deleting layout:', error);
       
@@ -111,6 +111,7 @@ export function DeleteLayoutDialog({
   
   return (
     <>
+      {/* Loading dialog that appears during deletion process */}
       <LoadingDialog 
         open={showLoadingDialog} 
         title='Deleting Layout' 
