@@ -1,23 +1,17 @@
 
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
-import { Card } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Ruler, Eye, MessageSquare, Camera } from "lucide-react";
-import { SceneContainer } from "@/components/three/SceneContainer";
+import { ArrowLeft, Loader2 } from "lucide-react";
 import { Layout } from "@/services/layout";
 import layoutService from "@/services/layout";
-import { ViewControls } from "@/components/viewer/ViewControls";
-import { ViewMeasurements } from "@/components/viewer/ViewMeasurements";
-import { ViewComments } from "@/components/viewer/ViewComments";
 
 export default function ViewerPage() {
   const router = useRouter();
   const { id } = router.query;
-  const controlsRef = useRef<any>(null);
   
   const [layout, setLayout] = useState<Layout | null>(null);
-  const [activeView, setActiveView] = useState<"normal" | "measure" | "comment">("normal");
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -37,71 +31,75 @@ export default function ViewerPage() {
     loadLayout();
   }, [id]);
 
+  const handleBackToProject = () => {
+    if (layout && layout.projectId) {
+      router.push(`/dashboard/projects/${layout.projectId}`);
+    } else {
+      router.push("/dashboard/projects");
+    }
+  };
+
   if (loading) {
-    return <div>Loading...</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <div className="flex items-center gap-2">
+          <Loader2 className="h-6 w-6 animate-spin" />
+          <p>Loading layout...</p>
+        </div>
+      </div>
+    );
   }
 
   if (!layout) {
-    return <div>Layout not found</div>;
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle>Layout Not Found</CardTitle>
+            <CardDescription>
+              The layout you are looking for could not be found.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <Button onClick={() => router.push("/dashboard/projects")}>
+              <ArrowLeft className="mr-2 h-4 w-4" />
+              Back to Projects
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
-
-  // No-op handler for onDropPoint in view mode
-  const handleDropPoint = (point: [number, number, number]) => {
-    // This function is intentionally empty since we're in read-only mode
-  };
 
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold">{layout.name}</h1>
-            <div className="flex items-center gap-2">
-              <Button
-                variant={activeView === "normal" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setActiveView("normal")}
+        <Card className="w-full max-w-4xl mx-auto">
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle className="text-2xl font-bold">{layout.name}</CardTitle>
+                <CardDescription>
+                  {layout.description || "No description available"}
+                </CardDescription>
+              </div>
+              <Button 
+                variant="outline" 
+                onClick={handleBackToProject}
               >
-                <Eye className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={activeView === "measure" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setActiveView("measure")}
-              >
-                <Ruler className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={activeView === "comment" ? "default" : "outline"}
-                size="icon"
-                onClick={() => setActiveView("comment")}
-              >
-                <MessageSquare className="h-4 w-4" />
-              </Button>
-              <Button variant="outline" size="icon">
-                <Camera className="h-4 w-4" />
+                <ArrowLeft className="mr-2 h-4 w-4" />
+                Back to Project
               </Button>
             </div>
-          </div>
-
-          <div className="grid grid-cols-[1fr_300px] gap-4">
-            <Card className="h-[800px]">
-              <SceneContainer
-                modules={layout.modules}
-                connections={layout.connections}
-                readOnly={true}
-                onDropPoint={handleDropPoint}
-                controlsRef={controlsRef}
-              />
-            </Card>
-
-            <div className="space-y-4">
-              <ViewControls />
-              {activeView === "measure" && <ViewMeasurements />}
-              {activeView === "comment" && <ViewComments layoutId={layout.id} />}
+          </CardHeader>
+          <CardContent>
+            <div className="text-center py-8">
+              <p className="text-muted-foreground">
+                This is a simplified view of the layout details.
+              </p>
             </div>
-          </div>
-        </div>
+          </CardContent>
+        </Card>
       </div>
     </div>
   );
