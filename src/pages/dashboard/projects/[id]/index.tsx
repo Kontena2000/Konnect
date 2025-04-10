@@ -40,7 +40,7 @@ import { formatDistanceToNow } from 'date-fns';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
-  const { id } = router.query;
+  const { id, tab } = router.query;
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -60,12 +60,18 @@ export default function ProjectDetailsPage() {
     plotLength: 0
   });
   
-  const [calculationsRefreshTrigger, setCalculationsRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('layouts');
+
+  // Set active tab from URL query parameter if available
+  useEffect(() => {
+    if (tab && typeof tab === 'string') {
+      setActiveTab(tab);
+    }
+  }, [tab]);
 
   // Refresh calculations function with better error handling and logging
   const refreshCalculations = useCallback(async () => {
-    if (!id) return;
+    if (!id || !user) return;
     
     try {
       console.log('Refreshing calculations for project:', id);
@@ -123,7 +129,7 @@ export default function ProjectDetailsPage() {
         description: 'Failed to refresh calculations'
       });
     }
-  }, [id, toast]);
+  }, [id, user, toast]);
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -175,7 +181,7 @@ export default function ProjectDetailsPage() {
     if (activeTab === 'calculations') {
       refreshCalculations();
     }
-  }, [activeTab, refreshCalculations, calculationsRefreshTrigger]);
+  }, [activeTab, refreshCalculations]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;

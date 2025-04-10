@@ -13,8 +13,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { db, getFirestoreSafely } from "@/lib/firebase";
-import { collection, addDoc, serverTimestamp } from "firebase/firestore";
+import { getFirestoreSafely } from "@/lib/firebase";
+import { collection, addDoc, serverTimestamp, doc, setDoc } from "firebase/firestore";
 import { useAuth } from "@/contexts/AuthContext";
 import { Loader2 } from "lucide-react";
 import { ProjectSelector } from "@/components/common/ProjectSelector";
@@ -88,6 +88,19 @@ export function SaveCalculationDialog({
       const safeDb = getFirestoreSafely();
       if (!safeDb) {
         throw new Error('Firestore is not available');
+      }
+
+      // First, ensure the matrix_calculator/user_configurations document exists
+      try {
+        const configsRef = doc(safeDb, 'matrix_calculator', 'user_configurations');
+        await setDoc(configsRef, {
+          created: serverTimestamp(),
+          description: 'User calculation configurations'
+        }, { merge: true });
+        console.log('Ensured user_configurations document exists');
+      } catch (error) {
+        console.error('Error ensuring user_configurations document exists:', error);
+        // Continue anyway as the collection might already exist
       }
 
       // Prepare calculation data - ensure all data is serializable
