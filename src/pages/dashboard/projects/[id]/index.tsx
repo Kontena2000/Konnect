@@ -523,7 +523,7 @@ export default function ProjectDetailsPage() {
                       <AlertDialogDescription>
                         This action cannot be undone. This will permanently delete the project
                         and all associated layouts and calculations.
-                      </DialogDialogDescription>
+                      </AlertDialogDescription>
                     </AlertDialogHeader>
                     <AlertDialogFooter>
                       <AlertDialogCancel>Cancel</AlertDialogCancel>
