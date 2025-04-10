@@ -46,6 +46,33 @@ export default function LayoutEditorPage() {
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
   
+  // Refresh layouts when needed
+  const refreshLayouts = useCallback(async () => {
+    if (!projectId || !user) return;
+    
+    try {
+      console.log('Refreshing layouts for project:', projectId);
+      const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
+      setLayouts(projectLayouts);
+      
+      // If current layout was deleted, select another one
+      if (currentLayout && !projectLayouts.some(l => l.id === currentLayout.id)) {
+        console.log('Current layout was deleted, selecting another one');
+        if (projectLayouts.length > 0) {
+          handleLayoutChange(projectLayouts[0]);
+        } else {
+          // No layouts left, create empty state
+          setCurrentLayout(null);
+          setModules([]);
+          setConnections([]);
+          router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
+        }
+      }
+    } catch (error) {
+      console.error('Error refreshing layouts:', error);
+    }
+  }, [projectId, user, currentLayout, handleLayoutChange, router]);
+
   // Handle save layout
   const handleSaveLayout = useCallback((layoutId: string) => {
     // Refresh layouts list
@@ -397,6 +424,7 @@ export default function LayoutEditorPage() {
                     currentLayout={currentLayout}
                     onLayoutChange={handleLayoutChange}
                     onLayoutCreate={handleLayoutCreate}
+                    onDeleteComplete={refreshLayouts}
                   />
                 </div>
                 

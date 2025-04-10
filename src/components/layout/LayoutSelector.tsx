@@ -17,6 +17,7 @@ interface LayoutSelectorProps {
   currentLayout: Layout | null;
   onLayoutChange: (layout: Layout) => void;
   onLayoutCreate: (layout: Layout) => void;
+  onDeleteComplete?: () => void;
 }
 
 export function LayoutSelector({
@@ -24,7 +25,8 @@ export function LayoutSelector({
   layouts,
   currentLayout,
   onLayoutChange,
-  onLayoutCreate
+  onLayoutCreate,
+  onDeleteComplete
 }: LayoutSelectorProps) {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newLayoutName, setNewLayoutName] = useState("");
@@ -84,24 +86,29 @@ export function LayoutSelector({
 
   const handleDeleteComplete = async () => {
     try {
-      // Refresh layouts after deletion
-      const updatedLayouts = await layoutService.getProjectLayouts(projectId);
-      
-      // If the current layout was deleted, select another one if available
-      if (currentLayout && !updatedLayouts.some(l => l.id === currentLayout.id)) {
-        if (updatedLayouts.length > 0) {
-          onLayoutChange(updatedLayouts[0]);
-        } else {
-          // No layouts left, create empty state
-          onLayoutChange({
-            id: '',
-            projectId,
-            name: '',
-            modules: [],
-            connections: [],
-            createdAt: new Date(),
-            updatedAt: new Date()
-          });
+      // Call parent's onDeleteComplete if provided
+      if (onDeleteComplete) {
+        onDeleteComplete();
+      } else {
+        // Fallback: refresh layouts after deletion
+        const updatedLayouts = await layoutService.getProjectLayouts(projectId);
+        
+        // If the current layout was deleted, select another one if available
+        if (currentLayout && !updatedLayouts.some(l => l.id === currentLayout.id)) {
+          if (updatedLayouts.length > 0) {
+            onLayoutChange(updatedLayouts[0]);
+          } else {
+            // No layouts left, create empty state
+            onLayoutChange({
+              id: '',
+              projectId,
+              name: '',
+              modules: [],
+              connections: [],
+              createdAt: new Date(),
+              updatedAt: new Date()
+            });
+          }
         }
       }
       
