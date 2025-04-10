@@ -23,7 +23,7 @@ export default function ViewerPage() {
         try {
           // Pass the user to getLayout to handle authentication
           const layoutData = await layoutService.getLayout(id as string, user || undefined);
-          console.log("Layout data loaded:", layoutData ? "success" : "null");
+          console.log("Layout data loaded:", layoutData ? "success" : "null", layoutData);
           setLayout(layoutData);
           if (!layoutData) {
             setError("Layout not found or you do not have permission to view it.");
@@ -80,6 +80,29 @@ export default function ViewerPage() {
     );
   }
 
+  // Format date for display
+  const formatDate = (date: any) => {
+    if (!date) return "Unknown";
+    
+    // Handle Firestore timestamp
+    if (date && typeof date === "object" && "seconds" in date) {
+      return new Date(date.seconds * 1000).toLocaleString();
+    }
+    
+    // Handle Date object
+    if (date instanceof Date) {
+      return date.toLocaleString();
+    }
+    
+    // Try to parse string date
+    try {
+      return new Date(date).toLocaleString();
+    } catch (e) {
+      console.error("Error formatting date:", e);
+      return "Unknown date format";
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto p-4">
@@ -110,7 +133,7 @@ export default function ViewerPage() {
                 </div>
                 <div>
                   <h3 className="text-sm font-medium">Last Updated</h3>
-                  <p>{layout.updatedAt ? new Date(layout.updatedAt).toLocaleString() : "Unknown"}</p>
+                  <p>{formatDate(layout.updatedAt)}</p>
                 </div>
                 <div>
                   <h3 className="text-sm font-medium">Modules</h3>
