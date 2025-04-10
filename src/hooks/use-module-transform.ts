@@ -105,7 +105,19 @@ export function useModuleTransform({
           z: snappedPosition.z,
           duration: 0.1,
           ease: 'power1.out',
-          onUpdate: updateShadowTransform
+          onUpdate: updateShadowTransform,
+          onComplete: () => {
+            // Always update position after animation completes
+            if (onUpdate && meshRef.current) {
+              onUpdate({
+                position: [
+                  meshRef.current.position.x,
+                  meshRef.current.position.y,
+                  meshRef.current.position.z
+                ]
+              });
+            }
+          }
         });
         
         position.copy(snappedPosition);

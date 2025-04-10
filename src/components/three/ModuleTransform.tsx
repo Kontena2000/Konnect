@@ -29,9 +29,9 @@ export function ModuleTransform({
       onMouseUp={onTransformEnd}
       onChange={onUpdate}
       onObjectChange={onUpdate} // Ensure position updates are captured during transformation
-      onDraggingChange={(event) => {
+      onUpdate={(e) => {
         // This ensures we capture the end of transform operations
-        if (!event.value && onTransformEnd) {
+        if (e.type === "dragging-changed" && !e.value && onTransformEnd) {
           onTransformEnd();
         }
       }}

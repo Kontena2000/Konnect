@@ -305,7 +305,7 @@ export function ModuleObject({
                 meshRef.current.scale.z
               ];
               
-              // Always update position, rotation, and scale in real-time during transform
+              // Update position in real-time during transform
               onUpdate?.(module.id, {
                 position: currentPosition,
                 rotation: currentRotation,

@@ -154,7 +154,7 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     // Log modules and their positions/rotations for debugging
     if (cleanData.modules && Array.isArray(cleanData.modules)) {
       console.log('Saving modules with positions/rotations:');
-      cleanData.modules.forEach(module => {
+      cleanData.modules.forEach((module: any) => {
         if (module.id) {
           console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
         }
@@ -255,7 +255,7 @@ const layoutService = {
         // Log modules and their positions/rotations for debugging
         if (cleanData.modules && Array.isArray(cleanData.modules)) {
           console.log('Admin saving modules with positions/rotations:');
-          cleanData.modules.forEach(module => {
+          cleanData.modules.forEach((module: any) => {
             if (module.id) {
               console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
             }
@@ -286,7 +286,7 @@ const layoutService = {
         
         // Log modules and their positions/rotations for debugging
         console.log('Saving modules with positions/rotations:');
-        data.modules.forEach(module => {
+        data.modules.forEach((module: any) => {
           if (module.id) {
             console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
           }
