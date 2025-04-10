@@ -185,7 +185,7 @@ class ModelImporterService {
       return response.data;
     } catch (error) {
       console.error(`Error downloading model ${modelId}:`, error);
-      throw new Error(`Failed to download model: ${error.message}`);
+      throw new Error(`Failed to download model: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

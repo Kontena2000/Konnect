@@ -89,6 +89,7 @@ export function ProjectCalculations({
   useEffect(() => {
     if (!projectId) return;
     
+    console.log('Loading calculations for project ID:', projectId, 'refreshTrigger:', refreshTrigger);
     loadCalculations();
   }, [projectId, refreshTrigger, loadCalculations]);
 

@@ -338,6 +338,13 @@ export default function ProjectDetailsPage() {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
   };
 
+  // Add this useEffect to refresh calculations when tab changes to 'calculations'
+  useEffect(() => {
+    if (activeTab === 'calculations') {
+      refreshCalculations();
+    }
+  }, [activeTab, refreshCalculations]);
+
   if (loading) {
     return (
       <AppLayout>
