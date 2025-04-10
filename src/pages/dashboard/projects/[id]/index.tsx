@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -357,62 +358,7 @@ export default function ProjectDetailsPage() {
                 <CardTitle>Project Information</CardTitle>
                 <CardDescription>Detailed information about this project</CardDescription>
               </div>
-              <Button
-                onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
-                className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
-              >
-                <Edit className="mr-2 h-4 w-4" />
-                Open Editor
-              </Button>
-            </div>
-          </CardHeader>
-          <CardContent className="space-y-6 pt-6">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Project Name</h3>
-                <p className="font-medium">{project.name}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
-                <p>{project.description || 'No description'}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
-                <Badge variant="outline" className={`${
-                  project.status === 'completed' ? 'bg-green-100 text-green-800' : 
-                  project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
-                  'bg-yellow-100 text-yellow-800'
-                }`}>
-                  {project.status || 'Planning'}
-                </Badge>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Created</h3>
-                <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
-              </div>
-              <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Last Updated</h3>
-                <p>{project.updatedAt ? new Date((project.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
-              </div>
-              
-              {/* Shared With */}
-              {project.sharedWith && project.sharedWith.length > 0 && (
-                <div className="md:col-span-3">
-                  <h3 className="text-sm font-medium text-muted-foreground">Shared With</h3>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {project.sharedWith.map((email: string) => (
-                      <span key={email} className="px-2 py-1 bg-muted rounded-md text-sm">{email}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Project Actions */}
-            <Separator className='my-6' />
-            <div>
-              <h3 className='text-lg font-medium mb-4'>Project Actions</h3>
-              <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+              <div className="flex items-center gap-2">
                 <Dialog>
                   <DialogTrigger asChild>
                     <Button 
@@ -495,6 +441,48 @@ export default function ProjectDetailsPage() {
                   </AlertDialogContent>
                 </AlertDialog>
               </div>
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6 pt-6">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Project Name</h3>
+                <p className="font-medium">{project.name}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Description</h3>
+                <p>{project.description || 'No description'}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Status</h3>
+                <Badge variant="outline" className={`${
+                  project.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                  project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {project.status || 'Planning'}
+                </Badge>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Created</h3>
+                <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
+              </div>
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground">Last Updated</h3>
+                <p>{project.updatedAt ? new Date((project.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
+              </div>
+              
+              {/* Shared With */}
+              {project.sharedWith && project.sharedWith.length > 0 && (
+                <div className="md:col-span-3">
+                  <h3 className="text-sm font-medium text-muted-foreground">Shared With</h3>
+                  <div className="flex flex-wrap gap-2 mt-1">
+                    {project.sharedWith.map((email: string) => (
+                      <span key={email} className="px-2 py-1 bg-muted rounded-md text-sm">{email}</span>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>
