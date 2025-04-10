@@ -1,4 +1,5 @@
-import { useEffect, useState, useCallback } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
@@ -34,13 +35,13 @@ import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
 import { useToast } from "@/hooks/use-toast";
 import { getFirestoreSafely } from "@/lib/firebase";
-import { collection, query, where, getDocs, orderBy } from "firebase/firestore";
+import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { formatDistanceToNow } from 'date-fns';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
-  const { id, tab } = router.query;
+  const { id } = router.query;
   const { user } = useAuth();
   const { toast } = useToast();
   
@@ -59,84 +60,12 @@ export default function ProjectDetailsPage() {
     plotWidth: 0,
     plotLength: 0
   });
-  
-  const [activeTab, setActiveTab] = useState('layouts');
-
-  // Set active tab from URL query parameter if available
-  useEffect(() => {
-    if (tab && typeof tab === 'string') {
-      setActiveTab(tab);
-    }
-  }, [tab]);
-
-  // Refresh calculations function with better error handling and logging
-  const refreshCalculations = useCallback(async () => {
-    if (!id || !user) return;
-    
-    try {
-      console.log('Refreshing calculations for project:', id);
-      const db = getFirestoreSafely();
-      if (!db) {
-        console.error('Firestore not available');
-        toast({
-          variant: 'destructive',
-          title: 'Error',
-          description: 'Could not connect to database'
-        });
-        return;
-      }
-      
-      // Create a direct reference to the configs subcollection
-      const calculationsRef = collection(db, 'matrix_calculator', 'user_configurations', 'configs');
-      const calculationsQuery = query(
-        calculationsRef,
-        where('projectId', '==', id),
-        orderBy('createdAt', 'desc')
-      );
-      
-      const calculationsSnapshot = await getDocs(calculationsQuery);
-      console.log(`Found ${calculationsSnapshot.docs.length} calculations for project ${id}`);
-      
-      const calculationsData = calculationsSnapshot.docs.map(doc => {
-        const data = doc.data();
-        // Ensure we have a valid date object for createdAt
-        let createdAt;
-        try {
-          createdAt = data.createdAt?.toDate ? data.createdAt.toDate() : new Date();
-        } catch (e) {
-          console.error('Error converting timestamp:', e);
-          createdAt = new Date();
-        }
-        
-        return {
-          id: doc.id,
-          ...data,
-          createdAt
-        };
-      });
-      
-      console.log('Calculations data:', calculationsData);
-      setCalculations(calculationsData);
-      
-      if (calculationsData.length > 0) {
-        console.log('First calculation:', calculationsData[0]);
-      }
-    } catch (error) {
-      console.error('Error refreshing calculations:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to refresh calculations'
-      });
-    }
-  }, [id, user, toast]);
 
   useEffect(() => {
     const loadProjectData = async () => {
       if (!id || !user) return;
       
       try {
-        setLoading(true);
         const projectData = await projectService.getProject(id as string);
         if (!projectData) {
           toast({
@@ -160,7 +89,26 @@ export default function ProjectDetailsPage() {
         setLayouts(projectLayouts);
 
         // Fetch calculations for this project
-        await refreshCalculations();
+        try {
+          const db = getFirestoreSafely();
+          if (!db) {
+            console.error('Firestore not available');
+            return;
+          }
+          
+          const calculationsQuery = query(
+            collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+            where('projectId', '==', id)
+          );
+          const calculationsSnapshot = await getDocs(calculationsQuery);
+          const calculationsData = calculationsSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data()
+          }));
+          setCalculations(calculationsData);
+        } catch (error) {
+          console.error('Error fetching calculations:', error);
+        }
       } catch (error) {
         console.error("Error loading project:", error);
         toast({
@@ -174,14 +122,7 @@ export default function ProjectDetailsPage() {
     };
     
     loadProjectData();
-  }, [id, user, router, toast, refreshCalculations]);
-
-  // Add this useEffect to refresh calculations when tab changes to 'calculations'
-  useEffect(() => {
-    if (activeTab === 'calculations') {
-      refreshCalculations();
-    }
-  }, [activeTab, refreshCalculations]);
+  }, [id, user, router, toast]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -284,7 +225,7 @@ export default function ProjectDetailsPage() {
     } catch (error) {
       console.error("Error creating layout:", error);
       toast({
-        variant: 'destructive',
+        variant: "destructive",
         title: "Error",
         description: "Failed to create new layout"
       });
@@ -323,6 +264,7 @@ export default function ProjectDetailsPage() {
     }
   };
 
+  // Add a new function to refresh layouts
   const refreshLayouts = async () => {
     if (!id) return;
     
@@ -390,8 +332,8 @@ export default function ProjectDetailsPage() {
         <Separator />
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-          <div className='md:col-span-3 space-y-6'>
-            <Tabs defaultValue={activeTab} value={activeTab} onValueChange={setActiveTab}>
+          <div className='md:col-span-2 space-y-6'>
+            <Tabs defaultValue="layouts">
               <TabsList>
                 <TabsTrigger value="layouts">Layouts</TabsTrigger>
                 <TabsTrigger value="calculations">Calculations</TabsTrigger>
@@ -459,25 +401,6 @@ export default function ProjectDetailsPage() {
               </TabsContent>
               
               <TabsContent value="calculations" className="space-y-4">
-                <div className='flex justify-end mb-4'>
-                  <Button 
-                    variant='outline' 
-                    size='sm'
-                    onClick={refreshCalculations}
-                    className='mr-2'
-                  >
-                    <Loader2 className='mr-2 h-4 w-4' />
-                    Refresh Calculations
-                  </Button>
-                  <Button 
-                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
-                    className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
-                  >
-                    <Calculator className='mr-2 h-4 w-4' />
-                    New Calculation
-                  </Button>
-                </div>
-                
                 <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                   {calculations.length > 0 ? (
                     calculations.map((calculation) => (
@@ -506,10 +429,8 @@ export default function ProjectDetailsPage() {
                             )}
                           </div>
                           <p className='text-xs text-muted-foreground mt-2'>
-                            Created: {calculation.createdAt 
-                              ? new Date(calculation.createdAt instanceof Date 
-                                  ? calculation.createdAt 
-                                  : (calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() 
+                            Created: {calculation.createdAt || calculation.timestamp 
+                              ? new Date(((calculation.createdAt || calculation.timestamp) as any)?.seconds * 1000 || Date.now()).toLocaleString() 
                               : 'Unknown'}
                           </p>
                         </CardContent>
@@ -587,6 +508,179 @@ export default function ProjectDetailsPage() {
                 </Card>
               </TabsContent>
             </Tabs>
+          </div>
+          
+          <div className="md:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
+                  className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
+                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Create New Layout
+                </Button>
+                
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Create Calculation
+                </Button>
+                
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setEditMode(true)}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Project Details
+                </Button>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Share className="mr-2 h-4 w-4" />
+                      Share Project
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Share Project</DialogTitle>
+                      <DialogDescription>
+                        Enter the email address of the user you want to share this project with.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input 
+                          id="email" 
+                          placeholder="user@example.com" 
+                          value={shareEmail}
+                          onChange={(e) => setShareEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleShareProject}>
+                        Share
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      className="w-full"
+                      variant="destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Project
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the project
+                        and all associated layouts and calculations.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteProject}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardContent>
+            </Card>
+            
+            {editMode && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Edit Project</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Project Name</Label>
+                    <Input 
+                      id="name" 
+                      name="name"
+                      value={formData.name} 
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea 
+                      id="description" 
+                      name="description"
+                      value={formData.description} 
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="plotWidth">Plot Width (m)</Label>
+                      <Input 
+                        id="plotWidth" 
+                        name="plotWidth"
+                        type="number" 
+                        value={formData.plotWidth} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="plotLength">Plot Length (m)</Label>
+                      <Input 
+                        id="plotLength" 
+                        name="plotLength"
+                        type="number" 
+                        value={formData.plotLength} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setEditMode(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleSaveProject}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </div>

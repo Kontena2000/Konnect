@@ -180,9 +180,6 @@ export default function MatrixCalculatorPage() {
   const handleSaveComplete = (calculationId: string, projectId: string) => {
     console.log('Calculation saved with ID:', calculationId, 'to project:', projectId);
     
-    // Increment refresh trigger to reload calculations
-    setRefreshTrigger(prev => prev + 1);
-    
     // Optionally redirect to project page
     if (projectId) {
       toast({
