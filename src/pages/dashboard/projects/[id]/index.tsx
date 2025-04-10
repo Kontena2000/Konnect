@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users, Plus } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users, Plus, Copy } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -55,6 +55,7 @@ export default function ProjectDetailsPage() {
   const [editMode, setEditMode] = useState(false);
   const [shareEmail, setShareEmail] = useState("");
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [duplicating, setDuplicating] = useState(false);
   
   const [formData, setFormData] = useState({
     name: "",
@@ -208,6 +209,28 @@ export default function ProjectDetailsPage() {
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to delete project'
       });
+    }
+  };
+
+  const handleDuplicateProject = async () => {
+    if (!id || !user) return;
+    
+    setDuplicating(true);
+    try {
+      const newProjectId = await projectService.duplicateProject(id as string, user.uid);
+      toast({
+        title: 'Success',
+        description: 'Project duplicated successfully'
+      });
+      router.push(`/dashboard/projects/${newProjectId}`);
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to duplicate project'
+      });
+      setDuplicating(false);
     }
   };
 
@@ -426,7 +449,7 @@ export default function ProjectDetailsPage() {
                 <Separator className="my-6" />
                 <div>
                   <h3 className="text-lg font-medium mb-4">Project Actions</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
@@ -465,6 +488,22 @@ export default function ProjectDetailsPage() {
                         </DialogFooter>
                       </DialogContent>
                     </Dialog>
+                    
+                    <Button 
+                      className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30"
+                      onClick={handleDuplicateProject}
+                      disabled={duplicating}
+                    >
+                      <div className="flex flex-col items-center text-center w-full">
+                        {duplicating ? (
+                          <Loader2 className="h-8 w-8 mb-2 animate-spin" />
+                        ) : (
+                          <Copy className="h-8 w-8 mb-2" />
+                        )}
+                        <span className="font-medium">Duplicate Project</span>
+                        <span className="text-xs mt-1 text-white/70">Create a copy with all layouts</span>
+                      </div>
+                    </Button>
                     
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -592,7 +631,7 @@ export default function ProjectDetailsPage() {
                 <h3 className="text-lg font-medium">Project Layouts</h3>
                 <Button 
                   className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
-                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                  onClick={createNewLayout}
                 >
                   <Plus className="h-4 w-4" />
                   Create New Layout
@@ -654,7 +693,7 @@ export default function ProjectDetailsPage() {
                     <p className='text-muted-foreground mb-4'>No layouts found for this project</p>
                     <Button 
                       className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow"
-                      onClick={() => router.push(`/dashboard/projects/${project.id}/editor`)}
+                      onClick={createNewLayout}
                     >
                       <Plus className='mr-2 h-4 w-4' />
                       Create First Layout
