@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -407,7 +408,6 @@ export default function ProjectDetailsPage() {
               <TabsList>
                 <TabsTrigger value="layouts">Layouts</TabsTrigger>
                 <TabsTrigger value="calculations">Calculations</TabsTrigger>
-                <TabsTrigger value="details">Project Details</TabsTrigger>
               </TabsList>
               
               <TabsContent value="layouts" className="space-y-4">
@@ -530,52 +530,6 @@ export default function ProjectDetailsPage() {
                     </div>
                   )}
                 </div>
-              </TabsContent>
-              
-              <TabsContent value="details">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Project Information</CardTitle>
-                  </CardHeader>
-                  <CardContent className='space-y-4'>
-                    <div className='grid grid-cols-1 md:grid-cols-2 gap-4'>
-                      <div>
-                        <h3 className='text-sm font-medium'>Project Name</h3>
-                        <p>{project.name}</p>
-                      </div>
-                      <div>
-                        <h3 className='text-sm font-medium'>Created</h3>
-                        <p>{project.createdAt ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</p>
-                      </div>
-                      <div className='md:col-span-2'>
-                        <h3 className='text-sm font-medium'>Description</h3>
-                        <p>{project.description || 'No description'}</p>
-                      </div>
-                      {(project as any).client && (
-                        <>
-                          <div>
-                            <h3 className='text-sm font-medium'>Client Name</h3>
-                            <p>{(project as any).client.name || 'Not specified'}</p>
-                          </div>
-                          <div>
-                            <h3 className='text-sm font-medium'>Client Contact</h3>
-                            <p>{(project as any).client.contact || 'Not specified'}</p>
-                          </div>
-                        </>
-                      )}
-                      {project.sharedWith && project.sharedWith.length > 0 && (
-                        <div className='md:col-span-2'>
-                          <h3 className='text-sm font-medium'>Shared With</h3>
-                          <ul className='list-disc list-inside'>
-                            {project.sharedWith.map((email: string) => (
-                              <li key={email}>{email}</li>
-                            ))}
-                          </ul>
-                        </div>
-                      )}
-                    </div>
-                  </CardContent>
-                </Card>
               </TabsContent>
             </Tabs>
           </div>
