@@ -14,6 +14,7 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Loader2, Trash2 } from "lucide-react";
 import layoutService from "@/services/layout";
 import { AuthUser } from "@/services/auth";
+import { LoadingDialog } from "@/components/ui/loading-dialog";
 
 interface DeleteLayoutDialogProps {
   layoutId: string;
@@ -30,6 +31,7 @@ export function DeleteLayoutDialog({
 }: DeleteLayoutDialogProps) {
   const [open, setOpen] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [showLoadingDialog, setShowLoadingDialog] = useState(false);
   
   const { toast } = useToast();
   const { user } = useAuth();
@@ -46,6 +48,7 @@ export function DeleteLayoutDialog({
     
     try {
       setDeleting(true);
+      setShowLoadingDialog(true);
       console.log(`Attempting to delete layout: ${layoutId} (${layoutName})`);
       
       await layoutService.deleteLayout(layoutId, user as AuthUser);
@@ -102,49 +105,58 @@ export function DeleteLayoutDialog({
       });
     } finally {
       setDeleting(false);
+      setShowLoadingDialog(false);
     }
   };
   
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        {trigger || (
-          <Button 
-            variant="destructive" 
-            size="icon"
-            title="Delete layout"
-          >
-            <Trash2 className="h-4 w-4" />
-          </Button>
-        )}
-      </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <DialogHeader>
-          <DialogTitle>Delete Layout</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete the layout "{layoutName}"? This action cannot be undone.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <Button variant="outline" onClick={() => setOpen(false)}>
-            Cancel
-          </Button>
-          <Button 
-            variant="destructive" 
-            onClick={handleDelete} 
-            disabled={deleting}
-          >
-            {deleting ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Deleting...
-              </>
-            ) : (
-              "Delete Layout"
-            )}
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+    <>
+      <LoadingDialog 
+        open={showLoadingDialog} 
+        title='Deleting Layout' 
+        description={`Please wait while we delete the layout '${layoutName}'...`}
+      />
+      
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          {trigger || (
+            <Button 
+              variant="destructive" 
+              size="icon"
+              title="Delete layout"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </DialogTrigger>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Delete Layout</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete the layout "{layoutName}"? This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setOpen(false)}>
+              Cancel
+            </Button>
+            <Button 
+              variant="destructive" 
+              onClick={handleDelete} 
+              disabled={deleting}
+            >
+              {deleting ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Deleting...
+                </>
+              ) : (
+                "Delete Layout"
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
