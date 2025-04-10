@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -354,7 +353,7 @@ export default function ProjectDetailsPage() {
           <Button
             variant='outline'
             onClick={() => router.push('/dashboard/projects')}
-            className="gap-2"
+            className='gap-2'
           >
             <ArrowLeft className='h-4 w-4' />
             Back to Projects
@@ -364,35 +363,42 @@ export default function ProjectDetailsPage() {
         <Separator />
 
         {/* Project Details Card with integrated actions */}
-        <Card className="overflow-hidden border-2 border-muted shadow-sm hover:shadow-md transition-all duration-300">
-          <CardHeader className="bg-muted/30 pb-4">
-            <div className="flex justify-between items-center">
+        <Card className='overflow-hidden border-2 border-muted shadow-sm hover:shadow-md transition-all duration-300'>
+          <CardHeader className='bg-muted/30 pb-4'>
+            <div className='flex justify-between items-center'>
               <div>
                 <CardTitle>Project Information</CardTitle>
                 <CardDescription>Detailed information about this project</CardDescription>
               </div>
-              {!editMode && (
-                <div className="flex gap-2">
-                  <Button
-                    onClick={() => setEditMode(true)}
-                    className='bg-[#6E56CF] hover:bg-[#6E56CF]/90 text-white'
-                  >
-                    <FileEdit className='mr-2 h-4 w-4' />
-                    Edit Details
-                  </Button>
-                  <Button
-                    onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
-                    className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
-                  >
-                    <Edit className='mr-2 h-4 w-4' />
-                    Open Editor
-                  </Button>
-                </div>
-              )}
+              <Button
+                onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+              >
+                <Edit className='mr-2 h-4 w-4' />
+                Open Editor
+              </Button>
             </div>
           </CardHeader>
           <CardContent className='space-y-6 pt-6'>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Project Name</h3>
+                <p className='font-medium'>{project.name}</p>
+              </div>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Description</h3>
+                <p>{project.description || 'No description'}</p>
+              </div>
+              <div>
+                <h3 className='text-sm font-medium text-muted-foreground'>Status</h3>
+                <Badge variant='outline' className={`${
+                  project.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                  project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
+                  'bg-yellow-100 text-yellow-800'
+                }`}>
+                  {project.status || 'Planning'}
+                </Badge>
+              </div>
               <div>
                 <h3 className='text-sm font-medium text-muted-foreground'>Project ID</h3>
                 <p className='font-mono text-sm'>{project.id}</p>
@@ -458,172 +464,96 @@ export default function ProjectDetailsPage() {
             </div>
 
             {/* Project Actions */}
-            {!editMode && (
-              <>
-                <Separator className="my-6" />
-                <div>
-                  <h3 className="text-lg font-medium mb-4">Project Actions</h3>
-                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <Dialog>
-                      <DialogTrigger asChild>
-                        <Button 
-                          className="bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30"
-                        >
-                          <div className="flex flex-col items-center text-center w-full">
-                            <Share className="h-8 w-8 mb-2" />
-                            <span className="font-medium">Share Project</span>
-                            <span className="text-xs mt-1 text-white/70">Collaborate with others</span>
-                          </div>
-                        </Button>
-                      </DialogTrigger>
-                      <DialogContent>
-                        <DialogHeader>
-                          <DialogTitle>Share Project</DialogTitle>
-                          <DialogDescription>
-                            Enter the email address of the user you want to share this project with.
-                          </DialogDescription>
-                        </DialogHeader>
-                        <div className="space-y-4 py-4">
-                          <div className="space-y-2">
-                            <Label htmlFor="email">Email Address</Label>
-                            <Input 
-                              id="email" 
-                              placeholder="user@example.com" 
-                              value={shareEmail}
-                              onChange={(e) => setShareEmail(e.target.value)}
-                            />
-                          </div>
-                        </div>
-                        <DialogFooter>
-                          <Button onClick={handleShareProject} className="bg-[#3CB371] hover:bg-[#3CB371]/80 text-white">
-                            <Share className="mr-2 h-4 w-4" />
-                            Share
-                          </Button>
-                        </DialogFooter>
-                      </DialogContent>
-                    </Dialog>
-                    
+            <Separator className='my-6' />
+            <div>
+              <h3 className='text-lg font-medium mb-4'>Project Actions</h3>
+              <div className='grid grid-cols-1 sm:grid-cols-3 gap-4'>
+                <Dialog>
+                  <DialogTrigger asChild>
                     <Button 
-                      className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30"
-                      onClick={handleDuplicateProject}
-                      disabled={duplicating}
+                      className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#3CB371]/30'
                     >
-                      <div className="flex flex-col items-center text-center w-full">
-                        {duplicating ? (
-                          <Loader2 className="h-8 w-8 mb-2 animate-spin" />
-                        ) : (
-                          <Copy className="h-8 w-8 mb-2" />
-                        )}
-                        <span className="font-medium">Duplicate Project</span>
-                        <span className="text-xs mt-1 text-white/70">Create a copy with all layouts</span>
+                      <div className='flex flex-col items-center text-center w-full'>
+                        <Share className='h-8 w-8 mb-2' />
+                        <span className='font-medium'>Share Project</span>
+                        <span className='text-xs mt-1 text-white/70'>Collaborate with others</span>
                       </div>
                     </Button>
-                    
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button 
-                          className="bg-red-500 hover:bg-red-600/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400"
-                        >
-                          <div className="flex flex-col items-center text-center w-full">
-                            <Trash2 className="h-8 w-8 mb-2" />
-                            <span className="font-medium">Delete Project</span>
-                            <span className="text-xs mt-1 text-white/70">Remove permanently</span>
-                          </div>
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            This action cannot be undone. This will permanently delete the project
-                            and all associated layouts and calculations.
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Cancel</AlertDialogCancel>
-                          <AlertDialogAction onClick={handleDeleteProject} className="bg-red-500 hover:bg-red-600">
-                            <Trash2 className="mr-2 h-4 w-4" />
-                            Delete
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  </div>
-                </div>
-              </>
-            )}
-            
-            {editMode && (
-              <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
-                <h3 className="text-lg font-medium">Edit Project Details</h3>
-                <div className="space-y-2">
-                  <Label htmlFor="name">Project Name</Label>
-                  <Input 
-                    id="name" 
-                    name="name"
-                    value={formData.name} 
-                    onChange={handleInputChange}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="description">Description</Label>
-                  <Textarea 
-                    id="description" 
-                    name="description"
-                    value={formData.description} 
-                    onChange={handleInputChange}
-                    rows={4}
-                  />
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="plotWidth">Plot Width (m)</Label>
-                    <Input 
-                      id="plotWidth" 
-                      name="plotWidth"
-                      type="number" 
-                      value={formData.plotWidth} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="plotLength">Plot Length (m)</Label>
-                    <Input 
-                      id="plotLength" 
-                      name="plotLength"
-                      type="number" 
-                      value={formData.plotLength} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                </div>
-                <div className="flex justify-end gap-2 pt-2">
-                  <Button 
-                    variant="outline" 
-                    onClick={() => setEditMode(false)}
-                  >
-                    Cancel
-                  </Button>
-                  <Button 
-                    onClick={handleSaveProject}
-                    disabled={saving}
-                    className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
-                  >
-                    {saving ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Saving...
-                      </>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Share Project</DialogTitle>
+                      <DialogDescription>
+                        Enter the email address of the user you want to share this project with.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4 py-4'>
+                      <div className='space-y-2'>
+                        <Label htmlFor='email'>Email Address</Label>
+                        <Input 
+                          id='email' 
+                          placeholder='user@example.com' 
+                          value={shareEmail}
+                          onChange={(e) => setShareEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleShareProject} className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white'>
+                        <Share className='mr-2 h-4 w-4' />
+                        Share
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <Button 
+                  className='bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#4A7AFF]/30'
+                  onClick={handleDuplicateProject}
+                  disabled={duplicating}
+                >
+                  <div className='flex flex-col items-center text-center w-full'>
+                    {duplicating ? (
+                      <Loader2 className='h-8 w-8 mb-2 animate-spin' />
                     ) : (
-                      <>
-                        <Save className="mr-2 h-4 w-4" />
-                        Save Changes
-                      </>
+                      <Copy className='h-8 w-8 mb-2' />
                     )}
-                  </Button>
-                </div>
+                    <span className='font-medium'>Duplicate Project</span>
+                    <span className='text-xs mt-1 text-white/70'>Create a copy with all layouts</span>
+                  </div>
+                </Button>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      className='bg-red-500 hover:bg-red-600/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-red-400'
+                    >
+                      <div className='flex flex-col items-center text-center w-full'>
+                        <Trash2 className='h-8 w-8 mb-2' />
+                        <span className='font-medium'>Delete Project</span>
+                        <span className='text-xs mt-1 text-white/70'>Remove permanently</span>
+                      </div>
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the project
+                        and all associated layouts and calculations.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteProject} className='bg-red-500 hover:bg-red-600'>
+                        <Trash2 className='mr-2 h-4 w-4' />
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
               </div>
-            )}
+            </div>
           </CardContent>
         </Card>
 
