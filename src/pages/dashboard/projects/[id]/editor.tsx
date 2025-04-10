@@ -1,10 +1,10 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SceneContainer } from '@/components/three/SceneContainer';
 import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
 import { Connection, Layout } from '@/services/layout';
@@ -16,10 +16,24 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
+import { FileText, Copy, Loader2 } from 'lucide-react';
 import layoutService from '@/services/layout';
+import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
 import { LayoutSelector } from '@/components/layout/LayoutSelector';
 import { AuthUser } from '@/services/auth';
+import { 
+  Dialog, 
+  DialogContent, 
+  DialogDescription, 
+  DialogFooter, 
+  DialogHeader, 
+  DialogTitle, 
+  DialogTrigger 
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Share } from 'lucide-react';
 
 interface EditorState {
   modules: Module[];
@@ -33,10 +47,13 @@ export default function LayoutEditorPage() {
   const [layout, setLayout] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
+  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [shareEmail, setShareEmail] = useState<string>('');
+  const [duplicating, setDuplicating] = useState<boolean>(false);
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -48,6 +65,50 @@ export default function LayoutEditorPage() {
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
+
+  // Handle share project
+  const handleShareProject = async () => {
+    if (!projectId || !shareEmail) return;
+    
+    try {
+      await projectService.shareProject(projectId as string, shareEmail);
+      toast({
+        title: 'Success',
+        description: `Project shared with ${shareEmail}`
+      });
+      setShareEmail('');
+    } catch (error) {
+      console.error('Error sharing project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to share project'
+      });
+    }
+  };
+
+  // Handle duplicate project
+  const handleDuplicateProject = async () => {
+    if (!projectId || !user) return;
+    
+    setDuplicating(true);
+    try {
+      const newProjectId = await projectService.duplicateProject(projectId as string, user.uid);
+      toast({
+        title: 'Success',
+        description: 'Project duplicated successfully'
+      });
+      router.push(`/dashboard/projects/${newProjectId}`);
+    } catch (error) {
+      console.error('Error duplicating project:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to duplicate project'
+      });
+      setDuplicating(false);
+    }
+  };
 
   // Handle layout change
   const handleLayoutChange = useCallback((layout: Layout) => {
@@ -581,9 +642,9 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout fullWidth noPadding>
-      <div className="h-screen w-screen overflow-hidden">
+      <div className='h-screen w-screen overflow-hidden'>
         <ErrorBoundary>
-          <div className="absolute inset-0">
+          <div className='absolute inset-0'>
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -597,7 +658,7 @@ export default function LayoutEditorPage() {
             />
           </div>
           
-          {/* Layout selector - Improved positioning for better responsiveness */}
+          {/* Layout selector with project actions */}
           <div className='fixed top-4 left-0 right-0 z-10'>
             <div className='max-w-2xl mx-auto'>
               <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center flex-wrap gap-4'>
@@ -612,7 +673,32 @@ export default function LayoutEditorPage() {
                   />
                 </div>
                 
-                <div className='flex items-center justify-center'>
+                <div className='flex items-center gap-2 justify-center'>
+                  <Button 
+                    variant='outline'
+                    size='sm'
+                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
+                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${projectId}`)}
+                  >
+                    <FileText className='h-3 w-3' />
+                    <span>Generate Report</span>
+                  </Button>
+                  
+                  <Button 
+                    variant='outline'
+                    size='sm'
+                    onClick={handleDuplicateProject}
+                    disabled={duplicating}
+                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#4A7AFF] text-[#4A7AFF] hover:bg-[#4A7AFF]/10'
+                  >
+                    {duplicating ? (
+                      <Loader2 className='h-3 w-3 animate-spin' />
+                    ) : (
+                      <Copy className='h-3 w-3' />
+                    )}
+                    <span>Duplicate</span>
+                  </Button>
+                  
                   <SaveLayoutDialog
                     layoutData={{
                       id: currentLayout?.id,
@@ -624,9 +710,9 @@ export default function LayoutEditorPage() {
                     }}
                     onSaveComplete={handleSaveLayout}
                     trigger={
-                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
-                        <Save className='h-4 w-4 mr-2' />
-                        {currentLayout?.id ? 'Save As' : 'Save Layout'}
+                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
+                        <Save className='h-3 w-3 mr-1' />
+                        {currentLayout?.id ? 'Save As' : 'Save'}
                       </Button>
                     }
                   />
