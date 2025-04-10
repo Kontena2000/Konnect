@@ -1,4 +1,3 @@
-
 import axios from 'axios';
 import { db, storage } from '@/lib/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
@@ -100,7 +99,10 @@ class ModelImporterService {
       // Download the model file
       const modelBuffer = await this.downloadModelFile(modelId, format);
       
-      // Upload to Firebase Storage
+      // Check if storage is null before using it
+      if (!storage) {
+        throw new Error('Firebase Storage is not available');
+      }
       const uniqueId = uuidv4();
       const storagePath = `models/${userId}/${uniqueId}.${format}`;
       const storageRef = ref(storage, storagePath);

@@ -137,7 +137,7 @@ export async function saveCalculationResult(
       const docRef = await addDoc(calculationsRef, calculationData);
       
       console.log('[Matrix Calculator] Calculation saved successfully with ID:', docRef.id);
-      calculatorDebug.log('Calculation saved successfully', { id: docRef.id });
+      calculatorDebug.log('Calculation saved successfully', { id: docRef.id, projectId: projectId || null });
       
       return { 
         success: true,

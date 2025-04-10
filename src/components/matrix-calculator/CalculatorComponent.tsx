@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { calculateConfiguration, CalculationOptions } from '@/services/matrixCalculatorService';
 import { findOptimalConfiguration } from '@/services/optimizationService';
@@ -473,9 +472,11 @@ export function CalculatorComponent({
 
   // Handle save calculation complete from SaveCalculationDialog
   const handleSaveComplete = (calculationId: string, savedProjectId: string) => {
-    console.log("Save complete callback received with:", calculationId, savedProjectId);
+    console.log('Save complete callback received with:', calculationId, savedProjectId);
     if (onSaveComplete) {
-      onSaveComplete(calculationId, savedProjectId);
+      // Ensure we're passing the correct project ID
+      const finalProjectId = savedProjectId || projectId || '';
+      onSaveComplete(calculationId, finalProjectId);
     }
   };
 
