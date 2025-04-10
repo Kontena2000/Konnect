@@ -29,7 +29,9 @@ export function LayoutList({ projectId, onRefresh }: LayoutListProps) {
       
       try {
         setLoading(true);
+        console.log('Fetching layouts for project:', projectId);
         const projectLayouts = await layoutService.getProjectLayouts(projectId);
+        console.log('Fetched layouts:', projectLayouts.length);
         setLayouts(projectLayouts);
       } catch (error) {
         console.error('Error fetching layouts:', error);
@@ -49,7 +51,9 @@ export function LayoutList({ projectId, onRefresh }: LayoutListProps) {
   const handleDeleteComplete = async () => {
     // Refresh layouts after deletion
     try {
+      console.log('Refreshing layouts after deletion');
       const projectLayouts = await layoutService.getProjectLayouts(projectId);
+      console.log('Fetched layouts after deletion:', projectLayouts.length);
       setLayouts(projectLayouts);
       
       if (onRefresh) {

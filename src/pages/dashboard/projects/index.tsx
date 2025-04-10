@@ -21,6 +21,7 @@ export default function ProjectsPage() {
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectLayoutCounts, setProjectLayoutCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
+  const [loadingLayoutCounts, setLoadingLayoutCounts] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const { toast } = useToast();
@@ -46,15 +47,20 @@ export default function ProjectsPage() {
   // Fetch layout counts for all projects
   useEffect(() => {
     const fetchLayoutCounts = async () => {
-      if (!projects.length) return;
+      if (!projects.length || !user) return;
       
+      setLoadingLayoutCounts(true);
       const counts: Record<string, number> = {};
       
       try {
+        console.log('Fetching layout counts for', projects.length, 'projects');
+        
         // Fetch layout counts for each project
         for (const project of projects) {
           try {
+            console.log('Fetching layouts for project:', project.id);
             const layouts = await layoutService.getProjectLayouts(project.id);
+            console.log('Found', layouts.length, 'layouts for project:', project.id);
             counts[project.id] = layouts.length;
           } catch (error) {
             console.error(`Error fetching layouts for project ${project.id}:`, error);
@@ -62,14 +68,17 @@ export default function ProjectsPage() {
           }
         }
         
+        console.log('Final layout counts:', counts);
         setProjectLayoutCounts(counts);
       } catch (error) {
         console.error('Error fetching layout counts:', error);
+      } finally {
+        setLoadingLayoutCounts(false);
       }
     };
     
     fetchLayoutCounts();
-  }, [projects]);
+  }, [projects, user]);
 
   const handleDeleteProject = async (projectId: string) => {
     if (!user) {
@@ -82,7 +91,6 @@ export default function ProjectsPage() {
     }
     
     try {
-      // Fix for issue 1: The deleteProject function only needs projectId and userId
       await projectService.deleteProject(projectId, user.uid);
       setProjects((prev) => prev.filter((p) => p.id !== projectId));
       toast({
@@ -310,8 +318,12 @@ export default function ProjectsPage() {
                       Last modified: {format(project.updatedAt.toDate(), 'MMM d, yyyy')}
                     </div>
                     <div className='flex gap-2'>
-                      <Badge variant='outline'>
-                        {projectLayoutCounts[project.id] || 0} Layouts
+                      <Badge variant='outline' className='bg-yellow-50'>
+                        {loadingLayoutCounts ? (
+                          <Loader2 className='h-3 w-3 mr-1 animate-spin' />
+                        ) : (
+                          <span>{projectLayoutCounts[project.id] || 0}</span>
+                        )} Layouts
                       </Badge>
                       {project.status && (
                         <Badge variant='secondary'>{project.status}</Badge>
