@@ -172,28 +172,21 @@ export default function LayoutEditorPage() {
         timestamp: Date.now()
       });
       
-      // Trigger immediate save when position is updated
-      if (updates.position && currentLayout?.id && user) {
-        console.log('Position updated, triggering immediate save for module:', moduleId);
-        const updatedModule = prev.find(m => m.id === moduleId);
+      // Trigger immediate save when position or rotation is updated
+      if ((updates.position || updates.rotation) && currentLayout?.id && user) {
+        console.log('Position or rotation updated, triggering immediate save for module:', moduleId);
         
-        if (updatedModule) {
-          const updatedModules = prev.map(m => 
-            m.id === moduleId ? { ...updatedModule, ...updates } : m
-          );
-          
-          // Use immediate save for position updates to ensure they're saved
-          layoutService.updateLayout(currentLayout.id, {
-            modules: updatedModules,
-            connections
-          }, user as AuthUser)
-            .then(() => {
-              console.log('Module position saved successfully:', moduleId);
-            })
-            .catch(error => {
-              console.error('Error saving module position:', error);
-            });
-        }
+        // Use immediate save for position/rotation updates to ensure they're saved
+        layoutService.updateLayout(currentLayout.id, {
+          modules: newModules,
+          connections
+        }, user as AuthUser)
+          .then(() => {
+            console.log('Module position/rotation saved successfully:', moduleId);
+          })
+          .catch(error => {
+            console.error('Error saving module position/rotation:', error);
+          });
       }
       
       return newModules;

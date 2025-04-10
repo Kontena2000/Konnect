@@ -47,12 +47,35 @@ export function useModuleTransform({
       meshRef.current.scale.z
     ];
 
-    // Always update position during transform to ensure real-time updates
-    onUpdate({
-      position,
-      rotation,
-      scale
-    });
+    // Check if position has actually changed to avoid unnecessary updates
+    const positionChanged = 
+      Math.abs(position[0] - module.position[0]) > 0.001 ||
+      Math.abs(position[1] - module.position[1]) > 0.001 ||
+      Math.abs(position[2] - module.position[2]) > 0.001;
+
+    const rotationChanged = 
+      Math.abs(rotation[0] - module.rotation[0]) > 0.001 ||
+      Math.abs(rotation[1] - module.rotation[1]) > 0.001 ||
+      Math.abs(rotation[2] - module.rotation[2]) > 0.001;
+
+    const scaleChanged = 
+      Math.abs(scale[0] - module.scale[0]) > 0.001 ||
+      Math.abs(scale[1] - module.scale[1]) > 0.001 ||
+      Math.abs(scale[2] - module.scale[2]) > 0.001;
+
+    // Only update if something has changed
+    if (positionChanged || rotationChanged || scaleChanged) {
+      console.log('Module transform changed, updating:', module.id, 
+        'position:', position, 
+        'rotation:', rotation,
+        'scale:', scale);
+      
+      onUpdate({
+        position,
+        rotation,
+        scale
+      });
+    }
 
     if (onComplete) {
       onComplete();
@@ -94,7 +117,19 @@ export function useModuleTransform({
           y: targetRotation,
           duration: 0.1,
           ease: 'power1.out',
-          onUpdate: updateShadowTransform
+          onUpdate: updateShadowTransform,
+          onComplete: () => {
+            // Always update rotation after animation completes
+            if (onUpdate && meshRef.current) {
+              onUpdate({
+                rotation: [
+                  meshRef.current.rotation.x * 180 / Math.PI,
+                  meshRef.current.rotation.y * 180 / Math.PI,
+                  meshRef.current.rotation.z * 180 / Math.PI
+                ]
+              });
+            }
+          }
         });
         rotation.y = targetRotation;
       }

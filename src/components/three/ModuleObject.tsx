@@ -49,7 +49,7 @@ export function ModuleObject({
   const { camera } = useThree();
   const [shadowTransform, setShadowTransform] = useState({
     position: new Vector3(module.position[0], 0.01, module.position[2]),
-    rotation: new Euler(-Math.PI/2, 0, 0)
+    rotation: new Euler(-Math.PI/2, module.rotation[1] * Math.PI / 180, 0)
   });
 
   const {
@@ -103,28 +103,56 @@ export function ModuleObject({
   const handleRotateLeft = useCallback(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y -= Math.PI/2;
-      handleTransformChange(meshRef, updateShadowTransform);
+      
+      // Get current rotation after change
+      const newRotation: [number, number, number] = [
+        meshRef.current.rotation.x * 180 / Math.PI,
+        meshRef.current.rotation.y * 180 / Math.PI,
+        meshRef.current.rotation.z * 180 / Math.PI
+      ];
+      
+      // Update module with new rotation
+      onUpdate?.(module.id, {
+        rotation: newRotation
+      });
+      
+      // Update shadow
+      updateShadowTransform();
     }
-  }, [handleTransformChange, updateShadowTransform]);
+  }, [module.id, onUpdate, updateShadowTransform]);
 
   const handleRotateRight = useCallback(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += Math.PI/2;
-      handleTransformChange(meshRef, updateShadowTransform);
+      
+      // Get current rotation after change
+      const newRotation: [number, number, number] = [
+        meshRef.current.rotation.x * 180 / Math.PI,
+        meshRef.current.rotation.y * 180 / Math.PI,
+        meshRef.current.rotation.z * 180 / Math.PI
+      ];
+      
+      // Update module with new rotation
+      onUpdate?.(module.id, {
+        rotation: newRotation
+      });
+      
+      // Update shadow
+      updateShadowTransform();
     }
-  }, [handleTransformChange, updateShadowTransform]);
+  }, [module.id, onUpdate, updateShadowTransform]);
 
   // Update position, rotation, scale when module props change
   useEffect(() => {
-    if (groupRef.current) {
+    if (meshRef.current) {
       // Update position
       if (module.position && Array.isArray(module.position) && module.position.length === 3) {
-        groupRef.current.position.set(module.position[0], module.position[1], module.position[2]);
+        meshRef.current.position.set(module.position[0], module.position[1], module.position[2]);
       }
       
       // Update rotation
       if (module.rotation && Array.isArray(module.rotation) && module.rotation.length === 3) {
-        groupRef.current.rotation.set(
+        meshRef.current.rotation.set(
           module.rotation[0] * Math.PI / 180,
           module.rotation[1] * Math.PI / 180,
           module.rotation[2] * Math.PI / 180
@@ -133,40 +161,43 @@ export function ModuleObject({
       
       // Update scale
       if (module.scale && Array.isArray(module.scale) && module.scale.length === 3) {
-        groupRef.current.scale.set(module.scale[0], module.scale[1], module.scale[2]);
+        meshRef.current.scale.set(module.scale[0], module.scale[1], module.scale[2]);
       }
+      
+      // Update shadow
+      updateShadowTransform();
     }
-  }, [module.position, module.rotation, module.scale]);
+  }, [module.position, module.rotation, module.scale, updateShadowTransform]);
 
   // Handle transform end - ensure position is saved
   const handleTransformEnd = useCallback(() => {
-    if (!groupRef.current || !onUpdate) return;
+    if (!meshRef.current || !onUpdate) return;
     
     setIsTransforming(false);
     onTransformEnd?.();
     
     // Get final position after transform
     const finalPosition: [number, number, number] = [
-      groupRef.current.position.x,
-      groupRef.current.position.y,
-      groupRef.current.position.z
+      meshRef.current.position.x,
+      meshRef.current.position.y,
+      meshRef.current.position.z
     ];
     
     // Get final rotation after transform
     const finalRotation: [number, number, number] = [
-      groupRef.current.rotation.x * 180 / Math.PI,
-      groupRef.current.rotation.y * 180 / Math.PI,
-      groupRef.current.rotation.z * 180 / Math.PI
+      meshRef.current.rotation.x * 180 / Math.PI,
+      meshRef.current.rotation.y * 180 / Math.PI,
+      meshRef.current.rotation.z * 180 / Math.PI
     ];
     
     // Get final scale after transform
     const finalScale: [number, number, number] = [
-      groupRef.current.scale.x,
-      groupRef.current.scale.y,
-      groupRef.current.scale.z
+      meshRef.current.scale.x,
+      meshRef.current.scale.y,
+      meshRef.current.scale.z
     ];
     
-    console.log('Transform ended, updating module with final position:', module.id, finalPosition);
+    console.log('Transform ended, updating module with final position:', module.id, finalPosition, 'rotation:', finalRotation);
     
     // Update module with final transform values
     onUpdate(module.id, {
@@ -180,14 +211,34 @@ export function ModuleObject({
   }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
 
   return (
-    <group ref={groupRef}>
-      <ModuleMesh
-        module={module}
-        meshRef={meshRef}
-        editorPreferences={editorPreferences}
-        onClick={handleClick}
-        onContextMenu={handleContextMenu}
-      />
+    <group>
+      <mesh
+        ref={meshRef}
+        position={[module.position[0], module.position[1], module.position[2]]}
+        rotation={[
+          module.rotation[0] * Math.PI / 180,
+          module.rotation[1] * Math.PI / 180,
+          module.rotation[2] * Math.PI / 180
+        ]}
+        scale={[module.scale[0], module.scale[1], module.scale[2]]}
+      >
+        <ModuleMesh
+          module={module}
+          meshRef={meshRef}
+          editorPreferences={editorPreferences}
+          onClick={handleClick}
+          onContextMenu={handleContextMenu}
+        />
+
+        {module.connectionPoints?.map((point, index) => (
+          <ConnectionPoint
+            key={`${module.id}-connection-${index}`}
+            position={point.position}
+            type={(point.types?.[0] || point.type || "power") as ConnectionType}
+            moduleId={module.id}
+          />
+        ))}
+      </mesh>
 
       <ModuleShadow
         module={module}
@@ -247,10 +298,18 @@ export function ModuleObject({
                 meshRef.current.rotation.z * 180 / Math.PI
               ];
               
+              // Get current scale during transform
+              const currentScale: [number, number, number] = [
+                meshRef.current.scale.x,
+                meshRef.current.scale.y,
+                meshRef.current.scale.z
+              ];
+              
               // Update position in real-time during transform
               onUpdate?.(module.id, {
                 position: currentPosition,
-                rotation: currentRotation
+                rotation: currentRotation,
+                scale: currentScale
               });
               
               // Update shadow
@@ -259,15 +318,6 @@ export function ModuleObject({
           }}
         />
       )}
-      
-      {module.connectionPoints?.map((point, index) => (
-        <ConnectionPoint
-          key={`${module.id}-connection-${index}`}
-          position={point.position}
-          type={(point.types?.[0] || point.type || "power") as ConnectionType}
-          moduleId={module.id}
-        />
-      ))}
     </group>
   );
 }
