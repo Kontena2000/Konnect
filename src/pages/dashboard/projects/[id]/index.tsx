@@ -105,7 +105,7 @@ export default function ProjectDetailsPage() {
     };
     
     loadProjectData();
-  }, [id, user, router, toast]);
+  }, [id, user, router, toast, refreshCalculations]);
 
   const refreshCalculations = useCallback(async () => {
     if (!id) return;

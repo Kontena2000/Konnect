@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { calculateConfiguration, CalculationOptions } from '@/services/matrixCalculatorService';
 import { findOptimalConfiguration } from '@/services/optimizationService';
@@ -470,10 +469,9 @@ export function CalculatorComponent({
   };
 
   // Handle save calculation complete
-  const handleSaveComplete = (calculationId: string, savedProjectId: string | undefined) => {
+  const handleSaveComplete = (calculationId: string, savedProjectId: string) => {
     if (onSaveComplete) {
-      // Ensure we always pass a string, even if savedProjectId is undefined
-      onSaveComplete(calculationId, savedProjectId || '');
+      onSaveComplete(calculationId, savedProjectId);
     }
   };
 

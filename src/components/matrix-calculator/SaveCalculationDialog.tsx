@@ -115,6 +115,7 @@ export function SaveCalculationDialog({
       });
       
       if (onSaveComplete) {
+        // Always pass a string for projectId
         onSaveComplete(docRef.id, selectedProjectId);
       }
       

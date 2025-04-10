@@ -180,7 +180,15 @@ export default function MatrixCalculatorPage() {
     
     // Optionally redirect to project page
     if (projectId) {
-      router.push(`/dashboard/projects/${projectId}?tab=calculations`);
+      toast({
+        title: 'Success',
+        description: 'Calculation saved successfully. Redirecting to project page...',
+      });
+      
+      // Short delay before redirecting to ensure toast is visible
+      setTimeout(() => {
+        router.push(`/dashboard/projects/${projectId}?tab=calculations`);
+      }, 1500);
     }
   };
 
