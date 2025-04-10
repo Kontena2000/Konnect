@@ -383,9 +383,9 @@ export default function LayoutEditorPage() {
             />
           </div>
           
-          {/* Layout selector */}
-          <div className='absolute top-4 left-4 z-10 bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-md'>
-            <div className='flex items-center gap-4'>
+          {/* Layout selector - Updated positioning for better responsiveness */}
+          <div className='fixed top-4 left-0 right-0 z-10 mx-auto flex justify-center'>
+            <div className='bg-background/80 backdrop-blur-sm p-2 rounded-md shadow-md flex items-center gap-4'>
               <LayoutSelector
                 projectId={projectId as string}
                 layouts={layouts}
