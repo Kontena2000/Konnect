@@ -507,8 +507,11 @@ const layoutService = {
       }
 
       // Special case for ruud@kontena.eu - always has full access
-      if (user.email !== 'ruud@kontena.eu') {
+      if (user.email === 'ruud@kontena.eu') {
+        console.log('Admin user detected, proceeding with save');
+      } else {
         const project = projectSnap.data();
+        // Check if user has access to the target project
         if (project.userId !== user.uid && !project.sharedWith?.includes(user.email!)) {
           console.error('Unauthorized access to project:', projectId, 'by user:', user.uid);
           throw new LayoutError('Unauthorized access to project', 'UNAUTHORIZED');
