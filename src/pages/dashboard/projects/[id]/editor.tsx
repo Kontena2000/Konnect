@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -45,6 +46,21 @@ export default function LayoutEditorPage() {
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
   const [layouts, setLayouts] = useState<Layout[]>([]);
   const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
+
+  // Handle layout change
+  const handleLayoutChange = useCallback((layout: Layout) => {
+    setCurrentLayout(layout);
+    setModules(layout.modules || []);
+    setConnections(layout.connections || []);
+    
+    // Update URL to reflect the selected layout
+    if (projectId && layout.id) {
+      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layout.id}`, undefined, { shallow: true });
+    } else if (projectId) {
+      // If no layout ID (empty layout), just show the editor without layout ID in URL
+      router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
+    }
+  }, [projectId, router]);
   
   // Refresh layouts when needed
   const refreshLayouts = useCallback(async () => {
@@ -103,21 +119,6 @@ export default function LayoutEditorPage() {
       
       // Redirect to the layout editor with the saved layout
       router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
-    }
-  }, [projectId, router]);
-
-  // Handle layout change
-  const handleLayoutChange = useCallback((layout: Layout) => {
-    setCurrentLayout(layout);
-    setModules(layout.modules || []);
-    setConnections(layout.connections || []);
-    
-    // Update URL to reflect the selected layout
-    if (projectId && layout.id) {
-      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layout.id}`, undefined, { shallow: true });
-    } else if (projectId) {
-      // If no layout ID (empty layout), just show the editor without layout ID in URL
-      router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
     }
   }, [projectId, router]);
 
@@ -369,10 +370,10 @@ export default function LayoutEditorPage() {
   
   if (loading) {
     return (
-      <div className='flex items-center justify-center h-screen w-full'>
-        <div className='space-y-4 text-center'>
-          <Skeleton className='h-8 w-64 mx-auto' />
-          <Skeleton className='h-[calc(100vh-120px)] w-[90vw] max-w-5xl' />
+      <div className="flex items-center justify-center h-screen w-full">
+        <div className="space-y-4 text-center">
+          <Skeleton className="h-8 w-64 mx-auto" />
+          <Skeleton className="h-[calc(100vh-120px)] w-[90vw] max-w-5xl" />
         </div>
       </div>
     );
@@ -380,12 +381,12 @@ export default function LayoutEditorPage() {
   
   if (error) {
     return (
-      <div className='flex items-center justify-center h-screen w-full'>
-        <div className='bg-destructive/10 p-6 rounded-md max-w-md'>
-          <h2 className='text-lg font-medium text-destructive mb-2'>Error</h2>
-          <p className='mb-4'>{error}</p>
+      <div className="flex items-center justify-center h-screen w-full">
+        <div className="bg-destructive/10 p-6 rounded-md max-w-md">
+          <h2 className="text-lg font-medium text-destructive mb-2">Error</h2>
+          <p className="mb-4">{error}</p>
           <Button 
-            variant='outline' 
+            variant="outline" 
             onClick={() => router.push('/dashboard/projects')}
           >
             Back to Projects
@@ -397,9 +398,9 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout fullWidth noPadding>
-      <div className='h-screen w-screen overflow-hidden'>
+      <div className="h-screen w-screen overflow-hidden">
         <ErrorBoundary>
-          <div className='absolute inset-0'>
+          <div className="absolute inset-0">
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -414,10 +415,10 @@ export default function LayoutEditorPage() {
           </div>
           
           {/* Layout selector - Improved positioning for better responsiveness */}
-          <div className='fixed top-4 left-0 right-0 z-10'>
-            <div className='max-w-3xl mx-auto px-4'>
-              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center sm:justify-between flex-wrap gap-4'>
-                <div className='flex items-center justify-center flex-grow sm:flex-grow-0'>
+          <div className="fixed top-4 left-0 right-0 z-10">
+            <div className="max-w-3xl mx-auto px-4">
+              <div className="bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center sm:justify-between flex-wrap gap-4">
+                <div className="flex items-center justify-center flex-grow sm:flex-grow-0">
                   <LayoutSelector
                     projectId={projectId as string}
                     layouts={layouts}
@@ -428,7 +429,7 @@ export default function LayoutEditorPage() {
                   />
                 </div>
                 
-                <div className='flex items-center justify-center'>
+                <div className="flex items-center justify-center">
                   <SaveLayoutDialog
                     layoutData={{
                       id: currentLayout?.id,
@@ -440,8 +441,8 @@ export default function LayoutEditorPage() {
                     }}
                     onSaveComplete={handleSaveLayout}
                     trigger={
-                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
-                        <Save className='h-4 w-4 mr-2' />
+                      <Button size="sm" className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black">
+                        <Save className="h-4 w-4 mr-2" />
                         {currentLayout?.id ? 'Save As' : 'Save Layout'}
                       </Button>
                     }
