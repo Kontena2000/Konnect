@@ -22,12 +22,10 @@ interface UseModuleStateProps {
 
 export function useModuleState(param?: UseModuleStateProps) {
   // Provide default values if param is undefined
-  const {
-    layoutId,
-    initialModules = [],
-    initialConnections = [],
-    autoSave = true
-  } = param || {};
+  const layoutId = param?.layoutId;
+  const initialModules = param?.initialModules || [];
+  const initialConnections = param?.initialConnections || [];
+  const autoSave = param?.autoSave !== false; // Default to true
 
   const [modules, setModules] = useState<Module[]>(initialModules);
   const [connections, setConnections] = useState<Connection[]>(initialConnections);
