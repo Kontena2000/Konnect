@@ -172,7 +172,7 @@ export default function LayoutEditorPage() {
         timestamp: Date.now()
       });
       
-      // Trigger immediate save when position or rotation is updated
+      // Always trigger immediate save when position or rotation is updated
       if ((updates.position || updates.rotation) && currentLayout?.id && user) {
         console.log('Position or rotation updated, triggering immediate save for module:', moduleId);
         

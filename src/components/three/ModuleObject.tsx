@@ -199,7 +199,7 @@ export function ModuleObject({
     
     console.log('Transform ended, updating module with final position:', module.id, finalPosition, 'rotation:', finalRotation);
     
-    // Update module with final transform values
+    // Force immediate update with final transform values to ensure they're saved
     onUpdate(module.id, {
       position: finalPosition,
       rotation: finalRotation,
@@ -305,7 +305,7 @@ export function ModuleObject({
                 meshRef.current.scale.z
               ];
               
-              // Update position in real-time during transform
+              // Always update position, rotation, and scale in real-time during transform
               onUpdate?.(module.id, {
                 position: currentPosition,
                 rotation: currentRotation,

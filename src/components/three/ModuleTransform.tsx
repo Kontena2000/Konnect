@@ -28,7 +28,13 @@ export function ModuleTransform({
       onMouseDown={onTransformStart}
       onMouseUp={onTransformEnd}
       onChange={onUpdate}
-      onObjectChange={onUpdate} // Add this to ensure position updates are captured
+      onObjectChange={onUpdate} // Ensure position updates are captured during transformation
+      onDraggingChange={(event) => {
+        // This ensures we capture the end of transform operations
+        if (!event.value && onTransformEnd) {
+          onTransformEnd();
+        }
+      }}
       size={0.75}
       showX={true}
       showY={true}

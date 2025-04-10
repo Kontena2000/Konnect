@@ -151,6 +151,16 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     // Ensure data is serializable for Firestore
     const cleanData = safeSerialize(data);
     
+    // Log modules and their positions/rotations for debugging
+    if (cleanData.modules && Array.isArray(cleanData.modules)) {
+      console.log('Saving modules with positions/rotations:');
+      cleanData.modules.forEach(module => {
+        if (module.id) {
+          console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
+        }
+      });
+    }
+    
     await updateDoc(layoutRef, {
       ...cleanData,
       updatedAt: serverTimestamp()
@@ -160,7 +170,7 @@ export const debouncedSave = debounce(async (layoutId: string, data: Partial<Lay
     console.error('Error in debouncedSave:', error);
     throw new Error('Failed to save layout: ' + (error instanceof Error ? error.message : String(error)));
   }
-}, 1000); // Reduced from 2000ms to 1000ms for more responsive saving
+}, 500); // Reduced from 1000ms to 500ms for more responsive saving
 
 const layoutService = {
   async createLayout(data: Omit<Layout, 'id' | 'createdAt' | 'updatedAt'>): Promise<string> {
@@ -242,6 +252,16 @@ const layoutService = {
         // Ensure data is serializable for Firestore
         const cleanData = safeSerialize(data);
         
+        // Log modules and their positions/rotations for debugging
+        if (cleanData.modules && Array.isArray(cleanData.modules)) {
+          console.log('Admin saving modules with positions/rotations:');
+          cleanData.modules.forEach(module => {
+            if (module.id) {
+              console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
+            }
+          });
+        }
+        
         await updateDoc(layoutRef, {
           ...cleanData,
           updatedAt: serverTimestamp()
@@ -263,6 +283,14 @@ const layoutService = {
           console.error('Invalid module data found:', invalidModules);
           throw new LayoutError('Invalid module data', 'VALIDATION_FAILED');
         }
+        
+        // Log modules and their positions/rotations for debugging
+        console.log('Saving modules with positions/rotations:');
+        data.modules.forEach(module => {
+          if (module.id) {
+            console.log(`Module ${module.id}: position=${JSON.stringify(module.position)}, rotation=${JSON.stringify(module.rotation)}`);
+          }
+        });
       }
       
       if (data.connections) {
