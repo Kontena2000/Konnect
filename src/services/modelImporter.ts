@@ -195,6 +195,11 @@ class ModelImporterService {
    */
   private async saveModelMetadata(model: ImportedModel): Promise<void> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        throw new Error('Firestore is not available');
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       await addDoc(modelsCollection, {
         ...model,
@@ -202,7 +207,7 @@ class ModelImporterService {
       });
     } catch (error) {
       console.error('Error saving model metadata:', error);
-      throw new Error(`Failed to save model metadata: ${error.message}`);
+      throw new Error(`Failed to save model metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 

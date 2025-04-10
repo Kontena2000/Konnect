@@ -343,7 +343,7 @@ export default function ProjectDetailsPage() {
     if (activeTab === 'calculations') {
       refreshCalculations();
     }
-  }, [activeTab, refreshCalculations]);
+  }, [activeTab, refreshCalculations, calculationsRefreshTrigger]);
 
   if (loading) {
     return (
