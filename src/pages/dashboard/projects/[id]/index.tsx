@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit, Users } from "lucide-react";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -225,9 +225,9 @@ export default function ProjectDetailsPage() {
     } catch (error) {
       console.error("Error creating layout:", error);
       toast({
-        variant: "destructive",
-        title: "Error",
-        description: "Failed to create new layout"
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to create new layout'
       });
     }
   };
@@ -325,7 +325,7 @@ export default function ProjectDetailsPage() {
         <Separator />
 
         {/* Project Details Card with integrated actions */}
-        <Card className="overflow-hidden border-2 border-muted">
+        <Card className="overflow-hidden border-2 border-muted shadow-sm hover:shadow-md transition-all duration-300">
           <CardHeader className="bg-muted/30 pb-4">
             <div className="flex justify-between items-center">
               <div>
