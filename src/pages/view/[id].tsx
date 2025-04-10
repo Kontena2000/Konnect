@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
@@ -6,22 +5,32 @@ import { Button } from "@/components/ui/button";
 import { ArrowLeft, Loader2 } from "lucide-react";
 import { Layout } from "@/services/layout";
 import layoutService from "@/services/layout";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function ViewerPage() {
   const router = useRouter();
   const { id } = router.query;
+  const { user } = useAuth();
   
   const [layout, setLayout] = useState<Layout | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const loadLayout = async () => {
       if (id) {
+        console.log("Attempting to load layout with ID:", id);
         try {
-          const layoutData = await layoutService.getLayout(id as string);
+          // Pass the user to getLayout to handle authentication
+          const layoutData = await layoutService.getLayout(id as string, user || undefined);
+          console.log("Layout data loaded:", layoutData ? "success" : "null");
           setLayout(layoutData);
-        } catch (error) {
-          console.error("Error loading layout:", error);
+          if (!layoutData) {
+            setError("Layout not found or you do not have permission to view it.");
+          }
+        } catch (err) {
+          console.error("Error loading layout:", err);
+          setError(err instanceof Error ? err.message : "Failed to load layout");
         } finally {
           setLoading(false);
         }
@@ -29,7 +38,7 @@ export default function ViewerPage() {
     };
 
     loadLayout();
-  }, [id]);
+  }, [id, user]);
 
   const handleBackToProject = () => {
     if (layout && layout.projectId) {
@@ -50,14 +59,14 @@ export default function ViewerPage() {
     );
   }
 
-  if (!layout) {
+  if (error || !layout) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <Card className="w-full max-w-md">
           <CardHeader>
             <CardTitle>Layout Not Found</CardTitle>
             <CardDescription>
-              The layout you are looking for could not be found.
+              {error || "The layout you are looking for could not be found."}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -93,10 +102,31 @@ export default function ViewerPage() {
             </div>
           </CardHeader>
           <CardContent>
-            <div className="text-center py-8">
-              <p className="text-muted-foreground">
-                This is a simplified view of the layout details.
-              </p>
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <h3 className="text-sm font-medium">Project ID</h3>
+                  <p>{layout.projectId}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">Last Updated</h3>
+                  <p>{layout.updatedAt ? new Date(layout.updatedAt).toLocaleString() : "Unknown"}</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">Modules</h3>
+                  <p>{layout.modules?.length || 0} modules</p>
+                </div>
+                <div>
+                  <h3 className="text-sm font-medium">Connections</h3>
+                  <p>{layout.connections?.length || 0} connections</p>
+                </div>
+              </div>
+              
+              <div className="text-center py-4 mt-4">
+                <p className="text-muted-foreground">
+                  This is a simplified view of the layout details.
+                </p>
+              </div>
             </div>
           </CardContent>
         </Card>
