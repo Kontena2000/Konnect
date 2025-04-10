@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from 'react';
 import { Button } from "@/components/ui/button";
 import { 
@@ -155,6 +156,8 @@ export function SaveLayoutDialog({
           await layoutService.updateLayout(layoutData.id, saveData, user as AuthUser);
           layoutId = layoutData.id;
           console.log('Layout updated successfully:', layoutId);
+          
+          // Show success toast
           toast({
             title: 'Success',
             description: 'Layout updated successfully'
@@ -177,6 +180,8 @@ export function SaveLayoutDialog({
           );
           
           console.log('New layout created successfully:', layoutId);
+          
+          // Show success toast
           toast({
             title: 'Success',
             description: 'New layout created successfully'
@@ -187,15 +192,16 @@ export function SaveLayoutDialog({
         }
       }
       
-      // Close dialog first to prevent any UI issues
+      // Close dialog
       setOpen(false);
       
-      // Then call the callback with the new layout ID
+      // Call the callback with the new layout ID
       if (onSaveComplete && layoutId) {
         console.log('Calling onSaveComplete with layoutId:', layoutId);
+        // Use a small delay to ensure dialog is closed first
         setTimeout(() => {
           onSaveComplete(layoutId);
-        }, 100); // Small delay to ensure dialog is closed first
+        }, 100);
       }
       
     } catch (error) {
@@ -217,7 +223,7 @@ export function SaveLayoutDialog({
       <DialogTrigger asChild>
         {trigger}
       </DialogTrigger>
-      <DialogContent className='sm:max-w-[500px]'>
+      <DialogContent className="sm:max-w-[500px]">
         <DialogHeader>
           <DialogTitle>Save Layout</DialogTitle>
           <DialogDescription>
@@ -226,35 +232,35 @@ export function SaveLayoutDialog({
         </DialogHeader>
         
         {error && (
-          <Alert variant='destructive' className='mt-2'>
-            <AlertCircle className='h-4 w-4' />
+          <Alert variant="destructive" className="mt-2">
+            <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
         )}
         
-        <div className='grid gap-4 py-4'>
-          <div className='grid gap-2'>
-            <Label htmlFor='project'>Project</Label>
+        <div className="grid gap-4 py-4">
+          <div className="grid gap-2">
+            <Label htmlFor="project">Project</Label>
             <ProjectSelector
               selectedProjectId={selectedProjectId}
               onSelect={setSelectedProjectId}
             />
           </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='name'>Name</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="name">Name</Label>
             <Input
-              id='name'
-              placeholder='Layout name'
+              id="name"
+              placeholder="Layout name"
               value={name}
               onChange={(e) => setName(e.target.value)}
             />
           </div>
-          <div className='grid gap-2'>
-            <Label htmlFor='description'>Description</Label>
+          <div className="grid gap-2">
+            <Label htmlFor="description">Description</Label>
             <Textarea
-              id='description'
-              placeholder='Layout description'
+              id="description"
+              placeholder="Layout description"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               rows={3}
@@ -262,17 +268,17 @@ export function SaveLayoutDialog({
           </div>
         </div>
         <DialogFooter>
-          <Button variant='outline' onClick={() => setOpen(false)}>
+          <Button variant="outline" onClick={() => setOpen(false)}>
             Cancel
           </Button>
           <Button 
             onClick={handleSave} 
             disabled={saving || !name.trim() || !selectedProjectId}
-            className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+            className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
           >
             {saving ? (
               <>
-                <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Saving...
               </>
             ) : (

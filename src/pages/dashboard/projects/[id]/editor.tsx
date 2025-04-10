@@ -211,16 +211,33 @@ export default function LayoutEditorPage() {
     // Update URL to include the layout ID without full page reload
     // Use the current projectId from the URL to ensure consistency
     const currentProjectId = router.query.id as string;
-    const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
     
-    console.log('Updating URL to:', newUrl);
-    router.push(newUrl, undefined, { shallow: true });
-    
-    // Show success toast
-    toast({
-      title: 'Success',
-      description: 'Layout saved successfully'
-    });
+    // Only update URL if we're still on the editor page
+    if (router.pathname.includes('/editor')) {
+      const newUrl = `/dashboard/projects/${currentProjectId}/editor?layoutId=${newLayoutId}`;
+      console.log('Updating URL to:', newUrl);
+      
+      // Use shallow routing to avoid full page reload
+      router.replace(newUrl, undefined, { shallow: true })
+        .then(() => {
+          console.log('URL updated successfully');
+          
+          // Show success toast after URL update
+          toast({
+            title: 'Success',
+            description: 'Layout saved successfully'
+          });
+        })
+        .catch(err => {
+          console.error('Error updating URL:', err);
+        });
+    } else {
+      // Just show success toast if we're not on the editor page
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully'
+      });
+    }
   }, [router, toast]);
   
   // Handle camera zoom
