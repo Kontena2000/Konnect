@@ -63,6 +63,45 @@ export default function ProjectDetailsPage() {
   const [calculationsRefreshTrigger, setCalculationsRefreshTrigger] = useState(0);
   const [activeTab, setActiveTab] = useState('layouts');
 
+  const refreshCalculations = useCallback(async () => {
+    if (!id) return;
+    
+    try {
+      console.log('Refreshing calculations for project:', id);
+      const db = getFirestoreSafely();
+      if (!db) {
+        console.error('Firestore not available');
+        return;
+      }
+      
+      const calculationsQuery = query(
+        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+        where('projectId', '==', id),
+        orderBy('createdAt', 'desc')
+      );
+      const calculationsSnapshot = await getDocs(calculationsQuery);
+      const calculationsData = calculationsSnapshot.docs.map(doc => {
+        const data = doc.data();
+        return {
+          id: doc.id,
+          ...data,
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
+        };
+      });
+      
+      console.log(`Found ${calculationsData.length} calculations for project ${id}`);
+      setCalculations(calculationsData);
+      setCalculationsRefreshTrigger(prev => prev + 1);
+    } catch (error) {
+      console.error('Error refreshing calculations:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to refresh calculations'
+      });
+    }
+  }, [id, toast]);
+
   useEffect(() => {
     const loadProjectData = async () => {
       if (!id || !user) return;
@@ -106,45 +145,6 @@ export default function ProjectDetailsPage() {
     
     loadProjectData();
   }, [id, user, router, toast, refreshCalculations]);
-
-  const refreshCalculations = useCallback(async () => {
-    if (!id) return;
-    
-    try {
-      console.log('Refreshing calculations for project:', id);
-      const db = getFirestoreSafely();
-      if (!db) {
-        console.error('Firestore not available');
-        return;
-      }
-      
-      const calculationsQuery = query(
-        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
-        where('projectId', '==', id),
-        orderBy('createdAt', 'desc')
-      );
-      const calculationsSnapshot = await getDocs(calculationsQuery);
-      const calculationsData = calculationsSnapshot.docs.map(doc => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date()
-        };
-      });
-      
-      console.log(`Found ${calculationsData.length} calculations for project ${id}`);
-      setCalculations(calculationsData);
-      setCalculationsRefreshTrigger(prev => prev + 1);
-    } catch (error) {
-      console.error('Error refreshing calculations:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to refresh calculations'
-      });
-    }
-  }, [id, toast]);
 
   // Check for tab parameter in URL
   useEffect(() => {

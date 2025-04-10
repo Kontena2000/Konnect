@@ -123,12 +123,32 @@ export default function MatrixCalculatorPage() {
         return;
       }
       
+      console.log('Loading calculation with ID:', calculationId);
+      
       const calculationRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', calculationId);
       const calculationSnap = await getDoc(calculationRef);
       
       if (calculationSnap.exists()) {
         const calculationData = calculationSnap.data();
+        console.log('Calculation data loaded:', calculationData);
+        
+        // Store the full calculation data
+        setCalculation(calculationData);
+        
+        // Set the results for the calculator component
         setInitialResults(calculationData.results);
+        
+        // If there's a projectId in the calculation data, set the project
+        if (calculationData.projectId && !projectId) {
+          const projectRef = doc(db, 'projects', calculationData.projectId);
+          const projectSnap = await getDoc(projectRef);
+          if (projectSnap.exists()) {
+            setProject({
+              id: projectSnap.id,
+              ...projectSnap.data()
+            });
+          }
+        }
         
         toast({
           title: 'Calculation Loaded',

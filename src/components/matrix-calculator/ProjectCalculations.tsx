@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+
+import { useState, useEffect, useCallback } from "react";
 import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { getFirestoreSafely } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -23,14 +24,8 @@ export function ProjectCalculations({
   const [expanded, setExpanded] = useState(true);
   const { toast } = useToast();
 
-  // Load calculations when projectId changes or refreshTrigger changes
-  useEffect(() => {
-    if (!projectId) return;
-    
-    loadCalculations();
-  }, [projectId, refreshTrigger, loadCalculations]);
-
-  const loadCalculations = async () => {
+  // Define loadCalculations with useCallback to avoid dependency issues
+  const loadCalculations = useCallback(async () => {
     if (!projectId) return;
     
     setLoading(true);
@@ -79,7 +74,14 @@ export function ProjectCalculations({
     } finally {
       setLoading(false);
     }
-  };
+  }, [projectId, toast]);
+
+  // Load calculations when projectId changes or refreshTrigger changes
+  useEffect(() => {
+    if (!projectId) return;
+    
+    loadCalculations();
+  }, [projectId, refreshTrigger, loadCalculations]);
 
   const handleLoadCalculation = (calculationId: string) => {
     if (onLoadCalculation) {
