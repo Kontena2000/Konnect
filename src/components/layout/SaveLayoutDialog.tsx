@@ -135,6 +135,11 @@ export function SaveLayoutDialog({
             moduleCopy.scale = moduleCopy.scale.map(Number);
           }
           
+          // Add selected property if it doesn't exist
+          if (moduleCopy.selected === undefined) {
+            moduleCopy.selected = false;
+          }
+          
           return moduleCopy;
         });
       }

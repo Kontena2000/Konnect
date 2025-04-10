@@ -158,7 +158,7 @@ const safeSerialize = (data: any): any => {
     // Handle objects
     if (typeof data === 'object') {
       try {
-        const result = {};
+        const result: Record<string, any> = {};
         // Safely copy properties
         Object.keys(data || {}).forEach(key => {
           if (data[key] !== undefined && data[key] !== null) {

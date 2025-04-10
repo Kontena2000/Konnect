@@ -1,4 +1,3 @@
-
 import { useState, useCallback, useRef, useEffect, useMemo } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
@@ -201,7 +200,13 @@ export function useModuleState(param?: UseModuleStateProps) {
       return;
     }
     
-    setModules(prev => [...prev, module]);
+    // Ensure module has selected property
+    const moduleWithSelected = {
+      ...module,
+      selected: module.selected === undefined ? false : module.selected
+    };
+    
+    setModules(prev => [...prev, moduleWithSelected]);
   }, []);
 
   const removeModule = useCallback((moduleId: string) => {
