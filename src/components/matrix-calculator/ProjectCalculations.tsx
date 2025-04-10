@@ -28,7 +28,7 @@ export function ProjectCalculations({
     if (!projectId) return;
     
     loadCalculations();
-  }, [projectId, refreshTrigger]);
+  }, [projectId, refreshTrigger, loadCalculations]);
 
   const loadCalculations = async () => {
     if (!projectId) return;
@@ -64,7 +64,7 @@ export function ProjectCalculations({
         return {
           id: doc.id,
           ...data,
-          createdAt: data.createdAt?.toDate() || new Date(),
+          createdAt: data.createdAt?.toDate ? data.createdAt.toDate() : new Date(),
         };
       });
 
