@@ -163,13 +163,13 @@ export function CalculationDetailsModal({
                       {renderDataRow("Project Name", calculation.projectName || "N/A")}
                       {renderDataRow("Total Racks", calculation.totalRacks || "N/A")}
                       {renderDataRow("Power Density", `${calculation.kwPerRack || "N/A"} kW/rack`)}
-                      {renderDataRow("Cooling Type", calculation.coolingType === 'dlc'
-                        ? 'Direct Liquid Cooling'
-                        : calculation.coolingType === 'air'
-                        ? 'Air Cooling'
-                        : calculation.coolingType === 'hybrid'
-                        ? 'Hybrid Cooling'
-                        : 'Immersion Cooling')}
+                      {renderDataRow("Cooling Type", calculation.coolingType === "dlc"
+                        ? "Direct Liquid Cooling"
+                        : calculation.coolingType === "air"
+                        ? "Air Cooling"
+                        : calculation.coolingType === "hybrid"
+                        ? "Hybrid Cooling"
+                        : "Immersion Cooling")}
                       {renderDataRow("Location", calculation.location?.name || "N/A")}
                     </div>
                   </div>
@@ -223,12 +223,12 @@ export function CalculationDetailsModal({
                       </div>
                     ))}
 
-                    {calculation.results.power.breakdown && (
+                    {calculation.results.power.breakdown && 
                       renderSection("Power Breakdown", (
                         <div className="space-y-2">
                           {Object.entries(calculation.results.power.breakdown).map(([key, value]: [string, any]) => (
                             <div key={key} className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
                               <span className="font-medium">{formatNumber(value)} kW</span>
                             </div>
                           ))}
@@ -244,25 +244,25 @@ export function CalculationDetailsModal({
                   <>
                     {renderSection("Cooling Summary", (
                       <div className="space-y-2">
-                        {renderDataRow("Cooling Type", calculation.coolingType === 'dlc'
-                          ? 'Direct Liquid Cooling'
-                          : calculation.coolingType === 'air'
-                          ? 'Air Cooling'
-                          : calculation.coolingType === 'hybrid'
-                          ? 'Hybrid Cooling'
-                          : 'Immersion Cooling')}
+                        {renderDataRow("Cooling Type", calculation.coolingType === "dlc"
+                          ? "Direct Liquid Cooling"
+                          : calculation.coolingType === "air"
+                          ? "Air Cooling"
+                          : calculation.coolingType === "hybrid"
+                          ? "Hybrid Cooling"
+                          : "Immersion Cooling")}
                         {renderDataRow("Heat Rejection", `${formatNumber(calculation.results.cooling.heatRejection)} kW`)}
                         {renderDataRow("Cooling Power", `${formatNumber(calculation.results.cooling.coolingPower)} kW`)}
                         {renderDataRow("Water Usage", `${formatNumber(calculation.results.cooling.waterUsage)} m³/year`)}
                       </div>
                     ))}
 
-                    {calculation.results.cooling.breakdown && (
+                    {calculation.results.cooling.breakdown && 
                       renderSection("Cooling Breakdown", (
                         <div className="space-y-2">
                           {Object.entries(calculation.results.cooling.breakdown).map(([key, value]: [string, any]) => (
                             <div key={key} className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
                               <span className="font-medium">{formatNumber(value)} kW</span>
                             </div>
                           ))}
@@ -285,12 +285,12 @@ export function CalculationDetailsModal({
                       </div>
                     ))}
 
-                    {calculation.results.cost.breakdown && (
+                    {calculation.results.cost.breakdown && 
                       renderSection("Cost Breakdown", (
                         <div className="space-y-2">
                           {Object.entries(calculation.results.cost.breakdown).map(([key, value]: [string, any]) => (
                             <div key={key} className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
                               <span className="font-medium">{formatCurrency(value)}</span>
                             </div>
                           ))}
