@@ -335,13 +335,22 @@ export default function ProjectDetailsPage() {
                 <CardDescription>Detailed information about this project</CardDescription>
               </div>
               {!editMode && (
-                <Button
-                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
-                  className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
-                >
-                  <Edit className='mr-2 h-4 w-4' />
-                  Open Editor
-                </Button>
+                <div className="flex gap-2">
+                  <Button
+                    onClick={() => setEditMode(true)}
+                    className='bg-[#6E56CF] hover:bg-[#6E56CF]/90 text-white'
+                  >
+                    <FileEdit className='mr-2 h-4 w-4' />
+                    Edit Details
+                  </Button>
+                  <Button
+                    onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                    className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+                  >
+                    <Edit className='mr-2 h-4 w-4' />
+                    Open Editor
+                  </Button>
+                </div>
               )}
             </div>
           </CardHeader>
@@ -418,17 +427,6 @@ export default function ProjectDetailsPage() {
                 <div>
                   <h3 className="text-lg font-medium mb-4">Project Actions</h3>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <Button 
-                      className="bg-[#6E56CF] hover:bg-[#6E56CF]/80 text-white h-auto py-4 px-4 rounded-lg shadow-sm hover:shadow transition-all duration-200 border border-transparent hover:border-[#6E56CF]/30"
-                      onClick={() => setEditMode(true)}
-                    >
-                      <div className="flex flex-col items-center text-center w-full">
-                        <FileEdit className="h-8 w-8 mb-2" />
-                        <span className="font-medium">Edit Project Details</span>
-                        <span className="text-xs mt-1 text-white/70">Update project information</span>
-                      </div>
-                    </Button>
-                    
                     <Dialog>
                       <DialogTrigger asChild>
                         <Button 
