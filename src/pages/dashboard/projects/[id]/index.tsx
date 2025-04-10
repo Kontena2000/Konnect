@@ -29,7 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar } from "lucide-react";
+import { Settings, Share, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, Calendar, ArrowLeft, FileEdit } from "lucide-react";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -313,32 +313,38 @@ export default function ProjectDetailsPage() {
             <h1 className='text-3xl font-bold tracking-tight'>{project.name}</h1>
             <p className='text-muted-foreground'>{project.description}</p>
           </div>
-          <div className='flex items-center gap-2'>
-            <Button
-              variant='outline'
-              onClick={() => router.push('/dashboard/projects')}
-            >
-              Back to Projects
-            </Button>
-            <Button
-              onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
-              className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
-            >
-              <Edit className='mr-2 h-4 w-4' />
-              Open Editor
-            </Button>
-          </div>
+          <Button
+            variant='outline'
+            onClick={() => router.push('/dashboard/projects')}
+            className="gap-2"
+          >
+            <ArrowLeft className='h-4 w-4' />
+            Back to Projects
+          </Button>
         </div>
 
         <Separator />
 
-        {/* Project Details Card - Moved above tabs */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Project Information</CardTitle>
-            <CardDescription>Detailed information about this project</CardDescription>
+        {/* Project Details Card with integrated actions */}
+        <Card className="overflow-hidden border-2 border-muted">
+          <CardHeader className="bg-muted/30 pb-4">
+            <div className="flex justify-between items-center">
+              <div>
+                <CardTitle>Project Information</CardTitle>
+                <CardDescription>Detailed information about this project</CardDescription>
+              </div>
+              {!editMode && (
+                <Button
+                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                  className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+                >
+                  <Edit className='mr-2 h-4 w-4' />
+                  Open Editor
+                </Button>
+              )}
+            </div>
           </CardHeader>
-          <CardContent className='space-y-4'>
+          <CardContent className='space-y-6 pt-6'>
             <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
               <div>
                 <h3 className='text-sm font-medium text-muted-foreground'>Project ID</h3>
@@ -399,313 +405,322 @@ export default function ProjectDetailsPage() {
                 </div>
               )}
             </div>
+
+            {/* Project Actions */}
+            {!editMode && (
+              <>
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Project Actions</h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                    <Button 
+                      className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-auto py-3 px-4"
+                      onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <LayoutGrid className="h-6 w-6 mb-1" />
+                        <span>Create New Layout</span>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      className="bg-[#4A7AFF] hover:bg-[#4A7AFF]/90 text-white h-auto py-3 px-4"
+                      onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <Calculator className="h-6 w-6 mb-1" />
+                        <span>Create Calculation</span>
+                      </div>
+                    </Button>
+                    
+                    <Button 
+                      className="bg-[#6E56CF] hover:bg-[#6E56CF]/90 text-white h-auto py-3 px-4"
+                      onClick={() => setEditMode(true)}
+                    >
+                      <div className="flex flex-col items-center text-center">
+                        <FileEdit className="h-6 w-6 mb-1" />
+                        <span>Edit Project Details</span>
+                      </div>
+                    </Button>
+                    
+                    <Dialog>
+                      <DialogTrigger asChild>
+                        <Button 
+                          className="bg-[#3CB371] hover:bg-[#3CB371]/90 text-white h-auto py-3 px-4"
+                        >
+                          <div className="flex flex-col items-center text-center">
+                            <Share className="h-6 w-6 mb-1" />
+                            <span>Share Project</span>
+                          </div>
+                        </Button>
+                      </DialogTrigger>
+                      <DialogContent>
+                        <DialogHeader>
+                          <DialogTitle>Share Project</DialogTitle>
+                          <DialogDescription>
+                            Enter the email address of the user you want to share this project with.
+                          </DialogDescription>
+                        </DialogHeader>
+                        <div className="space-y-4 py-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="email">Email Address</Label>
+                            <Input 
+                              id="email" 
+                              placeholder="user@example.com" 
+                              value={shareEmail}
+                              onChange={(e) => setShareEmail(e.target.value)}
+                            />
+                          </div>
+                        </div>
+                        <DialogFooter>
+                          <Button onClick={handleShareProject}>
+                            Share
+                          </Button>
+                        </DialogFooter>
+                      </DialogContent>
+                    </Dialog>
+                    
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button 
+                          className="bg-red-500 hover:bg-red-600 text-white h-auto py-3 px-4"
+                        >
+                          <div className="flex flex-col items-center text-center">
+                            <Trash2 className="h-6 w-6 mb-1" />
+                            <span>Delete Project</span>
+                          </div>
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            This action cannot be undone. This will permanently delete the project
+                            and all associated layouts and calculations.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction onClick={handleDeleteProject} className="bg-red-500 hover:bg-red-600">
+                            Delete
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  </div>
+                </div>
+              </>
+            )}
+            
+            {editMode && (
+              <div className="space-y-4 border rounded-lg p-4 bg-muted/10">
+                <h3 className="text-lg font-medium">Edit Project Details</h3>
+                <div className="space-y-2">
+                  <Label htmlFor="name">Project Name</Label>
+                  <Input 
+                    id="name" 
+                    name="name"
+                    value={formData.name} 
+                    onChange={handleInputChange}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="description">Description</Label>
+                  <Textarea 
+                    id="description" 
+                    name="description"
+                    value={formData.description} 
+                    onChange={handleInputChange}
+                    rows={4}
+                  />
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="plotWidth">Plot Width (m)</Label>
+                    <Input 
+                      id="plotWidth" 
+                      name="plotWidth"
+                      type="number" 
+                      value={formData.plotWidth} 
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="plotLength">Plot Length (m)</Label>
+                    <Input 
+                      id="plotLength" 
+                      name="plotLength"
+                      type="number" 
+                      value={formData.plotLength} 
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                </div>
+                <div className="flex justify-end gap-2 pt-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => setEditMode(false)}
+                  >
+                    Cancel
+                  </Button>
+                  <Button 
+                    onClick={handleSaveProject}
+                    disabled={saving}
+                    className="bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
+                  >
+                    {saving ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Saving...
+                      </>
+                    ) : (
+                      <>
+                        <Save className="mr-2 h-4 w-4" />
+                        Save Changes
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
-        <div className='grid grid-cols-1 md:grid-cols-3 gap-6'>
-          <div className='md:col-span-2 space-y-6'>
-            <Tabs defaultValue="layouts">
-              <TabsList>
-                <TabsTrigger value="layouts">Layouts</TabsTrigger>
-                <TabsTrigger value="calculations">Calculations</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="layouts" className="space-y-4">
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                  {layouts.length > 0 ? (
-                    layouts.map((layout) => (
-                      <Card key={layout.id}>
-                        <CardHeader className='pb-2'>
-                          <CardTitle>{layout.name}</CardTitle>
-                          <CardDescription>
-                            {layout.description || 'No description'}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <p className='text-sm'>
-                            {layout.modules?.length || 0} modules, {layout.connections?.length || 0} connections
-                          </p>
-                          <p className='text-xs text-muted-foreground'>
-                            Last updated: {layout.updatedAt ? new Date((layout.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
-                          </p>
-                        </CardContent>
-                        <CardFooter className='flex justify-end gap-2'>
-                          <Button 
-                            variant='outline' 
-                            size='sm'
-                            onClick={() => handleEditLayout(layout.id)}
-                          >
-                            <Edit className='mr-2 h-4 w-4' />
-                            Edit
-                          </Button>
-                          <Button 
-                            variant='outline' 
-                            size='sm'
-                            onClick={() => handleViewLayout(layout.id)}
-                          >
-                            <Eye className='mr-2 h-4 w-4' />
-                            View
-                          </Button>
-                          <DeleteLayoutDialog 
-                            layoutId={layout.id}
-                            layoutName={layout.name}
-                            onDeleteComplete={refreshLayouts}
-                          />
-                        </CardFooter>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className='col-span-full text-center py-8'>
-                      <p className='text-muted-foreground'>No layouts found for this project</p>
-                      <Button 
-                        variant='outline' 
-                        className='mt-4'
-                        onClick={() => router.push(`/dashboard/projects/${project.id}/editor`)}
-                      >
-                        <LayoutGrid className='mr-2 h-4 w-4' />
-                        Create Layout
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-              
-              <TabsContent value="calculations" className="space-y-4">
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
-                  {calculations.length > 0 ? (
-                    calculations.map((calculation) => (
-                      <Card key={calculation.id}>
-                        <CardHeader className='pb-2'>
-                          <CardTitle>{calculation.name || 'Unnamed Calculation'}</CardTitle>
-                          <CardDescription>
-                            {calculation.description || `${calculation.kwPerRack}kW per rack, ${calculation.totalRacks} racks`}
-                          </CardDescription>
-                        </CardHeader>
-                        <CardContent>
-                          <div className='space-y-1'>
-                            <p className='text-sm'>
-                              <span className='font-medium'>Cooling:</span> {calculation.coolingType || calculation.results?.rack?.coolingType || 'Unknown'}
-                            </p>
-                            <p className='text-sm'>
-                              <span className='font-medium'>Power:</span> {calculation.kwPerRack || calculation.results?.rack?.powerDensity || 0} kW/rack
-                            </p>
-                            {(calculation.results?.costs?.tco?.total5Years || calculation.results?.cost?.totalProjectCost) && (
-                              <p className='text-sm'>
-                                <span className='font-medium'>Total Cost:</span> $
-                                {calculation.results?.costs?.tco?.total5Years 
-                                  ? (calculation.results.costs.tco.total5Years / 1000000).toFixed(2) + 'M'
-                                  : (calculation.results?.cost?.totalProjectCost || 0).toLocaleString()}
-                              </p>
-                            )}
-                          </div>
-                          <p className='text-xs text-muted-foreground mt-2'>
-                            Created: {calculation.createdAt || calculation.timestamp 
-                              ? new Date(((calculation.createdAt || calculation.timestamp) as any)?.seconds * 1000 || Date.now()).toLocaleString() 
-                              : 'Unknown'}
-                          </p>
-                        </CardContent>
-                        <CardFooter className='flex justify-end gap-2'>
-                          <Button 
-                            variant='outline' 
-                            size='sm'
-                            onClick={() => handleEditCalculation(calculation.id)}
-                          >
-                            <Edit className='mr-2 h-4 w-4' />
-                            View
-                          </Button>
-                        </CardFooter>
-                      </Card>
-                    ))
-                  ) : (
-                    <div className='col-span-full text-center py-8'>
-                      <p className='text-muted-foreground'>No calculations found for this project</p>
-                      <Button 
-                        variant='outline' 
-                        className='mt-4'
-                        onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
-                      >
-                        <Calculator className='mr-2 h-4 w-4' />
-                        Create Calculation
-                      </Button>
-                    </div>
-                  )}
-                </div>
-              </TabsContent>
-            </Tabs>
-          </div>
-          
-          <div className="md:col-span-1 space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Project Actions</CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <Button 
-                  className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
-                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
-                >
-                  <LayoutGrid className="mr-2 h-4 w-4" />
-                  Create New Layout
-                </Button>
-                
-                <Button 
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
-                >
-                  <Calculator className="mr-2 h-4 w-4" />
-                  Create Calculation
-                </Button>
-                
-                <Button 
-                  className="w-full"
-                  variant="outline"
-                  onClick={() => setEditMode(true)}
-                >
-                  <Settings className="mr-2 h-4 w-4" />
-                  Edit Project Details
-                </Button>
-                
-                <Dialog>
-                  <DialogTrigger asChild>
-                    <Button 
-                      className="w-full"
-                      variant="outline"
-                    >
-                      <Share className="mr-2 h-4 w-4" />
-                      Share Project
-                    </Button>
-                  </DialogTrigger>
-                  <DialogContent>
-                    <DialogHeader>
-                      <DialogTitle>Share Project</DialogTitle>
-                      <DialogDescription>
-                        Enter the email address of the user you want to share this project with.
-                      </DialogDescription>
-                    </DialogHeader>
-                    <div className="space-y-4 py-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email Address</Label>
-                        <Input 
-                          id="email" 
-                          placeholder="user@example.com" 
-                          value={shareEmail}
-                          onChange={(e) => setShareEmail(e.target.value)}
-                        />
-                      </div>
-                    </div>
-                    <DialogFooter>
-                      <Button onClick={handleShareProject}>
-                        Share
-                      </Button>
-                    </DialogFooter>
-                  </DialogContent>
-                </Dialog>
-                
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button 
-                      className="w-full"
-                      variant="destructive"
-                    >
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Delete Project
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This action cannot be undone. This will permanently delete the project
-                        and all associated layouts and calculations.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={handleDeleteProject}>
-                        Delete
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </CardContent>
-            </Card>
+        <div className='space-y-6'>
+          <Tabs defaultValue="layouts" className="w-full">
+            <TabsList className="w-full justify-start">
+              <TabsTrigger value="layouts" className="flex-1 max-w-[200px]">
+                <LayoutGrid className="mr-2 h-4 w-4" />
+                Layouts
+              </TabsTrigger>
+              <TabsTrigger value="calculations" className="flex-1 max-w-[200px]">
+                <Calculator className="mr-2 h-4 w-4" />
+                Calculations
+              </TabsTrigger>
+            </TabsList>
             
-            {editMode && (
-              <Card>
-                <CardHeader>
-                  <CardTitle>Edit Project</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="name">Project Name</Label>
-                    <Input 
-                      id="name" 
-                      name="name"
-                      value={formData.name} 
-                      onChange={handleInputChange}
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="description">Description</Label>
-                    <Textarea 
-                      id="description" 
-                      name="description"
-                      value={formData.description} 
-                      onChange={handleInputChange}
-                      rows={4}
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="plotWidth">Plot Width (m)</Label>
-                      <Input 
-                        id="plotWidth" 
-                        name="plotWidth"
-                        type="number" 
-                        value={formData.plotWidth} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="plotLength">Plot Length (m)</Label>
-                      <Input 
-                        id="plotLength" 
-                        name="plotLength"
-                        type="number" 
-                        value={formData.plotLength} 
-                        onChange={handleInputChange}
-                      />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
+            <TabsContent value="layouts" className="space-y-4 mt-6">
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                {layouts.length > 0 ? (
+                  layouts.map((layout) => (
+                    <Card key={layout.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <CardHeader className='pb-2 bg-muted/20'>
+                        <CardTitle>{layout.name}</CardTitle>
+                        <CardDescription>
+                          {layout.description || 'No description'}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <p className='text-sm'>
+                          {layout.modules?.length || 0} modules, {layout.connections?.length || 0} connections
+                        </p>
+                        <p className='text-xs text-muted-foreground mt-1'>
+                          Last updated: {layout.updatedAt ? new Date((layout.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
+                        </p>
+                      </CardContent>
+                      <CardFooter className='flex justify-end gap-2'>
+                        <Button 
+                          variant='outline' 
+                          size='sm'
+                          onClick={() => handleEditLayout(layout.id)}
+                        >
+                          <Edit className='mr-2 h-4 w-4' />
+                          Edit
+                        </Button>
+                        <Button 
+                          variant='outline' 
+                          size='sm'
+                          onClick={() => handleViewLayout(layout.id)}
+                        >
+                          <Eye className='mr-2 h-4 w-4' />
+                          View
+                        </Button>
+                        <DeleteLayoutDialog 
+                          layoutId={layout.id}
+                          layoutName={layout.name}
+                          onDeleteComplete={refreshLayouts}
+                        />
+                      </CardFooter>
+                    </Card>
+                  ))
+                ) : (
+                  <div className='col-span-full text-center py-8'>
+                    <p className='text-muted-foreground'>No layouts found for this project</p>
                     <Button 
-                      variant="outline" 
-                      onClick={() => setEditMode(false)}
+                      variant='outline' 
+                      className='mt-4'
+                      onClick={() => router.push(`/dashboard/projects/${project.id}/editor`)}
                     >
-                      Cancel
-                    </Button>
-                    <Button 
-                      onClick={handleSaveProject}
-                      disabled={saving}
-                    >
-                      {saving ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Saving...
-                        </>
-                      ) : (
-                        <>
-                          <Save className="mr-2 h-4 w-4" />
-                          Save Changes
-                        </>
-                      )}
+                      <LayoutGrid className='mr-2 h-4 w-4' />
+                      Create Layout
                     </Button>
                   </div>
-                </CardContent>
-              </Card>
-            )}
-          </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="calculations" className="space-y-4 mt-6">
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+                {calculations.length > 0 ? (
+                  calculations.map((calculation) => (
+                    <Card key={calculation.id} className="overflow-hidden hover:shadow-md transition-shadow">
+                      <CardHeader className='pb-2 bg-muted/20'>
+                        <CardTitle>{calculation.name || 'Unnamed Calculation'}</CardTitle>
+                        <CardDescription>
+                          {calculation.description || `${calculation.kwPerRack}kW per rack, ${calculation.totalRacks} racks`}
+                        </CardDescription>
+                      </CardHeader>
+                      <CardContent className="pt-4">
+                        <div className='space-y-1'>
+                          <p className='text-sm'>
+                            <span className='font-medium'>Cooling:</span> {calculation.coolingType || calculation.results?.rack?.coolingType || 'Unknown'}
+                          </p>
+                          <p className='text-sm'>
+                            <span className='font-medium'>Power:</span> {calculation.kwPerRack || calculation.results?.rack?.powerDensity || 0} kW/rack
+                          </p>
+                          {(calculation.results?.costs?.tco?.total5Years || calculation.results?.cost?.totalProjectCost) && (
+                            <p className='text-sm'>
+                              <span className='font-medium'>Total Cost:</span> $
+                              {calculation.results?.costs?.tco?.total5Years 
+                                ? (calculation.results.costs.tco.total5Years / 1000000).toFixed(2) + 'M'
+                                : (calculation.results?.cost?.totalProjectCost || 0).toLocaleString()}
+                            </p>
+                          )}
+                        </div>
+                        <p className='text-xs text-muted-foreground mt-2'>
+                          Created: {calculation.createdAt || calculation.timestamp 
+                            ? new Date(((calculation.createdAt || calculation.timestamp) as any)?.seconds * 1000 || Date.now()).toLocaleString() 
+                            : 'Unknown'}
+                        </p>
+                      </CardContent>
+                      <CardFooter className='flex justify-end gap-2'>
+                        <Button 
+                          variant='outline' 
+                          size='sm'
+                          onClick={() => handleEditCalculation(calculation.id)}
+                        >
+                          <Edit className='mr-2 h-4 w-4' />
+                          View
+                        </Button>
+                      </CardFooter>
+                    </Card>
+                  ))
+                ) : (
+                  <div className='col-span-full text-center py-8'>
+                    <p className='text-muted-foreground'>No calculations found for this project</p>
+                    <Button 
+                      variant='outline' 
+                      className='mt-4'
+                      onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${project.id}`)}
+                    >
+                      <Calculator className='mr-2 h-4 w-4' />
+                      Create Calculation
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </AppLayout>
