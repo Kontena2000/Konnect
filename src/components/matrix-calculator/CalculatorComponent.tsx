@@ -12,7 +12,7 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, Zap, FileText } from 'lucide-react';
+import { Loader2, Zap, FileText, Save } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
 import { Switch } from '@/components/ui/switch';
@@ -23,6 +23,7 @@ import { getFirestoreSafely } from '@/lib/firebase';
 import { FirebaseDebugger } from './FirebaseDebugger';
 import { saveCalculationResult } from '@/services/calculationService';
 import { waitForMatrixCalculatorBootstrap } from '@/utils/matrixCalculatorBootstrap';
+import { useRouter } from 'next/router';
 
 // Fix the location-based calculation
 const calculateWithLocationFactors = async (
@@ -41,17 +42,21 @@ const calculateWithLocationFactors = async (
 };
 
 interface CalculatorComponentProps {
+  calculationId?: string;
+  projectId?: string;
   userId: string;
   userRole?: string;
-  onSave?: (results: any) => void;
+  onSaveComplete?: (calculationId: string, projectId: string) => void;
   initialResults?: any;
 }
 
 export function CalculatorComponent({ 
+  calculationId, 
+  projectId: initialProjectId,
   userId, 
   userRole = 'user',
   initialResults = null,
-  onSave
+  onSaveComplete 
 }: CalculatorComponentProps) {
   // State for inputs
   const [kwPerRack, setKwPerRack] = useState(75);
@@ -66,7 +71,7 @@ export function CalculatorComponent({
   const [calculationName, setCalculationName] = useState('');
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [projectId, setProjectId] = useState<string | undefined>(undefined);
+  const [projectId, setProjectId] = useState<string | undefined>(initialProjectId);
   
   // Advanced options
   const [redundancyMode, setRedundancyMode] = useState('N+1');
@@ -83,6 +88,16 @@ export function CalculatorComponent({
   const [preferredCoolingTypes, setPreferredCoolingTypes] = useState<string[]>(['air', 'dlc', 'hybrid', 'immersion']);
   
   const { toast } = useToast();
+  const router = useRouter();
+  
+  // Set projectId from URL if available
+  useEffect(() => {
+    const { projectId } = router.query;
+    if (projectId && typeof projectId === 'string') {
+      console.log('Setting projectId from URL:', projectId);
+      setProjectId(projectId);
+    }
+  }, [router.query]);
   
   // Check if Firebase is already initialized when component mounts
   useEffect(() => {
@@ -427,12 +442,12 @@ export function CalculatorComponent({
           description: 'Calculation saved successfully'
         });
         
-        if (onSave) {
-          onSave({
-            id: result.id,
-            name: calculationName,
-            projectId
-          });
+        // Make sure we have a valid projectId before passing it to the callback
+        const safeProjectId = projectId || '';
+        
+        if (onSaveComplete && result.id) {
+          // Ensure both parameters are strings
+          onSaveComplete(result.id, safeProjectId);
         }
         
         setCalculationName('');
@@ -440,7 +455,7 @@ export function CalculatorComponent({
       } else {
         toast({
           title: 'Error',
-          description: 'Failed to save calculation',
+          description: result.error || 'Failed to save calculation',
           variant: 'destructive'
         });
       }
@@ -453,6 +468,16 @@ export function CalculatorComponent({
       });
     } finally {
       setSaving(false);
+    }
+  };
+
+  // Handle save calculation complete from SaveCalculationDialog
+  const handleSaveComplete = (calculationId: string, savedProjectId: string) => {
+    console.log('Save complete callback received with:', calculationId, savedProjectId);
+    if (onSaveComplete) {
+      // Ensure we're passing the correct project ID
+      const finalProjectId = savedProjectId || projectId || '';
+      onSaveComplete(calculationId, finalProjectId);
     }
   };
 
@@ -847,11 +872,24 @@ export function CalculatorComponent({
       
       {results && (
         <>
-          <ResultsDisplay results={results} onSave={onSave} userId={userId} />
+          <ResultsDisplay 
+            results={results} 
+            onSave={(savedResults) => {
+              // This is a compatibility wrapper for the old onSave interface
+              if (onSaveComplete && projectId) {
+                onSaveComplete('temp-id', projectId);
+              }
+            }} 
+            userId={userId} 
+          />
           
-          <div className='flex justify-center mt-6'>
+          <div className='flex justify-end mt-4'>
             <SaveCalculationDialog
-              config={getCalculationConfig()}
+              config={{
+                kwPerRack,
+                coolingType,
+                totalRacks
+              }}
               results={results}
               options={{
                 redundancyMode,
@@ -864,23 +902,11 @@ export function CalculatorComponent({
                 },
                 location: useLocationData && location ? location : undefined
               }}
-              onSaveComplete={(calculationId, projectId) => {
-                toast({
-                  title: 'Calculation Saved',
-                  description: `Calculation has been saved to project successfully.`,
-                });
-                
-                if (onSave) {
-                  onSave({
-                    id: calculationId,
-                    projectId,
-                    ...results
-                  });
-                }
-              }}
+              onSaveComplete={handleSaveComplete}
               trigger={
-                <Button variant='outline' size='lg' className='w-full sm:w-auto'>
-                  Save Calculation to Project
+                <Button className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'>
+                  <Save className='mr-2 h-4 w-4' />
+                  Save Calculation
                 </Button>
               }
             />

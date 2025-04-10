@@ -21,12 +21,15 @@ import { CalculatorDebugger } from '@/components/matrix-calculator/CalculatorDeb
 export default function MatrixCalculatorPage() {
   const router = useRouter();
   const { calculationId, projectId } = router.query;
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const [calculation, setCalculation] = useState<any>(null);
   const [project, setProject] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const [initialResults, setInitialResults] = useState<any>(null);
+  const [loadingCalculation, setLoadingCalculation] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const initializeMatrixCalculator = async () => {
@@ -65,6 +68,7 @@ export default function MatrixCalculatorPage() {
         
         // If projectId is provided, fetch project data
         if (projectId) {
+          console.log('Fetching project data for projectId:', projectId);
           const projectRef = doc(db, 'projects', projectId as string);
           const projectSnap = await getDoc(projectRef);
           
@@ -85,6 +89,7 @@ export default function MatrixCalculatorPage() {
               return;
             }
             
+            console.log('Project data loaded:', projectData);
             setProject(projectData);
           } else {
             setError('Project not found');
@@ -94,78 +99,8 @@ export default function MatrixCalculatorPage() {
         
         // If calculationId is provided, fetch the calculation
         if (calculationId) {
-          try {
-            const calculationRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', calculationId as string);
-            const calculationSnap = await getDoc(calculationRef);
-            
-            if (calculationSnap.exists()) {
-              const calculationData = {
-                id: calculationSnap.id,
-                ...calculationSnap.data()
-              } as any; // Cast to any to avoid TypeScript errors
-              
-              // Check if user has access to this calculation
-              const calcUserId = calculationData.userId || '';
-              const calcProjectId = calculationData.projectId || '';
-              
-              if (calcUserId !== user.uid && user.email !== 'ruud@kontena.eu') {
-                // If calculation belongs to a project, check project access
-                if (calcProjectId) {
-                  const calcProjectRef = doc(db, 'projects', calcProjectId);
-                  const calcProjectSnap = await getDoc(calcProjectRef);
-                  
-                  if (calcProjectSnap.exists()) {
-                    const calcProjectData = calcProjectSnap.data();
-                    const projectSharedWith = calcProjectData.sharedWith || [];
-                    
-                    if (calcProjectData.userId !== user.uid && 
-                        (!projectSharedWith.includes(user.email))) {
-                      setError('You do not have access to this calculation');
-                      return;
-                    }
-                  }
-                } else {
-                  setError('You do not have access to this calculation');
-                  return;
-                }
-              }
-              
-              setCalculation(calculationData);
-              
-              // If calculation belongs to a project and no projectId was provided,
-              // fetch the project data
-              if (calcProjectId && !projectId) {
-                const calcProjectRef = doc(db, 'projects', calcProjectId);
-                const calcProjectSnap = await getDoc(calcProjectRef);
-                
-                if (calcProjectSnap.exists()) {
-                  setProject({
-                    id: calcProjectSnap.id,
-                    ...calcProjectSnap.data()
-                  });
-                }
-              }
-            } else {
-              // Try the old path structure
-              const oldCalculationRef = doc(db, 'users', user.uid, 'calculations', calculationId as string);
-              const oldCalculationSnap = await getDoc(oldCalculationRef);
-              
-              if (oldCalculationSnap.exists()) {
-                const calculationData = {
-                  id: oldCalculationSnap.id,
-                  ...oldCalculationSnap.data()
-                };
-                setCalculation(calculationData);
-              } else {
-                setError('Calculation not found');
-                return;
-              }
-            }
-          } catch (error) {
-            console.error('Error fetching calculation:', error);
-            setError('Failed to load calculation data');
-            return;
-          }
+          console.log('Loading calculation with ID:', calculationId);
+          await loadCalculation(calculationId as string);
         }
       } catch (err) {
         console.error('Error fetching data:', err);
@@ -178,13 +113,87 @@ export default function MatrixCalculatorPage() {
     fetchData();
   }, [calculationId, projectId, user]);
 
-  const handleSaveCalculation = (savedCalculation: any) => {
-    // Redirect to the project page if we have a project
-    if (savedCalculation.projectId) {
-      router.push(`/dashboard/projects/${savedCalculation.projectId}?tab=calculations`);
+  const loadCalculation = async (calculationId: string) => {
+    setLoadingCalculation(true);
+    try {
+      const db = getFirestoreSafely();
+      if (!db) {
+        toast({
+          title: 'Error',
+          description: 'Could not connect to database',
+          variant: 'destructive',
+        });
+        return;
+      }
+      
+      console.log('Loading calculation with ID:', calculationId);
+      
+      const calculationRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', calculationId);
+      const calculationSnap = await getDoc(calculationRef);
+      
+      if (calculationSnap.exists()) {
+        const calculationData = calculationSnap.data();
+        console.log('Calculation data loaded:', calculationData);
+        
+        // Store the full calculation data
+        setCalculation(calculationData);
+        
+        // Set the results for the calculator component
+        setInitialResults(calculationData.results);
+        
+        // If there's a projectId in the calculation data, set the project
+        if (calculationData.projectId && !projectId) {
+          const projectRef = doc(db, 'projects', calculationData.projectId);
+          const projectSnap = await getDoc(projectRef);
+          if (projectSnap.exists()) {
+            setProject({
+              id: projectSnap.id,
+              ...projectSnap.data()
+            });
+          }
+        }
+        
+        toast({
+          title: 'Calculation Loaded',
+          description: `Loaded calculation: ${calculationData.name || 'Unnamed Calculation'}`,
+        });
+      } else {
+        toast({
+          title: 'Error',
+          description: 'Calculation not found',
+          variant: 'destructive',
+        });
+      }
+    } catch (error) {
+      console.error('Error loading calculation:', error);
+      toast({
+        title: 'Error',
+        description: 'Failed to load calculation',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoadingCalculation(false);
     }
   };
-  
+
+  // Handle save complete event with improved logging
+  const handleSaveComplete = (calculationId: string, projectId: string) => {
+    console.log('Calculation saved with ID:', calculationId, 'to project:', projectId);
+    
+    // Optionally redirect to project page
+    if (projectId) {
+      toast({
+        title: 'Success',
+        description: 'Calculation saved successfully. Redirecting to project page...',
+      });
+      
+      // Short delay before redirecting to ensure toast is visible
+      setTimeout(() => {
+        router.push(`/dashboard/projects/${projectId}?tab=calculations`);
+      }, 1500);
+    }
+  };
+
   const handleLoadCalculation = (calculationId: string) => {
     console.log('Loading calculation:', calculationId);
     // Instead of directly loading the calculation, redirect to the page with the calculationId
@@ -253,9 +262,9 @@ export default function MatrixCalculatorPage() {
             <>
               <CalculatorComponent 
                 userId={user?.uid || ''} 
-                userRole={user?.role || 'user'}
-                initialResults={calculation?.results}
-                onSave={handleSaveCalculation}
+                userRole={user?.role || 'user'} 
+                initialResults={initialResults}
+                onSaveComplete={handleSaveComplete}
               />
               <SavedCalculations 
                 userId={user.uid} 

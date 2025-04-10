@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -304,7 +303,7 @@ export function ModuleObject({
           <ConnectionPoint
             key={`${module.id}-connection-${index}`}
             position={point.position}
-            type={(point.types?.[0] || point.type || "power") as ConnectionType}
+            type={(point.type || "power") as ConnectionType}
             moduleId={module.id}
           />
         ))}

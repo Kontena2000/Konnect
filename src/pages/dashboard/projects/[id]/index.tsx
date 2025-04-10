@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -509,7 +510,178 @@ export default function ProjectDetailsPage() {
             </Tabs>
           </div>
           
-          ... existing code ...
+          <div className="md:col-span-1 space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Project Actions</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <Button 
+                  className="w-full bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black"
+                  onClick={() => router.push(`/dashboard/projects/${id}/editor`)}
+                >
+                  <LayoutGrid className="mr-2 h-4 w-4" />
+                  Create New Layout
+                </Button>
+                
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
+                >
+                  <Calculator className="mr-2 h-4 w-4" />
+                  Create Calculation
+                </Button>
+                
+                <Button 
+                  className="w-full"
+                  variant="outline"
+                  onClick={() => setEditMode(true)}
+                >
+                  <Settings className="mr-2 h-4 w-4" />
+                  Edit Project Details
+                </Button>
+                
+                <Dialog>
+                  <DialogTrigger asChild>
+                    <Button 
+                      className="w-full"
+                      variant="outline"
+                    >
+                      <Share className="mr-2 h-4 w-4" />
+                      Share Project
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Share Project</DialogTitle>
+                      <DialogDescription>
+                        Enter the email address of the user you want to share this project with.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className="space-y-4 py-4">
+                      <div className="space-y-2">
+                        <Label htmlFor="email">Email Address</Label>
+                        <Input 
+                          id="email" 
+                          placeholder="user@example.com" 
+                          value={shareEmail}
+                          onChange={(e) => setShareEmail(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button onClick={handleShareProject}>
+                        Share
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
+                <AlertDialog>
+                  <AlertDialogTrigger asChild>
+                    <Button 
+                      className="w-full"
+                      variant="destructive"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      Delete Project
+                    </Button>
+                  </AlertDialogTrigger>
+                  <AlertDialogContent>
+                    <AlertDialogHeader>
+                      <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+                      <AlertDialogDescription>
+                        This action cannot be undone. This will permanently delete the project
+                        and all associated layouts and calculations.
+                      </AlertDialogDescription>
+                    </AlertDialogHeader>
+                    <AlertDialogFooter>
+                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                      <AlertDialogAction onClick={handleDeleteProject}>
+                        Delete
+                      </AlertDialogAction>
+                    </AlertDialogFooter>
+                  </AlertDialogContent>
+                </AlertDialog>
+              </CardContent>
+            </Card>
+            
+            {editMode && (
+              <Card>
+                <CardHeader>
+                  <CardTitle>Edit Project</CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="name">Project Name</Label>
+                    <Input 
+                      id="name" 
+                      name="name"
+                      value={formData.name} 
+                      onChange={handleInputChange}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="description">Description</Label>
+                    <Textarea 
+                      id="description" 
+                      name="description"
+                      value={formData.description} 
+                      onChange={handleInputChange}
+                      rows={4}
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="plotWidth">Plot Width (m)</Label>
+                      <Input 
+                        id="plotWidth" 
+                        name="plotWidth"
+                        type="number" 
+                        value={formData.plotWidth} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <Label htmlFor="plotLength">Plot Length (m)</Label>
+                      <Input 
+                        id="plotLength" 
+                        name="plotLength"
+                        type="number" 
+                        value={formData.plotLength} 
+                        onChange={handleInputChange}
+                      />
+                    </div>
+                  </div>
+                  <div className="flex justify-end gap-2 pt-2">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setEditMode(false)}
+                    >
+                      Cancel
+                    </Button>
+                    <Button 
+                      onClick={handleSaveProject}
+                      disabled={saving}
+                    >
+                      {saving ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Saving...
+                        </>
+                      ) : (
+                        <>
+                          <Save className="mr-2 h-4 w-4" />
+                          Save Changes
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </div>
       </div>
     </AppLayout>

@@ -100,7 +100,10 @@ class ModelImporterService {
       // Download the model file
       const modelBuffer = await this.downloadModelFile(modelId, format);
       
-      // Upload to Firebase Storage
+      // Check if storage is null before using it
+      if (!storage) {
+        throw new Error('Firebase Storage is not available');
+      }
       const uniqueId = uuidv4();
       const storagePath = `models/${userId}/${uniqueId}.${format}`;
       const storageRef = ref(storage, storagePath);
@@ -130,7 +133,7 @@ class ModelImporterService {
       return importedModel;
     } catch (error) {
       console.error('Error importing model:', error);
-      throw new Error(`Failed to import model: ${error.message}`);
+      throw new Error(`Failed to import model: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -183,7 +186,7 @@ class ModelImporterService {
       return response.data;
     } catch (error) {
       console.error(`Error downloading model ${modelId}:`, error);
-      throw new Error(`Failed to download model: ${error.message}`);
+      throw new Error(`Failed to download model: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -193,6 +196,11 @@ class ModelImporterService {
    */
   private async saveModelMetadata(model: ImportedModel): Promise<void> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        throw new Error('Firestore is not available');
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       await addDoc(modelsCollection, {
         ...model,
@@ -200,7 +208,7 @@ class ModelImporterService {
       });
     } catch (error) {
       console.error('Error saving model metadata:', error);
-      throw new Error(`Failed to save model metadata: ${error.message}`);
+      throw new Error(`Failed to save model metadata: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 
@@ -211,6 +219,12 @@ class ModelImporterService {
    */
   async getUserModels(userId: string): Promise<ImportedModel[]> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        console.error('Firestore is not available');
+        return [];
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       const userModelsQuery = query(modelsCollection, where('userId', '==', userId));
       const snapshot = await getDocs(userModelsQuery);
@@ -235,6 +249,12 @@ class ModelImporterService {
    */
   async getProjectModels(projectId: string): Promise<ImportedModel[]> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        console.error('Firestore is not available');
+        return [];
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       const projectModelsQuery = query(modelsCollection, where('projectId', '==', projectId));
       const snapshot = await getDocs(projectModelsQuery);
@@ -259,6 +279,11 @@ class ModelImporterService {
    */
   async assignModelToProject(modelId: string, projectId: string): Promise<void> {
     try {
+      // Check if db is null before using it
+      if (!db) {
+        throw new Error('Firestore is not available');
+      }
+      
       const modelsCollection = collection(db, 'importedModels');
       const modelQuery = query(modelsCollection, where('id', '==', modelId));
       const snapshot = await getDocs(modelQuery);
@@ -273,7 +298,7 @@ class ModelImporterService {
       });
     } catch (error) {
       console.error('Error assigning model to project:', error);
-      throw new Error(`Failed to assign model to project: ${error.message}`);
+      throw new Error(`Failed to assign model to project: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
 }

@@ -1,6 +1,6 @@
 
 import { useEffect } from "react";
-import { Mesh, MeshStandardMaterial } from "three";
+import { Mesh } from "three";
 import * as THREE from "three";
 import { Module } from "@/types/module";
 import { EditorPreferences } from "@/services/editor-preferences";
@@ -43,16 +43,12 @@ export function ModuleMesh({
       castShadow
       receiveShadow
     >
-      <boxGeometry args={[
-        module.dimensions.length,
-        module.dimensions.height,
-        module.dimensions.width
-      ]} />
+      <boxGeometry args={[1, 1, 1]} />
       <meshStandardMaterial
         color={module.color || '#888888'}
         transparent={true}
         opacity={editorPreferences?.objects.transparency || 0.85}
-        wireframe={module.wireframe}
+        wireframe={false}
       />
     </mesh>
   );
