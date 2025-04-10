@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -504,67 +503,67 @@ export default function ProjectDetailsPage() {
               </TabsTrigger>
             </TabsList>
             
-            <TabsContent value="layouts" className="space-y-4 mt-6">
-              <div className="flex justify-between items-center mb-4">
-                <h3 className="text-lg font-medium">Project Layouts</h3>
+            <TabsContent value='layouts' className='space-y-4 mt-6'>
+              <div className='flex justify-between items-center mb-4'>
+                <h3 className='text-lg font-medium'>Project Layouts</h3>
                 <Button 
-                  className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2"
+                  className='bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow flex items-center gap-2'
                   onClick={createNewLayout}
                   disabled={creatingLayout}
                 >
                   {creatingLayout ? (
                     <>
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                      <Loader2 className='h-4 w-4 animate-spin' />
                       Creating...
                     </>
                   ) : (
                     <>
-                      <Plus className="h-4 w-4" />
+                      <Plus className='h-4 w-4' />
                       Create New Layout
                     </>
                   )}
                 </Button>
               </div>
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
                 {layouts.length > 0 ? (
                   layouts.map((layout) => (
-                    <Card key={layout.id} className="overflow-hidden hover:shadow-md transition-shadow border border-muted">
-                      <CardHeader className="pb-2 bg-muted/20">
+                    <Card key={layout.id} className='overflow-hidden hover:shadow-md transition-shadow border border-muted'>
+                      <CardHeader className='pb-2 bg-muted/20'>
                         <CardTitle>{layout.name}</CardTitle>
                         <CardDescription>
                           {layout.description || 'No description'}
                         </CardDescription>
                       </CardHeader>
-                      <CardContent className="pt-4">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Badge variant="outline" className="bg-muted/30">
+                      <CardContent className='pt-4'>
+                        <div className='flex items-center gap-2 mb-2'>
+                          <Badge variant='outline' className='bg-muted/30'>
                             {layout.modules?.length || 0} modules
                           </Badge>
-                          <Badge variant="outline" className="bg-muted/30">
+                          <Badge variant='outline' className='bg-muted/30'>
                             {layout.connections?.length || 0} connections
                           </Badge>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-1">
+                        <p className='text-xs text-muted-foreground mt-1'>
                           Last updated: {layout.updatedAt ? new Date((layout.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
                         </p>
                       </CardContent>
-                      <CardFooter className="flex justify-end gap-2 pt-2 border-t bg-muted/10">
+                      <CardFooter className='flex justify-end gap-2 pt-2 border-t bg-muted/10'>
                         <Button 
-                          variant="outline" 
-                          size="sm"
+                          variant='outline' 
+                          size='sm'
                           onClick={() => handleEditLayout(layout.id)}
-                          className="hover:bg-[#F1B73A]/10"
+                          className='hover:bg-[#F1B73A]/10'
                         >
-                          <Edit className="mr-2 h-4 w-4" />
+                          <Edit className='mr-2 h-4 w-4' />
                           Edit
                         </Button>
                         <Button 
-                          variant="outline" 
-                          size="sm"
+                          variant='outline' 
+                          size='sm'
                           onClick={() => handleViewLayout(layout.id)}
-                          className="hover:bg-[#9333EA]/10"
+                          className='hover:bg-[#9333EA]/10'
                         >
-                          <Eye className="mr-2 h-4 w-4" />
+                          <Eye className='mr-2 h-4 w-4' />
                           View
                         </Button>
                         <DeleteLayoutDialog 
@@ -576,26 +575,9 @@ export default function ProjectDetailsPage() {
                     </Card>
                   ))
                 ) : (
-                  <div className="col-span-full text-center py-12 bg-muted/10 rounded-lg border border-dashed border-muted">
-                    <LayoutGrid className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                    <p className="text-muted-foreground mb-4">No layouts found for this project</p>
-                    <Button 
-                      className="bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black transition-all duration-200 shadow-sm hover:shadow"
-                      onClick={createNewLayout}
-                      disabled={creatingLayout}
-                    >
-                      {creatingLayout ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Creating...
-                        </>
-                      ) : (
-                        <>
-                          <Plus className="mr-2 h-4 w-4" />
-                          Create First Layout
-                        </>
-                      )}
-                    </Button>
+                  <div className='col-span-full text-center py-12 bg-muted/10 rounded-lg border border-dashed border-muted'>
+                    <LayoutGrid className='h-12 w-12 mx-auto text-muted-foreground mb-4' />
+                    <p className='text-muted-foreground mb-4'>No layouts found for this project</p>
                   </div>
                 )}
               </div>

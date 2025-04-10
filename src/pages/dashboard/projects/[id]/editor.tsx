@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -17,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
+import { FileText, Copy, Loader2 } from 'lucide-react';
 import layoutService from '@/services/layout';
 import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
@@ -33,7 +33,7 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Share, Copy, Loader2 } from 'lucide-react';
+import { Share } from 'lucide-react';
 
 interface EditorState {
   modules: Module[];
@@ -642,9 +642,9 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout fullWidth noPadding>
-      <div className="h-screen w-screen overflow-hidden">
+      <div className='h-screen w-screen overflow-hidden'>
         <ErrorBoundary>
-          <div className="absolute inset-0">
+          <div className='absolute inset-0'>
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -674,43 +674,15 @@ export default function LayoutEditorPage() {
                 </div>
                 
                 <div className='flex items-center gap-2 justify-center'>
-                  <Dialog>
-                    <DialogTrigger asChild>
-                      <Button 
-                        variant='outline'
-                        size='sm'
-                        className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
-                      >
-                        <Share className='h-3 w-3' />
-                        <span>Share</span>
-                      </Button>
-                    </DialogTrigger>
-                    <DialogContent>
-                      <DialogHeader>
-                        <DialogTitle>Share Project</DialogTitle>
-                        <DialogDescription>
-                          Enter the email address of the user you want to share this project with.
-                        </DialogDescription>
-                      </DialogHeader>
-                      <div className='space-y-4 py-4'>
-                        <div className='space-y-2'>
-                          <Label htmlFor='email'>Email Address</Label>
-                          <Input 
-                            id='email' 
-                            placeholder='user@example.com' 
-                            value={shareEmail}
-                            onChange={(e) => setShareEmail(e.target.value)}
-                          />
-                        </div>
-                      </div>
-                      <DialogFooter>
-                        <Button onClick={handleShareProject} className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white'>
-                          <Share className='mr-2 h-4 w-4' />
-                          Share
-                        </Button>
-                      </DialogFooter>
-                    </DialogContent>
-                  </Dialog>
+                  <Button 
+                    variant='outline'
+                    size='sm'
+                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
+                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${projectId}`)}
+                  >
+                    <FileText className='h-3 w-3' />
+                    <span>Generate Report</span>
+                  </Button>
                   
                   <Button 
                     variant='outline'
