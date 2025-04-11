@@ -16,9 +16,13 @@ interface ReportOptions {
   companyName?: string;
   projectName?: string;
   clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   preparedBy?: string;
   date?: string;
   logo?: string;
+  selectedCalculation?: any; // Tambahkan properti untuk detail perhitungan yang dipilih
 }
 
 /**
@@ -44,8 +48,12 @@ export async function generateCalculationPdfReport(
     companyName: "Kontena",
     projectName: "Data Center Project",
     clientName: "",
+    clientEmail: "",
+    clientPhone: "",
+    clientAddress: "",
     preparedBy: "",
     date: new Date().toLocaleDateString(),
+    selectedCalculation: null
   };
 
   // Merge default options with provided options
@@ -53,6 +61,11 @@ export async function generateCalculationPdfReport(
 
   // Add report header
   addReportHeader(doc, config, finalReportOptions);
+
+  // Add selected calculation details if available
+  if (finalReportOptions.selectedCalculation) {
+    addSelectedCalculationDetails(doc, finalReportOptions.selectedCalculation);
+  }
 
   // Add executive summary
   addExecutiveSummary(doc, config, results, options);
@@ -85,6 +98,127 @@ export async function generateCalculationPdfReport(
 
   // Return the PDF as a blob
   return doc.output("blob");
+}
+
+/**
+ * Add selected calculation details section
+ */
+function addSelectedCalculationDetails(doc: jsPDF, calculation: any) {
+  // Check if we need to add a new page
+  const currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 15 : 150;
+  
+  if (currentY > 250) {
+    doc.addPage();
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    doc.text("Selected Calculation Details", 15, 20);
+    
+    addCalculationDetailsTable(doc, calculation, 30);
+  } else {
+    // Section title
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    doc.text("Selected Calculation Details", 15, currentY);
+    
+    addCalculationDetailsTable(doc, calculation, currentY + 10);
+  }
+}
+
+/**
+ * Add calculation details table
+ */
+function addCalculationDetailsTable(doc: jsPDF, calculation: any, startY: number) {
+  try {
+    // Extract calculation details
+    const createdAt = calculation.createdAt ? new Date(calculation.createdAt).toLocaleDateString() : "Not specified";
+    const updatedAt = calculation.updatedAt ? new Date(calculation.updatedAt).toLocaleDateString() : "Not specified";
+    
+    // Prepare data for table
+    const detailsData = [
+      ["Calculation Name", calculation.name || "Unnamed Calculation"],
+      ["Description", calculation.description || "No description provided"],
+      ["Created At", createdAt],
+      ["Last Updated", updatedAt]
+    ];
+    
+    // Add tags if available
+    if (calculation.tags && calculation.tags.length > 0) {
+      detailsData.push(["Tags", calculation.tags.join(", ")]);
+    }
+    
+    // Add creator if available
+    if (calculation.createdBy) {
+      detailsData.push(["Created By", calculation.createdBy]);
+    }
+    
+    // Add calculation ID
+    if (calculation.id) {
+      detailsData.push(["Calculation ID", calculation.id]);
+    }
+    
+    // Add table to document
+    doc.autoTable({
+      startY: startY,
+      body: detailsData,
+      theme: "plain", // Use plain theme for borderless table
+      styles: { 
+        fontSize: 11,
+        cellPadding: 5
+      },
+      margin: { left: 15, right: 15 },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 120 }
+      }
+    });
+    
+    // Add configuration details if available
+    if (calculation.config) {
+      const configY = (doc as any).lastAutoTable.finalY + 10;
+      doc.setFontSize(14);
+      doc.setTextColor(0, 51, 102);
+      doc.text("Configuration Parameters", 15, configY);
+      
+      const configData = [
+        ["Power Density per Rack", `${formatNumber(calculation.config.kwPerRack)} kW`],
+        ["Total Number of Racks", `${formatNumber(calculation.config.totalRacks || 28)}`],
+        ["Cooling Solution", `${capitalizeFirstLetter(calculation.config.coolingType)}`]
+      ];
+      
+      // Add additional configuration parameters if available
+      if (calculation.options) {
+        if (calculation.options.redundancyMode) {
+          configData.push(["Redundancy Mode", calculation.options.redundancyMode]);
+        }
+        
+        if (calculation.options.batteryRuntime) {
+          configData.push(["Battery Runtime", `${calculation.options.batteryRuntime} minutes`]);
+        }
+        
+        if (calculation.options.includeGenerator !== undefined) {
+          configData.push(["Generator Included", calculation.options.includeGenerator ? "Yes" : "No"]);
+        }
+      }
+      
+      doc.autoTable({
+        startY: configY + 5,
+        body: configData,
+        theme: "plain",
+        styles: { fontSize: 10 },
+        margin: { left: 20, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 80 },
+          1: { cellWidth: 80 }
+        }
+      });
+    }
+    
+  } catch (error) {
+    console.error("Error adding calculation details table:", error);
+    doc.setFontSize(10);
+    doc.setTextColor(255, 0, 0);
+    doc.text("Error displaying calculation details", 15, startY + 5);
+  }
 }
 
 /**
@@ -127,6 +261,63 @@ function addReportHeader(doc: jsPDF, config: CalculationConfig, options: ReportO
   doc.setDrawColor(0, 51, 102);
   doc.setLineWidth(0.5);
   doc.line(15, 50, 195, 50);
+
+  // Add project details in a clean table format without borders
+  doc.setFontSize(16);
+  doc.setTextColor(0, 51, 102);
+  doc.text("Project Information", 15, 65);
+  
+  const projectData = [
+    ["Project Name", options.projectName || "Data Center Project"],
+    ["Description", "Data center configuration and calculation report"],
+    ["Status", "Planning"]
+  ];
+  
+  doc.autoTable({
+    startY: 70,
+    body: projectData,
+    theme: "plain", // Use plain theme for borderless table
+    styles: { 
+      fontSize: 11,
+      cellPadding: 5
+    },
+    margin: { left: 15, right: 15 },
+    columnStyles: {
+      0: { cellWidth: 50, fontStyle: 'bold' },
+      1: { cellWidth: 120 }
+    }
+  });
+  
+  // Add client information if available
+  if (options.clientName || options.clientEmail || options.clientPhone || options.clientAddress) {
+    const clientY = (doc as any).lastAutoTable.finalY + 15;
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    doc.text("Client Information", 15, clientY);
+    
+    const clientData = [
+      ["Company Name", options.clientName || "Not specified"],
+      ["Email", options.clientEmail || "Not specified"],
+      ["Phone", options.clientPhone || "Not specified"],
+      ["Address", options.clientAddress || "Not specified"]
+    ];
+    
+    doc.autoTable({
+      startY: clientY + 5,
+      body: clientData,
+      theme: "plain", // Use plain theme for borderless table
+      styles: { 
+        fontSize: 11,
+        cellPadding: 5
+      },
+      margin: { left: 15, right: 15 },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 120 }
+      }
+    });
+  }
 
   // Move to next section
   doc.setFontSize(12);
@@ -532,7 +723,7 @@ function addCostDetails(doc: jsPDF, results: any, startY: number, includeDetaile
   if (includeDetailedBreakdown) {
     const detailedY = (doc as any).lastAutoTable.finalY + 10;
     
-    // Check if we need to add a new page
+    // Check if we need to add a new page for the remaining tables
     if (detailedY > 250) {
       doc.addPage();
       doc.setFontSize(14);

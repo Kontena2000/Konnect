@@ -11,6 +11,10 @@ interface GeneratePdfButtonProps {
   options: CalculationOptions;
   projectName?: string;
   clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
+  selectedCalculation?: any; // Tambahkan properti untuk detail perhitungan yang dipilih
 }
 
 export function GeneratePdfButton({
@@ -18,7 +22,11 @@ export function GeneratePdfButton({
   results,
   options,
   projectName,
-  clientName
+  clientName,
+  clientEmail,
+  clientPhone,
+  clientAddress,
+  selectedCalculation // Tambahkan parameter untuk detail perhitungan yang dipilih
 }: GeneratePdfButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -37,7 +45,11 @@ export function GeneratePdfButton({
           includeDetailedBreakdown: true,
           projectName: projectName || "Data Center Project",
           clientName: clientName || "",
+          clientEmail: clientEmail || "",
+          clientPhone: clientPhone || "",
+          clientAddress: clientAddress || "",
           date: new Date().toLocaleDateString(),
+          selectedCalculation: selectedCalculation // Kirim detail perhitungan yang dipilih ke fungsi generate PDF
         }
       );
       

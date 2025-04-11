@@ -58,6 +58,7 @@
     "firebase-admin": "^13.0.2",
     "framer-motion": "^12.0.6",
     "gsap": "^3.12.7",
+    "html2canvas": "^1.4.1",
     "input-otp": "^1.4.2",
     "jspdf": "^3.0.1",
     "jspdf-autotable": "^5.0.2",
