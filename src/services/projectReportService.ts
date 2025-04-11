@@ -103,7 +103,7 @@ function addReportHeader(doc: jsPDF, project: Project, options: ProjectReportOpt
     // Add title
     doc.setFontSize(24);
     doc.setTextColor(0, 51, 102); // Dark blue
-    doc.text("Project Report", 105, 25, { align: "center" });
+    doc.text("PROJECT REPORT", 105, 25, { align: "center" });
 
     // Add company and project info
     doc.setFontSize(14);
@@ -138,7 +138,7 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
     // Section title
     doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
-    doc.text("Project Details", 15, startY);
+    doc.text("1. Project Details", 15, startY);
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
@@ -211,7 +211,7 @@ function addClientInformation(doc: jsPDF, project: Project, startY: number): num
     // Section title
     doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
-    doc.text("Client Information", 15, startY);
+    doc.text("2. Client Information", 15, startY);
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
@@ -275,7 +275,7 @@ async function addLayoutsSection(doc: jsPDF, layouts: Layout[], layoutImages: { 
     // Section title
     doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
-    doc.text("Project Layouts", 15, startY);
+    doc.text("3. Project Layouts", 15, startY);
     
     return await addLayoutDetails(doc, layouts, layoutImages, startY + 10);
   } catch (error) {
@@ -404,7 +404,7 @@ function addCalculationsSection(doc: jsPDF, calculations: any[], startY: number)
     // Section title
     doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
-    doc.text("Project Calculations", 15, startY);
+    doc.text("4. Project Calculations", 15, startY);
     
     return addCalculationDetails(doc, calculations, startY + 10);
   } catch (error) {
