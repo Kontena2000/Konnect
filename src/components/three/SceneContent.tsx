@@ -10,6 +10,7 @@ import { EnvironmentalElement as ElementType, TerrainData } from '@/services/env
 import { EnvironmentalElement } from '@/components/environment/EnvironmentalElement';
 import { TerrainView } from '@/components/environment/TerrainView';
 import { EditorPreferences } from '@/services/editor-preferences';
+import { SceneElements } from './SceneElements';
 
 interface SceneContentProps {
   modules: Module[];
@@ -29,7 +30,6 @@ interface SceneContentProps {
     width: number;
     height: number;
     depth: number;
-    length: number;
   } | null;
   readOnly?: boolean;
   snapPoints?: Vector3[];
@@ -109,8 +109,6 @@ export function SceneContent({
       }
     }
   }, [isDraggingOver, mousePosition, camera, raycaster, groundPlane, onPreviewPositionUpdate, draggedDimensions]);
-
-  const { camera } = useThree();
 
   return (
     <SceneElements

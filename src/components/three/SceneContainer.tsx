@@ -178,7 +178,11 @@ export function SceneContainer({
       const pos = new Vector3(...module.position);
       const box = new Box3().setFromCenterAndSize(
         pos,
-        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
+        new Vector3(
+          module.dimensions.width || 1, 
+          module.dimensions.height || 1, 
+          module.dimensions.depth || 1
+        )
       );
       lines.push(
         new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),

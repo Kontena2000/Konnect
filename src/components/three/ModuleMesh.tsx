@@ -42,31 +42,6 @@ export function ModuleMesh({
     });
   }, [module.dimensions]);
 
-  // Calculate color based on state
-  const color = useMemo(() => {
-    return module.color || '#666666';
-  }, [module.color]);
-
-  // Calculate bounding box for the module
-  const boundingBox = useMemo(() => {
-    const box = new Box3();
-    const size = new Vector3(dimensions.width, dimensions.height, dimensions.depth);
-    box.setFromCenterAndSize(new Vector3(0, 0, 0), size);
-    return box;
-  }, [dimensions]);
-
-  useEffect(() => {
-    if (meshRef.current) {
-      meshRef.current.traverse((child) => {
-        if (child instanceof THREE.Mesh) {
-          child.castShadow = true;
-          child.receiveShadow = true;
-          child.updateMatrixWorld(true);
-        }
-      });
-    }
-  }, [meshRef]);
-
   return (
     <mesh
       ref={meshRef}
@@ -80,9 +55,9 @@ export function ModuleMesh({
     >
       <boxGeometry args={[dimensions.width, dimensions.height, dimensions.depth]} />
       <meshStandardMaterial 
-        color={color} 
+        color={module.color || '#666666'} 
         transparent={true}
-        opacity={editorPreferences?.objects.transparency || 0.85}
+        opacity={0.85}
       />
     </mesh>
   );
