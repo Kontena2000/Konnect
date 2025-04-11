@@ -632,9 +632,99 @@ export default function ProjectDetailsPage() {
             
             <TabsContent value='client-info' className='space-y-4 mt-6'>
               <Card>
-                <CardHeader>
-                  <CardTitle>Client Information</CardTitle>
-                  <CardDescription>Details about the client for this project</CardDescription>
+                <CardHeader className='flex flex-row items-center justify-between'>
+                  <div>
+                    <CardTitle>Client Information</CardTitle>
+                    <CardDescription>Details about the client for this project</CardDescription>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant='outline'
+                        size='sm'
+                        className='h-8 text-xs flex items-center gap-1 bg-white border-[#F1B73A] text-[#F1B73A] hover:bg-[#F1B73A]/10'
+                      >
+                        <Edit className='h-3 w-3' />
+                        <span>Edit Client Info</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Client Information</DialogTitle>
+                        <DialogDescription>
+                          Update the client information for this project
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className='space-y-4 py-4'>
+                        <div className='grid grid-cols-1 gap-4'>
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientCompany'>Company Name</Label>
+                            <Input
+                              id='clientCompany'
+                              name='clientCompany'
+                              value={formData.clientCompany}
+                              onChange={handleInputChange}
+                              placeholder='Enter company name'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientEmail'>Email</Label>
+                            <Input
+                              id='clientEmail'
+                              name='clientEmail'
+                              type='email'
+                              value={formData.clientEmail}
+                              onChange={handleInputChange}
+                              placeholder='Enter client email'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientPhone'>Phone</Label>
+                            <Input
+                              id='clientPhone'
+                              name='clientPhone'
+                              value={formData.clientPhone}
+                              onChange={handleInputChange}
+                              placeholder='Enter client phone'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientAddress'>Address</Label>
+                            <Textarea
+                              id='clientAddress'
+                              name='clientAddress'
+                              value={formData.clientAddress}
+                              onChange={handleInputChange}
+                              placeholder='Enter client address'
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          onClick={handleSaveProject}
+                          disabled={saving}
+                          className='bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black'
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className='mr-2 h-4 w-4' />
+                              Save Changes
+                            </>
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent className='space-y-6'>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
