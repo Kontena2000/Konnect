@@ -134,7 +134,7 @@ function addReportHeader(doc: jsPDF, config: CalculationConfig, options: ReportO
   doc.setLineWidth(0.5);
   doc.line(15, 50, 195, 50);
 
-  // Add project details in a clean table format
+  // Add project details in a clean table format without borders
   doc.setFontSize(16);
   doc.setTextColor(0, 51, 102);
   doc.text("Project Information", 15, 65);
