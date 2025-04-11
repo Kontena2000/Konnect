@@ -203,8 +203,8 @@ export function SceneContainer({
     const moduleData = event.dataTransfer.getData('application/json');
     if (moduleData) {
       try {
-        const module = JSON.parse(moduleData);
-        draggedModuleRef.current = module;
+        const draggedModule = JSON.parse(moduleData);
+        draggedModuleRef.current = draggedModule;
       } catch (e) {
         console.error('Failed to parse dragged module data:', e);
       }

@@ -1,5 +1,5 @@
 import { useThree } from "@react-three/fiber";
-import { Module } from "@/types/module";
+import { Module, ModuleDimensions } from '@/types/module';
 import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { Vector2, Vector3, Line3, Mesh } from "three";
@@ -13,28 +13,28 @@ interface SceneContentProps {
   onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
-  connections: Connection[];
-  environmentalElements?: ElementType[];
-  terrain?: TerrainData;
+  connections?: any[];
+  environmentalElements?: any[];
+  terrain?: any;
   onEnvironmentalElementSelect?: (elementId: string) => void;
   gridSnap?: boolean;
   isDraggingOver?: boolean;
-  mousePosition: Vector2 | null;
-  draggedDimensions: { length: number; width: number; height: number; } | null;
+  mousePosition?: Vector2 | null;
+  draggedDimensions?: ModuleDimensions | null;
   readOnly?: boolean;
-  snapPoints: Vector3[];
-  snapLines: Line3[];
-  onPreviewPositionUpdate: (position: [number, number, number]) => void;
-  previewMesh: Mesh | null;
-  rotationAngle: number;
+  snapPoints?: Vector3[];
+  snapLines?: Line3[];
+  onPreviewPositionUpdate?: (position: [number, number, number]) => void;
+  previewMesh?: Mesh | null;
+  rotationAngle?: number;
   showGuides?: boolean;
-  previewPosition: [number, number, number];
-  setRotationAngle: (angle: number | ((prev: number) => number)) => void;
-  controlsRef: React.RefObject<any>;
-  isTransforming: boolean;
+  previewPosition?: [number, number, number];
+  setRotationAngle?: (angle: number) => void;
+  controlsRef?: React.RefObject<any>;
+  isTransforming?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
-  editorPreferences?: EditorPreferences | null;
+  editorPreferences?: any;
 }
 
 export function SceneContent({
