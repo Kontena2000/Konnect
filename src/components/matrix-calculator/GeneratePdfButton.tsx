@@ -14,6 +14,7 @@ interface GeneratePdfButtonProps {
   clientEmail?: string;
   clientPhone?: string;
   clientAddress?: string;
+  selectedCalculation?: any; // Tambahkan properti untuk detail perhitungan yang dipilih
 }
 
 export function GeneratePdfButton({
@@ -24,7 +25,8 @@ export function GeneratePdfButton({
   clientName,
   clientEmail,
   clientPhone,
-  clientAddress
+  clientAddress,
+  selectedCalculation // Tambahkan parameter untuk detail perhitungan yang dipilih
 }: GeneratePdfButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -47,6 +49,7 @@ export function GeneratePdfButton({
           clientPhone: clientPhone || "",
           clientAddress: clientAddress || "",
           date: new Date().toLocaleDateString(),
+          selectedCalculation: selectedCalculation // Kirim detail perhitungan yang dipilih ke fungsi generate PDF
         }
       );
       
