@@ -59,58 +59,6 @@ export function Toolbox({
     });
   };
 
-  const handle2DView = () => {
-    console.log('2D View button clicked', controlsRef?.current);
-    if (controlsRef?.current) {
-      // Call the reset method which sets the camera to 2D top-down view
-      controlsRef.current.reset();
-      toast({
-        title: '2D View',
-        description: 'Switched to 2D top-down view',
-        duration: 1500
-      });
-    } else {
-      console.error('Controls reference is not available');
-      toast({
-        title: 'Error',
-        description: 'Could not switch to 2D view',
-        variant: 'destructive',
-        duration: 1500
-      });
-    }
-  };
-
-  const handle3DView = () => {
-    console.log('3D View button clicked', controlsRef?.current);
-    if (controlsRef?.current) {
-      // Use the set3DView method for isometric view
-      if (typeof controlsRef.current.set3DView === 'function') {
-        controlsRef.current.set3DView();
-        toast({
-          title: '3D View',
-          description: 'Switched to 3D isometric view',
-          duration: 1500
-        });
-      } else {
-        console.error('set3DView method is not available');
-        toast({
-          title: 'Error',
-          description: 'Could not switch to 3D view',
-          variant: 'destructive',
-          duration: 1500
-        });
-      }
-    } else {
-      console.error('Controls reference is not available');
-      toast({
-        title: 'Error',
-        description: 'Could not switch to 3D view',
-        variant: 'destructive',
-        duration: 1500
-      });
-    }
-  };
-
   return (
     <div 
       className={cn(
@@ -267,7 +215,11 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={handle2DView}
+                    onClick={() => {
+                      if (controlsRef?.current) {
+                        controlsRef.current.reset();
+                      }
+                    }}
                     className='w-full'
                   >
                     <View className='h-4 w-4' />
@@ -284,7 +236,12 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={handle3DView}
+                    onClick={() => {
+                      if (controlsRef?.current) {
+                        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
+                        controlsRef.current.setPolarAngle(Math.PI / 4);
+                      }
+                    }}
                     className='w-full'
                   >
                     <Grid className='h-4 w-4' />
