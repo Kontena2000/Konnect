@@ -626,11 +626,11 @@ export default function ProjectDetailsPage() {
                             Configuration Summary
                           </h4>
                           <p className='text-sm'>
-                            {calculation.kwPerRack}kW per rack, 
+                            {calculation.kwPerRack || 0}kW per rack, 
                             {calculation.coolingType === 'dlc' ? ' Direct Liquid Cooling' : 
                              calculation.coolingType === 'air' ? ' Air Cooling' : 
                              calculation.coolingType === 'hybrid' ? ' Hybrid Cooling' : ' Immersion Cooling'}, 
-                            {calculation.totalRacks} racks
+                            {calculation.totalRacks || 0} racks
                           </p>
                         </div>
                         
@@ -643,18 +643,18 @@ export default function ProjectDetailsPage() {
                                 Total Project Cost
                               </h4>
                               <p className='text-xl font-bold text-green-600'>
-                                ${typeof calculation.results.cost.totalProjectCost === 'number' 
-                                  ? calculation.results.cost.totalProjectCost.toLocaleString() 
-                                  : '0'}
+                                ${calculation.results.cost.totalProjectCost ? 
+                                  calculation.results.cost.totalProjectCost.toLocaleString() : 
+                                  '0'}
                               </p>
-                              {typeof calculation.results.cost.totalProjectCost === 'number' && calculation.totalRacks > 0 && (
+                              {calculation.results.cost.totalProjectCost && calculation.totalRacks > 0 && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  ${(calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString()} per rack
+                                  ${Math.round(calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString()} per rack
                                 </div>
                               )}
-                              {typeof calculation.results.cost.costPerKw === 'number' && (
+                              {calculation.results.cost.costPerKw && (
                                 <div className='text-xs text-muted-foreground'>
-                                  ${calculation.results.cost.costPerKw.toLocaleString()} per kW
+                                  ${Math.round(calculation.results.cost.costPerKw).toLocaleString()} per kW
                                 </div>
                               )}
                             </div>
@@ -668,12 +668,12 @@ export default function ProjectDetailsPage() {
                                 Power Requirements
                               </h4>
                               <p className='text-xl font-bold text-amber-500'>
-                                {typeof calculation.results.power.totalPower === 'number' 
-                                  ? calculation.results.power.totalPower.toLocaleString() 
-                                  : '0'} kW
+                                {calculation.results.power.totalPower ? 
+                                  calculation.results.power.totalPower.toLocaleString() : 
+                                  '0'} kW
                                 {calculation.results.power.upsCapacity ? ' UPS Capacity' : ''}
                               </p>
-                              {typeof calculation.results.power.upsModules === 'number' && (
+                              {calculation.results.power.upsModules && (
                                 <div className='text-xs text-muted-foreground mt-1'>
                                   {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize || 250}kW UPS Modules
                                 </div>
@@ -696,24 +696,24 @@ export default function ProjectDetailsPage() {
                               <p className='text-xl font-bold text-blue-500'>
                                 {calculation.coolingType === 'hybrid' ? (
                                   <>
-                                    {typeof calculation.results.cooling.dlcCapacity === 'number' 
-                                      ? calculation.results.cooling.dlcCapacity.toLocaleString() 
-                                      : '0'} kW DLC + {' '}
-                                    {typeof calculation.results.cooling.airCapacity === 'number' 
-                                      ? calculation.results.cooling.airCapacity.toLocaleString() 
-                                      : '0'} kW Air
+                                    {calculation.results.cooling.dlcCapacity ? 
+                                      calculation.results.cooling.dlcCapacity.toLocaleString() : 
+                                      '0'} kW DLC + {' '}
+                                    {calculation.results.cooling.airCapacity ? 
+                                      calculation.results.cooling.airCapacity.toLocaleString() : 
+                                      '0'} kW Air
                                   </>
                                 ) : (
                                   <>
-                                    {typeof calculation.results.cooling.coolingCapacity === 'number' 
-                                      ? calculation.results.cooling.coolingCapacity.toLocaleString() 
-                                      : typeof calculation.results.cooling.totalCapacity === 'number'
-                                        ? calculation.results.cooling.totalCapacity.toLocaleString()
-                                        : '0'} kW
+                                    {calculation.results.cooling.coolingCapacity ? 
+                                      calculation.results.cooling.coolingCapacity.toLocaleString() : 
+                                      calculation.results.cooling.totalCapacity ? 
+                                        calculation.results.cooling.totalCapacity.toLocaleString() :
+                                        '0'} kW
                                   </>
                                 )}
                               </p>
-                              {typeof calculation.results.cooling.flowRate === 'number' && (
+                              {calculation.results.cooling.flowRate && (
                                 <div className='text-xs text-muted-foreground mt-1'>
                                   {calculation.results.cooling.flowRate.toLocaleString()} L/min Flow Rate
                                 </div>
