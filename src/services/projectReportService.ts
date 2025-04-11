@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Project } from "@/services/project";
@@ -9,6 +10,9 @@ import html2canvas from "html2canvas";
 declare module "jspdf" {
   interface jsPDF {
     autoTable: (options: any) => jsPDF;
+    lastAutoTable?: {
+      finalY: number;
+    };
   }
 }
 
@@ -97,15 +101,15 @@ function addReportHeader(doc: jsPDF, project: Project, options: ProjectReportOpt
     }
 
     // Add title
-    doc.setFontSize(20);
+    doc.setFontSize(24);
     doc.setTextColor(0, 51, 102); // Dark blue
-    doc.text("Project Report", 105, 20, { align: "center" });
+    doc.text("Project Report", 105, 25, { align: "center" });
 
     // Add company and project info
-    doc.setFontSize(12);
+    doc.setFontSize(14);
     doc.setTextColor(0, 0, 0);
-    doc.text(`Company: ${options.companyName}`, 105, 30, { align: "center" });
-    doc.text(`Project: ${project.name}`, 105, 36, { align: "center" });
+    doc.text(`Company: ${options.companyName}`, 105, 35, { align: "center" });
+    doc.text(`Project: ${project.name || "Untitled Project"}`, 105, 42, { align: "center" });
 
     // Add date and prepared by
     doc.setFontSize(10);
@@ -119,9 +123,6 @@ function addReportHeader(doc: jsPDF, project: Project, options: ProjectReportOpt
     doc.setDrawColor(0, 51, 102);
     doc.setLineWidth(0.5);
     doc.line(15, 50, 195, 50);
-
-    // Move to next section
-    doc.setFontSize(12);
   } catch (error) {
     console.error("Error adding report header:", error);
   }
@@ -135,7 +136,7 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
     const startY = 60;
     
     // Section title
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
     doc.text("Project Details", 15, startY);
     
@@ -153,7 +154,7 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
     
     // Create project details table
     const tableData = [
-      ["Project Name", project.name],
+      ["Project Name", project.name || "Untitled Project"],
       ["Description", project.description || "No description provided"],
       ["Status", project.status || "Planning"],
       ["Created", createdDate],
@@ -166,21 +167,30 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
     }
     
     doc.autoTable({
-      startY: startY + 5,
+      startY: startY + 8,
       head: [["Property", "Value"]],
       body: tableData,
       theme: "grid",
-      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
-      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [0, 51, 102], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 12
+      },
+      styles: { 
+        fontSize: 11,
+        cellPadding: 5
+      },
       margin: { left: 15, right: 15 },
       columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 130 }
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 120 }
       }
     });
     
     // Return the Y position after the table
-    return doc.autoTable.previous.finalY + 15;
+    const finalY = doc.lastAutoTable?.finalY;
+    return finalY ? finalY + 15 : 120;
   } catch (error) {
     console.error("Error adding project details:", error);
     return 120; // Return a default value if there's an error
@@ -192,8 +202,14 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
  */
 function addClientInformation(doc: jsPDF, project: Project, startY: number): number {
   try {
+    // Check if we need to add a new page
+    if (startY > 220) {
+      doc.addPage();
+      startY = 20;
+    }
+    
     // Section title
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
     doc.text("Client Information", 15, startY);
     
@@ -215,21 +231,30 @@ function addClientInformation(doc: jsPDF, project: Project, startY: number): num
     ];
     
     doc.autoTable({
-      startY: startY + 5,
+      startY: startY + 8,
       head: [["Property", "Value"]],
       body: tableData,
       theme: "grid",
-      headStyles: { fillColor: [0, 51, 102], textColor: [255, 255, 255] },
-      styles: { fontSize: 10 },
+      headStyles: { 
+        fillColor: [0, 51, 102], 
+        textColor: [255, 255, 255],
+        fontStyle: 'bold',
+        fontSize: 12
+      },
+      styles: { 
+        fontSize: 11,
+        cellPadding: 5
+      },
       margin: { left: 15, right: 15 },
       columnStyles: {
-        0: { cellWidth: 40 },
-        1: { cellWidth: 130 }
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 120 }
       }
     });
     
     // Return the Y position after the table
-    return doc.autoTable.previous.finalY + 15;
+    const finalY = doc.lastAutoTable?.finalY;
+    return finalY ? finalY + 15 : startY + 60;
   } catch (error) {
     console.error("Error adding client information:", error);
     return startY + 30; // Return a default value if there's an error
@@ -248,7 +273,7 @@ async function addLayoutsSection(doc: jsPDF, layouts: Layout[], layoutImages: { 
     }
     
     // Section title
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
     doc.text("Project Layouts", 15, startY);
     
@@ -270,42 +295,70 @@ async function addLayoutDetails(doc: jsPDF, layouts: Layout[], layoutImages: { [
       const layout = layouts[i];
       
       // Check if we need to add a new page
-      if (currentY > 220) {
+      if (currentY > 200) {
         doc.addPage();
         currentY = 20;
       }
       
       // Add layout title
-      doc.setFontSize(14);
+      doc.setFontSize(16);
       doc.setTextColor(0, 71, 122);
-      doc.text(`Layout: ${layout.name}`, 15, currentY);
-      currentY += 6;
+      doc.text(`Layout: ${layout.name || "Untitled Layout"}`, 15, currentY + 8);
+      currentY += 14;
+      
+      // Create layout info table
+      const tableData = [];
       
       // Add layout description if available
       if (layout.description) {
-        doc.setFontSize(10);
-        doc.setTextColor(0, 0, 0);
-        doc.text(`Description: ${layout.description}`, 15, currentY);
-        currentY += 6;
+        tableData.push(["Description", layout.description]);
       }
       
       // Add layout details
-      doc.setFontSize(10);
-      doc.text(`Modules: ${layout.modules?.length || 0}`, 15, currentY);
-      currentY += 5;
-      doc.text(`Connections: ${layout.connections?.length || 0}`, 15, currentY);
-      currentY += 5;
+      tableData.push(
+        ["Modules", `${layout.modules?.length || 0}`],
+        ["Connections", `${layout.connections?.length || 0}`]
+      );
       
       // Add last updated info
       if (layout.updatedAt) {
         const updatedDate = new Date((layout.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleDateString();
-        doc.text(`Last updated: ${updatedDate}`, 15, currentY);
-        currentY += 10;
+        tableData.push(["Last Updated", updatedDate]);
       }
+      
+      // Add layout info table
+      doc.autoTable({
+        startY: currentY,
+        body: tableData,
+        theme: "plain",
+        styles: { 
+          fontSize: 11,
+          cellPadding: 3
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 40, fontStyle: 'bold' },
+          1: { cellWidth: 130 }
+        }
+      });
+      
+      currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : currentY + 30;
       
       // Add layout image if available
       if (layoutImages[layout.id]) {
         try {
+          // Check if we need to add a new page for the image
+          if (currentY > 170) {
+            doc.addPage();
+            currentY = 20;
+          }
+          
+          // Add image title
+          doc.setFontSize(12);
+          doc.setTextColor(0, 0, 0);
+          doc.text("Layout Visualization:", 15, currentY);
+          currentY += 8;
+          
           // Add the image
           doc.addImage(layoutImages[layout.id], "JPEG", 15, currentY, 180, 100);
           currentY += 110; // Image height + margin
@@ -315,14 +368,16 @@ async function addLayoutDetails(doc: jsPDF, layouts: Layout[], layoutImages: { [
           currentY += 10;
         }
       } else {
-        doc.text("No layout image available", 15, currentY);
+        doc.setFontSize(11);
+        doc.setTextColor(100, 100, 100);
+        doc.text("No layout visualization available", 15, currentY);
         currentY += 10;
       }
       
       // Add separator between layouts
       if (i < layouts.length - 1) {
         doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.2);
+        doc.setLineWidth(0.5);
         doc.line(15, currentY, 195, currentY);
         currentY += 15;
       }
@@ -347,7 +402,7 @@ function addCalculationsSection(doc: jsPDF, calculations: any[], startY: number)
     }
     
     // Section title
-    doc.setFontSize(16);
+    doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
     doc.text("Project Calculations", 15, startY);
     
@@ -369,74 +424,120 @@ function addCalculationDetails(doc: jsPDF, calculations: any[], startY: number):
       const calculation = calculations[i];
       
       // Check if we need to add a new page
-      if (currentY > 220) {
+      if (currentY > 200) {
         doc.addPage();
         currentY = 20;
       }
       
       // Add calculation title
-      doc.setFontSize(14);
+      doc.setFontSize(16);
       doc.setTextColor(0, 71, 122);
-      doc.text(`Calculation: ${calculation.name || 'Untitled Calculation'}`, 15, currentY);
-      currentY += 6;
+      doc.text(`Calculation: ${calculation.name || 'Untitled Calculation'}`, 15, currentY + 8);
+      currentY += 14;
       
       // Add calculation description if available
       if (calculation.description) {
-        doc.setFontSize(10);
+        doc.setFontSize(11);
         doc.setTextColor(0, 0, 0);
         doc.text(`Description: ${calculation.description}`, 15, currentY);
-        currentY += 10;
-      } else {
-        currentY += 4;
+        currentY += 8;
       }
       
       // Add configuration summary
-      doc.setFontSize(12);
+      doc.setFontSize(14);
       doc.setTextColor(0, 51, 102);
       doc.text("Configuration Summary", 15, currentY);
-      currentY += 6;
-      
-      doc.setFontSize(10);
-      doc.setTextColor(0, 0, 0);
+      currentY += 8;
       
       const coolingTypeText = calculation.coolingType === 'dlc' ? 'Direct Liquid Cooling' : 
                               calculation.coolingType === 'air' ? 'Air Cooling' : 
                               calculation.coolingType === 'hybrid' ? 'Hybrid Cooling' : 'Immersion Cooling';
       
-      doc.text(`Power Density: ${calculation.kwPerRack || 0} kW per rack`, 15, currentY);
-      currentY += 5;
-      doc.text(`Cooling Type: ${coolingTypeText}`, 15, currentY);
-      currentY += 5;
-      doc.text(`Total Racks: ${calculation.totalRacks || 0}`, 15, currentY);
-      currentY += 10;
+      // Create configuration summary table
+      const configData = [
+        ["Power Density", `${calculation.kwPerRack || 0} kW per rack`],
+        ["Cooling Type", coolingTypeText],
+        ["Total Racks", `${calculation.totalRacks || 0}`]
+      ];
+      
+      doc.autoTable({
+        startY: currentY,
+        body: configData,
+        theme: "grid",
+        styles: { 
+          fontSize: 11,
+          cellPadding: 5
+        },
+        margin: { left: 15, right: 15 },
+        columnStyles: {
+          0: { cellWidth: 60, fontStyle: 'bold' },
+          1: { cellWidth: 110 }
+        }
+      });
+      
+      currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : currentY + 30;
       
       // Add results if available
       if (calculation.results) {
+        // Check if we need to add a new page
+        if (currentY > 200) {
+          doc.addPage();
+          currentY = 20;
+        }
+        
         // Cost information
         if (calculation.results.cost) {
-          doc.setFontSize(12);
+          doc.setFontSize(14);
           doc.setTextColor(0, 51, 102);
           doc.text("Cost Summary", 15, currentY);
-          currentY += 6;
-          
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
+          currentY += 8;
           
           try {
-            const totalCost = calculation.results.cost.totalProjectCost;
-            doc.text(`Total Project Cost: ${formatCurrency(totalCost)}`, 15, currentY);
-            currentY += 5;
+            // Create cost summary table
+            const costData = [];
+            
+            if (calculation.results.cost.totalProjectCost) {
+              costData.push(["Total Project Cost", formatCurrency(calculation.results.cost.totalProjectCost)]);
+            }
             
             if (calculation.results.cost.costPerRack) {
-              doc.text(`Cost per Rack: ${formatCurrency(calculation.results.cost.costPerRack)}`, 15, currentY);
-              currentY += 5;
+              costData.push(["Cost per Rack", formatCurrency(calculation.results.cost.costPerRack)]);
             }
             
             if (calculation.results.cost.costPerKw) {
-              doc.text(`Cost per kW: ${formatCurrency(calculation.results.cost.costPerKw)}`, 15, currentY);
-              currentY += 10;
-            } else {
-              currentY += 5;
+              costData.push(["Cost per kW", formatCurrency(calculation.results.cost.costPerKw)]);
+            }
+            
+            // Add cost breakdown if available
+            if (calculation.results.cost.electrical?.total) {
+              costData.push(["Electrical Distribution", formatCurrency(calculation.results.cost.electrical.total)]);
+            }
+            
+            if (calculation.results.cost.cooling) {
+              costData.push(["Cooling System", formatCurrency(calculation.results.cost.cooling)]);
+            }
+            
+            if (calculation.results.cost.power?.total) {
+              costData.push(["Power System", formatCurrency(calculation.results.cost.power.total)]);
+            }
+            
+            if (costData.length > 0) {
+              doc.autoTable({
+                startY: currentY,
+                body: costData,
+                theme: "grid",
+                styles: { 
+                  fontSize: 11,
+                  cellPadding: 5
+                },
+                margin: { left: 15, right: 15 },
+                columnStyles: {
+                  0: { cellWidth: 80, fontStyle: 'bold' },
+                  1: { cellWidth: 80, halign: 'right' }
+                }
+              });
+              
+              currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : currentY + 30;
             }
           } catch (error) {
             console.error("Error formatting cost data:", error);
@@ -445,35 +546,55 @@ function addCalculationDetails(doc: jsPDF, calculations: any[], startY: number):
           }
         }
         
+        // Check if we need to add a new page
+        if (currentY > 200) {
+          doc.addPage();
+          currentY = 20;
+        }
+        
         // Power requirements
         if (calculation.results.power) {
-          doc.setFontSize(12);
+          doc.setFontSize(14);
           doc.setTextColor(0, 51, 102);
           doc.text("Power Requirements", 15, currentY);
-          currentY += 6;
-          
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
+          currentY += 8;
           
           try {
+            // Create power requirements table
+            const powerData = [];
+            
             const powerValue = calculation.results.power.upsCapacity ? 
               formatNumber(calculation.results.power.upsCapacity) : 
               calculation.results.power.totalPower ? 
                 formatNumber(calculation.results.power.totalPower) : '0';
             
-            doc.text(`Power Capacity: ${powerValue} kW`, 15, currentY);
-            currentY += 5;
+            powerData.push(["Power Capacity", `${powerValue} kW`]);
             
             if (calculation.results.power.upsModules) {
-              doc.text(`UPS Modules: ${calculation.results.power.upsModules} x ${calculation.results.power.upsModuleSize || 250}kW`, 15, currentY);
-              currentY += 5;
+              powerData.push(["UPS Modules", `${calculation.results.power.upsModules} x ${calculation.results.power.upsModuleSize || 250}kW`]);
             }
             
             if (calculation.results.power.redundancy) {
-              doc.text(`Redundancy: ${calculation.results.power.redundancy}`, 15, currentY);
-              currentY += 10;
-            } else {
-              currentY += 5;
+              powerData.push(["Redundancy", calculation.results.power.redundancy]);
+            }
+            
+            if (powerData.length > 0) {
+              doc.autoTable({
+                startY: currentY,
+                body: powerData,
+                theme: "grid",
+                styles: { 
+                  fontSize: 11,
+                  cellPadding: 5
+                },
+                margin: { left: 15, right: 15 },
+                columnStyles: {
+                  0: { cellWidth: 80, fontStyle: 'bold' },
+                  1: { cellWidth: 80 }
+                }
+              });
+              
+              currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : currentY + 30;
             }
           } catch (error) {
             console.error("Error formatting power data:", error);
@@ -482,17 +603,23 @@ function addCalculationDetails(doc: jsPDF, calculations: any[], startY: number):
           }
         }
         
+        // Check if we need to add a new page
+        if (currentY > 200) {
+          doc.addPage();
+          currentY = 20;
+        }
+        
         // Cooling solution
         if (calculation.results.cooling) {
-          doc.setFontSize(12);
+          doc.setFontSize(14);
           doc.setTextColor(0, 51, 102);
           doc.text("Cooling Solution", 15, currentY);
-          currentY += 6;
-          
-          doc.setFontSize(10);
-          doc.setTextColor(0, 0, 0);
+          currentY += 8;
           
           try {
+            // Create cooling solution table
+            const coolingData = [];
+            
             let coolingCapacityText = "";
             
             if (calculation.coolingType === 'hybrid') {
@@ -501,14 +628,29 @@ function addCalculationDetails(doc: jsPDF, calculations: any[], startY: number):
               coolingCapacityText = `${formatNumber(calculation.results.cooling.coolingCapacity || calculation.results.cooling.totalCapacity || 0)} kW`;
             }
             
-            doc.text(`Cooling Capacity: ${coolingCapacityText}`, 15, currentY);
-            currentY += 5;
+            coolingData.push(["Cooling Capacity", coolingCapacityText]);
             
             if (calculation.results.cooling.flowRate) {
-              doc.text(`Flow Rate: ${formatNumber(calculation.results.cooling.flowRate)} L/min`, 15, currentY);
-              currentY += 10;
-            } else {
-              currentY += 5;
+              coolingData.push(["Flow Rate", `${formatNumber(calculation.results.cooling.flowRate)} L/min`]);
+            }
+            
+            if (coolingData.length > 0) {
+              doc.autoTable({
+                startY: currentY,
+                body: coolingData,
+                theme: "grid",
+                styles: { 
+                  fontSize: 11,
+                  cellPadding: 5
+                },
+                margin: { left: 15, right: 15 },
+                columnStyles: {
+                  0: { cellWidth: 80, fontStyle: 'bold' },
+                  1: { cellWidth: 80 }
+                }
+              });
+              
+              currentY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 10 : currentY + 30;
             }
           } catch (error) {
             console.error("Error formatting cooling data:", error);
@@ -521,7 +663,7 @@ function addCalculationDetails(doc: jsPDF, calculations: any[], startY: number):
       // Add separator between calculations
       if (i < calculations.length - 1) {
         doc.setDrawColor(200, 200, 200);
-        doc.setLineWidth(0.2);
+        doc.setLineWidth(0.5);
         doc.line(15, currentY, 195, currentY);
         currentY += 15;
       }
@@ -546,7 +688,7 @@ function addFooter(doc: jsPDF, project: Project) {
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
       doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
-      doc.text(`Project: ${project.name} - Confidential`, 105, 285, { align: 'center' });
+      doc.text(`Project: ${project.name || "Untitled Project"} - Confidential`, 105, 285, { align: 'center' });
     }
   } catch (error) {
     console.error("Error adding footer:", error);
