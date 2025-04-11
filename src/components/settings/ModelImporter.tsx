@@ -61,7 +61,8 @@ export default function ModelImporter() {
     try {
       const results = await modelImporterService.searchModels({
         query: searchQuery,
-        category: category === 'all' ? '' : category,
+        // Don't convert 'all' to empty string here
+        category: category === 'all' ? 'all' : category,
         limit: 20,
       });
       setSearchResults(results);
