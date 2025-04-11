@@ -1,3 +1,4 @@
+
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -178,7 +179,7 @@ export function SceneContainer({
       const pos = new Vector3(...module.position);
       const box = new Box3().setFromCenterAndSize(
         pos,
-        new Vector3(module.dimensions.width, module.dimensions.height, module.dimensions.depth)
+        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
       );
       lines.push(
         new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),
