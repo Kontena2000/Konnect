@@ -205,6 +205,7 @@ export function SceneContainer({
       try {
         const draggedModule = JSON.parse(moduleData);
         draggedModuleRef.current = draggedModule;
+        console.log('Dragged module dimensions:', draggedModule.dimensions);
       } catch (e) {
         console.error('Failed to parse dragged module data:', e);
       }

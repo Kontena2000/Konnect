@@ -254,6 +254,7 @@ export default function LayoutEditorPage() {
     document.addEventListener('dragstart', (e) => {
       if (e.dataTransfer) {
         e.dataTransfer.setData('application/json', moduleData);
+        console.log('Setting drag data with dimensions:', module.dimensions);
       }
     }, { once: true });
     

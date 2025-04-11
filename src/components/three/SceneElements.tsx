@@ -1,7 +1,7 @@
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
-import { Module } from "@/types/module";
+import { Module, ModuleDimensions } from "@/types/module";
 import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
 import { useRef, useEffect, useState } from "react";
@@ -62,7 +62,7 @@ export function SceneElements({
   snapLines = [],
   previewPosition = [0, 0, 0],
   readOnly = false,
-  setRotationAngle = () => {},
+  setRotationAngle,
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
@@ -85,7 +85,6 @@ export function SceneElements({
     }
   }, [draggedDimensions]);
 
-  const { camera } = useThree();
   const internalControlsRef = useRef<any>(null);
   const actualControlsRef = controlsRef || internalControlsRef;
 
