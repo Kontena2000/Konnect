@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -245,10 +244,18 @@ export default function LayoutEditorPage() {
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
-      position: [0, module.dimensions.height / 2, 0],
+      position: [0, module.dimensions.height / 2, 0], // Gunakan setengah tinggi modul untuk posisi Y awal
       rotation: [0, 0, 0],
       scale: [1, 1, 1]
     };
+    
+    // Simpan data modul ke dataTransfer untuk digunakan saat drag
+    const moduleData = JSON.stringify(module);
+    document.addEventListener('dragstart', (e) => {
+      if (e.dataTransfer) {
+        e.dataTransfer.setData('application/json', moduleData);
+      }
+    }, { once: true });
     
     setModules(prev => [...prev, newModule]);
     setSelectedModuleId(newModule.id);

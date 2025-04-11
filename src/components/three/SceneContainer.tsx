@@ -178,7 +178,7 @@ export function SceneContainer({
       const pos = new Vector3(...module.position);
       const box = new Box3().setFromCenterAndSize(
         pos,
-        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
+        new Vector3(module.dimensions.depth, module.dimensions.height, module.dimensions.width)
       );
       lines.push(
         new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),
@@ -198,6 +198,17 @@ export function SceneContainer({
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     ));
+    
+    // Store the dragged module data for preview
+    const moduleData = event.dataTransfer.getData('application/json');
+    if (moduleData) {
+      try {
+        const module = JSON.parse(moduleData);
+        draggedModuleRef.current = module;
+      } catch (e) {
+        console.error('Failed to parse dragged module data:', e);
+      }
+    }
   }, []);
 
   const handleDragLeave = useCallback(() => {
