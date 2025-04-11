@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin, Zap, Snowflake, DollarSign, Server, Thermometer } from 'lucide-react';
+import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin, Zap, Snowflake, DollarSign, Server, Thermometer, Download } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -38,6 +38,7 @@ import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { CalculationDetailsModal } from '@/components/matrix-calculator/CalculationDetailsModal';
+import { generateProjectPdfReport, captureLayoutImage } from '@/services/projectReportService';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -56,6 +57,10 @@ export default function ProjectDetailsPage() {
   const [creatingCalculation, setCreatingCalculation] = useState(false);
   const [selectedCalculationId, setSelectedCalculationId] = useState<string | null>(null);
   const [calculationModalOpen, setCalculationModalOpen] = useState(false);
+  const [generatingReport, setGeneratingReport] = useState(false);
+  const [selectedLayoutIds, setSelectedLayoutIds] = useState<string[]>([]);
+  const [selectedCalculationIds, setSelectedCalculationIds] = useState<string[]>([]);
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -326,6 +331,66 @@ export default function ProjectDetailsPage() {
     setCalculationModalOpen(true);
   };
 
+  // Function to generate project report PDF
+  const generateProjectReport = async () => {
+    if (!project) return;
+    
+    setGeneratingReport(true);
+    try {
+      // Filter selected layouts and calculations
+      const selectedLayouts = layouts.filter(layout => 
+        selectedLayoutIds.length === 0 || selectedLayoutIds.includes(layout.id)
+      );
+      
+      const selectedCalculations = calculations.filter(calc => 
+        selectedCalculationIds.length === 0 || selectedCalculationIds.includes(calc.id)
+      );
+      
+      // Capture layout images if any layouts are selected
+      const layoutImages: { [key: string]: string } = {};
+      
+      // For now, we'll use placeholder images since we can't capture actual layout images in this context
+      // In a real implementation, you would capture images from the layout viewer
+      
+      // Generate the PDF report
+      const pdfBlob = await generateProjectPdfReport(
+        project,
+        selectedLayouts,
+        selectedCalculations,
+        layoutImages,
+        {
+          companyName: 'Kontena',
+          preparedBy: user?.email || '',
+          date: new Date().toLocaleDateString()
+        }
+      );
+      
+      // Create a download link for the PDF
+      const url = URL.createObjectURL(pdfBlob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `${project.name.replace(/\\s+/g, '_')}_Report.pdf`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: 'Success',
+        description: 'Project report generated successfully'
+      });
+    } catch (error) {
+      console.error('Error generating project report:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to generate project report'
+      });
+    } finally {
+      setGeneratingReport(false);
+      setReportDialogOpen(false);
+    }
+  };
+
   if (loading) {
     return (
       <AppLayout>
@@ -372,15 +437,106 @@ export default function ProjectDetailsPage() {
                 <CardDescription>Detailed information about this project</CardDescription>
               </div>
               <div className='flex items-center gap-2'>
-                <Button 
-                  variant='outline'
-                  size='sm'
-                  className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
-                  onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${id}`)}
-                >
-                  <FileText className='h-3 w-3' />
-                  <span>Generate Report</span>
-                </Button>
+                <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant='outline'
+                      size='sm'
+                      className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
+                    >
+                      <FileText className='h-3 w-3' />
+                      <span>Generate Report</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Generate Project Report</DialogTitle>
+                      <DialogDescription>
+                        Select the layouts and calculations to include in the report.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4 py-4'>
+                      <div className='space-y-2'>
+                        <h3 className='text-sm font-medium'>Layouts</h3>
+                        {layouts.length > 0 ? (
+                          <div className='grid grid-cols-2 gap-2'>
+                            {layouts.map(layout => (
+                              <div key={layout.id} className='flex items-center space-x-2'>
+                                <input
+                                  type='checkbox'
+                                  id={`layout-${layout.id}`}
+                                  checked={selectedLayoutIds.includes(layout.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedLayoutIds(prev => [...prev, layout.id]);
+                                    } else {
+                                      setSelectedLayoutIds(prev => prev.filter(id => id !== layout.id));
+                                    }
+                                  }}
+                                  className='rounded border-gray-300'
+                                />
+                                <label htmlFor={`layout-${layout.id}`} className='text-sm'>
+                                  {layout.name}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className='text-sm text-muted-foreground'>No layouts available</p>
+                        )}
+                      </div>
+                      
+                      <div className='space-y-2'>
+                        <h3 className='text-sm font-medium'>Calculations</h3>
+                        {calculations.length > 0 ? (
+                          <div className='grid grid-cols-2 gap-2'>
+                            {calculations.map(calc => (
+                              <div key={calc.id} className='flex items-center space-x-2'>
+                                <input
+                                  type='checkbox'
+                                  id={`calc-${calc.id}`}
+                                  checked={selectedCalculationIds.includes(calc.id)}
+                                  onChange={(e) => {
+                                    if (e.target.checked) {
+                                      setSelectedCalculationIds(prev => [...prev, calc.id]);
+                                    } else {
+                                      setSelectedCalculationIds(prev => prev.filter(id => id !== calc.id));
+                                    }
+                                  }}
+                                  className='rounded border-gray-300'
+                                />
+                                <label htmlFor={`calc-${calc.id}`} className='text-sm'>
+                                  {calc.name || 'Untitled Calculation'}
+                                </label>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <p className='text-sm text-muted-foreground'>No calculations available</p>
+                        )}
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        onClick={generateProjectReport}
+                        disabled={generatingReport}
+                        className='bg-[#3CB371] hover:bg-[#3CB371]/80 text-white'
+                      >
+                        {generatingReport ? (
+                          <>
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            Generating...
+                          </>
+                        ) : (
+                          <>
+                            <Download className='mr-2 h-4 w-4' />
+                            Generate PDF
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
                 
                 <Button 
                   variant='outline'
