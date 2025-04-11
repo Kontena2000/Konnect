@@ -97,6 +97,31 @@ export function CalculationDetailsModal({
     return `${formatNumber(num * 100, 2)}%`;
   };
 
+  // Safely get power value
+  const getPowerValue = (calculation: any) => {
+    if (!calculation || !calculation.results || !calculation.results.power) return '0';
+    
+    return calculation.results.power.upsCapacity 
+      ? formatNumber(calculation.results.power.upsCapacity) 
+      : calculation.results.power.totalPower 
+        ? formatNumber(calculation.results.power.totalPower) 
+        : '0';
+  };
+
+  // Safely get cooling value
+  const getCoolingValue = (calculation: any) => {
+    if (!calculation || !calculation.results || !calculation.results.cooling) return '0';
+    
+    if (calculation.coolingType === 'hybrid') {
+      const dlcCapacity = calculation.results.cooling.dlcCapacity || 0;
+      const airCapacity = calculation.results.cooling.airCapacity || 0;
+      return `${formatNumber(dlcCapacity)} kW DLC + ${formatNumber(airCapacity)} kW Air`;
+    } else {
+      return `${formatNumber(calculation.results.cooling.coolingCapacity || 
+        calculation.results.cooling.totalCapacity || 0)} kW`;
+    }
+  };
+
   // Render a data row with label and value
   const renderDataRow = (label: string, value: React.ReactNode) => (
     <div className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
@@ -176,10 +201,7 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-2'>Power Requirements</h3>
                   <p className='text-2xl font-bold text-amber-500'>
-                    {calculation.results?.power?.upsCapacity ? 
-                      formatNumber(calculation.results.power.upsCapacity) : 
-                      calculation.results?.power?.totalPower ? 
-                        formatNumber(calculation.results.power.totalPower) : '0'} kW UPS Capacity
+                    {getPowerValue(calculation)} kW UPS Capacity
                   </p>
                   {calculation.results?.power?.upsModules && (
                     <p className='text-sm text-gray-600'>
@@ -197,21 +219,7 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-2'>Cooling Solution</h3>
                   <p className='text-2xl font-bold text-amber-500'>
-                    {calculation.coolingType === 'hybrid' ? (
-                      <>
-                        {calculation.results?.cooling?.dlcCapacity ? 
-                          formatNumber(calculation.results.cooling.dlcCapacity) : '0'} kW DLC + {' '}
-                        {calculation.results?.cooling?.airCapacity ? 
-                          formatNumber(calculation.results.cooling.airCapacity) : '0'} kW Air
-                      </>
-                    ) : (
-                      <>
-                        {calculation.results?.cooling?.coolingCapacity ? 
-                          formatNumber(calculation.results.cooling.coolingCapacity) : 
-                          calculation.results?.cooling?.totalCapacity ? 
-                            formatNumber(calculation.results.cooling.totalCapacity) : '0'} kW
-                      </>
-                    )}
+                    {getCoolingValue(calculation)}
                   </p>
                   {calculation.results?.cooling?.flowRate && (
                     <p className='text-sm text-gray-600'>
@@ -312,7 +320,7 @@ export function CalculationDetailsModal({
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Cooling Breakdown</h4>
                         <div className='space-y-2'>
-                          {Object.entries(calculation.results.cooling.breakdown).map(([key, value]: [string, any]) => (
+                          {Object.entries(calculation.results.cooling.breakdown || {}).map(([key, value]: [string, any]) => (
                             <div key={key} className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
                               <span className='text-muted-foreground'>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                               <span className='font-medium'>{formatNumber(value)} kW</span>
@@ -368,7 +376,7 @@ export function CalculationDetailsModal({
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Power Breakdown</h4>
                         <div className='space-y-2'>
-                          {Object.entries(calculation.results.power.breakdown).map(([key, value]: [string, any]) => (
+                          {Object.entries(calculation.results.power.breakdown || {}).map(([key, value]: [string, any]) => (
                             <div key={key} className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
                               <span className='text-muted-foreground'>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
                               <span className='font-medium'>{formatNumber(value)} kW</span>
