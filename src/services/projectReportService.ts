@@ -1,3 +1,4 @@
+
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Project } from "@/services/project";
@@ -25,7 +26,8 @@ interface ProjectReportOptions {
 }
 
 /**
- * Generate a comprehensive PDF report for a project
+ * Generate a simplified PDF report for a project
+ * Focusing on project name, description, status and client information
  */
 export async function generateProjectPdfReport(
   project: Project,
@@ -44,8 +46,8 @@ export async function generateProjectPdfReport(
 
     // Default report options
     const defaultReportOptions: ProjectReportOptions = {
-      includeLayouts: true,
-      includeCalculations: true,
+      includeLayouts: false,
+      includeCalculations: false,
       companyName: "Kontena",
       preparedBy: "",
       date: new Date().toLocaleDateString(),
@@ -68,11 +70,11 @@ export async function generateProjectPdfReport(
     doc.setLineWidth(0.5);
     doc.line(15, 40, 195, 40);
 
-    // Add project details
-    const projectDetailsY = addProjectDetails(doc, project);
+    // Add project details in a table format
+    addProjectDetailsTable(doc, project);
 
-    // Add client information
-    const clientInfoY = addClientInformation(doc, project, projectDetailsY);
+    // Add client information in a table format
+    addClientInformationTable(doc, project);
 
     // Add footer with page numbers
     addFooter(doc, project);
@@ -86,112 +88,85 @@ export async function generateProjectPdfReport(
 }
 
 /**
- * Add project details section
+ * Add project details in a table format
  */
-function addProjectDetails(doc: jsPDF, project: Project): number {
+function addProjectDetailsTable(doc: jsPDF, project: Project): void {
   try {
     const startY = 60;
     
-    // Section title
-    doc.setFontSize(18);
-    doc.setTextColor(0, 51, 102);
-    doc.text('Project Details', 15, startY);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
-    
-    // Create project details table with borderless design
+    // Project details table data
     const tableData = [
-      ['Project Name', project.name || 'Untitled Project'],
-      ['Description', project.description || 'No description provided'],
-      ['Status', project.status || 'Planning']
+      ["Project Name", project.name || "Untitled Project"],
+      ["Description", project.description || "No description provided"],
+      ["Status", project.status || "Planning"]
     ];
     
     doc.autoTable({
-      startY: startY + 8,
+      startY: startY,
       body: tableData,
-      theme: 'plain', // Use plain theme for borderless table
+      theme: "plain", // Use plain theme for borderless table
       styles: { 
         fontSize: 11,
         cellPadding: 5
       },
       margin: { left: 15, right: 15 },
       columnStyles: {
-        0: { cellWidth: 50, fontStyle: 'bold' },
+        0: { cellWidth: 50, fontStyle: "bold" },
         1: { cellWidth: 120 }
       }
     });
-    
-    // Return the Y position after the table
-    const finalY = doc.lastAutoTable?.finalY;
-    return finalY ? finalY + 15 : 120;
   } catch (error) {
-    console.error('Error adding project details:', error);
-    return 120; // Return a default value if there's an error
+    console.error("Error adding project details table:", error);
   }
 }
 
 /**
- * Add client information section
+ * Add client information in a table format
  */
-function addClientInformation(doc: jsPDF, project: Project, startY: number): number {
+function addClientInformationTable(doc: jsPDF, project: Project): void {
   try {
-    // Check if we need to add a new page
-    if (startY > 220) {
-      doc.addPage();
-      startY = 20;
-    }
-    
-    // Section title
-    doc.setFontSize(18);
-    doc.setTextColor(0, 51, 102);
-    doc.text('Client Information', 15, startY);
-    
-    doc.setFontSize(12);
-    doc.setTextColor(0, 0, 0);
+    // Get the Y position after the previous table
+    const startY = doc.lastAutoTable?.finalY ? doc.lastAutoTable.finalY + 20 : 120;
     
     // Check if client info exists
     if (!project.clientInfo) {
-      doc.text('No client information available', 15, startY + 10);
-      return startY + 20;
+      doc.setFontSize(11);
+      doc.setTextColor(0, 0, 0);
+      doc.text("No client information available", 15, startY);
+      return;
     }
     
-    // Create client info table with borderless design
+    // Client information table data
     const tableData = [
-      ['Company Name', project.clientInfo.name || 'Not specified'],
-      ['Email', project.clientInfo.email || 'Not specified'],
-      ['Phone', project.clientInfo.phone || 'Not specified'],
-      ['Address', project.clientInfo.address || 'Not specified']
+      ["Company Name", project.clientInfo.name || "Not specified"],
+      ["Email", project.clientInfo.email || "Not specified"],
+      ["Phone", project.clientInfo.phone || "Not specified"],
+      ["Address", project.clientInfo.address || "Not specified"]
     ];
     
     doc.autoTable({
-      startY: startY + 8,
+      startY: startY,
       body: tableData,
-      theme: 'plain', // Use plain theme for borderless table
+      theme: "plain", // Use plain theme for borderless table
       styles: { 
         fontSize: 11,
         cellPadding: 5
       },
       margin: { left: 15, right: 15 },
       columnStyles: {
-        0: { cellWidth: 50, fontStyle: 'bold' },
+        0: { cellWidth: 50, fontStyle: "bold" },
         1: { cellWidth: 120 }
       }
     });
-    
-    // Return the Y position after the table
-    const finalY = doc.lastAutoTable?.finalY;
-    return finalY ? finalY + 15 : startY + 60;
   } catch (error) {
-    console.error('Error adding client information:', error);
-    return startY + 30; // Return a default value if there's an error
+    console.error("Error adding client information table:", error);
   }
 }
 
 /**
  * Add footer with page numbers and project name
  */
-function addFooter(doc: jsPDF, project: Project) {
+function addFooter(doc: jsPDF, project: Project): void {
   try {
     const pageCount = doc.getNumberOfPages();
     
@@ -199,8 +174,8 @@ function addFooter(doc: jsPDF, project: Project) {
       doc.setPage(i);
       doc.setFontSize(8);
       doc.setTextColor(100, 100, 100);
-      doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: 'center' });
-      doc.text(`Project: ${project.name || "Untitled Project"} - Confidential`, 105, 285, { align: 'center' });
+      doc.text(`Page ${i} of ${pageCount}`, 105, 290, { align: "center" });
+      doc.text(`Project: ${project.name || "Untitled Project"} - Confidential`, 105, 285, { align: "center" });
     }
   } catch (error) {
     console.error("Error adding footer:", error);
@@ -224,9 +199,9 @@ export async function captureLayoutImage(elementId: string): Promise<string> {
       allowTaint: true
     });
     
-    return canvas.toDataURL('image/jpeg', 0.8);
+    return canvas.toDataURL("image/jpeg", 0.8);
   } catch (error) {
-    console.error('Error capturing layout image:', error);
+    console.error("Error capturing layout image:", error);
     throw error;
   }
 }
