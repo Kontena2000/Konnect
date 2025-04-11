@@ -21,6 +21,7 @@ interface ProjectReportOptions {
   companyName?: string;
   preparedBy?: string;
   date?: string;
+  logo?: string;
 }
 
 /**
