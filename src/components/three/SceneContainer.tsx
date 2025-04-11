@@ -211,8 +211,16 @@ export function SceneContainer({
         if (moduleData) {
           // Pastikan dimensi modul valid
           if (moduleData.dimensions) {
-            draggedModuleRef.current = moduleData;
-            console.log('Dragged module dimensions in handleDragOver:', moduleData.dimensions);
+            // Simpan modul dengan dimensi yang valid
+            draggedModuleRef.current = {
+              ...moduleData,
+              dimensions: {
+                width: moduleData.dimensions.width || 1,
+                height: moduleData.dimensions.height || 1,
+                depth: moduleData.dimensions.depth || 1
+              }
+            };
+            console.log('Dragged module dimensions in handleDragOver:', draggedModuleRef.current.dimensions);
           } else {
             console.error('Module data missing dimensions:', moduleData);
           }
