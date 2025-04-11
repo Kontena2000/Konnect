@@ -1,54 +1,51 @@
-
-import { useEffect, useRef, useMemo } from "react";
-import { Mesh, Vector3, Box3 } from "three";
+import { useEffect, useRef, useMemo, useState } from "react";
+import { Mesh, Vector3, Box3, MeshStandardMaterial, BoxGeometry } from "three";
 import { ThreeEvent } from '@react-three/fiber';
-import * as THREE from "three";
 import { Module } from "@/types/module";
 import { EditorPreferences } from "@/services/editor-preferences";
 
 interface ModuleMeshProps {
   module: Module;
-  meshRef?: React.RefObject<Mesh>;
+  meshRef: React.RefObject<Mesh>;
+  editorPreferences?: EditorPreferences | null;
   onClick?: (event: ThreeEvent<MouseEvent>) => void;
   onContextMenu?: (event: ThreeEvent<MouseEvent>) => void;
-  hovered?: boolean;
-  selected?: boolean;
-  isColliding?: boolean;
-  editorPreferences?: EditorPreferences | null;
 }
 
 export function ModuleMesh({
   module,
   meshRef,
+  editorPreferences,
   onClick,
-  onContextMenu,
-  hovered = false,
-  selected = false,
-  isColliding = false,
-  editorPreferences
+  onContextMenu
 }: ModuleMeshProps) {
-  const localRef = useRef<Mesh>(null);
-  const ref = meshRef || localRef;
+  const [dimensions, setDimensions] = useState({
+    width: module.dimensions?.width || 1,
+    height: module.dimensions?.height || 1,
+    depth: module.dimensions?.depth || 1
+  });
 
-  // Scale down the module dimensions for better visualization
-  const scaleFactor = 0.6; // Reduced from 0.7 to make modules even smaller
+  // Log dimensi modul untuk debugging
+  useEffect(() => {
+    console.log(`ModuleMesh for ${module.id} - dimensions:`, {
+      fromModule: module.dimensions,
+      used: dimensions
+    });
+  }, [module.id, module.dimensions, dimensions]);
 
-  // Calculate dimensions based on the module's dimensions
-  const dimensions = useMemo(() => {
-    return {
-      width: module.dimensions.width * scaleFactor,
-      height: module.dimensions.height * scaleFactor,
-      depth: module.dimensions.depth * scaleFactor
-    };
-  }, [module.dimensions, scaleFactor]);
+  // Update dimensions when module changes
+  useEffect(() => {
+    setDimensions({
+      width: module.dimensions?.width || 1,
+      height: module.dimensions?.height || 1,
+      depth: module.dimensions?.depth || 1
+    });
+  }, [module.dimensions]);
 
-  // Determine color based on state
+  // Calculate color based on state
   const color = useMemo(() => {
-    if (isColliding) return '#FF4040';
-    if (selected) return '#4080FF';
-    if (hovered) return '#60A0FF';
-    return module.color || '#3B82F6';
-  }, [isColliding, selected, hovered, module.color]);
+    return module.color || '#666666';
+  }, [module.color]);
 
   // Calculate bounding box for the module
   const boundingBox = useMemo(() => {
@@ -59,8 +56,8 @@ export function ModuleMesh({
   }, [dimensions]);
 
   useEffect(() => {
-    if (ref.current) {
-      ref.current.traverse((child) => {
+    if (meshRef.current) {
+      meshRef.current.traverse((child) => {
         if (child instanceof THREE.Mesh) {
           child.castShadow = true;
           child.receiveShadow = true;
@@ -68,11 +65,14 @@ export function ModuleMesh({
         }
       });
     }
-  }, [ref]);
+  }, [meshRef]);
 
   return (
     <mesh
-      ref={ref}
+      ref={meshRef}
+      position={[module.position[0], module.position[1], module.position[2]]}
+      rotation={[module.rotation[0], module.rotation[1], module.rotation[2]]}
+      scale={[module.scale[0], module.scale[1], module.scale[2]]}
       onClick={onClick}
       onContextMenu={onContextMenu}
       castShadow
@@ -83,8 +83,6 @@ export function ModuleMesh({
         color={color} 
         transparent={true}
         opacity={editorPreferences?.objects.transparency || 0.85}
-        roughness={0.5}
-        metalness={0.2}
       />
     </mesh>
   );

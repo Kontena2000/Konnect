@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -188,6 +187,9 @@ export default function LayoutEditorPage() {
 
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
+    // Log dimensi modul saat mulai drag
+    console.log('Module drag start with original dimensions:', module.dimensions);
+    
     // Create a new module instance with unique ID
     const newModule: Module = {
       ...module,
@@ -197,7 +199,10 @@ export default function LayoutEditorPage() {
       scale: [1, 1, 1]
     };
     
-    console.log('Module drag start with dimensions:', module.dimensions);
+    // Pastikan dimensi modul tetap sama seperti aslinya
+    newModule.dimensions = { ...module.dimensions };
+    
+    console.log('New module created with dimensions:', newModule.dimensions);
     
     setModules(prev => [...prev, newModule]);
     setSelectedModuleId(newModule.id);

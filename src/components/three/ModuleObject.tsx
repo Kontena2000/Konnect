@@ -1,4 +1,3 @@
-
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -37,7 +36,7 @@ export function ModuleObject({
   onClick,
   onUpdate,
   onDelete,
-  transformMode = "translate",
+  transformMode = 'translate',
   gridSnap = true,
   readOnly = false,
   onTransformStart,
@@ -51,6 +50,14 @@ export function ModuleObject({
     position: new Vector3(module.position[0], 0.01, module.position[2]),
     rotation: new Euler(-Math.PI/2, 0, 0)
   });
+
+  // Log dimensi modul untuk debugging
+  useEffect(() => {
+    console.log(`ModuleObject rendered: ${module.id}`, {
+      dimensions: module.dimensions,
+      position: module.position
+    });
+  }, [module.id, module.dimensions, module.position]);
 
   const {
     isShiftPressed,
@@ -67,11 +74,21 @@ export function ModuleObject({
     onUpdate
   });
 
-  const initialPosition = useMemo(() => new Vector3(
-    module.position[0],
-    module.position[1] + 5,
-    module.position[2]
-  ), [module.position]);
+  // Pastikan posisi Y awal sesuai dengan setengah tinggi modul
+  const initialPosition = useMemo(() => {
+    // Pastikan dimensi tinggi digunakan dengan benar
+    const height = module.dimensions?.height || 1;
+    return new Vector3(
+      module.position[0],
+      module.position[1] + 5, // Tambahkan offset untuk animasi jatuh
+      module.position[2]
+    );
+  }, [module.position, module.dimensions]);
+
+  // Pastikan finalHeight menggunakan dimensi tinggi yang benar
+  const finalHeight = useMemo(() => {
+    return module.dimensions?.height / 2 || 0.5;
+  }, [module.dimensions]);
 
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
@@ -134,7 +151,7 @@ export function ModuleObject({
         <ModuleAnimation
           meshRef={meshRef}
           initialPosition={initialPosition}
-          finalHeight={module.dimensions.height / 2}
+          finalHeight={finalHeight} // Gunakan finalHeight yang sudah dihitung
           onComplete={() => setAnimating(false)}
           onUpdate={updateShadowTransform}
         />

@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Box, Truck, Trees, Database, Server, Leaf } from "lucide-react";
@@ -85,6 +84,8 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
             draggable
             onDragStart={(e) => {
               e.dataTransfer.effectAllowed = "move";
+              // Simpan data modul lengkap dalam dataTransfer
+              e.dataTransfer.setData('module', JSON.stringify(module));
               onDragStart(module);
             }}
           >

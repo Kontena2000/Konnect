@@ -1,4 +1,3 @@
-
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -199,6 +198,21 @@ export function SceneContainer({
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     ));
+    
+    // Pastikan draggedModuleRef dipertahankan selama drag
+    try {
+      // Coba ambil data modul dari dataTransfer
+      const moduleDataString = event.dataTransfer.getData('module');
+      if (moduleDataString && !draggedModuleRef.current) {
+        const moduleData = JSON.parse(moduleDataString);
+        if (moduleData) {
+          draggedModuleRef.current = moduleData;
+          console.log('Dragged module dimensions in handleDragOver:', moduleData.dimensions);
+        }
+      }
+    } catch (error) {
+      console.error('Error parsing dragged module data:', error);
+    }
   }, []);
 
   const handleDragLeave = useCallback(() => {
@@ -210,9 +224,18 @@ export function SceneContainer({
     event.preventDefault();
     setIsDraggingOver(false);
     setMousePosition(null);
+    
+    // Log dimensi modul saat drop untuk debugging
+    if (draggedModuleRef.current) {
+      console.log('Dropping module with dimensions:', draggedModuleRef.current.dimensions);
+    }
+    
     if (previewPosition && onDropPoint) {
       onDropPoint(previewPosition);
     }
+    
+    // Reset draggedModuleRef setelah drop
+    draggedModuleRef.current = null;
   }, [previewPosition, onDropPoint]);
 
   const handleTransformStart = useCallback(() => {

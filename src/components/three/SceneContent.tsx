@@ -1,9 +1,14 @@
+import { useRef, useState, useEffect, useCallback, useMemo } from 'react';
 import { useThree } from '@react-three/fiber';
-import { Module, ModuleDimensions } from '@/types/module';
+import { PerspectiveCamera, OrthographicCamera, Vector2, Vector3, Raycaster, Mesh, Box3 } from 'three';
+import { Module } from '@/types/module';
 import { Connection } from '@/services/layout';
-import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
-import { Vector2, Vector3, Line3, Mesh } from 'three';
-import { SceneElements } from './SceneElements';
+import { ConnectionType } from '@/types/connection';
+import { ModuleObject } from './ModuleObject';
+import { ConnectionLine } from './ConnectionLine';
+import { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
+import { EnvironmentalElement } from '@/components/environment/EnvironmentalElement';
+import { TerrainView } from '@/components/environment/TerrainView';
 import { EditorPreferences } from '@/services/editor-preferences';
 
 interface SceneContentProps {
@@ -20,16 +25,21 @@ interface SceneContentProps {
   gridSnap?: boolean;
   isDraggingOver?: boolean;
   mousePosition?: Vector2 | null;
-  draggedDimensions?: ModuleDimensions | null;
+  draggedDimensions?: {
+    width: number;
+    height: number;
+    depth: number;
+    length: number;
+  } | null;
   readOnly?: boolean;
   snapPoints?: Vector3[];
-  snapLines?: Line3[];
+  snapLines?: any[];
   onPreviewPositionUpdate?: (position: [number, number, number]) => void;
   previewMesh?: Mesh | null;
   rotationAngle?: number;
   showGuides?: boolean;
   previewPosition?: [number, number, number];
-  setRotationAngle?: (angle: number | ((prev: number) => number)) => void;
+  setRotationAngle?: (angle: number) => void;
   controlsRef?: React.RefObject<any>;
   isTransforming?: boolean;
   onTransformStart?: () => void;
@@ -40,7 +50,7 @@ interface SceneContentProps {
 export function SceneContent({
   modules,
   selectedModuleId,
-  transformMode,
+  transformMode = 'translate',
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -56,17 +66,50 @@ export function SceneContent({
   snapPoints = [],
   snapLines = [],
   onPreviewPositionUpdate,
-  previewMesh = null,
+  previewMesh,
   rotationAngle = 0,
   showGuides = false,
-  previewPosition = [0, 0, 0],
-  setRotationAngle = () => {},
+  previewPosition,
+  setRotationAngle,
   controlsRef,
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
-  editorPreferences,
+  editorPreferences
 }: SceneContentProps) {
+  const { scene, camera, gl } = useThree();
+  const raycaster = useMemo(() => new Raycaster(), []);
+  const groundPlane = useMemo(() => new Mesh(), []);
+  
+  // Tambahkan log untuk melihat dimensi yang di-drag
+  useEffect(() => {
+    if (draggedDimensions) {
+      console.log('Dragged dimensions in SceneContent:', draggedDimensions);
+    }
+  }, [draggedDimensions]);
+
+  // Gunakan dimensi yang benar untuk preview
+  useEffect(() => {
+    if (isDraggingOver && mousePosition && draggedDimensions) {
+      raycaster.setFromCamera(mousePosition, camera);
+      const intersects = raycaster.intersectObject(groundPlane);
+      
+      if (intersects.length > 0) {
+        const point = intersects[0].point;
+        
+        // Gunakan dimensi yang benar dari draggedDimensions
+        const height = draggedDimensions.height || 1;
+        const position: [number, number, number] = [
+          Math.round(point.x),
+          height / 2, // Posisi y yang benar berdasarkan tinggi modul
+          Math.round(point.z)
+        ];
+        
+        onPreviewPositionUpdate?.(position);
+      }
+    }
+  }, [isDraggingOver, mousePosition, camera, raycaster, groundPlane, onPreviewPositionUpdate, draggedDimensions]);
+
   const { camera } = useThree();
 
   return (
