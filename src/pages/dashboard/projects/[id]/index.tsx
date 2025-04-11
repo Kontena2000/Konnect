@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -673,7 +672,10 @@ export default function ProjectDetailsPage() {
                                 Power Requirements
                               </h4>
                               <p className='text-xl font-bold text-amber-500'>
-                                {formatNumber(calculation.results.power.totalPower)} kW
+                                {calculation.results.power.upsCapacity ? 
+                                  formatNumber(calculation.results.power.upsCapacity) : 
+                                  calculation.results.power.totalPower ? 
+                                    formatNumber(calculation.results.power.totalPower) : '0'} kW
                                 {calculation.results.power.upsCapacity ? ' UPS Capacity' : ''}
                               </p>
                               {calculation.results.power.upsModules && (
@@ -699,8 +701,8 @@ export default function ProjectDetailsPage() {
                               <p className='text-xl font-bold text-blue-500'>
                                 {calculation.coolingType === 'hybrid' ? (
                                   <>
-                                    {formatNumber(calculation.results.cooling.dlcCapacity)} kW DLC + {' '}
-                                    {formatNumber(calculation.results.cooling.airCapacity)} kW Air
+                                    {formatNumber(calculation.results.cooling.dlcCapacity || 0)} kW DLC + {' '}
+                                    {formatNumber(calculation.results.cooling.airCapacity || 0)} kW Air
                                   </>
                                 ) : (
                                   <>
