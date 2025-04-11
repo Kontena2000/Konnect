@@ -699,23 +699,25 @@ export default function LayoutEditorPage() {
                     <span>Duplicate</span>
                   </Button>
                   
-                  <SaveLayoutDialog
-                    layoutData={{
-                      id: currentLayout?.id,
-                      projectId: projectId as string,
-                      name: currentLayout?.name || '',
-                      description: currentLayout?.description || '',
-                      modules: modules,
-                      connections: connections
-                    }}
-                    onSaveComplete={handleSaveLayout}
-                    trigger={
-                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
-                        <Save className='h-3 w-3 mr-1' />
-                        {currentLayout?.id ? 'Save As' : 'Save'}
-                      </Button>
-                    }
-                  />
+                  <div className='flex items-center gap-2 justify-center'>
+                    <SaveLayoutDialog
+                      layoutData={{
+                        id: currentLayout?.id,
+                        projectId: projectId as string,
+                        name: currentLayout?.name || '',
+                        description: currentLayout?.description || '',
+                        modules: modules,
+                        connections: connections
+                      }}
+                      onSaveComplete={handleSaveLayout}
+                      trigger={
+                        <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
+                          <Save className='h-3 w-3 mr-1' />
+                          {currentLayout?.id ? 'Save As' : 'Save'}
+                        </Button>
+                      }
+                    />
+                  </div>
                 </div>
               </div>
             </div>

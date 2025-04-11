@@ -272,7 +272,7 @@ export function ModuleObject({
   }, [module.id, onUpdate, updateShadowTransform]);
 
   return (
-    <group>
+    <group ref={groupRef}>
       <mesh
         ref={meshRef}
         position={[
