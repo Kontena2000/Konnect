@@ -97,31 +97,6 @@ export function CalculationDetailsModal({
     return `${formatNumber(num * 100, 2)}%`;
   };
 
-  // Safely get power value
-  const getPowerValue = (calculation: any) => {
-    if (!calculation || !calculation.results || !calculation.results.power) return '0';
-    
-    return calculation.results.power.upsCapacity 
-      ? formatNumber(calculation.results.power.upsCapacity) 
-      : calculation.results.power.totalPower 
-        ? formatNumber(calculation.results.power.totalPower) 
-        : '0';
-  };
-
-  // Safely get cooling value
-  const getCoolingValue = (calculation: any) => {
-    if (!calculation || !calculation.results || !calculation.results.cooling) return '0';
-    
-    if (calculation.coolingType === 'hybrid') {
-      const dlcCapacity = calculation.results.cooling.dlcCapacity || 0;
-      const airCapacity = calculation.results.cooling.airCapacity || 0;
-      return `${formatNumber(dlcCapacity)} kW DLC + ${formatNumber(airCapacity)} kW Air`;
-    } else {
-      return `${formatNumber(calculation.results.cooling.coolingCapacity || 
-        calculation.results.cooling.totalCapacity || 0)} kW`;
-    }
-  };
-
   // Render a data row with label and value
   const renderDataRow = (label: string, value: React.ReactNode) => (
     <div className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
@@ -182,12 +157,11 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-2'>Total Project Cost</h3>
                   <p className='text-2xl font-bold text-amber-500'>
-                    ${calculation.results?.cost?.totalProjectCost ? 
-                      formatNumber(calculation.results.cost.totalProjectCost) : '0'}
+                    ${formatNumber(calculation.results?.cost?.totalProjectCost)}
                   </p>
-                  {calculation.results?.cost?.totalProjectCost && calculation.totalRacks > 0 && (
+                  {calculation.totalRacks > 0 && (
                     <p className='text-sm text-gray-600'>
-                      ${formatNumber(calculation.results.cost.totalProjectCost / calculation.totalRacks)} per rack
+                      ${formatNumber(Math.round((calculation.results?.cost?.totalProjectCost || 0) / calculation.totalRacks))} per rack
                     </p>
                   )}
                   {calculation.results?.cost?.costPerKw && (
@@ -201,11 +175,11 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-2'>Power Requirements</h3>
                   <p className='text-2xl font-bold text-amber-500'>
-                    {getPowerValue(calculation)} kW UPS Capacity
+                    {formatNumber(calculation.results?.power?.upsCapacity)} kW UPS Capacity
                   </p>
-                  {calculation.results?.power?.upsModules && (
+                  {calculation.results?.power?.upsModules && calculation.results?.power?.upsModuleSize && (
                     <p className='text-sm text-gray-600'>
-                      {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize || 250}kW UPS Modules
+                      {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize}kW UPS Modules
                     </p>
                   )}
                   {calculation.results?.power?.redundancy && (
@@ -219,7 +193,15 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-2'>Cooling Solution</h3>
                   <p className='text-2xl font-bold text-amber-500'>
-                    {getCoolingValue(calculation)}
+                    {calculation.coolingType === 'hybrid' ? (
+                      <>
+                        {formatNumber(calculation.results?.cooling?.dlcCapacity)} kW DLC + {formatNumber(calculation.results?.cooling?.airCapacity)} kW Air
+                      </>
+                    ) : (
+                      <>
+                        {formatNumber(calculation.results?.cooling?.coolingCapacity || calculation.results?.cooling?.totalCapacity)} kW
+                      </>
+                    )}
                   </p>
                   {calculation.results?.cooling?.flowRate && (
                     <p className='text-sm text-gray-600'>
@@ -353,8 +335,8 @@ export function CalculationDetailsModal({
                         <div className='space-y-2'>
                           {renderDataRow('UPS Capacity:', calculation.results?.power?.upsCapacity ? 
                             `${formatNumber(calculation.results.power.upsCapacity)} kW` : 'N/A')}
-                          {renderDataRow('UPS Modules:', calculation.results?.power?.upsModules ? 
-                            `${calculation.results.power.upsModules} x ${calculation.results.power.upsModuleSize || 250}kW` : 'N/A')}
+                          {renderDataRow('UPS Modules:', calculation.results?.power?.upsModules && calculation.results?.power?.upsModuleSize ? 
+                            `${calculation.results.power.upsModules} x ${calculation.results.power.upsModuleSize}kW` : 'N/A')}
                           {renderDataRow('Redundancy:', calculation.results?.power?.redundancy || 'N/A')}
                         </div>
                       </div>
