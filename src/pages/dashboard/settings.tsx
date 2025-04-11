@@ -13,7 +13,7 @@ import { CalculationSettings } from "@/components/settings/CalculationSettings";
 import { PricingEditor } from "@/components/settings/PricingEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import { DebugSettings } from "@/components/settings/DebugSettings";
-import { ModelImporter } from '@/components/settings/ModelImporter';
+import ModelImporter from '@/components/settings/ModelImporter';
 import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
