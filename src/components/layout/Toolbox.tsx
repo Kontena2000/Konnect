@@ -1,296 +1,261 @@
 
-import { useState, useCallback } from 'react';
-import { ModuleLibrary } from '@/components/three/ModuleLibrary';
-import { Button } from '@/components/ui/button';
-import { Separator } from '@/components/ui/separator';
-import { ScrollArea } from '@/components/ui/scroll-area';
-import { Module } from '@/types/module';
-import { Connection, Layout } from '@/services/layout';
-import { cn } from '@/lib/utils';
-import { 
-  Undo2, 
-  Redo2, 
-  Save, 
-  Maximize2, 
-  Minimize2, 
-  RotateCcw, 
-  Grid3X3, 
-  Grid, 
-  Eye, 
-  EyeOff
-} from 'lucide-react';
-import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import { useToast } from '@/hooks/use-toast';
+import { useState } from "react";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { ChevronLeft, ChevronRight, Box, Settings, Layers, Save, Undo, Redo, View, Grid } from "lucide-react";
+import { ModuleLibrary } from "@/components/three/ModuleLibrary";
+import { cn } from "@/lib/utils";
+import { Module } from "@/types/module";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Separator } from "@/components/ui/separator";
+import { toast } from '@/hooks/use-toast';
 
 interface ToolboxProps {
   onModuleDragStart: (module: Module) => void;
-  onUndo: () => void;
-  onRedo: () => void;
-  controlsRef: React.RefObject<any>;
-  currentLayout?: Layout;
-  modules: Module[];
-  connections: Connection[];
+  onSave?: () => void;
+  onUndo?: () => void;
+  onRedo?: () => void;
+  controlsRef?: React.RefObject<any>;
 }
 
 export function Toolbox({ 
   onModuleDragStart, 
+  onSave, 
   onUndo, 
-  onRedo, 
-  controlsRef,
-  currentLayout,
-  modules,
-  connections
+  onRedo,
+  controlsRef
 }: ToolboxProps) {
-  const [isCollapsed, setIsCollapsed] = useState(false);
-  const [view, setView] = useState<'3d' | '2d'>('3d');
-  const { toast } = useToast();
+  const [collapsed, setCollapsed] = useState(false);
+  const [expandedSection, setExpandedSection] = useState<string>("modules");
 
-  const handleSave = useCallback(async () => {
-    if (!currentLayout) {
-      toast({
-        title: 'Error',
-        description: 'No layout selected. Please create or select a layout first.',
-        variant: 'destructive'
-      });
-      return;
+  const sections = [
+    {
+      id: "modules",
+      title: "Module Library",
+      icon: <Box className="h-5 w-5" />,
+      content: <ModuleLibrary onDragStart={onModuleDragStart} />
+    },
+    {
+      id: "layers",
+      title: "Layers",
+      icon: <Layers className="h-5 w-5" />,
+      content: <div className="p-4 text-sm text-muted-foreground">Layer management coming soon</div>
+    },
+    {
+      id: "settings",
+      title: "Scene Settings",
+      icon: <Settings className="h-5 w-5" />,
+      content: <div className="p-4 text-sm text-muted-foreground">Scene settings coming soon</div>
     }
+  ];
 
-    try {
-      await fetch(`/api/layouts/${currentLayout.id}`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          ...currentLayout,
-          modules,
-          connections,
-          updatedAt: new Date().toISOString()
-        }),
-      });
-
-      toast({
-        title: 'Success',
-        description: 'Layout saved successfully'
-      });
-    } catch (error) {
-      console.error('Error saving layout:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to save layout',
-        variant: 'destructive'
-      });
-    }
-  }, [currentLayout, modules, connections, toast]);
-
-  const handleViewToggle = useCallback(() => {
-    if (!controlsRef.current) return;
-    
-    if (view === '3d') {
-      // Switch to 2D top-down view
-      controlsRef.current.setPosition(0, 20, 0);
-      controlsRef.current.setTarget(0, 0, 0);
-      setView('2d');
-    } else {
-      // Switch back to 3D view
-      controlsRef.current.setPosition(10, 10, 10);
-      controlsRef.current.setTarget(0, 0, 0);
-      setView('3d');
-    }
-  }, [view, controlsRef]);
-
-  const handleZoomToFit = useCallback(() => {
-    if (!controlsRef.current) return;
-    
-    // Find the bounds of all modules
-    if (modules.length === 0) {
-      controlsRef.current.setPosition(10, 10, 10);
-      controlsRef.current.setTarget(0, 0, 0);
-      return;
-    }
-    
-    let minX = Infinity;
-    let maxX = -Infinity;
-    let minY = Infinity;
-    let maxY = -Infinity;
-    let minZ = Infinity;
-    let maxZ = -Infinity;
-    
-    modules.forEach(module => {
-      const width = module.dimensions.width || 1;
-      const height = module.dimensions.height || 1;
-      const depth = module.dimensions.depth || 1;
-      
-      const x = module.position[0];
-      const y = module.position[1];
-      const z = module.position[2];
-      
-      minX = Math.min(minX, x - width / 2);
-      maxX = Math.max(maxX, x + width / 2);
-      minY = Math.min(minY, y - height / 2);
-      maxY = Math.max(maxY, y + height / 2);
-      minZ = Math.min(minZ, z - depth / 2);
-      maxZ = Math.max(maxZ, z + depth / 2);
+  const handleSave = () => {
+    onSave?.();
+    toast({
+      title: 'Layout Saved',
+      description: 'Your layout changes have been saved successfully.',
+      duration: 2000
     });
-    
-    const centerX = (minX + maxX) / 2;
-    const centerY = (minY + maxY) / 2;
-    const centerZ = (minZ + maxZ) / 2;
-    
-    const sizeX = maxX - minX;
-    const sizeY = maxY - minY;
-    const sizeZ = maxZ - minZ;
-    
-    const maxSize = Math.max(sizeX, sizeY, sizeZ);
-    const distance = maxSize * 1.5;
-    
-    if (view === '2d') {
-      controlsRef.current.setPosition(centerX, centerY + distance, centerZ);
-    } else {
-      controlsRef.current.setPosition(
-        centerX + distance,
-        centerY + distance,
-        centerZ + distance
-      );
-    }
-    
-    controlsRef.current.setTarget(centerX, centerY, centerZ);
-  }, [modules, controlsRef, view]);
+  };
 
   return (
-    <TooltipProvider>
-      <div 
-        className={cn(
-          'fixed right-4 top-1/2 -translate-y-1/2 bg-background/80 backdrop-blur-sm rounded-lg shadow-lg transition-all duration-300 z-10',
-          isCollapsed ? 'w-12' : 'w-64'
-        )}
-      >
-        <div className="p-2 flex flex-col h-full max-h-[80vh]">
-          {/* Header */}
-          <div className='flex items-center justify-between mb-2'>
-            {!isCollapsed && <h2 className='text-lg font-medium'>Toolbox</h2>}
+    <div 
+      className={cn(
+        'fixed top-0 right-0 h-screen bg-background border-l transition-all duration-200 z-50 flex flex-col',
+        collapsed ? 'w-16' : 'w-80'
+      )}
+      style={{ marginLeft: 'auto' }}
+    >
+      {/* Header */}
+      <div className='flex h-16 items-center justify-between px-4 border-b'>
+        {collapsed ? (
+          <Button
+            variant='ghost'
+            size='icon'
+            onClick={() => setCollapsed(false)}
+            className='w-full text-muted-foreground hover:text-foreground'
+          >
+            <ChevronLeft className='h-4 w-4' />
+          </Button>
+        ) : (
+          <div className='flex items-center justify-between w-full'>
+            <h2 className='text-lg font-medium'>Toolbox</h2>
             <Button
               variant='ghost'
               size='icon'
-              onClick={() => setIsCollapsed(!isCollapsed)}
-              className='text-muted-foreground hover:text-foreground ml-auto'
+              onClick={() => setCollapsed(true)}
+              className='text-muted-foreground hover:text-foreground'
             >
-              {isCollapsed ? <Maximize2 className='h-4 w-4' /> : <Minimize2 className='h-4 w-4' />}
+              <ChevronRight className='h-4 w-4' />
             </Button>
           </div>
+        )}
+      </div>
 
-          {/* Main content area */}
-          <div className='flex-1 overflow-hidden mb-2'>
-            <ScrollArea className='h-full pr-3'>
-              {!isCollapsed && (
-                <div className='space-y-4'>
-                  <div>
-                    <h3 className='text-sm font-medium mb-2'>Modules</h3>
-                    <ModuleLibrary onDragStart={onModuleDragStart} />
-                  </div>
-                </div>
-              )}
-            </ScrollArea>
-          </div>
+      {/* Main content area */}
+      <div className='flex-1 overflow-hidden'>
+        <ScrollArea className='h-full'>
+          {collapsed ? (
+            <div className='p-2 space-y-2'>
+              {sections.map((section) => (
+                <TooltipProvider key={section.id}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <Button
+                        variant='ghost'
+                        size='icon'
+                        className={cn(
+                          'w-full',
+                          expandedSection === section.id && 'bg-accent'
+                        )}
+                        onClick={() => {
+                          setCollapsed(false);
+                          setExpandedSection(section.id);
+                        }}
+                      >
+                        {section.icon}
+                      </Button>
+                    </TooltipTrigger>
+                    <TooltipContent side='left'>
+                      <p>{section.title}</p>
+                    </TooltipContent>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+          ) : (
+            <div className='p-2'>
+              {sections.map((section) => (
+                <Collapsible
+                  key={section.id}
+                  open={expandedSection === section.id}
+                  onOpenChange={() => setExpandedSection(section.id)}
+                >
+                  <CollapsibleTrigger className='flex items-center w-full p-2 hover:bg-accent rounded-md'>
+                    {section.icon}
+                    <span className='ml-2'>{section.title}</span>
+                  </CollapsibleTrigger>
+                  <CollapsibleContent>
+                    {section.content}
+                  </CollapsibleContent>
+                </Collapsible>
+              ))}
+            </div>
+          )}
+        </ScrollArea>
+      </div>
 
-          {/* Bottom toolbar */}
-          <div className='border-t pt-2 bg-background/80 backdrop-blur-sm mt-auto'>
-            <div className='space-y-2'>
+      {/* Bottom toolbar */}
+      <div className='border-t p-2 bg-background/80 backdrop-blur-sm'>
+        <TooltipProvider>
+          <div className='space-y-2'>
+            {/* Save button - Always visible and prominent */}
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant='default' 
+                  size={collapsed ? 'icon' : 'default'}
+                  onClick={handleSave}
+                  className='w-full bg-primary hover:bg-primary/90'
+                >
+                  <Save className='h-4 w-4' />
+                  {!collapsed && <span className='ml-2'>Save Layout</span>}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent side='left'>
+                <p>Save current layout</p>
+              </TooltipContent>
+            </Tooltip>
+
+            <Separator />
+
+            <div className={cn(
+              'grid gap-2',
+              collapsed ? 'grid-cols-1' : 'grid-cols-2'
+            )}>
+              {/* Undo/Redo group */}
               <Tooltip>
                 <TooltipTrigger asChild>
                   <Button 
-                    variant='default' 
-                    size={isCollapsed ? 'icon' : 'default'}
-                    onClick={handleSave}
-                    className='w-full bg-primary hover:bg-primary/90'
+                    variant='outline' 
+                    size={collapsed ? 'icon' : 'default'}
+                    onClick={onUndo}
+                    className='w-full'
                   >
-                    <Save className='h-4 w-4' />
-                    {!isCollapsed && <span className='ml-2'>Save Layout</span>}
+                    <Undo className='h-4 w-4' />
+                    {!collapsed && <span className='ml-2'>Undo</span>}
                   </Button>
                 </TooltipTrigger>
                 <TooltipContent side='left'>
-                  <p>Save current layout</p>
+                  <p>Undo last action</p>
                 </TooltipContent>
               </Tooltip>
 
-              <Separator />
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant='outline' 
+                    size={collapsed ? 'icon' : 'default'}
+                    onClick={onRedo}
+                    className='w-full'
+                  >
+                    <Redo className='h-4 w-4' />
+                    {!collapsed && <span className='ml-2'>Redo</span>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='left'>
+                  <p>Redo last action</p>
+                </TooltipContent>
+              </Tooltip>
 
-              <div className={cn(
-                'grid gap-2',
-                isCollapsed ? 'grid-cols-1' : 'grid-cols-2'
-              )}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant='outline' 
-                      size={isCollapsed ? 'icon' : 'default'}
-                      onClick={onUndo}
-                      className='w-full'
-                    >
-                      <Undo2 className='h-4 w-4' />
-                      {!isCollapsed && <span className='ml-2'>Undo</span>}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side='left'>
-                    <p>Undo last action</p>
-                  </TooltipContent>
-                </Tooltip>
+              {/* View controls */}
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant='outline' 
+                    size={collapsed ? 'icon' : 'default'}
+                    onClick={() => {
+                      if (controlsRef?.current) {
+                        controlsRef.current.reset();
+                      }
+                    }}
+                    className='w-full'
+                  >
+                    <View className='h-4 w-4' />
+                    {!collapsed && <span className='ml-2'>2D View</span>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='left'>
+                  <p>Switch to 2D top view</p>
+                </TooltipContent>
+              </Tooltip>
 
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant='outline' 
-                      size={isCollapsed ? 'icon' : 'default'}
-                      onClick={onRedo}
-                      className='w-full'
-                    >
-                      <Redo2 className='h-4 w-4' />
-                      {!isCollapsed && <span className='ml-2'>Redo</span>}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side='left'>
-                    <p>Redo last action</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant='outline' 
-                      size={isCollapsed ? 'icon' : 'default'}
-                      onClick={handleViewToggle}
-                      className='w-full'
-                    >
-                      {view === '2d' ? <Eye className='h-4 w-4' /> : <EyeOff className='h-4 w-4' />}
-                      {!isCollapsed && <span className='ml-2'>{view === '2d' ? '2D View' : '3D View'}</span>}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side='left'>
-                    <p>Toggle between 2D and 3D views</p>
-                  </TooltipContent>
-                </Tooltip>
-
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button 
-                      variant='outline' 
-                      size={isCollapsed ? 'icon' : 'default'}
-                      onClick={handleZoomToFit}
-                      className='w-full'
-                    >
-                      <Grid className='h-4 w-4' />
-                      {!isCollapsed && <span className='ml-2'>Zoom to Fit</span>}
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent side='left'>
-                    <p>Zoom to fit all modules</p>
-                  </TooltipContent>
-                </Tooltip>
-              </div>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant='outline' 
+                    size={collapsed ? 'icon' : 'default'}
+                    onClick={() => {
+                      if (controlsRef?.current) {
+                        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
+                        controlsRef.current.setPolarAngle(Math.PI / 4);
+                      }
+                    }}
+                    className='w-full'
+                  >
+                    <Grid className='h-4 w-4' />
+                    {!collapsed && <span className='ml-2'>3D View</span>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='left'>
+                  <p>Switch to 3D isometric view</p>
+                </TooltipContent>
+              </Tooltip>
             </div>
           </div>
-        </div>
+        </TooltipProvider>
       </div>
-    </TooltipProvider>
+    </div>
   );
 }
