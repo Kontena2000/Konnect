@@ -16,7 +16,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
-import { FileText, Copy, Loader2 } from 'lucide-react';
 import layoutService from '@/services/layout';
 import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
@@ -53,7 +52,6 @@ export default function LayoutEditorPage() {
   const isUndoingOrRedoing = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [shareEmail, setShareEmail] = useState<string>('');
-  const [duplicating, setDuplicating] = useState<boolean>(false);
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -84,29 +82,6 @@ export default function LayoutEditorPage() {
         title: 'Error',
         description: 'Failed to share project'
       });
-    }
-  };
-
-  // Handle duplicate project
-  const handleDuplicateProject = async () => {
-    if (!projectId || !user) return;
-    
-    setDuplicating(true);
-    try {
-      const newProjectId = await projectService.duplicateProject(projectId as string, user.uid);
-      toast({
-        title: 'Success',
-        description: 'Project duplicated successfully'
-      });
-      router.push(`/dashboard/projects/${newProjectId}`);
-    } catch (error) {
-      console.error('Error duplicating project:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to duplicate project'
-      });
-      setDuplicating(false);
     }
   };
 
