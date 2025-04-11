@@ -1,4 +1,3 @@
-
 import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Box, Truck, Trees, Database, Server, Leaf } from "lucide-react";
