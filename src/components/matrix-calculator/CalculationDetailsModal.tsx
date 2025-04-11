@@ -7,14 +7,16 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
-  DialogClose
+  DialogClose,
+  DialogFooter
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Loader2, X } from "lucide-react";
+import { FileText, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { GeneratePdfButton } from "./GeneratePdfButton";
 
 interface CalculationDetailsModalProps {
   calculationId: string;
@@ -381,6 +383,13 @@ export function CalculationDetailsModal({
           <div className='flex flex-col items-center justify-center py-12'>
             <p className='text-muted-foreground'>Calculation not found or failed to load.</p>
           </div>
+        )}
+
+        {/* Add Dialog Footer with Generate PDF button */}
+        {!loading && calculation && (
+          <DialogFooter className="mt-4">
+            <GeneratePdfButton calculation={calculation} />
+          </DialogFooter>
         )}
       </DialogContent>
     </Dialog>
