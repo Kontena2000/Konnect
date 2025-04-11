@@ -249,8 +249,6 @@ export default function LayoutEditorPage() {
       scale: [1, 1, 1]
     };
     
-    // Simpan data modul ke dataTransfer untuk digunakan saat drag
-    // Tidak perlu mengatur dataTransfer di sini karena sudah diatur di ModuleLibrary
     console.log('Module drag start with dimensions:', module.dimensions);
     
     setModules(prev => [...prev, newModule]);
