@@ -674,50 +674,23 @@ export default function LayoutEditorPage() {
                 </div>
                 
                 <div className='flex items-center gap-2 justify-center'>
-                  <Button 
-                    variant='outline'
-                    size='sm'
-                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
-                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${projectId}`)}
-                  >
-                    <FileText className='h-3 w-3' />
-                    <span>Generate Report</span>
-                  </Button>
-                  
-                  <Button 
-                    variant='outline'
-                    size='sm'
-                    onClick={handleDuplicateProject}
-                    disabled={duplicating}
-                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#4A7AFF] text-[#4A7AFF] hover:bg-[#4A7AFF]/10'
-                  >
-                    {duplicating ? (
-                      <Loader2 className='h-3 w-3 animate-spin' />
-                    ) : (
-                      <Copy className='h-3 w-3' />
-                    )}
-                    <span>Duplicate</span>
-                  </Button>
-                  
-                  <div className='flex items-center gap-2 justify-center'>
-                    <SaveLayoutDialog
-                      layoutData={{
-                        id: currentLayout?.id,
-                        projectId: projectId as string,
-                        name: currentLayout?.name || '',
-                        description: currentLayout?.description || '',
-                        modules: modules,
-                        connections: connections
-                      }}
-                      onSaveComplete={handleSaveLayout}
-                      trigger={
-                        <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
-                          <Save className='h-3 w-3 mr-1' />
-                          {currentLayout?.id ? 'Save As' : 'Save'}
-                        </Button>
-                      }
-                    />
-                  </div>
+                  <SaveLayoutDialog
+                    layoutData={{
+                      id: currentLayout?.id,
+                      projectId: projectId as string,
+                      name: currentLayout?.name || '',
+                      description: currentLayout?.description || '',
+                      modules: modules,
+                      connections: connections
+                    }}
+                    onSaveComplete={handleSaveLayout}
+                    trigger={
+                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
+                        <Save className='h-3 w-3 mr-1' />
+                        {currentLayout?.id ? 'Save As' : 'Save'}
+                      </Button>
+                    }
+                  />
                 </div>
               </div>
             </div>
