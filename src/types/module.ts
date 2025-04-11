@@ -2,7 +2,7 @@
 export interface ModuleDimensions {
   width: number;
   height: number;
-  depth: number;
+  length: number;
 }
 
 export interface ModuleConnectionPoint {
@@ -63,7 +63,7 @@ export const DEFAULT_MODULE_TEMPLATES: ModuleTemplate[] = [
     type: "rack",
     category: "racks",
     description: "Standard 42U server rack",
-    dimensions: { width: 0.6, height: 2.0, depth: 1.2 },
+    dimensions: { width: 0.6, height: 2.0, length: 1.2 },
     color: "#8884d8",
     connectionPoints: [
       {
@@ -90,7 +90,7 @@ export const DEFAULT_MODULE_TEMPLATES: ModuleTemplate[] = [
     type: "cooling",
     category: "cooling",
     description: "Standard cooling unit",
-    dimensions: { width: 1.0, height: 2.0, depth: 1.0 },
+    dimensions: { width: 1.0, height: 2.0, length: 1.0 },
     color: "#82ca9d",
     connectionPoints: [
       {
@@ -109,7 +109,7 @@ export const DEFAULT_MODULE_TEMPLATES: ModuleTemplate[] = [
     type: "power",
     category: "power",
     description: "Standard power distribution unit",
-    dimensions: { width: 1.0, height: 1.5, depth: 0.8 },
+    dimensions: { width: 1.0, height: 1.5, length: 0.8 },
     color: "#ffc658",
     connectionPoints: [
       {
@@ -128,7 +128,7 @@ export const DEFAULT_MODULE_TEMPLATES: ModuleTemplate[] = [
     type: "container",
     category: "containers",
     description: "Edge computing container",
-    dimensions: { width: 12.192, height: 2.896, depth: 2.438 },
+    dimensions: { width: 12.192, height: 2.896, length: 2.438 },
     color: "#0088FE",
     connectionPoints: [
       {

@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useMemo } from "react";
 import { Card } from "@/components/ui/card";
 import { Box, Truck, Trees, Database, Server, Leaf } from "lucide-react";
@@ -99,7 +100,7 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
               <div className="flex-1 min-w-0">
                 <p className="font-medium truncate">{module.name}</p>
                 <p className="text-sm text-muted-foreground">
-                  {module.dimensions.depth}m × {module.dimensions.width}m × {module.dimensions.height}m
+                  {module.dimensions.length}m × {module.dimensions.width}m × {module.dimensions.height}m
                 </p>
                 {module.description && (
                   <p className="text-sm text-muted-foreground truncate">
