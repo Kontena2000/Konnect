@@ -28,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin } from 'lucide-react';
+import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin, Zap, Snowflake, DollarSign, Server, Thermometer } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -584,41 +584,136 @@ export default function ProjectDetailsPage() {
                   )}
                 </Button>
               </div>
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <div className='grid grid-cols-1 gap-4'>
                 {calculations.length > 0 ? (
                   calculations.map((calculation) => (
                     <Card key={calculation.id} className='overflow-hidden hover:shadow-md transition-shadow border border-muted'>
                       <CardHeader className='pb-2 bg-muted/20'>
-                        <CardTitle>{calculation.name || 'Untitled Calculation'}</CardTitle>
-                        <CardDescription>
-                          {calculation.description || 'No description'}
-                        </CardDescription>
+                        <div className='flex justify-between items-start'>
+                          <div>
+                            <CardTitle>{calculation.name || 'Untitled Calculation'}</CardTitle>
+                            <CardDescription>
+                              {calculation.description || 'No description'}
+                            </CardDescription>
+                          </div>
+                          <div className='flex gap-2'>
+                            <Button 
+                              variant='outline' 
+                              size='sm'
+                              onClick={() => handleEditCalculation(calculation.id)}
+                              className='hover:bg-[#F1B73A]/10'
+                            >
+                              <Edit className='mr-2 h-4 w-4' />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant='outline' 
+                              size='sm'
+                              onClick={() => handleViewCalculation(calculation.id)}
+                              className='hover:bg-[#9333EA]/10'
+                            >
+                              <Eye className='mr-2 h-4 w-4' />
+                              View
+                            </Button>
+                          </div>
+                        </div>
                       </CardHeader>
                       <CardContent className='pt-4'>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
-                        </p>
+                        {/* Configuration Summary */}
+                        <div className='bg-muted/10 p-3 rounded-md mb-4'>
+                          <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                            <Server className='h-4 w-4 text-muted-foreground' />
+                            Configuration Summary
+                          </h4>
+                          <p className='text-sm'>
+                            {calculation.kwPerRack}kW per rack, 
+                            {calculation.coolingType === 'dlc' ? ' Direct Liquid Cooling' : 
+                             calculation.coolingType === 'air' ? ' Air Cooling' : 
+                             calculation.coolingType === 'hybrid' ? ' Hybrid Cooling' : ' Immersion Cooling'}, 
+                            {calculation.totalRacks} racks
+                          </p>
+                        </div>
+                        
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          {/* Total Project Cost */}
+                          {calculation.results?.cost && (
+                            <div className='bg-muted/10 p-3 rounded-md'>
+                              <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                                <DollarSign className='h-4 w-4 text-green-600' />
+                                Total Project Cost
+                              </h4>
+                              <p className='text-xl font-bold text-green-600'>
+                                ${calculation.results.cost.totalProjectCost.toLocaleString()}
+                              </p>
+                              <div className='text-xs text-muted-foreground mt-1'>
+                                ${(calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString()} per rack
+                              </div>
+                              {calculation.results.cost.costPerKw && (
+                                <div className='text-xs text-muted-foreground'>
+                                  ${calculation.results.cost.costPerKw.toLocaleString()} per kW
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Power Requirements */}
+                          {calculation.results?.power && (
+                            <div className='bg-muted/10 p-3 rounded-md'>
+                              <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                                <Zap className='h-4 w-4 text-amber-500' />
+                                Power Requirements
+                              </h4>
+                              <p className='text-xl font-bold text-amber-500'>
+                                {calculation.results.power.totalPower.toLocaleString()} kW
+                              </p>
+                              {calculation.results.power.upsModules && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  {calculation.results.power.upsModules} UPS Modules
+                                </div>
+                              )}
+                              {calculation.results.power.redundancy && (
+                                <div className='text-xs text-muted-foreground'>
+                                  {calculation.results.power.redundancy} Redundancy
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Cooling Solution */}
+                          {calculation.results?.cooling && (
+                            <div className='bg-muted/10 p-3 rounded-md'>
+                              <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                                <Snowflake className='h-4 w-4 text-blue-500' />
+                                Cooling Solution
+                              </h4>
+                              <p className='text-xl font-bold text-blue-500'>
+                                {calculation.coolingType === 'hybrid' ? (
+                                  <>
+                                    {calculation.results.cooling.dlcCapacity?.toLocaleString() || '0'} kW DLC + {calculation.results.cooling.airCapacity?.toLocaleString() || '0'} kW Air
+                                  </>
+                                ) : (
+                                  <>{calculation.results.cooling.coolingCapacity?.toLocaleString() || calculation.results.cooling.totalCapacity?.toLocaleString() || '0'} kW</>
+                                )}
+                              </p>
+                              {calculation.results.cooling.flowRate && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  {calculation.results.cooling.flowRate.toLocaleString()} L/min Flow Rate
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Additional Details */}
+                        <div className='mt-4 text-xs text-muted-foreground'>
+                          <div className='flex justify-between'>
+                            <span>Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</span>
+                            {calculation.updatedAt && (
+                              <span>Updated: {new Date((calculation.updatedAt as any)?.seconds * 1000).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
                       </CardContent>
-                      <CardFooter className='flex justify-end gap-2 pt-2 border-t bg-muted/10'>
-                        <Button 
-                          variant='outline' 
-                          size='sm'
-                          onClick={() => handleEditCalculation(calculation.id)}
-                          className='hover:bg-[#F1B73A]/10'
-                        >
-                          <Edit className='mr-2 h-4 w-4' />
-                          Edit
-                        </Button>
-                        <Button 
-                          variant='outline' 
-                          size='sm'
-                          onClick={() => handleViewCalculation(calculation.id)}
-                          className='hover:bg-[#9333EA]/10'
-                        >
-                          <Eye className='mr-2 h-4 w-4' />
-                          View
-                        </Button>
-                      </CardFooter>
                     </Card>
                   ))
                 ) : (
