@@ -64,7 +64,7 @@ export function CreateModuleDialog({ onModuleCreated, categories = [] }: CreateM
       const [parent, child] = name.split(".");
       setFormData((prev) => ({
         ...prev,
-        [parent]: {
+        [parent as keyof typeof prev]: {
           ...prev[parent as keyof typeof prev],
           [child]: value,
         },
