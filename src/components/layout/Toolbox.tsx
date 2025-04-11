@@ -1,6 +1,8 @@
 import { useState, useCallback } from 'react';
+import { ModuleLibrary } from '@/components/three/ModuleLibrary';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { ScrollArea } from '@/components/ui/scroll-area';
 import { Module } from '@/types/module';
 import { Connection, Layout } from '@/services/layout';
 import { cn } from '@/lib/utils';
@@ -14,12 +16,9 @@ import {
   Grid3X3, 
   Grid, 
   Eye, 
-  EyeOff,
-  Download,
-  Upload
+  EyeOff
 } from 'lucide-react';
 import { TooltipProvider, Tooltip, TooltipTrigger, TooltipContent } from '@/components/ui/tooltip';
-import layoutService from '@/services/layout';
 import { useToast } from '@/hooks/use-toast';
 
 interface ToolboxProps {
@@ -56,11 +55,17 @@ export function Toolbox({
     }
 
     try {
-      await layoutService.saveLayout({
-        ...currentLayout,
-        modules,
-        connections,
-        updatedAt: new Date().toISOString()
+      await fetch(`/api/layouts/${currentLayout.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...currentLayout,
+          modules,
+          connections,
+          updatedAt: new Date().toISOString()
+        }),
       });
 
       toast({

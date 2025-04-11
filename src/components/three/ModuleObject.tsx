@@ -78,17 +78,20 @@ export function ModuleObject({
   const initialPosition = useMemo(() => {
     // Pastikan dimensi tinggi digunakan dengan benar
     const height = module.dimensions?.height || 1;
+    console.log(`Module ${module.id} initialPosition calculation with height:`, height);
     return new Vector3(
       module.position[0],
       module.position[1] + 5, // Tambahkan offset untuk animasi jatuh
       module.position[2]
     );
-  }, [module.position, module.dimensions]);
+  }, [module.position, module.dimensions, module.id]);
 
   // Pastikan finalHeight menggunakan dimensi tinggi yang benar
   const finalHeight = useMemo(() => {
-    return module.dimensions?.height / 2 || 0.5;
-  }, [module.dimensions]);
+    const height = module.dimensions?.height || 1;
+    console.log(`Module ${module.id} finalHeight calculation with height:`, height);
+    return height / 2;
+  }, [module.dimensions, module.id]);
 
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;

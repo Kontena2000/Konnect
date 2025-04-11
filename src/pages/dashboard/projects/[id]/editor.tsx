@@ -101,6 +101,9 @@ export default function LayoutEditorPage() {
         // Ensure scale values are numbers
         moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
         
+        // Log the dimensions for debugging
+        console.log(`Module ${moduleCopy.id} dimensions:`, moduleCopy.dimensions);
+        
         return moduleCopy;
       });
       
@@ -199,8 +202,8 @@ export default function LayoutEditorPage() {
       scale: [1, 1, 1]
     };
     
-    // Pastikan dimensi modul tetap sama seperti aslinya
-    newModule.dimensions = { ...module.dimensions };
+    // Pastikan dimensi modul tetap sama seperti aslinya dengan deep copy
+    newModule.dimensions = JSON.parse(JSON.stringify(module.dimensions));
     
     console.log('New module created with dimensions:', newModule.dimensions);
     
