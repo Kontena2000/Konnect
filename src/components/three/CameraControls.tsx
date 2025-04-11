@@ -1,3 +1,4 @@
+
 import { useRef, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
@@ -46,18 +47,18 @@ export function CameraControls({
 
     // Add methods for camera position control
     controls.reset = () => {
-      console.log('Setting 2D view');
-      // Set camera to top-down 2D view
-      camera.position.set(0, 20, 0.001); // Small z offset to prevent issues
+      camera.position.set(10, 10, 10);
       camera.lookAt(0, 0, 0);
       controls.update();
     };
 
-    controls.set3DView = () => {
-      console.log('Setting 3D view');
-      // Set camera to isometric view position
-      camera.position.set(15, 15, 15);
-      camera.lookAt(0, 0, 0);
+    controls.setAzimuthalAngle = (angle: number) => {
+      controls.setAzimuthalAngle(angle);
+      controls.update();
+    };
+
+    controls.setPolarAngle = (angle: number) => {
+      controls.setPolarAngle(angle);
       controls.update();
     };
 
