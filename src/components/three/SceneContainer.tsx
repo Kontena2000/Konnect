@@ -176,14 +176,9 @@ export function SceneContainer({
   const snapLines = useMemo(() => {
     return modules.reduce((lines: Line3[], module) => {
       const pos = new Vector3(...module.position);
-      // Use width, height, depth instead of length for type safety
-      const width = module.dimensions.width || 1;
-      const height = module.dimensions.height || 1;
-      const depth = module.dimensions.depth || 1;
-      
       const box = new Box3().setFromCenterAndSize(
         pos,
-        new Vector3(width, height, depth)
+        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
       );
       lines.push(
         new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),
