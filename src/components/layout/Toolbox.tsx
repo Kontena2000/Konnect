@@ -1,3 +1,4 @@
+
 import { useState, useCallback } from 'react';
 import { ModuleLibrary } from '@/components/three/ModuleLibrary';
 import { Button } from '@/components/ui/button';
@@ -166,122 +167,127 @@ export function Toolbox({
       >
         <div className="p-2 flex flex-col h-full max-h-[80vh]">
           {/* Header */}
-          <div className='flex items-center justify-between'>
-            <h2 className='text-lg font-medium'>Toolbox</h2>
+          <div className='flex items-center justify-between mb-2'>
+            {!isCollapsed && <h2 className='text-lg font-medium'>Toolbox</h2>}
             <Button
               variant='ghost'
               size='icon'
               onClick={() => setIsCollapsed(!isCollapsed)}
-              className='text-muted-foreground hover:text-foreground'
+              className='text-muted-foreground hover:text-foreground ml-auto'
             >
               {isCollapsed ? <Maximize2 className='h-4 w-4' /> : <Minimize2 className='h-4 w-4' />}
             </Button>
           </div>
 
           {/* Main content area */}
-          <div className='flex-1 overflow-hidden'>
-            <ScrollArea className='h-full'>
-              {/* Add your sections here */}
+          <div className='flex-1 overflow-hidden mb-2'>
+            <ScrollArea className='h-full pr-3'>
+              {!isCollapsed && (
+                <div className='space-y-4'>
+                  <div>
+                    <h3 className='text-sm font-medium mb-2'>Modules</h3>
+                    <ModuleLibrary onDragStart={onModuleDragStart} />
+                  </div>
+                </div>
+              )}
             </ScrollArea>
           </div>
 
           {/* Bottom toolbar */}
-          <div className='border-t p-2 bg-background/80 backdrop-blur-sm'>
-            <TooltipProvider>
-              <div className='space-y-2'>
+          <div className='border-t pt-2 bg-background/80 backdrop-blur-sm mt-auto'>
+            <div className='space-y-2'>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button 
+                    variant='default' 
+                    size={isCollapsed ? 'icon' : 'default'}
+                    onClick={handleSave}
+                    className='w-full bg-primary hover:bg-primary/90'
+                  >
+                    <Save className='h-4 w-4' />
+                    {!isCollapsed && <span className='ml-2'>Save Layout</span>}
+                  </Button>
+                </TooltipTrigger>
+                <TooltipContent side='left'>
+                  <p>Save current layout</p>
+                </TooltipContent>
+              </Tooltip>
+
+              <Separator />
+
+              <div className={cn(
+                'grid gap-2',
+                isCollapsed ? 'grid-cols-1' : 'grid-cols-2'
+              )}>
                 <Tooltip>
                   <TooltipTrigger asChild>
                     <Button 
-                      variant='default' 
+                      variant='outline' 
                       size={isCollapsed ? 'icon' : 'default'}
-                      onClick={handleSave}
-                      className='w-full bg-primary hover:bg-primary/90'
+                      onClick={onUndo}
+                      className='w-full'
                     >
-                      <Save className='h-4 w-4' />
-                      {!isCollapsed && <span className='ml-2'>Save Layout</span>}
+                      <Undo2 className='h-4 w-4' />
+                      {!isCollapsed && <span className='ml-2'>Undo</span>}
                     </Button>
                   </TooltipTrigger>
                   <TooltipContent side='left'>
-                    <p>Save current layout</p>
+                    <p>Undo last action</p>
                   </TooltipContent>
                 </Tooltip>
 
-                <Separator />
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size={isCollapsed ? 'icon' : 'default'}
+                      onClick={onRedo}
+                      className='w-full'
+                    >
+                      <Redo2 className='h-4 w-4' />
+                      {!isCollapsed && <span className='ml-2'>Redo</span>}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side='left'>
+                    <p>Redo last action</p>
+                  </TooltipContent>
+                </Tooltip>
 
-                <div className={cn(
-                  'grid gap-2',
-                  isCollapsed ? 'grid-cols-1' : 'grid-cols-2'
-                )}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant='outline' 
-                        size={isCollapsed ? 'icon' : 'default'}
-                        onClick={onUndo}
-                        className='w-full'
-                      >
-                        <Undo2 className='h-4 w-4' />
-                        {!isCollapsed && <span className='ml-2'>Undo</span>}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side='left'>
-                      <p>Undo last action</p>
-                    </TooltipContent>
-                  </Tooltip>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size={isCollapsed ? 'icon' : 'default'}
+                      onClick={handleViewToggle}
+                      className='w-full'
+                    >
+                      {view === '2d' ? <Eye className='h-4 w-4' /> : <EyeOff className='h-4 w-4' />}
+                      {!isCollapsed && <span className='ml-2'>{view === '2d' ? '2D View' : '3D View'}</span>}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side='left'>
+                    <p>Toggle between 2D and 3D views</p>
+                  </TooltipContent>
+                </Tooltip>
 
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant='outline' 
-                        size={isCollapsed ? 'icon' : 'default'}
-                        onClick={onRedo}
-                        className='w-full'
-                      >
-                        <Redo2 className='h-4 w-4' />
-                        {!isCollapsed && <span className='ml-2'>Redo</span>}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side='left'>
-                      <p>Redo last action</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant='outline' 
-                        size={isCollapsed ? 'icon' : 'default'}
-                        onClick={handleViewToggle}
-                        className='w-full'
-                      >
-                        {view === '2d' ? <Eye className='h-4 w-4' /> : <EyeOff className='h-4 w-4' />}
-                        {!isCollapsed && <span className='ml-2'>{view === '2d' ? '2D View' : '3D View'}</span>}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side='left'>
-                      <p>Toggle between 2D and 3D views</p>
-                    </TooltipContent>
-                  </Tooltip>
-
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button 
-                        variant='outline' 
-                        size={isCollapsed ? 'icon' : 'default'}
-                        onClick={handleZoomToFit}
-                        className='w-full'
-                      >
-                        <Grid className='h-4 w-4' />
-                        {!isCollapsed && <span className='ml-2'>Zoom to Fit</span>}
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent side='left'>
-                      <p>Zoom to fit all modules</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </div>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <Button 
+                      variant='outline' 
+                      size={isCollapsed ? 'icon' : 'default'}
+                      onClick={handleZoomToFit}
+                      className='w-full'
+                    >
+                      <Grid className='h-4 w-4' />
+                      {!isCollapsed && <span className='ml-2'>Zoom to Fit</span>}
+                    </Button>
+                  </TooltipTrigger>
+                  <TooltipContent side='left'>
+                    <p>Zoom to fit all modules</p>
+                  </TooltipContent>
+                </Tooltip>
               </div>
-            </TooltipProvider>
+            </div>
           </div>
         </div>
       </div>
