@@ -11,6 +11,9 @@ interface GeneratePdfButtonProps {
   options: CalculationOptions;
   projectName?: string;
   clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
 }
 
 export function GeneratePdfButton({
@@ -18,7 +21,10 @@ export function GeneratePdfButton({
   results,
   options,
   projectName,
-  clientName
+  clientName,
+  clientEmail,
+  clientPhone,
+  clientAddress
 }: GeneratePdfButtonProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const { toast } = useToast();
@@ -37,6 +43,9 @@ export function GeneratePdfButton({
           includeDetailedBreakdown: true,
           projectName: projectName || "Data Center Project",
           clientName: clientName || "",
+          clientEmail: clientEmail || "",
+          clientPhone: clientPhone || "",
+          clientAddress: clientAddress || "",
           date: new Date().toLocaleDateString(),
         }
       );

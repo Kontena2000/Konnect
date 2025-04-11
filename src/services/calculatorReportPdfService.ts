@@ -16,6 +16,9 @@ interface ReportOptions {
   companyName?: string;
   projectName?: string;
   clientName?: string;
+  clientEmail?: string;
+  clientPhone?: string;
+  clientAddress?: string;
   preparedBy?: string;
   date?: string;
   logo?: string;
@@ -44,6 +47,9 @@ export async function generateCalculationPdfReport(
     companyName: "Kontena",
     projectName: "Data Center Project",
     clientName: "",
+    clientEmail: "",
+    clientPhone: "",
+    clientAddress: "",
     preparedBy: "",
     date: new Date().toLocaleDateString(),
   };
@@ -127,6 +133,63 @@ function addReportHeader(doc: jsPDF, config: CalculationConfig, options: ReportO
   doc.setDrawColor(0, 51, 102);
   doc.setLineWidth(0.5);
   doc.line(15, 50, 195, 50);
+
+  // Add project details in a clean table format
+  doc.setFontSize(16);
+  doc.setTextColor(0, 51, 102);
+  doc.text("Project Information", 15, 65);
+  
+  const projectData = [
+    ["Project Name", options.projectName || "Data Center Project"],
+    ["Description", "Data center configuration and calculation report"],
+    ["Status", "Planning"]
+  ];
+  
+  doc.autoTable({
+    startY: 70,
+    body: projectData,
+    theme: "plain", // Use plain theme for borderless table
+    styles: { 
+      fontSize: 11,
+      cellPadding: 5
+    },
+    margin: { left: 15, right: 15 },
+    columnStyles: {
+      0: { cellWidth: 50, fontStyle: 'bold' },
+      1: { cellWidth: 120 }
+    }
+  });
+  
+  // Add client information if available
+  if (options.clientName || options.clientEmail || options.clientPhone || options.clientAddress) {
+    const clientY = (doc as any).lastAutoTable.finalY + 15;
+    
+    doc.setFontSize(16);
+    doc.setTextColor(0, 51, 102);
+    doc.text("Client Information", 15, clientY);
+    
+    const clientData = [
+      ["Company Name", options.clientName || "Not specified"],
+      ["Email", options.clientEmail || "Not specified"],
+      ["Phone", options.clientPhone || "Not specified"],
+      ["Address", options.clientAddress || "Not specified"]
+    ];
+    
+    doc.autoTable({
+      startY: clientY + 5,
+      body: clientData,
+      theme: "plain", // Use plain theme for borderless table
+      styles: { 
+        fontSize: 11,
+        cellPadding: 5
+      },
+      margin: { left: 15, right: 15 },
+      columnStyles: {
+        0: { cellWidth: 50, fontStyle: 'bold' },
+        1: { cellWidth: 120 }
+      }
+    });
+  }
 
   // Move to next section
   doc.setFontSize(12);
@@ -532,7 +595,7 @@ function addCostDetails(doc: jsPDF, results: any, startY: number, includeDetaile
   if (includeDetailedBreakdown) {
     const detailedY = (doc as any).lastAutoTable.finalY + 10;
     
-    // Check if we need to add a new page
+    // Check if we need to add a new page for the remaining tables
     if (detailedY > 250) {
       doc.addPage();
       doc.setFontSize(14);
