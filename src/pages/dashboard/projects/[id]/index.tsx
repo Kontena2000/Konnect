@@ -337,6 +337,10 @@ export default function ProjectDetailsPage() {
     
     setGeneratingReport(true);
     try {
+      // Log project data for debugging
+      console.log('Project data for report:', project);
+      console.log('Client info:', project.clientInfo);
+      
       // Filter selected layouts and calculations
       const selectedLayouts = layouts.filter(layout => 
         selectedLayoutIds.length === 0 || selectedLayoutIds.includes(layout.id)
@@ -346,15 +350,16 @@ export default function ProjectDetailsPage() {
         selectedCalculationIds.length === 0 || selectedCalculationIds.includes(calc.id)
       );
       
+      console.log('Selected layouts:', selectedLayouts);
+      console.log('Selected calculations:', selectedCalculations);
+      
       // Create layout images
       const layoutImages: { [key: string]: string } = {};
       
-      // For each layout, try to capture a real 3D view if available
-      // This is a more advanced approach than just creating placeholder images
+      // For each layout, create a visualization
       for (const layout of selectedLayouts) {
         try {
-          // First try to get a real 3D view by redirecting to view page and capturing it
-          // If that's not possible, create a more detailed placeholder
+          // Create a canvas for the layout visualization
           const canvas = document.createElement('canvas');
           canvas.width = 800;
           canvas.height = 450;
@@ -405,6 +410,14 @@ export default function ProjectDetailsPage() {
                 ctx.strokeStyle = '#333333';
                 ctx.lineWidth = 1;
                 ctx.strokeRect(x, y, 100, 60);
+                
+                // Add module name if available
+                if (module.name) {
+                  ctx.fillStyle = '#ffffff';
+                  ctx.font = '10px Arial';
+                  ctx.textAlign = 'center';
+                  ctx.fillText(module.name.substring(0, 12), x + 50, y + 35);
+                }
               });
             }
             
@@ -442,7 +455,9 @@ export default function ProjectDetailsPage() {
             ctx.font = '16px Arial';
             ctx.fillText(`Modules: ${layout.modules?.length || 0} | Connections: ${layout.connections?.length || 0}`, 400, 70);
             
+            // Convert canvas to image data URL
             layoutImages[layout.id] = canvas.toDataURL('image/jpeg', 0.9);
+            console.log(`Created image for layout ${layout.id}`);
           }
         } catch (err) {
           console.error(`Error creating visualization for layout ${layout.id}:`, err);
@@ -464,9 +479,25 @@ export default function ProjectDetailsPage() {
         }
       }
       
+      console.log('Layout images created:', Object.keys(layoutImages));
+      
+      // Make sure project has all required fields
+      const projectForReport = {
+        ...project,
+        name: project.name || 'Untitled Project',
+        description: project.description || 'No description provided',
+        status: project.status || 'Planning',
+        clientInfo: project.clientInfo || {
+          name: 'Not specified',
+          email: 'Not specified',
+          phone: 'Not specified',
+          address: 'Not specified'
+        }
+      };
+      
       // Generate the PDF report
       const pdfBlob = await generateProjectPdfReport(
-        project,
+        projectForReport,
         selectedLayouts,
         selectedCalculations,
         layoutImages,
