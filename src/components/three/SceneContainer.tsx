@@ -1,3 +1,4 @@
+
 import { Canvas, useThree } from "@react-three/fiber";
 import { useDroppable } from "@dnd-kit/core";
 import { Module } from "@/types/module";
@@ -178,11 +179,7 @@ export function SceneContainer({
       const pos = new Vector3(...module.position);
       const box = new Box3().setFromCenterAndSize(
         pos,
-        new Vector3(
-          module.dimensions.width || 1, 
-          module.dimensions.height || 1, 
-          module.dimensions.depth || 1
-        )
+        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
       );
       lines.push(
         new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),
@@ -202,42 +199,6 @@ export function SceneContainer({
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     ));
-    
-    try {
-      // Coba ambil data modul dari dataTransfer
-      const moduleDataString = event.dataTransfer.getData('module');
-      if (moduleDataString && !draggedModuleRef.current) {
-        const moduleData = JSON.parse(moduleDataString);
-        if (moduleData) {
-          // Pastikan dimensi modul valid
-          if (moduleData.dimensions) {
-            // Simpan modul dengan dimensi yang valid
-            draggedModuleRef.current = {
-              ...moduleData,
-              dimensions: {
-                width: moduleData.dimensions.width || 1,
-                height: moduleData.dimensions.height || 1,
-                depth: moduleData.dimensions.depth || 1
-              }
-            };
-            console.log('Dragged module dimensions in handleDragOver:', draggedModuleRef.current.dimensions);
-          } else {
-            console.error('Module data missing dimensions:', moduleData);
-            // Buat dimensi default jika tidak ada
-            draggedModuleRef.current = {
-              ...moduleData,
-              dimensions: {
-                width: 1,
-                height: 1,
-                depth: 1
-              }
-            };
-          }
-        }
-      }
-    } catch (error) {
-      console.error('Error parsing dragged module data:', error);
-    }
   }, []);
 
   const handleDragLeave = useCallback(() => {
@@ -249,29 +210,9 @@ export function SceneContainer({
     event.preventDefault();
     setIsDraggingOver(false);
     setMousePosition(null);
-    
-    // Log dimensi modul saat drop untuk debugging
-    if (draggedModuleRef.current) {
-      console.log('Dropping module with dimensions:', draggedModuleRef.current.dimensions);
-      
-      if (previewPosition && onDropPoint) {
-        // Pastikan previewPosition menggunakan tinggi modul yang benar
-        const height = draggedModuleRef.current.dimensions.height || 1;
-        const adjustedPosition: [number, number, number] = [
-          previewPosition[0],
-          height / 2, // Posisi Y yang benar berdasarkan tinggi modul
-          previewPosition[2]
-        ];
-        
-        console.log('Adjusted drop position with correct height:', adjustedPosition);
-        onDropPoint(adjustedPosition);
-      }
-    } else if (previewPosition && onDropPoint) {
+    if (previewPosition && onDropPoint) {
       onDropPoint(previewPosition);
     }
-    
-    // Reset draggedModuleRef setelah drop
-    draggedModuleRef.current = null;
   }, [previewPosition, onDropPoint]);
 
   const handleTransformStart = useCallback(() => {
