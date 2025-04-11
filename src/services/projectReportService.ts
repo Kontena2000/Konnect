@@ -142,45 +142,22 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
     // Section title
     doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
-    doc.text("1. Project Details", 15, startY);
+    doc.text('Project Details', 15, startY);
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     
-    // Format dates
-    const createdDate = project.createdAt 
-      ? new Date((project.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleDateString() 
-      : 'Unknown';
-    
-    const updatedDate = project.updatedAt 
-      ? new Date((project.updatedAt as any)?.seconds * 1000 || Date.now()).toLocaleDateString() 
-      : 'Unknown';
-    
-    // Create project details table
+    // Create project details table with borderless design
     const tableData = [
-      ["Project Name", project.name || "Untitled Project"],
-      ["Description", project.description || "No description provided"],
-      ["Status", project.status || "Planning"],
-      ["Created", createdDate],
-      ["Last Updated", updatedDate]
+      ['Project Name', project.name || 'Untitled Project'],
+      ['Description', project.description || 'No description provided'],
+      ['Status', project.status || 'Planning']
     ];
-    
-    // Add shared with information if available
-    if (project.sharedWith && project.sharedWith.length > 0) {
-      tableData.push(["Shared With", project.sharedWith.join(", ")]);
-    }
     
     doc.autoTable({
       startY: startY + 8,
-      head: [["Property", "Value"]],
       body: tableData,
-      theme: "grid",
-      headStyles: { 
-        fillColor: [0, 51, 102], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 12
-      },
+      theme: 'plain', // Use plain theme for borderless table
       styles: { 
         fontSize: 11,
         cellPadding: 5
@@ -196,7 +173,7 @@ function addProjectDetails(doc: jsPDF, project: Project): number {
     const finalY = doc.lastAutoTable?.finalY;
     return finalY ? finalY + 15 : 120;
   } catch (error) {
-    console.error("Error adding project details:", error);
+    console.error('Error adding project details:', error);
     return 120; // Return a default value if there's an error
   }
 }
@@ -215,36 +192,29 @@ function addClientInformation(doc: jsPDF, project: Project, startY: number): num
     // Section title
     doc.setFontSize(18);
     doc.setTextColor(0, 51, 102);
-    doc.text("2. Client Information", 15, startY);
+    doc.text('Client Information', 15, startY);
     
     doc.setFontSize(12);
     doc.setTextColor(0, 0, 0);
     
     // Check if client info exists
     if (!project.clientInfo) {
-      doc.text("No client information available", 15, startY + 10);
+      doc.text('No client information available', 15, startY + 10);
       return startY + 20;
     }
     
-    // Create client info table
+    // Create client info table with borderless design
     const tableData = [
-      ["Company Name", project.clientInfo.name || "Not specified"],
-      ["Email", project.clientInfo.email || "Not specified"],
-      ["Phone", project.clientInfo.phone || "Not specified"],
-      ["Address", project.clientInfo.address || "Not specified"]
+      ['Company Name', project.clientInfo.name || 'Not specified'],
+      ['Email', project.clientInfo.email || 'Not specified'],
+      ['Phone', project.clientInfo.phone || 'Not specified'],
+      ['Address', project.clientInfo.address || 'Not specified']
     ];
     
     doc.autoTable({
       startY: startY + 8,
-      head: [["Property", "Value"]],
       body: tableData,
-      theme: "grid",
-      headStyles: { 
-        fillColor: [0, 51, 102], 
-        textColor: [255, 255, 255],
-        fontStyle: 'bold',
-        fontSize: 12
-      },
+      theme: 'plain', // Use plain theme for borderless table
       styles: { 
         fontSize: 11,
         cellPadding: 5
@@ -260,7 +230,7 @@ function addClientInformation(doc: jsPDF, project: Project, startY: number): num
     const finalY = doc.lastAutoTable?.finalY;
     return finalY ? finalY + 15 : startY + 60;
   } catch (error) {
-    console.error("Error adding client information:", error);
+    console.error('Error adding client information:', error);
     return startY + 30; // Return a default value if there's an error
   }
 }
