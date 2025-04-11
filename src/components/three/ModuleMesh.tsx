@@ -30,7 +30,7 @@ export function ModuleMesh({
   const ref = meshRef || localRef;
 
   // Scale down the module dimensions for better visualization
-  const scaleFactor = 0.7; // Reduced from 1.0 to make modules smaller
+  const scaleFactor = 0.6; // Reduced from 0.7 to make modules even smaller
 
   // Calculate dimensions based on the module's dimensions
   const dimensions = useMemo(() => {
