@@ -111,6 +111,12 @@ export function ProjectCalculations({
     return formatDistanceToNow(date, { addSuffix: true });
   };
 
+  // Helper function for safe formatting
+  const formatNumber = (value: any): string => {
+    if (value === undefined || value === null) return '0';
+    return value.toLocaleString();
+  };
+
   if (!projectId) {
     return null;
   }
@@ -194,9 +200,7 @@ export function ProjectCalculations({
                       <div className='md:col-span-3'>
                         <span className='text-muted-foreground'>Total Cost:</span>
                         <span className='ml-2 font-medium text-primary'>
-                          ${calculation.results.cost.totalProjectCost ? 
-                            calculation.results.cost.totalProjectCost.toLocaleString() : 
-                            '0'}
+                          ${formatNumber(calculation.results.cost.totalProjectCost)}
                         </span>
                       </div>
                     )}

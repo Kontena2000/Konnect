@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -66,6 +67,12 @@ export default function ProjectDetailsPage() {
     clientAddress: '',
     clientCompany: ''
   });
+
+  // Helper functions for formatting
+  const formatNumber = (value: any): string => {
+    if (value === undefined || value === null) return '0';
+    return value.toLocaleString();
+  };
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -643,18 +650,16 @@ export default function ProjectDetailsPage() {
                                 Total Project Cost
                               </h4>
                               <p className='text-xl font-bold text-green-600'>
-                                ${calculation.results.cost.totalProjectCost ? 
-                                  calculation.results.cost.totalProjectCost.toLocaleString() : 
-                                  '0'}
+                                ${formatNumber(calculation.results.cost.totalProjectCost)}
                               </p>
                               {calculation.results.cost.totalProjectCost && calculation.totalRacks > 0 && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  ${Math.round(calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString()} per rack
+                                  ${formatNumber(Math.round(calculation.results.cost.totalProjectCost / calculation.totalRacks))} per rack
                                 </div>
                               )}
                               {calculation.results.cost.costPerKw && (
                                 <div className='text-xs text-muted-foreground'>
-                                  ${Math.round(calculation.results.cost.costPerKw).toLocaleString()} per kW
+                                  ${formatNumber(Math.round(calculation.results.cost.costPerKw))} per kW
                                 </div>
                               )}
                             </div>
@@ -668,9 +673,7 @@ export default function ProjectDetailsPage() {
                                 Power Requirements
                               </h4>
                               <p className='text-xl font-bold text-amber-500'>
-                                {calculation.results.power.totalPower ? 
-                                  calculation.results.power.totalPower.toLocaleString() : 
-                                  '0'} kW
+                                {formatNumber(calculation.results.power.totalPower)} kW
                                 {calculation.results.power.upsCapacity ? ' UPS Capacity' : ''}
                               </p>
                               {calculation.results.power.upsModules && (
@@ -696,26 +699,19 @@ export default function ProjectDetailsPage() {
                               <p className='text-xl font-bold text-blue-500'>
                                 {calculation.coolingType === 'hybrid' ? (
                                   <>
-                                    {calculation.results.cooling.dlcCapacity ? 
-                                      calculation.results.cooling.dlcCapacity.toLocaleString() : 
-                                      '0'} kW DLC + {' '}
-                                    {calculation.results.cooling.airCapacity ? 
-                                      calculation.results.cooling.airCapacity.toLocaleString() : 
-                                      '0'} kW Air
+                                    {formatNumber(calculation.results.cooling.dlcCapacity)} kW DLC + {' '}
+                                    {formatNumber(calculation.results.cooling.airCapacity)} kW Air
                                   </>
                                 ) : (
                                   <>
-                                    {calculation.results.cooling.coolingCapacity ? 
-                                      calculation.results.cooling.coolingCapacity.toLocaleString() : 
-                                      calculation.results.cooling.totalCapacity ? 
-                                        calculation.results.cooling.totalCapacity.toLocaleString() :
-                                        '0'} kW
+                                    {formatNumber(calculation.results.cooling.coolingCapacity || 
+                                      calculation.results.cooling.totalCapacity || 0)} kW
                                   </>
                                 )}
                               </p>
                               {calculation.results.cooling.flowRate && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  {calculation.results.cooling.flowRate.toLocaleString()} L/min Flow Rate
+                                  {formatNumber(calculation.results.cooling.flowRate)} L/min Flow Rate
                                 </div>
                               )}
                             </div>
