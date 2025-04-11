@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -24,10 +23,10 @@ import { Loader2, Plus } from "lucide-react";
 
 interface CreateModuleDialogProps {
   onModuleCreated?: () => void;
-  categories: { id: string; name: string }[];
+  categories?: { id: string; name: string }[];
 }
 
-export function CreateModuleDialog({ onModuleCreated, categories }: CreateModuleDialogProps) {
+export function CreateModuleDialog({ onModuleCreated, categories = [] }: CreateModuleDialogProps) {
   const [open, setOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [colorPickerOpen, setColorPickerOpen] = useState(false);
@@ -212,17 +211,17 @@ export function CreateModuleDialog({ onModuleCreated, categories }: CreateModule
             </div>
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="category">Category</Label>
+          <div className='space-y-2'>
+            <Label htmlFor='category'>Category</Label>
             <Select
               value={formData.category}
-              onValueChange={(value) => handleSelectChange("category", value)}
+              onValueChange={(value) => handleSelectChange('category', value)}
             >
               <SelectTrigger>
-                <SelectValue placeholder="Select a category" />
+                <SelectValue placeholder='Select a category' />
               </SelectTrigger>
               <SelectContent>
-                {categories.map((category) => (
+                {Array.isArray(categories) && categories.map((category) => (
                   <SelectItem key={category.id} value={category.id}>
                     {category.name}
                   </SelectItem>

@@ -1,21 +1,21 @@
-import { useThree } from "@react-three/fiber";
+import { useThree } from '@react-three/fiber';
 import { Module, ModuleDimensions } from '@/types/module';
-import { Connection } from "@/services/layout";
-import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { Vector2, Vector3, Line3, Mesh } from "three";
-import { SceneElements } from "./SceneElements";
+import { Connection } from '@/services/layout';
+import type { EnvironmentalElement as ElementType, TerrainData } from '@/services/environment';
+import { Vector2, Vector3, Line3, Mesh } from 'three';
+import { SceneElements } from './SceneElements';
 import { EditorPreferences } from '@/services/editor-preferences';
 
 interface SceneContentProps {
   modules: Module[];
   selectedModuleId?: string;
-  transformMode?: "translate" | "rotate" | "scale";
+  transformMode?: 'translate' | 'rotate' | 'scale';
   onModuleSelect?: (moduleId: string) => void;
   onModuleUpdate?: (moduleId: string, updates: Partial<Module>) => void;
   onModuleDelete?: (moduleId: string) => void;
-  connections?: any[];
-  environmentalElements?: any[];
-  terrain?: any;
+  connections?: Connection[];
+  environmentalElements?: ElementType[];
+  terrain?: TerrainData;
   onEnvironmentalElementSelect?: (elementId: string) => void;
   gridSnap?: boolean;
   isDraggingOver?: boolean;
@@ -34,7 +34,7 @@ interface SceneContentProps {
   isTransforming?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
-  editorPreferences?: any;
+  editorPreferences?: EditorPreferences | null;
 }
 
 export function SceneContent({
@@ -44,25 +44,25 @@ export function SceneContent({
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
-  connections,
-  environmentalElements,
+  connections = [],
+  environmentalElements = [],
   terrain,
   onEnvironmentalElementSelect,
-  gridSnap,
-  isDraggingOver,
+  gridSnap = false,
+  isDraggingOver = false,
   mousePosition,
   draggedDimensions,
-  readOnly,
-  snapPoints,
-  snapLines,
+  readOnly = false,
+  snapPoints = [],
+  snapLines = [],
   onPreviewPositionUpdate,
-  previewMesh,
-  rotationAngle,
-  showGuides,
-  previewPosition,
-  setRotationAngle,
+  previewMesh = null,
+  rotationAngle = 0,
+  showGuides = false,
+  previewPosition = [0, 0, 0],
+  setRotationAngle = () => {},
   controlsRef,
-  isTransforming,
+  isTransforming = false,
   onTransformStart,
   onTransformEnd,
   editorPreferences,
