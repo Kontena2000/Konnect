@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { getFirestoreSafely } from "@/lib/firebase";
@@ -76,8 +77,8 @@ export function CalculationDetailsModal({
   };
 
   // Format number with commas and decimal places
-  const formatNumber = (num: number | undefined | null, decimals = 2) => {
-    if (num === undefined || num === null) return 'N/A';
+  const formatNumber = (num: number | undefined | null, decimals = 0) => {
+    if (num === undefined || num === null) return '0';
     return num.toLocaleString(undefined, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
@@ -86,23 +87,15 @@ export function CalculationDetailsModal({
 
   // Format currency
   const formatCurrency = (num: number | undefined | null) => {
-    if (num === undefined || num === null) return 'N/A';
-    return `$${formatNumber(num, 2)}`;
+    if (num === undefined || num === null) return '$0';
+    return `$${formatNumber(num, 0)}`;
   };
 
   // Format percentage
   const formatPercentage = (num: number | undefined | null) => {
-    if (num === undefined || num === null) return "N/A";
+    if (num === undefined || num === null) return "0%";
     return `${formatNumber(num * 100, 2)}%`;
   };
-
-  // Render a section with title and content
-  const renderSection = (title: string, content: React.ReactNode) => (
-    <div className='mb-6'>
-      <h3 className='text-lg font-medium mb-2'>{title}</h3>
-      <div className='bg-muted/20 p-4 rounded-md'>{content}</div>
-    </div>
-  );
 
   // Render a data row with label and value
   const renderDataRow = (label: string, value: React.ReactNode) => (
@@ -165,16 +158,16 @@ export function CalculationDetailsModal({
                   <h3 className='text-lg font-medium mb-2'>Total Project Cost</h3>
                   <p className='text-2xl font-bold text-amber-500'>
                     ${calculation.results?.cost?.totalProjectCost ? 
-                      formatNumber(calculation.results.cost.totalProjectCost, 0) : '0'}
+                      formatNumber(calculation.results.cost.totalProjectCost) : '0'}
                   </p>
                   {calculation.results?.cost?.totalProjectCost && calculation.totalRacks > 0 && (
                     <p className='text-sm text-gray-600'>
-                      ${formatNumber(calculation.results.cost.totalProjectCost / calculation.totalRacks, 0)} per rack
+                      ${formatNumber(calculation.results.cost.totalProjectCost / calculation.totalRacks)} per rack
                     </p>
                   )}
                   {calculation.results?.cost?.costPerKw && (
                     <p className='text-sm text-gray-600'>
-                      ${formatNumber(calculation.results.cost.costPerKw, 0)} per kW
+                      ${formatNumber(calculation.results.cost.costPerKw)} per kW
                     </p>
                   )}
                 </div>
@@ -183,8 +176,10 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-2'>Power Requirements</h3>
                   <p className='text-2xl font-bold text-amber-500'>
-                    {calculation.results?.power?.totalPower ? 
-                      formatNumber(calculation.results.power.totalPower, 0) : '0'} kW {calculation.results?.power?.upsCapacity ? 'UPS Capacity' : ''}
+                    {calculation.results?.power?.upsCapacity ? 
+                      formatNumber(calculation.results.power.upsCapacity) : 
+                      calculation.results?.power?.totalPower ? 
+                        formatNumber(calculation.results.power.totalPower) : '0'} kW UPS Capacity
                   </p>
                   {calculation.results?.power?.upsModules && (
                     <p className='text-sm text-gray-600'>
@@ -205,16 +200,16 @@ export function CalculationDetailsModal({
                     {calculation.coolingType === 'hybrid' ? (
                       <>
                         {calculation.results?.cooling?.dlcCapacity ? 
-                          formatNumber(calculation.results.cooling.dlcCapacity, 0) : '0'} kW DLC + {' '}
+                          formatNumber(calculation.results.cooling.dlcCapacity) : '0'} kW DLC + {' '}
                         {calculation.results?.cooling?.airCapacity ? 
-                          formatNumber(calculation.results.cooling.airCapacity, 0) : '0'} kW Air
+                          formatNumber(calculation.results.cooling.airCapacity) : '0'} kW Air
                       </>
                     ) : (
                       <>
                         {calculation.results?.cooling?.coolingCapacity ? 
-                          formatNumber(calculation.results.cooling.coolingCapacity, 0) : 
+                          formatNumber(calculation.results.cooling.coolingCapacity) : 
                           calculation.results?.cooling?.totalCapacity ? 
-                            formatNumber(calculation.results.cooling.totalCapacity, 0) : '0'} kW
+                            formatNumber(calculation.results.cooling.totalCapacity) : '0'} kW
                       </>
                     )}
                   </p>
@@ -245,10 +240,10 @@ export function CalculationDetailsModal({
                         <h4 className='font-medium mb-2'>Power Distribution</h4>
                         <div className='space-y-2'>
                           {renderDataRow('Current per Row:', calculation.results?.electrical?.currentPerRow ? 
-                            `${formatNumber(calculation.results.electrical.currentPerRow, 0)} A` : 'N/A')}
+                            `${formatNumber(calculation.results.electrical.currentPerRow)} A` : 'N/A')}
                           {renderDataRow('Busbar Size:', calculation.results?.electrical?.busbarSize || 'N/A')}
                           {renderDataRow('Current per Rack:', calculation.results?.electrical?.currentPerRack ? 
-                            `${formatNumber(calculation.results.electrical.currentPerRack, 0)} A` : 'N/A')}
+                            `${formatNumber(calculation.results.electrical.currentPerRack)} A` : 'N/A')}
                         </div>
                       </div>
 
@@ -306,7 +301,7 @@ export function CalculationDetailsModal({
                           {renderDataRow('Cooling Power:', calculation.results?.cooling?.coolingPower ? 
                             `${formatNumber(calculation.results.cooling.coolingPower)} kW` : 'N/A')}
                           {renderDataRow('Flow Rate:', calculation.results?.cooling?.flowRate ? 
-                            `${formatNumber(calculation.results.cooling.flowRate)} L/min` : 'N/A')}
+                            `${formatNumber(calculation.results.cooling.flowRate, 2)} L/min` : 'N/A')}
                           {renderDataRow('Efficiency:', calculation.results?.cooling?.efficiency ? 
                             formatPercentage(calculation.results.cooling.efficiency) : 'N/A')}
                         </div>
