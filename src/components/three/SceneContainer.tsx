@@ -223,6 +223,15 @@ export function SceneContainer({
             console.log('Dragged module dimensions in handleDragOver:', draggedModuleRef.current.dimensions);
           } else {
             console.error('Module data missing dimensions:', moduleData);
+            // Buat dimensi default jika tidak ada
+            draggedModuleRef.current = {
+              ...moduleData,
+              dimensions: {
+                width: 1,
+                height: 1,
+                depth: 1
+              }
+            };
           }
         }
       }
