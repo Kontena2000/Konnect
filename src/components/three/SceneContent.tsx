@@ -39,7 +39,7 @@ interface SceneContentProps {
   rotationAngle?: number;
   showGuides?: boolean;
   previewPosition?: [number, number, number];
-  setRotationAngle?: (angle: number | ((prev: number) => number)) => void;
+  setRotationAngle?: (angle: number) => void;
   controlsRef?: React.RefObject<any>;
   isTransforming?: boolean;
   onTransformStart?: () => void;

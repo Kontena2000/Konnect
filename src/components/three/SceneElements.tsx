@@ -4,13 +4,13 @@ import { ConnectionLine } from "./ConnectionLine";
 import { Module, ModuleDimensions } from "@/types/module";
 import { Connection } from "@/services/layout";
 import type { EnvironmentalElement as ElementType, TerrainData } from "@/services/environment";
-import { useRef, useEffect, useState } from "react";
-import { Vector2, Vector3, Line3, Mesh, Object3D, BufferAttribute, BufferGeometry, LineBasicMaterial, Float32BufferAttribute, Plane } from "three";
+import { useRef, useEffect, useState, useCallback, useMemo } from "react";
+import { Vector2, Vector3, Line3, Mesh, Object3D, BufferAttribute, BufferGeometry, LineBasicMaterial, Float32BufferAttribute, PlaneGeometry, MeshBasicMaterial } from "three";
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
 import { CameraControls } from "./CameraControls";
-import { Html } from "@react-three/drei";
+import { Html, OrbitControls } from "@react-three/drei";
 import { EditorPreferences } from "@/services/editor-preferences";
 
 interface SceneElementsProps {
@@ -33,7 +33,7 @@ interface SceneElementsProps {
   snapLines?: Line3[];
   previewPosition?: [number, number, number];
   readOnly?: boolean;
-  setRotationAngle?: (angle: number | ((prev: number) => number)) => void;
+  setRotationAngle?: (angle: number) => void;
   isTransforming?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
@@ -45,7 +45,7 @@ interface SceneElementsProps {
 export function SceneElements({
   modules,
   selectedModuleId,
-  transformMode,
+  transformMode = 'translate',
   onModuleSelect,
   onModuleUpdate,
   onModuleDelete,
@@ -55,14 +55,14 @@ export function SceneElements({
   onEnvironmentalElementSelect,
   gridSnap = false,
   isDraggingOver = false,
-  previewMesh = null,
+  previewMesh,
   rotationAngle = 0,
   showGuides = false,
   snapPoints = [],
   snapLines = [],
-  previewPosition = [0, 0, 0],
+  previewPosition,
   readOnly = false,
-  setRotationAngle = () => {},
+  setRotationAngle,
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
@@ -70,75 +70,115 @@ export function SceneElements({
   controlsRef,
   draggedDimensions
 }: SceneElementsProps) {
-  const { scene, camera, raycaster, gl, pointer } = useThree();
-  const [groundPlane] = useState(() => new Plane(new Vector3(0, 1, 0), 0));
-  const [intersectionPoint] = useState(() => new Vector3());
-  const [previewVisible, setPreviewVisible] = useState(false);
-  const [previewDimensions, setPreviewDimensions] = useState<ModuleDimensions | null>(null);
+  const { scene, camera, gl } = useThree();
+  const orbitControlsRef = useRef<any>(null);
+  const groundRef = useRef<Mesh>(null);
   
-  // Use draggedDimensions if available, otherwise use default dimensions
+  // Log dimensi yang di-drag untuk debugging
   useEffect(() => {
     if (draggedDimensions) {
-      setPreviewDimensions(draggedDimensions);
-      console.log('Preview dimensions set to:', draggedDimensions);
-    } else {
-      setPreviewDimensions({ width: 1, height: 1, depth: 1 });
+      console.log('Dragged dimensions in SceneElements:', draggedDimensions);
     }
   }, [draggedDimensions]);
 
-  const internalControlsRef = useRef<any>(null);
-  const actualControlsRef = controlsRef || internalControlsRef;
-
+  // Set up orbit controls
   useEffect(() => {
-    if (camera) {
-      camera.position.set(10, 10, 10);
-      camera.lookAt(0, 0, 0);
+    if (orbitControlsRef.current && controlsRef) {
+      // Expose orbit controls methods to parent component
+      if (controlsRef.current !== orbitControlsRef.current) {
+        controlsRef.current = orbitControlsRef.current;
+      }
     }
-  }, [camera]);
+  }, [orbitControlsRef, controlsRef]);
 
-  // Update preview mesh when dragging over
+  // Create ground plane for raycasting
   useEffect(() => {
-    if (isDraggingOver && previewDimensions) {
-      setPreviewVisible(true);
-    } else {
-      setPreviewVisible(false);
-    }
-  }, [isDraggingOver, previewDimensions]);
+    if (!groundRef.current) return;
+    
+    const geometry = new PlaneGeometry(1000, 1000);
+    const material = new MeshBasicMaterial({ 
+      visible: false,
+      transparent: true,
+      opacity: 0
+    });
+    
+    groundRef.current.rotation.x = -Math.PI / 2;
+    groundRef.current.position.y = 0;
+    groundRef.current.updateMatrixWorld();
+  }, []);
+
+  // Handle keyboard events for orbit controls
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'r' && isDraggingOver && setRotationAngle) {
+        setRotationAngle(rotationAngle + Math.PI / 2);
+      }
+    };
+    
+    window.addEventListener('keydown', handleKeyDown);
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isDraggingOver, rotationAngle, setRotationAngle]);
+
+  // Create preview mesh for dragging
+  const previewBoxMesh = useMemo(() => {
+    if (!isDraggingOver || !draggedDimensions) return null;
+    
+    // Pastikan dimensi valid
+    const width = draggedDimensions.width || 1;
+    const height = draggedDimensions.height || 1;
+    const depth = draggedDimensions.depth || 1;
+    
+    console.log('Creating preview mesh with dimensions:', { width, height, depth });
+    
+    return (
+      <mesh
+        position={previewPosition || [0, height / 2, 0]}
+        rotation={[0, rotationAngle || 0, 0]}
+        castShadow
+      >
+        <boxGeometry args={[width, height, depth]} />
+        <meshStandardMaterial 
+          color={'#666666'} 
+          transparent={true} 
+          opacity={0.5} 
+        />
+      </mesh>
+    );
+  }, [isDraggingOver, previewPosition, rotationAngle, draggedDimensions]);
 
   return (
     <>
+      {/* Lighting */}
       <ambientLight intensity={0.5} />
       <directionalLight 
         position={[10, 10, 10]} 
         intensity={0.8} 
         castShadow 
-        shadow-mapSize-width={2048}
+        shadow-mapSize-width={2048} 
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls 
-        controlsRef={actualControlsRef}
-        enabled={!isTransforming}
-        enableZoom={!isTransforming}
-        enablePan={!isTransforming}
-        enableRotate={!isTransforming}
-        minDistance={5}
-        maxDistance={50}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 2.1}
-      />
-      <GridHelper preferences={editorPreferences?.grid} />
-
-      {terrain && <TerrainView terrain={terrain} />}
+      {/* Ground plane for raycasting */}
+      <mesh ref={groundRef} receiveShadow>
+        <planeGeometry args={[1000, 1000]} />
+        <meshBasicMaterial visible={false} />
+      </mesh>
       
-      {environmentalElements?.map(element => (
-        <EnvironmentalElement
-          key={element.id}
-          element={element}
-          onClick={() => onEnvironmentalElementSelect?.(element.id)}
-        />
-      ))}
-
+      {/* Camera controls */}
+      <OrbitControls
+        ref={orbitControlsRef}
+        makeDefault
+        enableDamping
+        dampingFactor={0.1}
+        rotateSpeed={0.5}
+        minDistance={2}
+        maxDistance={100}
+        enabled={!isTransforming}
+      />
+      
+      {/* Modules */}
       {modules.map(module => (
         <ModuleObject
           key={module.id}
@@ -146,11 +186,7 @@ export function SceneElements({
           modules={modules}
           selected={module.id === selectedModuleId}
           onClick={() => onModuleSelect?.(module.id)}
-          onUpdate={(moduleUpdates) => {
-            if (onModuleUpdate) {
-              onModuleUpdate(module.id, moduleUpdates as Partial<Module>);
-            }
-          }}
+          onUpdate={(updates) => onModuleUpdate?.(module.id, updates)}
           onDelete={() => onModuleDelete?.(module.id)}
           transformMode={transformMode}
           gridSnap={gridSnap}
@@ -160,83 +196,32 @@ export function SceneElements({
           editorPreferences={editorPreferences}
         />
       ))}
-
-      {connections.map(connection => (
+      
+      {/* Connections */}
+      {connections.map((connection, index) => (
         <ConnectionLine
-          key={connection.id}
+          key={`connection-${index}`}
           connection={connection}
+          modules={modules}
         />
       ))}
-
-      {isDraggingOver && previewMesh && (
-        <group position={previewPosition} rotation={[0, rotationAngle, 0]}>
-          <primitive object={previewMesh.clone()} />
-          <Html position={[0, 2, 0]}>
-            <div className="bg-background/80 backdrop-blur-sm p-1 rounded shadow flex gap-1">
-              <button 
-                className="p-1 hover:bg-accent rounded"
-                onClick={() => setRotationAngle(prev => prev - Math.PI/2)}
-              >
-                ⟲
-              </button>
-              <button 
-                className="p-1 hover:bg-accent rounded"
-                onClick={() => setRotationAngle(prev => prev + Math.PI/2)}
-              >
-                ⟳
-              </button>
-            </div>
-          </Html>
-        </group>
-      )}
-
-      {showGuides && snapPoints.map((point, i) => (
-        <mesh key={`point-${i}`} position={[point.x, 0.01, point.z]}>
-          <sphereGeometry args={[0.1, 8, 8]} />
-          <meshBasicMaterial color="#ffcc00" transparent opacity={0.5} />
-        </mesh>
+      
+      {/* Environmental elements */}
+      {environmentalElements.map(element => (
+        <EnvironmentalElement
+          key={element.id}
+          element={element}
+          onClick={() => onEnvironmentalElementSelect?.(element.id)}
+        />
       ))}
       
-      {showGuides && snapLines.map((line, i) => {
-        const positions = new Float32Array([
-          line.start.x, 0.01, line.start.z,
-          line.end.x, 0.01, line.end.z
-        ]);
-        return (
-          <line key={`line-${i}`}>
-            <bufferGeometry>
-              <bufferAttribute
-                attach='attributes-position'
-                array={positions}
-                count={2}
-                itemSize={3}
-              />
-            </bufferGeometry>
-            <lineBasicMaterial color='#ffcc00' opacity={0.5} transparent />
-          </line>
-        );
-      })}
-
-      {/* Preview mesh for drag and drop */}
-      {previewVisible && previewDimensions && (
-        <mesh 
-          position={[previewPosition[0], previewDimensions.height / 2, previewPosition[2]]}
-          rotation={[0, rotationAngle, 0]}
-        >
-          <boxGeometry 
-            args={[
-              previewDimensions.width,
-              previewDimensions.height,
-              previewDimensions.depth
-            ]} 
-          />
-          <meshStandardMaterial 
-            color="#3b82f6" 
-            transparent 
-            opacity={0.5} 
-          />
-        </mesh>
+      {/* Terrain */}
+      {terrain && (
+        <TerrainView terrain={terrain} />
       )}
+      
+      {/* Preview mesh for dragging */}
+      {previewBoxMesh}
     </>
   );
 }
