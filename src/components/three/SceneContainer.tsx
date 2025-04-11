@@ -206,6 +206,12 @@ export function SceneContainer({
         const draggedModule = JSON.parse(moduleData);
         draggedModuleRef.current = draggedModule;
         console.log('Dragged module dimensions:', draggedModule.dimensions);
+        
+        // Ensure the preview dimensions are set correctly
+        if (draggedModule.dimensions) {
+          // Set preview height to match the module height
+          setPreviewHeight(draggedModule.dimensions.height);
+        }
       } catch (e) {
         console.error('Failed to parse dragged module data:', e);
       }

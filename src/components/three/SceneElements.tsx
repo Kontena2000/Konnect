@@ -33,7 +33,7 @@ interface SceneElementsProps {
   snapLines?: Line3[];
   previewPosition?: [number, number, number];
   readOnly?: boolean;
-  setRotationAngle?: (angle: number) => void;
+  setRotationAngle?: (angle: number | ((prev: number) => number)) => void;
   isTransforming?: boolean;
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
@@ -62,7 +62,7 @@ export function SceneElements({
   snapLines = [],
   previewPosition = [0, 0, 0],
   readOnly = false,
-  setRotationAngle,
+  setRotationAngle = () => {},
   isTransforming = false,
   onTransformStart,
   onTransformEnd,
@@ -80,6 +80,7 @@ export function SceneElements({
   useEffect(() => {
     if (draggedDimensions) {
       setPreviewDimensions(draggedDimensions);
+      console.log('Preview dimensions set to:', draggedDimensions);
     } else {
       setPreviewDimensions({ width: 1, height: 1, depth: 1 });
     }
