@@ -382,6 +382,13 @@ export function SceneContainer({
           <div className='flex items-center gap-2 mt-2'>
             <span className='text-xs text-muted-foreground'>Position: {previewPosition[0].toFixed(1)}, {previewPosition[2].toFixed(1)}</span>
           </div>
+          {draggedModuleRef.current?.dimensions && (
+            <div className='flex items-center gap-2'>
+              <span className='text-xs text-muted-foreground'>
+                Size: {draggedModuleRef.current.dimensions.width}m × {draggedModuleRef.current.dimensions.depth}m × {draggedModuleRef.current.dimensions.height}m
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
