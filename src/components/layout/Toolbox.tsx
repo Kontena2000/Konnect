@@ -164,7 +164,7 @@ export function Toolbox({
           isCollapsed ? 'w-12' : 'w-64'
         )}
       >
-        <div className="p-2 flex flex-col h-full">
+        <div className="p-2 flex flex-col h-full max-h-[80vh]">
           {/* Header */}
           <div className='flex items-center justify-between'>
             <h2 className='text-lg font-medium'>Toolbox</h2>
