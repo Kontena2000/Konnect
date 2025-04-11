@@ -37,6 +37,11 @@ export function ModuleLibrary({ onDragStart }: ModuleLibraryProps) {
       if (!user) return;
       try {
         const moduleData = await moduleService.getAllModules();
+        console.log("Loaded modules with dimensions:", moduleData.map(m => ({ 
+          id: m.id, 
+          name: m.name,
+          dimensions: m.dimensions 
+        })));
         setModules(moduleData);
         
         const uniqueCategories = Array.from(new Set(moduleData.map(m => m.category || "uncategorized")));

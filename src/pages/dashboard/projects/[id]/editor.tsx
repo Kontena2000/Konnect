@@ -193,17 +193,27 @@ export default function LayoutEditorPage() {
     // Log dimensi modul saat mulai drag
     console.log('Module drag start with original dimensions:', module.dimensions);
     
+    if (!module.dimensions) {
+      console.error('Module is missing dimensions:', module);
+      return;
+    }
+    
+    // Pastikan dimensi modul valid
+    const validDimensions = {
+      width: module.dimensions.width || 1,
+      height: module.dimensions.height || 1,
+      depth: module.dimensions.depth || 1
+    };
+    
     // Create a new module instance with unique ID
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
-      position: [0, module.dimensions.height / 2, 0], // Gunakan setengah tinggi modul untuk posisi Y awal
+      position: [0, validDimensions.height / 2, 0], // Gunakan setengah tinggi modul untuk posisi Y awal
       rotation: [0, 0, 0],
-      scale: [1, 1, 1]
+      scale: [1, 1, 1],
+      dimensions: validDimensions // Pastikan dimensi yang benar digunakan
     };
-    
-    // Pastikan dimensi modul tetap sama seperti aslinya dengan deep copy
-    newModule.dimensions = JSON.parse(JSON.stringify(module.dimensions));
     
     console.log('New module created with dimensions:', newModule.dimensions);
     

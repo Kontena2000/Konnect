@@ -99,12 +99,15 @@ export function SceneContent({
         
         // Gunakan dimensi yang benar dari draggedDimensions
         const height = draggedDimensions.height || 1;
+        console.log('Using height for preview position:', height);
+        
         const position: [number, number, number] = [
           Math.round(point.x),
           height / 2, // Posisi y yang benar berdasarkan tinggi modul
           Math.round(point.z)
         ];
         
+        console.log('Setting preview position:', position);
         onPreviewPositionUpdate?.(position);
       }
     }

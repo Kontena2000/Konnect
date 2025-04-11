@@ -203,15 +203,19 @@ export function SceneContainer({
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     ));
     
-    // Pastikan draggedModuleRef dipertahankan selama drag
     try {
       // Coba ambil data modul dari dataTransfer
       const moduleDataString = event.dataTransfer.getData('module');
       if (moduleDataString && !draggedModuleRef.current) {
         const moduleData = JSON.parse(moduleDataString);
         if (moduleData) {
-          draggedModuleRef.current = moduleData;
-          console.log('Dragged module dimensions in handleDragOver:', moduleData.dimensions);
+          // Pastikan dimensi modul valid
+          if (moduleData.dimensions) {
+            draggedModuleRef.current = moduleData;
+            console.log('Dragged module dimensions in handleDragOver:', moduleData.dimensions);
+          } else {
+            console.error('Module data missing dimensions:', moduleData);
+          }
         }
       }
     } catch (error) {
@@ -232,9 +236,20 @@ export function SceneContainer({
     // Log dimensi modul saat drop untuk debugging
     if (draggedModuleRef.current) {
       console.log('Dropping module with dimensions:', draggedModuleRef.current.dimensions);
-    }
-    
-    if (previewPosition && onDropPoint) {
+      
+      if (previewPosition && onDropPoint) {
+        // Pastikan previewPosition menggunakan tinggi modul yang benar
+        const height = draggedModuleRef.current.dimensions.height || 1;
+        const adjustedPosition: [number, number, number] = [
+          previewPosition[0],
+          height / 2, // Posisi Y yang benar berdasarkan tinggi modul
+          previewPosition[2]
+        ];
+        
+        console.log('Adjusted drop position with correct height:', adjustedPosition);
+        onDropPoint(adjustedPosition);
+      }
+    } else if (previewPosition && onDropPoint) {
       onDropPoint(previewPosition);
     }
     

@@ -57,6 +57,14 @@ export function ModuleObject({
       dimensions: module.dimensions,
       position: module.position
     });
+    
+    // Validasi dimensi modul
+    if (!module.dimensions || 
+        typeof module.dimensions.width !== 'number' || 
+        typeof module.dimensions.height !== 'number' || 
+        typeof module.dimensions.depth !== 'number') {
+      console.error(`Module ${module.id} has invalid dimensions:`, module.dimensions);
+    }
   }, [module.id, module.dimensions, module.position]);
 
   const {

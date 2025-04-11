@@ -19,28 +19,20 @@ export function ModuleMesh({
   onClick,
   onContextMenu
 }: ModuleMeshProps) {
-  const [dimensions, setDimensions] = useState({
+  // Pastikan dimensi modul valid
+  const validDimensions = useMemo(() => ({
     width: module.dimensions?.width || 1,
     height: module.dimensions?.height || 1,
     depth: module.dimensions?.depth || 1
-  });
+  }), [module.dimensions]);
 
   // Log dimensi modul untuk debugging
   useEffect(() => {
     console.log(`ModuleMesh for ${module.id} - dimensions:`, {
       fromModule: module.dimensions,
-      used: dimensions
+      used: validDimensions
     });
-  }, [module.id, module.dimensions, dimensions]);
-
-  // Update dimensions when module changes
-  useEffect(() => {
-    setDimensions({
-      width: module.dimensions?.width || 1,
-      height: module.dimensions?.height || 1,
-      depth: module.dimensions?.depth || 1
-    });
-  }, [module.dimensions]);
+  }, [module.id, module.dimensions, validDimensions]);
 
   return (
     <mesh
@@ -53,7 +45,7 @@ export function ModuleMesh({
       castShadow
       receiveShadow
     >
-      <boxGeometry args={[dimensions.width, dimensions.height, dimensions.depth]} />
+      <boxGeometry args={[validDimensions.width, validDimensions.height, validDimensions.depth]} />
       <meshStandardMaterial 
         color={module.color || '#666666'} 
         transparent={true}
