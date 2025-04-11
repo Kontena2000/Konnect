@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { AppLayout } from "@/components/layout/AppLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -14,6 +13,7 @@ import { CalculationSettings } from "@/components/settings/CalculationSettings";
 import { PricingEditor } from "@/components/settings/PricingEditor";
 import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 import { DebugSettings } from "@/components/settings/DebugSettings";
+import { ModelImporter } from '@/components/settings/ModelImporter';
 import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
@@ -59,6 +59,7 @@ export default function SettingsPage() {
             <TabsTrigger value='users'>Users</TabsTrigger>
             <TabsTrigger value='theme'>Theme</TabsTrigger>
             <TabsTrigger value='modules'>Modules</TabsTrigger>
+            <TabsTrigger value='3d-models'>3D Models</TabsTrigger>
             <TabsTrigger value='layout-editor'>Layout Editor</TabsTrigger>
             <TabsTrigger value='matrix-calculator'>Matrix Calculator</TabsTrigger>
             <TabsTrigger value='system'>System</TabsTrigger>
@@ -88,6 +89,10 @@ export default function SettingsPage() {
             <MatrixCalculatorSettings userId={user?.uid || ''} />
             <CalculationSettings readOnly={user?.role !== 'admin'} />
             <PricingEditor readOnly={user?.role !== 'admin'} />
+          </TabsContent>
+
+          <TabsContent value='3d-models' className='space-y-6'>
+            <ModelImporter />
           </TabsContent>
 
           <TabsContent value='system' className='space-y-6'>
