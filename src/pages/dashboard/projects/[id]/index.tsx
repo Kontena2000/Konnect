@@ -346,11 +346,30 @@ export default function ProjectDetailsPage() {
         selectedCalculationIds.length === 0 || selectedCalculationIds.includes(calc.id)
       );
       
-      // Capture layout images if any layouts are selected
+      // Create placeholder layout images
       const layoutImages: { [key: string]: string } = {};
       
-      // For now, we'll use placeholder images since we can't capture actual layout images in this context
-      // In a real implementation, you would capture images from the layout viewer
+      // Generate a simple placeholder image for each layout
+      for (const layout of selectedLayouts) {
+        try {
+          // Create a simple canvas with layout name as placeholder
+          const canvas = document.createElement('canvas');
+          canvas.width = 400;
+          canvas.height = 200;
+          const ctx = canvas.getContext('2d');
+          if (ctx) {
+            ctx.fillStyle = '#f0f0f0';
+            ctx.fillRect(0, 0, 400, 200);
+            ctx.font = '16px Arial';
+            ctx.fillStyle = '#333';
+            ctx.textAlign = 'center';
+            ctx.fillText(`Layout: ${layout.name}`, 200, 100);
+            layoutImages[layout.id] = canvas.toDataURL('image/jpeg');
+          }
+        } catch (err) {
+          console.error(`Error creating placeholder for layout ${layout.id}:`, err);
+        }
+      }
       
       // Generate the PDF report
       const pdfBlob = await generateProjectPdfReport(
@@ -383,7 +402,7 @@ export default function ProjectDetailsPage() {
       toast({
         variant: 'destructive',
         title: 'Error',
-        description: 'Failed to generate project report'
+        description: error instanceof Error ? error.message : 'Failed to generate project report'
       });
     } finally {
       setGeneratingReport(false);
