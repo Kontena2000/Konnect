@@ -221,11 +221,15 @@ export function CreateModuleDialog({ onModuleCreated, categories = [] }: CreateM
                 <SelectValue placeholder='Select a category' />
               </SelectTrigger>
               <SelectContent>
-                {Array.isArray(categories) && categories.map((category) => (
-                  <SelectItem key={category.id} value={category.id}>
-                    {category.name}
-                  </SelectItem>
-                ))}
+                {categories && categories.length > 0 ? (
+                  categories.map((category) => (
+                    <SelectItem key={category.id} value={category.id}>
+                      {category.name}
+                    </SelectItem>
+                  ))
+                ) : (
+                  <SelectItem value="uncategorized">Uncategorized</SelectItem>
+                )}
               </SelectContent>
             </Select>
           </div>

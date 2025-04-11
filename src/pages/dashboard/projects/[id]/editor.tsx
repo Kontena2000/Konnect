@@ -250,13 +250,8 @@ export default function LayoutEditorPage() {
     };
     
     // Simpan data modul ke dataTransfer untuk digunakan saat drag
-    const moduleData = JSON.stringify(module);
-    document.addEventListener('dragstart', (e) => {
-      if (e.dataTransfer) {
-        e.dataTransfer.setData('application/json', moduleData);
-        console.log('Setting drag data with dimensions:', module.dimensions);
-      }
-    }, { once: true });
+    // Tidak perlu mengatur dataTransfer di sini karena sudah diatur di ModuleLibrary
+    console.log('Module drag start with dimensions:', module.dimensions);
     
     setModules(prev => [...prev, newModule]);
     setSelectedModuleId(newModule.id);

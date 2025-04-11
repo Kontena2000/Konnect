@@ -205,7 +205,7 @@ export function SceneContainer({
       try {
         const draggedModule = JSON.parse(moduleData);
         draggedModuleRef.current = draggedModule;
-        console.log('Dragged module dimensions:', draggedModule.dimensions);
+        console.log('Dragged module dimensions from dataTransfer:', draggedModule.dimensions);
         
         // Ensure the preview dimensions are set correctly
         if (draggedModule.dimensions) {
