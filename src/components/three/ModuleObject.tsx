@@ -1,6 +1,8 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
-import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
+import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
+import { TransformControls } from "@react-three/drei";
 import { Module } from "@/types/module";
 import { ConnectionPoint } from "./ConnectionPoint";
 import { ModuleMesh } from "./ModuleMesh";
@@ -18,7 +20,7 @@ interface ModuleObjectProps {
   modules?: Module[];
   selected?: boolean;
   onClick?: () => void;
-  onUpdate?: (moduleId: string, updates: Partial<Module>) => void;
+  onUpdate?: (updates: Partial<Module>) => void;
   onDelete?: () => void;
   transformMode?: "translate" | "rotate" | "scale";
   gridSnap?: boolean;
@@ -43,12 +45,11 @@ export function ModuleObject({
   editorPreferences
 }: ModuleObjectProps) {
   const meshRef = useRef<Mesh>(null);
-  const groupRef = useRef<Group>(null);
   const [animating, setAnimating] = useState(true);
   const { camera } = useThree();
   const [shadowTransform, setShadowTransform] = useState({
     position: new Vector3(module.position[0], 0.01, module.position[2]),
-    rotation: new Euler(-Math.PI/2, module.rotation[1] * Math.PI / 180, 0)
+    rotation: new Euler(-Math.PI/2, 0, 0)
   });
 
   const {
@@ -63,15 +64,14 @@ export function ModuleObject({
     gridSnap,
     readOnly,
     transformMode,
-    onUpdate: (updates) => onUpdate?.(module.id, updates)
+    onUpdate
   });
 
-  // Gunakan dimensi sebenarnya dari modul untuk posisi awal
   const initialPosition = useMemo(() => new Vector3(
     module.position[0],
-    module.dimensions.height / 2, // Gunakan setengah tinggi modul untuk posisi Y awal
+    module.position[1] + 5,
     module.position[2]
-  ), [module.position, module.dimensions.height]);
+  ), [module.position]);
 
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
@@ -100,215 +100,29 @@ export function ModuleObject({
     onClick?.();
   }, [onClick]);
 
-  // Handle transform end - ensure position is saved
-  const handleTransformEnd = useCallback(() => {
-    if (!meshRef.current || !onUpdate) return;
-    
-    setIsTransforming(false);
-    
-    // Get final position after transform
-    const finalPosition: [number, number, number] = [
-      Number(meshRef.current.position.x),
-      Number(meshRef.current.position.y),
-      Number(meshRef.current.position.z)
-    ];
-    
-    // Get final rotation after transform - convert from radians to degrees
-    const finalRotation: [number, number, number] = [
-      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
-      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
-      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
-    ];
-    
-    // Get final scale after transform
-    const finalScale: [number, number, number] = [
-      Number(meshRef.current.scale.x),
-      Number(meshRef.current.scale.y),
-      Number(meshRef.current.scale.z)
-    ];
-    
-    console.log('Transform ended, updating module with final values:', {
-      id: module.id,
-      position: finalPosition,
-      rotation: finalRotation,
-      scale: finalScale
-    });
-    
-    // Force immediate update with final transform values to ensure they're saved
-    onUpdate(module.id, {
-      position: finalPosition,
-      rotation: finalRotation,
-      scale: finalScale
-    });
-    
-    // Update shadow
-    updateShadowTransform();
-    
-    // Call the parent onTransformEnd after our updates
-    onTransformEnd?.();
-  }, [module.id, onUpdate, onTransformEnd, updateShadowTransform, setIsTransforming]);
-
   const handleRotateLeft = useCallback(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y -= Math.PI/2;
-      
-      // Get current rotation after change - convert from radians to degrees
-      const newRotation: [number, number, number] = [
-        Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
-        Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
-        Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
-      ];
-      
-      console.log('Rotate left, new rotation:', newRotation);
-      
-      // Update module with new rotation
-      onUpdate?.(module.id, {
-        rotation: newRotation
-      });
-      
-      // Update shadow
-      updateShadowTransform();
+      handleTransformChange(meshRef, updateShadowTransform);
     }
-  }, [module.id, onUpdate, updateShadowTransform]);
+  }, [handleTransformChange, updateShadowTransform]);
 
   const handleRotateRight = useCallback(() => {
     if (meshRef.current) {
       meshRef.current.rotation.y += Math.PI/2;
-      
-      // Get current rotation after change - convert from radians to degrees
-      const newRotation: [number, number, number] = [
-        Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
-        Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
-        Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
-      ];
-      
-      console.log('Rotate right, new rotation:', newRotation);
-      
-      // Update module with new rotation
-      onUpdate?.(module.id, {
-        rotation: newRotation
-      });
-      
-      // Update shadow
-      updateShadowTransform();
+      handleTransformChange(meshRef, updateShadowTransform);
     }
-  }, [module.id, onUpdate, updateShadowTransform]);
-
-  // Update position, rotation, scale when module props change
-  useEffect(() => {
-    if (meshRef.current) {
-      // Update position
-      if (module.position && Array.isArray(module.position) && module.position.length === 3) {
-        // Ensure position values are numbers
-        const numPosition = module.position.map(Number) as [number, number, number];
-        meshRef.current.position.set(numPosition[0], numPosition[1], numPosition[2]);
-      }
-      
-      // Update rotation
-      if (module.rotation && Array.isArray(module.rotation) && module.rotation.length === 3) {
-        // Ensure rotation values are numbers and convert from degrees to radians
-        const numRotation = module.rotation.map(Number) as [number, number, number];
-        const radX = numRotation[0] * Math.PI / 180;
-        const radY = numRotation[1] * Math.PI / 180;
-        const radZ = numRotation[2] * Math.PI / 180;
-        
-        meshRef.current.rotation.set(radX, radY, radZ);
-        
-        // Log rotation values for debugging
-        console.log(`Module ${module.id} rotation set to:`, 
-          numRotation, 
-          'radians:', [radX, radY, radZ]
-        );
-      }
-      
-      // Update scale
-      if (module.scale && Array.isArray(module.scale) && module.scale.length === 3) {
-        // Ensure scale values are numbers
-        const numScale = module.scale.map(Number) as [number, number, number];
-        meshRef.current.scale.set(numScale[0], numScale[1], numScale[2]);
-      }
-      
-      // Update shadow
-      updateShadowTransform();
-    }
-  }, [module.position, module.rotation, module.scale, updateShadowTransform, module.id]);
-
-  // This function is called continuously during transform
-  const handleContinuousUpdate = useCallback(() => {
-    if (!meshRef.current || !onUpdate) return;
-    
-    // Get current position during transform
-    const currentPosition: [number, number, number] = [
-      Number(meshRef.current.position.x),
-      Number(meshRef.current.position.y),
-      Number(meshRef.current.position.z)
-    ];
-    
-    // Get current rotation during transform - convert from radians to degrees
-    const currentRotation: [number, number, number] = [
-      Number((meshRef.current.rotation.x * 180 / Math.PI).toFixed(2)),
-      Number((meshRef.current.rotation.y * 180 / Math.PI).toFixed(2)),
-      Number((meshRef.current.rotation.z * 180 / Math.PI).toFixed(2))
-    ];
-    
-    // Get current scale during transform
-    const currentScale: [number, number, number] = [
-      Number(meshRef.current.scale.x),
-      Number(meshRef.current.scale.y),
-      Number(meshRef.current.scale.z)
-    ];
-    
-    // Log rotation values for debugging
-    console.log(`Module ${module.id} rotation during transform:`, currentRotation);
-    
-    // Update position in real-time during transform
-    onUpdate(module.id, {
-      position: currentPosition,
-      rotation: currentRotation,
-      scale: currentScale
-    });
-    
-    // Update shadow
-    updateShadowTransform();
-  }, [module.id, onUpdate, updateShadowTransform]);
+  }, [handleTransformChange, updateShadowTransform]);
 
   return (
-    <group ref={groupRef}>
-      <mesh
-        ref={meshRef}
-        position={[
-          Number(module.position[0]), 
-          Number(module.position[1]), 
-          Number(module.position[2])
-        ]}
-        rotation={[
-          Number(module.rotation[0]) * Math.PI / 180,
-          Number(module.rotation[1]) * Math.PI / 180,
-          Number(module.rotation[2]) * Math.PI / 180
-        ]}
-        scale={[
-          Number(module.scale[0]), 
-          Number(module.scale[1]), 
-          Number(module.scale[2])
-        ]}
-      >
-        <ModuleMesh
-          module={module}
-          meshRef={meshRef}
-          editorPreferences={editorPreferences}
-          onClick={handleClick}
-          onContextMenu={handleContextMenu}
-        />
-
-        {module.connectionPoints?.map((point, index) => (
-          <ConnectionPoint
-            key={`${module.id}-connection-${index}`}
-            position={point.position}
-            type={(point.type || "power") as ConnectionType}
-            moduleId={module.id}
-          />
-        ))}
-      </mesh>
+    <group>
+      <ModuleMesh
+        module={module}
+        meshRef={meshRef}
+        editorPreferences={editorPreferences}
+        onClick={handleClick}
+        onContextMenu={handleContextMenu}
+      />
 
       <ModuleShadow
         module={module}
@@ -320,7 +134,7 @@ export function ModuleObject({
         <ModuleAnimation
           meshRef={meshRef}
           initialPosition={initialPosition}
-          finalHeight={module.dimensions.height / 2} // Gunakan setengah tinggi modul untuk posisi Y akhir
+          finalHeight={module.dimensions.height / 2}
           onComplete={() => setAnimating(false)}
           onUpdate={updateShadowTransform}
         />
@@ -350,10 +164,23 @@ export function ModuleObject({
             setIsTransforming(true);
             onTransformStart?.();
           }}
-          onTransformEnd={handleTransformEnd}
-          onUpdate={handleContinuousUpdate}
+          onTransformEnd={() => {
+            setIsTransforming(false);
+            onTransformEnd?.();
+            handleTransformChange(meshRef, updateShadowTransform);
+          }}
+          onUpdate={() => handleTransformChange(meshRef, updateShadowTransform)}
         />
       )}
+      
+      {module.connectionPoints?.map((point, index) => (
+        <ConnectionPoint
+          key={`${module.id}-connection-${index}`}
+          position={point.position}
+          type={(point.types?.[0] || point.type || "power") as ConnectionType}
+          moduleId={module.id}
+        />
+      ))}
     </group>
   );
 }
