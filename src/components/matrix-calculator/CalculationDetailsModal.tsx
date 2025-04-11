@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { doc, getDoc } from "firebase/firestore";
 import { getFirestoreSafely } from "@/lib/firebase";
@@ -78,7 +77,7 @@ export function CalculationDetailsModal({
 
   // Format number with commas and decimal places
   const formatNumber = (num: number, decimals = 2) => {
-    if (num === undefined || num === null) return "N/A";
+    if (num === undefined || num === null) return 'N/A';
     return num.toLocaleString(undefined, {
       minimumFractionDigits: decimals,
       maximumFractionDigits: decimals
@@ -87,7 +86,7 @@ export function CalculationDetailsModal({
 
   // Format currency
   const formatCurrency = (num: number) => {
-    if (num === undefined || num === null) return "N/A";
+    if (num === undefined || num === null) return 'N/A';
     return `$${formatNumber(num, 2)}`;
   };
 

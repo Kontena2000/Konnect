@@ -647,11 +647,11 @@ export default function ProjectDetailsPage() {
                                   ? calculation.results.cost.totalProjectCost.toLocaleString() 
                                   : '0'}
                               </p>
-                              <div className='text-xs text-muted-foreground mt-1'>
-                                ${typeof calculation.results.cost.totalProjectCost === 'number' && calculation.totalRacks
-                                  ? (calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString() 
-                                  : '0'} per rack
-                              </div>
+                              {typeof calculation.results.cost.totalProjectCost === 'number' && calculation.totalRacks > 0 && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  ${(calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString()} per rack
+                                </div>
+                              )}
                               {typeof calculation.results.cost.costPerKw === 'number' && (
                                 <div className='text-xs text-muted-foreground'>
                                   ${calculation.results.cost.costPerKw.toLocaleString()} per kW
@@ -671,13 +671,14 @@ export default function ProjectDetailsPage() {
                                 {typeof calculation.results.power.totalPower === 'number' 
                                   ? calculation.results.power.totalPower.toLocaleString() 
                                   : '0'} kW
+                                {calculation.results.power.upsCapacity ? ' UPS Capacity' : ''}
                               </p>
-                              {typeof calculation.results.power.upsModules !== 'undefined' && (
+                              {typeof calculation.results.power.upsModules === 'number' && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  {calculation.results.power.upsModules} UPS Modules
+                                  {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize || 250}kW UPS Modules
                                 </div>
                               )}
-                              {typeof calculation.results.power.redundancy !== 'undefined' && (
+                              {calculation.results.power.redundancy && (
                                 <div className='text-xs text-muted-foreground'>
                                   {calculation.results.power.redundancy} Redundancy
                                 </div>
@@ -697,7 +698,7 @@ export default function ProjectDetailsPage() {
                                   <>
                                     {typeof calculation.results.cooling.dlcCapacity === 'number' 
                                       ? calculation.results.cooling.dlcCapacity.toLocaleString() 
-                                      : '0'} kW DLC + 
+                                      : '0'} kW DLC + {' '}
                                     {typeof calculation.results.cooling.airCapacity === 'number' 
                                       ? calculation.results.cooling.airCapacity.toLocaleString() 
                                       : '0'} kW Air
