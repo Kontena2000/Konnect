@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -13,9 +14,7 @@ import firebaseMonitor from '@/services/firebase-monitor';
 import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
-import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
-import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
@@ -50,7 +49,6 @@ export default function LayoutEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
-  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [shareEmail, setShareEmail] = useState<string>('');
 
   // State
@@ -153,56 +151,6 @@ export default function LayoutEditorPage() {
     }
   }, [projectId, user, currentLayout, handleLayoutChange, router]);
 
-  // Handle save layout
-  const handleSaveLayout = useCallback((layoutId: string) => {
-    // Refresh layouts list
-    if (projectId) {
-      // Fetch all layouts for this project
-      layoutService.getProjectLayouts(projectId as string)
-        .then(projectLayouts => {
-          setLayouts(projectLayouts);
-          
-          // Find the newly saved layout
-          const savedLayout = projectLayouts.find(l => l.id === layoutId);
-          if (savedLayout) {
-            setCurrentLayout(savedLayout);
-            
-            // Update modules and connections from the saved layout
-            if (savedLayout.modules) {
-              // Ensure all module positions and rotations are properly converted to numbers
-              const processedModules = savedLayout.modules.map(module => {
-                // Create a deep copy to avoid modifying the original
-                const moduleCopy = JSON.parse(JSON.stringify(module));
-                
-                // Ensure position values are numbers
-                moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
-                
-                // Ensure rotation values are numbers
-                moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
-                
-                // Ensure scale values are numbers
-                moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
-                
-                return moduleCopy;
-              });
-              
-              setModules(processedModules);
-            }
-            
-            if (savedLayout.connections) {
-              setConnections(savedLayout.connections);
-            }
-          }
-        })
-        .catch(err => {
-          console.error('Error refreshing layouts:', err);
-        });
-      
-      // Redirect to the layout editor with the saved layout
-      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layoutId}`, undefined, { shallow: true });
-    }
-  }, [projectId, router]);
-
   // Handle layout create
   const handleLayoutCreate = useCallback((layout: Layout) => {
     setLayouts(prev => [...prev, layout]);
@@ -260,49 +208,6 @@ export default function LayoutEditorPage() {
     setSelectedModuleId(moduleId);
   }, []);
 
-  // Function to save layout immediately
-  const saveLayoutImmediately = useCallback(() => {
-    if (!currentLayout?.id || !user) return;
-    
-    console.log('Saving layout immediately...');
-    
-    // Ensure all module positions and rotations are numbers before saving
-    const modulesToSave = modules.map(module => {
-      // Create a deep copy to avoid modifying the original
-      const moduleCopy = JSON.parse(JSON.stringify(module));
-      
-      // Ensure position values are numbers
-      if (moduleCopy.position && Array.isArray(moduleCopy.position)) {
-        moduleCopy.position = moduleCopy.position.map(Number);
-      }
-      
-      // Ensure rotation values are numbers
-      if (moduleCopy.rotation && Array.isArray(moduleCopy.rotation)) {
-        moduleCopy.rotation = moduleCopy.rotation.map(Number);
-        console.log(`Module ${moduleCopy.id} rotation for immediate save:`, moduleCopy.rotation);
-      }
-      
-      // Ensure scale values are numbers
-      if (moduleCopy.scale && Array.isArray(moduleCopy.scale)) {
-        moduleCopy.scale = moduleCopy.scale.map(Number);
-      }
-      
-      return moduleCopy;
-    });
-    
-    // Use immediate save to ensure changes are persisted
-    layoutService.updateLayout(currentLayout.id, {
-      modules: modulesToSave,
-      connections
-    }, user as AuthUser)
-      .then(() => {
-        console.log('Layout saved successfully');
-      })
-      .catch(error => {
-        console.error('Error saving layout:', error);
-      });
-  }, [currentLayout, modules, connections, user]);
-
   // Handle module updates
   const handleModuleUpdate = useCallback((moduleId: string, updates: Partial<Module>) => {
     const startTime = performance.now();
@@ -338,47 +243,9 @@ export default function LayoutEditorPage() {
         timestamp: Date.now()
       });
       
-      // Clear any existing save timeout
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-      
-      // Set a new timeout to save changes after a short delay
-      saveTimeoutRef.current = setTimeout(() => {
-        if (currentLayout?.id && user) {
-          saveLayoutImmediately();
-        }
-      }, 250); // Reduced from 500ms for more responsive saving
-      
       return newModules;
     });
-  }, [currentLayout, user, saveLayoutImmediately]);
-
-  // Auto-save when modules or connections change
-  useEffect(() => {
-    // Skip auto-save during undo/redo operations
-    if (isUndoingOrRedoing.current) return;
-    
-    // Skip if no current layout or user
-    if (!currentLayout?.id || !user) return;
-    
-    // Clear any existing save timeout
-    if (saveTimeoutRef.current) {
-      clearTimeout(saveTimeoutRef.current);
-    }
-    
-    // Set a new timeout to save changes after a short delay
-    saveTimeoutRef.current = setTimeout(() => {
-      saveLayoutImmediately();
-    }, 1000);
-    
-    // Cleanup function to clear timeout
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, [modules, connections, currentLayout, user, saveLayoutImmediately]);
+  }, []);
 
   // Handle module deletion
   const handleModuleDelete = useCallback((moduleId: string) => {
@@ -400,13 +267,9 @@ export default function LayoutEditorPage() {
       
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
-        // Save the undone state
-        if (currentLayout?.id && user) {
-          saveLayoutImmediately();
-        }
       }, 50);
     }
-  }, [undoStack, modules, connections, currentLayout, user, saveLayoutImmediately]);
+  }, [undoStack, modules, connections]);
 
   // Redo handler
   const handleRedo = useCallback(() => {
@@ -422,29 +285,9 @@ export default function LayoutEditorPage() {
       
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
-        // Save the redone state
-        if (currentLayout?.id && user) {
-          saveLayoutImmediately();
-        }
       }, 50);
     }
-  }, [redoStack, modules, connections, currentLayout, user, saveLayoutImmediately]);
-
-  // Manual save handler
-  const handleSave = useCallback(() => {
-    if (currentLayout?.id && user) {
-      saveLayoutImmediately();
-    }
-  }, [currentLayout, user, saveLayoutImmediately]);
-
-  // Cleanup timeouts
-  useEffect(() => {
-    return () => {
-      if (saveTimeoutRef.current) {
-        clearTimeout(saveTimeoutRef.current);
-      }
-    };
-  }, []);
+  }, [redoStack, modules, connections]);
 
   // Save state for undo when modules or connections change
   useEffect(() => {
@@ -649,26 +492,6 @@ export default function LayoutEditorPage() {
                     onDeleteComplete={refreshLayouts}
                   />
                 </div>
-                
-                <div className='flex items-center gap-2 justify-center'>
-                  <SaveLayoutDialog
-                    layoutData={{
-                      id: currentLayout?.id,
-                      projectId: projectId as string,
-                      name: currentLayout?.name || '',
-                      description: currentLayout?.description || '',
-                      modules: modules,
-                      connections: connections
-                    }}
-                    onSaveComplete={handleSaveLayout}
-                    trigger={
-                      <Button size='sm' className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black h-8 text-xs'>
-                        <Save className='h-3 w-3 mr-1' />
-                        {currentLayout?.id ? 'Save As' : 'Save'}
-                      </Button>
-                    }
-                  />
-                </div>
               </div>
             </div>
           </div>
@@ -676,14 +499,12 @@ export default function LayoutEditorPage() {
           {/* Add Toolbox component */}
           <Toolbox 
             onModuleDragStart={handleModuleDragStart}
-            onSave={handleSave}
             onUndo={handleUndo}
             onRedo={handleRedo}
             controlsRef={controlsRef}
             currentLayout={currentLayout || undefined}
             modules={modules}
             connections={connections}
-            onSaveComplete={handleSaveLayout}
           />
         </ErrorBoundary>
       </div>
