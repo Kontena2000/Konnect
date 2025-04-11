@@ -67,16 +67,16 @@ export function CalculationDetailsModal({
 
   // Format date from Firestore timestamp
   const formatDate = (timestamp: any) => {
-    if (!timestamp) return "Unknown";
+    if (!timestamp) return 'Unknown';
     try {
       return new Date(timestamp.seconds * 1000).toLocaleString();
     } catch (e) {
-      return "Invalid date";
+      return 'Invalid date';
     }
   };
 
   // Format number with commas and decimal places
-  const formatNumber = (num: number, decimals = 2) => {
+  const formatNumber = (num: number | undefined | null, decimals = 2) => {
     if (num === undefined || num === null) return 'N/A';
     return num.toLocaleString(undefined, {
       minimumFractionDigits: decimals,
@@ -85,54 +85,54 @@ export function CalculationDetailsModal({
   };
 
   // Format currency
-  const formatCurrency = (num: number) => {
+  const formatCurrency = (num: number | undefined | null) => {
     if (num === undefined || num === null) return 'N/A';
     return `$${formatNumber(num, 2)}`;
   };
 
   // Format percentage
-  const formatPercentage = (num: number) => {
+  const formatPercentage = (num: number | undefined | null) => {
     if (num === undefined || num === null) return "N/A";
     return `${formatNumber(num * 100, 2)}%`;
   };
 
   // Render a section with title and content
   const renderSection = (title: string, content: React.ReactNode) => (
-    <div className="mb-6">
-      <h3 className="text-lg font-medium mb-2">{title}</h3>
-      <div className="bg-muted/20 p-4 rounded-md">{content}</div>
+    <div className='mb-6'>
+      <h3 className='text-lg font-medium mb-2'>{title}</h3>
+      <div className='bg-muted/20 p-4 rounded-md'>{content}</div>
     </div>
   );
 
   // Render a data row with label and value
   const renderDataRow = (label: string, value: React.ReactNode) => (
-    <div className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-      <span className="text-muted-foreground">{label}</span>
-      <span className="font-medium">{value}</span>
+    <div className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
+      <span className='text-muted-foreground'>{label}</span>
+      <span className='font-medium'>{value}</span>
     </div>
   );
 
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] flex flex-col">
+      <DialogContent className='max-w-4xl max-h-[90vh] flex flex-col'>
         <DialogHeader>
-          <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl">
-              {loading ? "Loading Calculation Details..." : calculation?.name || "Calculation Details"}
+          <div className='flex items-center justify-between'>
+            <DialogTitle className='text-xl'>
+              {loading ? 'Loading Calculation Details...' : calculation?.name || 'Calculation Details'}
             </DialogTitle>
             <DialogClose asChild>
-              <Button variant="ghost" size="icon">
-                <X className="h-4 w-4" />
+              <Button variant='ghost' size='icon'>
+                <X className='h-4 w-4' />
               </Button>
             </DialogClose>
           </div>
           <DialogDescription>
             {!loading && calculation?.description}
             {!loading && (
-              <div className="flex gap-2 mt-1 text-xs">
-                <span className="text-muted-foreground">Created: {formatDate(calculation?.createdAt)}</span>
+              <div className='flex gap-2 mt-1 text-xs'>
+                <span className='text-muted-foreground'>Created: {formatDate(calculation?.createdAt)}</span>
                 {calculation?.updatedAt && (
-                  <span className="text-muted-foreground">• Updated: {formatDate(calculation?.updatedAt)}</span>
+                  <span className='text-muted-foreground'>• Updated: {formatDate(calculation?.updatedAt)}</span>
                 )}
               </div>
             )}
@@ -140,178 +140,312 @@ export function CalculationDetailsModal({
         </DialogHeader>
 
         {loading ? (
-          <div className="flex items-center justify-center py-12">
-            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+          <div className='flex items-center justify-center py-12'>
+            <Loader2 className='h-8 w-8 animate-spin text-primary' />
           </div>
         ) : calculation ? (
-          <ScrollArea className="flex-1 pr-4">
-            <Tabs defaultValue="overview" className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="overview">Overview</TabsTrigger>
-                <TabsTrigger value="power">Power</TabsTrigger>
-                <TabsTrigger value="cooling">Cooling</TabsTrigger>
-                <TabsTrigger value="costs">Costs</TabsTrigger>
-                <TabsTrigger value="all">All Data</TabsTrigger>
-              </TabsList>
+          <ScrollArea className='flex-1 pr-4'>
+            <div className='space-y-6 p-2'>
+              {/* Configuration Summary Section */}
+              <div className='bg-gray-50 p-4 rounded-lg border'>
+                <h3 className='text-lg font-medium mb-3'>Configuration Summary</h3>
+                <p className='text-base'>
+                  {calculation.kwPerRack || 0}kW per rack, {' '}
+                  {calculation.coolingType === 'dlc' ? 'Direct Liquid Cooling' : 
+                   calculation.coolingType === 'air' ? 'Air Cooling' : 
+                   calculation.coolingType === 'hybrid' ? 'Hybrid Cooling' : 'Immersion Cooling'}, {' '}
+                  {calculation.totalRacks || 0} racks
+                </p>
+              </div>
 
-              <TabsContent value="overview" className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Basic Information</h3>
-                    <div className="space-y-2">
-                      {renderDataRow("Project Name", calculation.projectName || "N/A")}
-                      {renderDataRow("Total Racks", calculation.totalRacks || "N/A")}
-                      {renderDataRow("Power Density", `${calculation.kwPerRack || "N/A"} kW/rack`)}
-                      {renderDataRow("Cooling Type", calculation.coolingType === "dlc"
-                        ? "Direct Liquid Cooling"
-                        : calculation.coolingType === "air"
-                        ? "Air Cooling"
-                        : calculation.coolingType === "hybrid"
-                        ? "Hybrid Cooling"
-                        : "Immersion Cooling")}
-                      {renderDataRow("Location", calculation.location?.name || "N/A")}
-                    </div>
-                  </div>
-
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Summary Results</h3>
-                    <div className="space-y-2">
-                      {calculation.results?.cost && (
-                        <>
-                          {renderDataRow("Total Project Cost", formatCurrency(calculation.results.cost.totalProjectCost))}
-                          {renderDataRow("Total Power Cost", formatCurrency(calculation.results.cost.totalPowerCost))}
-                          {renderDataRow("Total Cooling Cost", formatCurrency(calculation.results.cost.totalCoolingCost))}
-                          {renderDataRow("Total Infrastructure Cost", formatCurrency(calculation.results.cost.totalInfrastructureCost))}
-                        </>
-                      )}
-                    </div>
-                  </div>
+              {/* Main Metrics Grid */}
+              <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                {/* Total Project Cost */}
+                <div className='bg-gray-50 p-4 rounded-lg border'>
+                  <h3 className='text-lg font-medium mb-2'>Total Project Cost</h3>
+                  <p className='text-2xl font-bold text-amber-500'>
+                    ${calculation.results?.cost?.totalProjectCost ? 
+                      formatNumber(calculation.results.cost.totalProjectCost, 0) : '0'}
+                  </p>
+                  {calculation.results?.cost?.totalProjectCost && calculation.totalRacks > 0 && (
+                    <p className='text-sm text-gray-600'>
+                      ${formatNumber(calculation.results.cost.totalProjectCost / calculation.totalRacks, 0)} per rack
+                    </p>
+                  )}
+                  {calculation.results?.cost?.costPerKw && (
+                    <p className='text-sm text-gray-600'>
+                      ${formatNumber(calculation.results.cost.costPerKw, 0)} per kW
+                    </p>
+                  )}
                 </div>
 
-                {calculation.results?.summary && (
-                  <div className="mt-6">
-                    <h3 className="text-lg font-medium mb-2">Key Metrics</h3>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="bg-muted/20 p-4 rounded-md">
-                        <div className="text-sm text-muted-foreground">Total Power</div>
-                        <div className="text-2xl font-bold">{formatNumber(calculation.results.summary.totalPower)} kW</div>
+                {/* Power Requirements */}
+                <div className='bg-gray-50 p-4 rounded-lg border'>
+                  <h3 className='text-lg font-medium mb-2'>Power Requirements</h3>
+                  <p className='text-2xl font-bold text-amber-500'>
+                    {calculation.results?.power?.totalPower ? 
+                      formatNumber(calculation.results.power.totalPower, 0) : '0'} kW {calculation.results?.power?.upsCapacity ? 'UPS Capacity' : ''}
+                  </p>
+                  {calculation.results?.power?.upsModules && (
+                    <p className='text-sm text-gray-600'>
+                      {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize || 250}kW UPS Modules
+                    </p>
+                  )}
+                  {calculation.results?.power?.redundancy && (
+                    <p className='text-sm text-gray-600'>
+                      {calculation.results.power.redundancy} Redundancy
+                    </p>
+                  )}
+                </div>
+
+                {/* Cooling Solution */}
+                <div className='bg-gray-50 p-4 rounded-lg border'>
+                  <h3 className='text-lg font-medium mb-2'>Cooling Solution</h3>
+                  <p className='text-2xl font-bold text-amber-500'>
+                    {calculation.coolingType === 'hybrid' ? (
+                      <>
+                        {calculation.results?.cooling?.dlcCapacity ? 
+                          formatNumber(calculation.results.cooling.dlcCapacity, 0) : '0'} kW DLC + {' '}
+                        {calculation.results?.cooling?.airCapacity ? 
+                          formatNumber(calculation.results.cooling.airCapacity, 0) : '0'} kW Air
+                      </>
+                    ) : (
+                      <>
+                        {calculation.results?.cooling?.coolingCapacity ? 
+                          formatNumber(calculation.results.cooling.coolingCapacity, 0) : 
+                          calculation.results?.cooling?.totalCapacity ? 
+                            formatNumber(calculation.results.cooling.totalCapacity, 0) : '0'} kW
+                      </>
+                    )}
+                  </p>
+                  {calculation.results?.cooling?.flowRate && (
+                    <p className='text-sm text-gray-600'>
+                      {formatNumber(calculation.results.cooling.flowRate, 2)} L/min Flow Rate
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Tabs for Detailed Information */}
+              <Tabs defaultValue='electrical' className='w-full mt-6'>
+                <TabsList className='mb-4 w-full justify-start'>
+                  <TabsTrigger value='electrical'>Electrical</TabsTrigger>
+                  <TabsTrigger value='cooling'>Cooling</TabsTrigger>
+                  <TabsTrigger value='power-systems'>Power Systems</TabsTrigger>
+                  <TabsTrigger value='cost-breakdown'>Cost Breakdown</TabsTrigger>
+                </TabsList>
+
+                {/* Electrical System Details */}
+                <TabsContent value='electrical' className='space-y-6'>
+                  <div className='bg-gray-50 p-4 rounded-lg border'>
+                    <h3 className='text-lg font-medium mb-3'>Electrical System Details</h3>
+                    
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-4'>
+                      <div>
+                        <h4 className='font-medium mb-2'>Power Distribution</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('Current per Row:', calculation.results?.electrical?.currentPerRow ? 
+                            `${formatNumber(calculation.results.electrical.currentPerRow, 0)} A` : 'N/A')}
+                          {renderDataRow('Busbar Size:', calculation.results?.electrical?.busbarSize || 'N/A')}
+                          {renderDataRow('Current per Rack:', calculation.results?.electrical?.currentPerRack ? 
+                            `${formatNumber(calculation.results.electrical.currentPerRack, 0)} A` : 'N/A')}
+                        </div>
                       </div>
-                      <div className="bg-muted/20 p-4 rounded-md">
-                        <div className="text-sm text-muted-foreground">PUE</div>
-                        <div className="text-2xl font-bold">{formatNumber(calculation.results.summary.pue, 3)}</div>
+
+                      <div>
+                        <h4 className='font-medium mb-2'>Rack PDUs</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('Type:', calculation.results?.electrical?.rackPduType || 'N/A')}
+                          {renderDataRow('Quantity:', calculation.totalRacks || 'N/A')}
+                        </div>
                       </div>
-                      <div className="bg-muted/20 p-4 rounded-md">
-                        <div className="text-sm text-muted-foreground">Annual Energy</div>
-                        <div className="text-2xl font-bold">{formatNumber(calculation.results.summary.annualEnergy)} MWh</div>
+                    </div>
+
+                    <div className='mt-4'>
+                      <h4 className='font-medium mb-2'>Tap-Off Boxes</h4>
+                      <div className='space-y-2'>
+                        {renderDataRow('Type:', calculation.results?.electrical?.tapOffType || 'N/A')}
+                        {renderDataRow('Quantity:', calculation.results?.electrical?.tapOffQuantity || 'N/A')}
+                      </div>
+                    </div>
+
+                    <div className='mt-4'>
+                      <h4 className='font-medium mb-2'>Costs</h4>
+                      <div className='space-y-2'>
+                        {renderDataRow('Busbars:', formatCurrency(calculation.results?.cost?.breakdown?.busbars))}
+                        {renderDataRow('Tap-Off Boxes:', formatCurrency(calculation.results?.cost?.breakdown?.tapOffBoxes))}
+                        {renderDataRow('Rack PDUs:', formatCurrency(calculation.results?.cost?.breakdown?.rackPdus))}
+                        {renderDataRow('Total Electrical:', formatCurrency(calculation.results?.cost?.totalPowerCost))}
                       </div>
                     </div>
                   </div>
-                )}
-              </TabsContent>
+                </TabsContent>
 
-              <TabsContent value="power" className="space-y-6">
-                {calculation.results?.power && (
-                  <>
-                    {renderSection("Power Summary", (
-                      <div className="space-y-2">
-                        {renderDataRow("IT Load", `${formatNumber(calculation.results.power.itLoad)} kW`)}
-                        {renderDataRow("Total Power", `${formatNumber(calculation.results.power.totalPower)} kW`)}
-                        {renderDataRow("PUE", formatNumber(calculation.results.power.pue, 3))}
-                        {renderDataRow("Annual Energy", `${formatNumber(calculation.results.power.annualEnergy)} MWh`)}
-                        {renderDataRow("Annual Energy Cost", formatCurrency(calculation.results.power.annualEnergyCost))}
-                      </div>
-                    ))}
-
-                    {calculation.results.power.breakdown && 
-                      renderSection("Power Breakdown", (
-                        <div className="space-y-2">
-                          {Object.entries(calculation.results.power.breakdown).map(([key, value]: [string, any]) => (
-                            <div key={key} className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
-                              <span className="font-medium">{formatNumber(value)} kW</span>
-                            </div>
-                          ))}
+                {/* Cooling Tab */}
+                <TabsContent value='cooling' className='space-y-6'>
+                  <div className='bg-gray-50 p-4 rounded-lg border'>
+                    <h3 className='text-lg font-medium mb-3'>Cooling System Details</h3>
+                    
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-4'>
+                      <div>
+                        <h4 className='font-medium mb-2'>System Specifications</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('Cooling Type:', calculation.coolingType === 'dlc' ? 'Direct Liquid Cooling' : 
+                            calculation.coolingType === 'air' ? 'Air Cooling' : 
+                            calculation.coolingType === 'hybrid' ? 'Hybrid Cooling' : 'Immersion Cooling')}
+                          {renderDataRow('Heat Rejection:', calculation.results?.cooling?.heatRejection ? 
+                            `${formatNumber(calculation.results.cooling.heatRejection)} kW` : 'N/A')}
+                          {renderDataRow('Water Usage:', calculation.results?.cooling?.waterUsage ? 
+                            `${formatNumber(calculation.results.cooling.waterUsage)} m³/year` : 'N/A')}
                         </div>
-                      ))
-                    }
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="cooling" className="space-y-6">
-                {calculation.results?.cooling && (
-                  <>
-                    {renderSection("Cooling Summary", (
-                      <div className="space-y-2">
-                        {renderDataRow("Cooling Type", calculation.coolingType === "dlc"
-                          ? "Direct Liquid Cooling"
-                          : calculation.coolingType === "air"
-                          ? "Air Cooling"
-                          : calculation.coolingType === "hybrid"
-                          ? "Hybrid Cooling"
-                          : "Immersion Cooling")}
-                        {renderDataRow("Heat Rejection", `${formatNumber(calculation.results.cooling.heatRejection)} kW`)}
-                        {renderDataRow("Cooling Power", `${formatNumber(calculation.results.cooling.coolingPower)} kW`)}
-                        {renderDataRow("Water Usage", `${formatNumber(calculation.results.cooling.waterUsage)} m³/year`)}
                       </div>
-                    ))}
 
-                    {calculation.results.cooling.breakdown && 
-                      renderSection("Cooling Breakdown", (
-                        <div className="space-y-2">
+                      <div>
+                        <h4 className='font-medium mb-2'>Performance</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('Cooling Power:', calculation.results?.cooling?.coolingPower ? 
+                            `${formatNumber(calculation.results.cooling.coolingPower)} kW` : 'N/A')}
+                          {renderDataRow('Flow Rate:', calculation.results?.cooling?.flowRate ? 
+                            `${formatNumber(calculation.results.cooling.flowRate)} L/min` : 'N/A')}
+                          {renderDataRow('Efficiency:', calculation.results?.cooling?.efficiency ? 
+                            formatPercentage(calculation.results.cooling.efficiency) : 'N/A')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {calculation.results?.cooling?.breakdown && (
+                      <div className='mt-4'>
+                        <h4 className='font-medium mb-2'>Cooling Breakdown</h4>
+                        <div className='space-y-2'>
                           {Object.entries(calculation.results.cooling.breakdown).map(([key, value]: [string, any]) => (
-                            <div key={key} className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
-                              <span className="font-medium">{formatNumber(value)} kW</span>
+                            <div key={key} className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
+                              <span className='text-muted-foreground'>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                              <span className='font-medium'>{formatNumber(value)} kW</span>
                             </div>
                           ))}
                         </div>
-                      ))
-                    }
-                  </>
-                )}
-              </TabsContent>
-
-              <TabsContent value="costs" className="space-y-6">
-                {calculation.results?.cost && (
-                  <>
-                    {renderSection("Cost Summary", (
-                      <div className="space-y-2">
-                        {renderDataRow("Total Project Cost", formatCurrency(calculation.results.cost.totalProjectCost))}
-                        {renderDataRow("Total Power Cost", formatCurrency(calculation.results.cost.totalPowerCost))}
-                        {renderDataRow("Total Cooling Cost", formatCurrency(calculation.results.cost.totalCoolingCost))}
-                        {renderDataRow("Total Infrastructure Cost", formatCurrency(calculation.results.cost.totalInfrastructureCost))}
                       </div>
-                    ))}
+                    )}
 
-                    {calculation.results.cost.breakdown && 
-                      renderSection("Cost Breakdown", (
-                        <div className="space-y-2">
-                          {Object.entries(calculation.results.cost.breakdown).map(([key, value]: [string, any]) => (
-                            <div key={key} className="grid grid-cols-2 py-2 border-b border-border/40 last:border-0">
-                              <span className="text-muted-foreground">{key.replace(/([A-Z])/g, " $1").replace(/^./, str => str.toUpperCase())}</span>
-                              <span className="font-medium">{formatCurrency(value)}</span>
+                    <div className='mt-4'>
+                      <h4 className='font-medium mb-2'>Costs</h4>
+                      <div className='space-y-2'>
+                        {renderDataRow('Equipment Cost:', formatCurrency(calculation.results?.cost?.breakdown?.coolingEquipment))}
+                        {renderDataRow('Installation Cost:', formatCurrency(calculation.results?.cost?.breakdown?.coolingInstallation))}
+                        {renderDataRow('Annual Operating Cost:', formatCurrency(calculation.results?.cost?.breakdown?.annualCoolingCost))}
+                        {renderDataRow('Total Cooling Cost:', formatCurrency(calculation.results?.cost?.totalCoolingCost))}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Power Systems Tab */}
+                <TabsContent value='power-systems' className='space-y-6'>
+                  <div className='bg-gray-50 p-4 rounded-lg border'>
+                    <h3 className='text-lg font-medium mb-3'>Power Systems Details</h3>
+                    
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-4'>
+                      <div>
+                        <h4 className='font-medium mb-2'>UPS System</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('UPS Capacity:', calculation.results?.power?.upsCapacity ? 
+                            `${formatNumber(calculation.results.power.upsCapacity)} kW` : 'N/A')}
+                          {renderDataRow('UPS Modules:', calculation.results?.power?.upsModules ? 
+                            `${calculation.results.power.upsModules} x ${calculation.results.power.upsModuleSize || 250}kW` : 'N/A')}
+                          {renderDataRow('Redundancy:', calculation.results?.power?.redundancy || 'N/A')}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className='font-medium mb-2'>Power Metrics</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('IT Load:', calculation.results?.power?.itLoad ? 
+                            `${formatNumber(calculation.results.power.itLoad)} kW` : 'N/A')}
+                          {renderDataRow('PUE:', calculation.results?.power?.pue ? 
+                            formatNumber(calculation.results.power.pue, 3) : 'N/A')}
+                          {renderDataRow('Annual Energy:', calculation.results?.power?.annualEnergy ? 
+                            `${formatNumber(calculation.results.power.annualEnergy)} MWh` : 'N/A')}
+                        </div>
+                      </div>
+                    </div>
+
+                    {calculation.results?.power?.breakdown && (
+                      <div className='mt-4'>
+                        <h4 className='font-medium mb-2'>Power Breakdown</h4>
+                        <div className='space-y-2'>
+                          {Object.entries(calculation.results.power.breakdown).map(([key, value]: [string, any]) => (
+                            <div key={key} className='grid grid-cols-2 py-2 border-b border-border/40 last:border-0'>
+                              <span className='text-muted-foreground'>{key.replace(/([A-Z])/g, ' $1').replace(/^./, str => str.toUpperCase())}</span>
+                              <span className='font-medium'>{formatNumber(value)} kW</span>
                             </div>
                           ))}
                         </div>
-                      ))
-                    }
-                  </>
-                )}
-              </TabsContent>
+                      </div>
+                    )}
 
-              <TabsContent value="all" className="space-y-6">
-                <div className="bg-muted/20 p-4 rounded-md">
-                  <pre className="whitespace-pre-wrap text-xs overflow-auto">
-                    {JSON.stringify(calculation, null, 2)}
-                  </pre>
-                </div>
-              </TabsContent>
-            </Tabs>
+                    <div className='mt-4'>
+                      <h4 className='font-medium mb-2'>Costs</h4>
+                      <div className='space-y-2'>
+                        {renderDataRow('UPS Cost:', formatCurrency(calculation.results?.cost?.breakdown?.ups))}
+                        {renderDataRow('Generators Cost:', formatCurrency(calculation.results?.cost?.breakdown?.generators))}
+                        {renderDataRow('Annual Energy Cost:', formatCurrency(calculation.results?.power?.annualEnergyCost))}
+                        {renderDataRow('Total Power Cost:', formatCurrency(calculation.results?.cost?.totalPowerCost))}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+
+                {/* Cost Breakdown Tab */}
+                <TabsContent value='cost-breakdown' className='space-y-6'>
+                  <div className='bg-gray-50 p-4 rounded-lg border'>
+                    <h3 className='text-lg font-medium mb-3'>Cost Breakdown</h3>
+                    
+                    <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-4'>
+                      <div>
+                        <h4 className='font-medium mb-2'>Capital Expenditure</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('Power Infrastructure:', formatCurrency(calculation.results?.cost?.totalPowerCost))}
+                          {renderDataRow('Cooling Infrastructure:', formatCurrency(calculation.results?.cost?.totalCoolingCost))}
+                          {renderDataRow('Racks & Enclosures:', formatCurrency(calculation.results?.cost?.breakdown?.racks))}
+                          {renderDataRow('Building & Construction:', formatCurrency(calculation.results?.cost?.breakdown?.building))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <h4 className='font-medium mb-2'>Operating Expenditure</h4>
+                        <div className='space-y-2'>
+                          {renderDataRow('Annual Energy Cost:', formatCurrency(calculation.results?.power?.annualEnergyCost))}
+                          {renderDataRow('Annual Cooling Cost:', formatCurrency(calculation.results?.cost?.breakdown?.annualCoolingCost))}
+                          {renderDataRow('Annual Maintenance:', formatCurrency(calculation.results?.cost?.breakdown?.annualMaintenance))}
+                          {renderDataRow('Total Annual OpEx:', formatCurrency(
+                            (calculation.results?.power?.annualEnergyCost || 0) + 
+                            (calculation.results?.cost?.breakdown?.annualCoolingCost || 0) + 
+                            (calculation.results?.cost?.breakdown?.annualMaintenance || 0)
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className='mt-4'>
+                      <h4 className='font-medium mb-2'>Total Project Costs</h4>
+                      <div className='space-y-2'>
+                        {renderDataRow('Total Infrastructure Cost:', formatCurrency(calculation.results?.cost?.totalInfrastructureCost))}
+                        {renderDataRow('Cost per Rack:', formatCurrency(
+                          calculation.totalRacks > 0 ? 
+                            (calculation.results?.cost?.totalProjectCost || 0) / calculation.totalRacks : 0
+                        ))}
+                        {renderDataRow('Cost per kW:', formatCurrency(calculation.results?.cost?.costPerKw))}
+                        {renderDataRow('Total Project Cost:', formatCurrency(calculation.results?.cost?.totalProjectCost))}
+                      </div>
+                    </div>
+                  </div>
+                </TabsContent>
+              </Tabs>
+            </div>
           </ScrollArea>
         ) : (
-          <div className="flex flex-col items-center justify-center py-12">
-            <p className="text-muted-foreground">Calculation not found or failed to load.</p>
+          <div className='flex flex-col items-center justify-center py-12'>
+            <p className='text-muted-foreground'>Calculation not found or failed to load.</p>
           </div>
         )}
       </DialogContent>
