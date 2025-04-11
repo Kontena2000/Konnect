@@ -3,9 +3,10 @@ import { collection, query, where, orderBy, getDocs } from "firebase/firestore";
 import { getFirestoreSafely } from "@/lib/firebase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calculator, ChevronDown, ChevronUp } from "lucide-react";
+import { Loader2, Calculator, ChevronDown, ChevronUp, Eye } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
+import { CalculationDetailsModal } from './CalculationDetailsModal';
 
 interface ProjectCalculationsProps {
   projectId: string;
@@ -22,6 +23,8 @@ export function ProjectCalculations({
   const [loading, setLoading] = useState(false);
   const [expanded, setExpanded] = useState(true);
   const { toast } = useToast();
+  const [selectedCalculationId, setSelectedCalculationId] = useState<string | null>(null);
+  const [calculationModalOpen, setCalculationModalOpen] = useState(false);
 
   // Define loadCalculations with useCallback to avoid dependency issues
   const loadCalculations = useCallback(async () => {
@@ -99,8 +102,19 @@ export function ProjectCalculations({
     }
   };
 
+  const handleViewCalculation = (calculationId: string) => {
+    setSelectedCalculationId(calculationId);
+    setCalculationModalOpen(true);
+  };
+
   const formatDate = (date: Date) => {
     return formatDistanceToNow(date, { addSuffix: true });
+  };
+
+  // Helper function for safe formatting
+  const formatNumber = (value: any): string => {
+    if (value === undefined || value === null) return '0';
+    return value.toLocaleString();
   };
 
   if (!projectId) {
@@ -137,13 +151,24 @@ export function ProjectCalculations({
                         {formatDate(calculation.createdAt)}
                       </p>
                     </div>
-                    <Button
-                      variant='outline'
-                      size='sm'
-                      onClick={() => handleLoadCalculation(calculation.id)}
-                    >
-                      View Details
-                    </Button>
+                    <div className='flex gap-2'>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => handleViewCalculation(calculation.id)}
+                        className='hover:bg-[#9333EA]/10'
+                      >
+                        <Eye className='mr-2 h-4 w-4' />
+                        View
+                      </Button>
+                      <Button
+                        variant='outline'
+                        size='sm'
+                        onClick={() => handleLoadCalculation(calculation.id)}
+                      >
+                        Load
+                      </Button>
+                    </div>
                   </div>
 
                   <div className='grid grid-cols-1 md:grid-cols-3 gap-2 text-sm mt-2'>
@@ -175,7 +200,7 @@ export function ProjectCalculations({
                       <div className='md:col-span-3'>
                         <span className='text-muted-foreground'>Total Cost:</span>
                         <span className='ml-2 font-medium text-primary'>
-                          ${calculation.results.cost.totalProjectCost.toLocaleString()}
+                          ${formatNumber(calculation.results.cost.totalProjectCost)}
                         </span>
                       </div>
                     )}
@@ -210,6 +235,15 @@ export function ProjectCalculations({
             </Button>
           </div>
         </CardContent>
+      )}
+
+      {/* Calculation Details Modal */}
+      {selectedCalculationId && (
+        <CalculationDetailsModal
+          calculationId={selectedCalculationId}
+          isOpen={calculationModalOpen}
+          onOpenChange={setCalculationModalOpen}
+        />
       )}
     </Card>
   );

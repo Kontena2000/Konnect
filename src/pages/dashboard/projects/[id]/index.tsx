@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useRouter } from "next/router";
 import { AppLayout } from "@/components/layout/AppLayout";
@@ -29,7 +28,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
-import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin } from 'lucide-react';
+import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin, Zap, Snowflake, DollarSign, Server, Thermometer } from 'lucide-react';
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -38,6 +37,7 @@ import { useToast } from "@/hooks/use-toast";
 import { getFirestoreSafely } from "@/lib/firebase";
 import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
+import { CalculationDetailsModal } from '@/components/matrix-calculator/CalculationDetailsModal';
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -54,6 +54,8 @@ export default function ProjectDetailsPage() {
   const [duplicating, setDuplicating] = useState(false);
   const [creatingLayout, setCreatingLayout] = useState(false);
   const [creatingCalculation, setCreatingCalculation] = useState(false);
+  const [selectedCalculationId, setSelectedCalculationId] = useState<string | null>(null);
+  const [calculationModalOpen, setCalculationModalOpen] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -64,6 +66,12 @@ export default function ProjectDetailsPage() {
     clientAddress: '',
     clientCompany: ''
   });
+
+  // Helper functions for formatting
+  const formatNumber = (value: any): string => {
+    if (value === undefined || value === null) return '0';
+    return value.toLocaleString();
+  };
 
   useEffect(() => {
     const loadProjectData = async () => {
@@ -311,6 +319,11 @@ export default function ProjectDetailsPage() {
   
   const handleEditCalculation = (calculationId: string) => {
     router.push(`/dashboard/matrix-calculator?calculationId=${calculationId}`);
+  };
+
+  const handleViewCalculation = (calculationId: string) => {
+    setSelectedCalculationId(calculationId);
+    setCalculationModalOpen(true);
   };
 
   if (loading) {
@@ -577,32 +590,146 @@ export default function ProjectDetailsPage() {
                   )}
                 </Button>
               </div>
-              <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4'>
+              <div className='grid grid-cols-1 gap-4'>
                 {calculations.length > 0 ? (
                   calculations.map((calculation) => (
                     <Card key={calculation.id} className='overflow-hidden hover:shadow-md transition-shadow border border-muted'>
                       <CardHeader className='pb-2 bg-muted/20'>
-                        <CardTitle>{calculation.name || 'Untitled Calculation'}</CardTitle>
-                        <CardDescription>
-                          {calculation.description || 'No description'}
-                        </CardDescription>
+                        <div className='flex justify-between items-start'>
+                          <div>
+                            <CardTitle>{calculation.name || 'Untitled Calculation'}</CardTitle>
+                            <CardDescription>
+                              {calculation.description || 'No description'}
+                            </CardDescription>
+                          </div>
+                          <div className='flex gap-2'>
+                            <Button 
+                              variant='outline' 
+                              size='sm'
+                              onClick={() => handleEditCalculation(calculation.id)}
+                              className='hover:bg-[#F1B73A]/10'
+                            >
+                              <Edit className='mr-2 h-4 w-4' />
+                              Edit
+                            </Button>
+                            <Button 
+                              variant='outline' 
+                              size='sm'
+                              onClick={() => handleViewCalculation(calculation.id)}
+                              className='hover:bg-[#9333EA]/10'
+                            >
+                              <Eye className='mr-2 h-4 w-4' />
+                              View
+                            </Button>
+                          </div>
+                        </div>
                       </CardHeader>
                       <CardContent className='pt-4'>
-                        <p className='text-xs text-muted-foreground mt-1'>
-                          Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}
-                        </p>
+                        {/* Configuration Summary */}
+                        <div className='bg-muted/10 p-3 rounded-md mb-4'>
+                          <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                            <Server className='h-4 w-4 text-muted-foreground' />
+                            Configuration Summary
+                          </h4>
+                          <p className='text-sm'>
+                            {calculation.kwPerRack || 0}kW per rack, 
+                            {calculation.coolingType === 'dlc' ? ' Direct Liquid Cooling' : 
+                             calculation.coolingType === 'air' ? ' Air Cooling' : 
+                             calculation.coolingType === 'hybrid' ? ' Hybrid Cooling' : ' Immersion Cooling'}, 
+                            {calculation.totalRacks || 0} racks
+                          </p>
+                        </div>
+                        
+                        <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>
+                          {/* Total Project Cost */}
+                          {calculation.results?.cost && (
+                            <div className='bg-muted/10 p-3 rounded-md'>
+                              <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                                <DollarSign className='h-4 w-4 text-green-600' />
+                                Total Project Cost
+                              </h4>
+                              <p className='text-xl font-bold text-green-600'>
+                                ${formatNumber(calculation.results.cost.totalProjectCost)}
+                              </p>
+                              {calculation.results.cost.totalProjectCost && calculation.totalRacks > 0 && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  ${formatNumber(Math.round(calculation.results.cost.totalProjectCost / calculation.totalRacks))} per rack
+                                </div>
+                              )}
+                              {calculation.results.cost.costPerKw && (
+                                <div className='text-xs text-muted-foreground'>
+                                  ${formatNumber(Math.round(calculation.results.cost.costPerKw))} per kW
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Power Requirements */}
+                          {calculation.results?.power && (
+                            <div className='bg-muted/10 p-3 rounded-md'>
+                              <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                                <Zap className='h-4 w-4 text-amber-500' />
+                                Power Requirements
+                              </h4>
+                              <p className='text-xl font-bold text-amber-500'>
+                                {calculation.results.power.upsCapacity ? 
+                                  formatNumber(calculation.results.power.upsCapacity) : 
+                                  calculation.results.power.totalPower ? 
+                                    formatNumber(calculation.results.power.totalPower) : '0'} kW
+                                {calculation.results.power.upsCapacity ? ' UPS Capacity' : ''}
+                              </p>
+                              {calculation.results.power.upsModules && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize || 250}kW UPS Modules
+                                </div>
+                              )}
+                              {calculation.results.power.redundancy && (
+                                <div className='text-xs text-muted-foreground'>
+                                  {calculation.results.power.redundancy} Redundancy
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Cooling Solution */}
+                          {calculation.results?.cooling && (
+                            <div className='bg-muted/10 p-3 rounded-md'>
+                              <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
+                                <Snowflake className='h-4 w-4 text-blue-500' />
+                                Cooling Solution
+                              </h4>
+                              <p className='text-xl font-bold text-blue-500'>
+                                {calculation.coolingType === 'hybrid' ? (
+                                  <>
+                                    {formatNumber(calculation.results.cooling.dlcCapacity || 0)} kW DLC + {' '}
+                                    {formatNumber(calculation.results.cooling.airCapacity || 0)} kW Air
+                                  </>
+                                ) : (
+                                  <>
+                                    {formatNumber(calculation.results.cooling.coolingCapacity || 
+                                      calculation.results.cooling.totalCapacity || 0)} kW
+                                  </>
+                                )}
+                              </p>
+                              {calculation.results.cooling.flowRate && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  {formatNumber(calculation.results.cooling.flowRate)} L/min Flow Rate
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </div>
+                        
+                        {/* Additional Details */}
+                        <div className='mt-4 text-xs text-muted-foreground'>
+                          <div className='flex justify-between'>
+                            <span>Created: {calculation.createdAt ? new Date((calculation.createdAt as any)?.seconds * 1000 || Date.now()).toLocaleString() : 'Unknown'}</span>
+                            {calculation.updatedAt && (
+                              <span>Updated: {new Date((calculation.updatedAt as any)?.seconds * 1000).toLocaleString()}</span>
+                            )}
+                          </div>
+                        </div>
                       </CardContent>
-                      <CardFooter className='flex justify-end gap-2 pt-2 border-t bg-muted/10'>
-                        <Button 
-                          variant='outline' 
-                          size='sm'
-                          onClick={() => handleEditCalculation(calculation.id)}
-                          className='hover:bg-[#F1B73A]/10'
-                        >
-                          <Edit className='mr-2 h-4 w-4' />
-                          Edit
-                        </Button>
-                      </CardFooter>
                     </Card>
                   ))
                 ) : (
@@ -616,9 +743,99 @@ export default function ProjectDetailsPage() {
             
             <TabsContent value='client-info' className='space-y-4 mt-6'>
               <Card>
-                <CardHeader>
-                  <CardTitle>Client Information</CardTitle>
-                  <CardDescription>Details about the client for this project</CardDescription>
+                <CardHeader className='flex flex-row items-center justify-between'>
+                  <div>
+                    <CardTitle>Client Information</CardTitle>
+                    <CardDescription>Details about the client for this project</CardDescription>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant='outline'
+                        size='sm'
+                        className='h-8 text-xs flex items-center gap-1 bg-white border-[#F1B73A] text-[#F1B73A] hover:bg-[#F1B73A]/10'
+                      >
+                        <Edit className='h-3 w-3' />
+                        <span>Edit Client Info</span>
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Edit Client Information</DialogTitle>
+                        <DialogDescription>
+                          Update the client information for this project
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className='space-y-4 py-4'>
+                        <div className='grid grid-cols-1 gap-4'>
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientCompany'>Company Name</Label>
+                            <Input
+                              id='clientCompany'
+                              name='clientCompany'
+                              value={formData.clientCompany}
+                              onChange={handleInputChange}
+                              placeholder='Enter company name'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientEmail'>Email</Label>
+                            <Input
+                              id='clientEmail'
+                              name='clientEmail'
+                              type='email'
+                              value={formData.clientEmail}
+                              onChange={handleInputChange}
+                              placeholder='Enter client email'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientPhone'>Phone</Label>
+                            <Input
+                              id='clientPhone'
+                              name='clientPhone'
+                              value={formData.clientPhone}
+                              onChange={handleInputChange}
+                              placeholder='Enter client phone'
+                            />
+                          </div>
+                          
+                          <div className='space-y-2'>
+                            <Label htmlFor='clientAddress'>Address</Label>
+                            <Textarea
+                              id='clientAddress'
+                              name='clientAddress'
+                              value={formData.clientAddress}
+                              onChange={handleInputChange}
+                              placeholder='Enter client address'
+                              rows={3}
+                            />
+                          </div>
+                        </div>
+                      </div>
+                      <DialogFooter>
+                        <Button
+                          onClick={handleSaveProject}
+                          disabled={saving}
+                          className='bg-[#F1B73A] hover:bg-[#F1B73A]/80 text-black'
+                        >
+                          {saving ? (
+                            <>
+                              <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                              Saving...
+                            </>
+                          ) : (
+                            <>
+                              <Save className='mr-2 h-4 w-4' />
+                              Save Changes
+                            </>
+                          )}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
                 </CardHeader>
                 <CardContent className='space-y-6'>
                   <div className='grid grid-cols-1 md:grid-cols-2 gap-6'>
@@ -660,6 +877,15 @@ export default function ProjectDetailsPage() {
           </Tabs>
         </div>
       </div>
+
+      {/* Calculation Details Modal */}
+      {selectedCalculationId && (
+        <CalculationDetailsModal
+          calculationId={selectedCalculationId}
+          isOpen={calculationModalOpen}
+          onOpenChange={setCalculationModalOpen}
+        />
+      )}
     </AppLayout>
   );
 }
