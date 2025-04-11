@@ -1,3 +1,4 @@
+
 import { useRef, useState, useEffect, useCallback, useMemo } from "react";
 import { Vector3, Mesh, Euler, PerspectiveCamera, OrthographicCamera, Group } from "three";
 import { useThree, ThreeEvent } from "@react-three/fiber";
@@ -66,6 +67,7 @@ export function ModuleObject({
     onUpdate: (updates) => onUpdate?.(module.id, updates)
   });
 
+  // Gunakan dimensi sebenarnya dari modul untuk posisi awal
   const initialPosition = useMemo(() => new Vector3(
     module.position[0],
     module.position[1] + 5,
