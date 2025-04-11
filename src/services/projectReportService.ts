@@ -1,4 +1,3 @@
-
 import { jsPDF } from "jspdf";
 import "jspdf-autotable";
 import { Project } from "@/services/project";
@@ -22,7 +21,6 @@ interface ProjectReportOptions {
   companyName?: string;
   preparedBy?: string;
   date?: string;
-  logo?: string;
 }
 
 /**
@@ -54,6 +52,12 @@ export async function generateProjectPdfReport(
 
     // Merge default options with provided options
     const finalOptions = { ...defaultReportOptions, ...options };
+
+    // Log project data for debugging
+    console.log('Generating PDF for project:', project);
+    console.log('Layouts:', layouts);
+    console.log('Calculations:', calculations);
+    console.log('Layout Images:', Object.keys(layoutImages));
 
     // Add report header
     addReportHeader(doc, project, finalOptions);
