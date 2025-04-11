@@ -13,8 +13,8 @@ import { Search, Download, Check, X, RefreshCw } from "lucide-react";
 export default function ModelImporter() {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [category, setCategory] = useState("");
+  const [searchQuery, setSearchQuery] = useState('');
+  const [category, setCategory] = useState('all');
   const [searchResults, setSearchResults] = useState<ModelAsset[]>([]);
   const [importedModels, setImportedModels] = useState<ImportedModel[]>([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -23,14 +23,14 @@ export default function ModelImporter() {
 
   // Categories for the dropdown
   const categories = [
-    { value: "", label: "All Categories" },
-    { value: "plants", label: "Plants" },
-    { value: "furniture", label: "Furniture" },
-    { value: "electronics", label: "Electronics" },
-    { value: "vehicles", label: "Vehicles" },
-    { value: "architecture", label: "Architecture" },
-    { value: "food", label: "Food" },
-    { value: "household", label: "Household" },
+    { value: 'all', label: 'All Categories' },
+    { value: 'plants', label: 'Plants' },
+    { value: 'furniture', label: 'Furniture' },
+    { value: 'electronics', label: 'Electronics' },
+    { value: 'vehicles', label: 'Vehicles' },
+    { value: 'architecture', label: 'Architecture' },
+    { value: 'food', label: 'Food' },
+    { value: 'household', label: 'Household' },
   ];
 
   // Load user's imported models
@@ -61,7 +61,8 @@ export default function ModelImporter() {
     try {
       const results = await modelImporterService.searchModels({
         query: searchQuery,
-        category,
+        // Don't convert 'all' to empty string here
+        category: category === 'all' ? 'all' : category,
         limit: 20,
       });
       setSearchResults(results);

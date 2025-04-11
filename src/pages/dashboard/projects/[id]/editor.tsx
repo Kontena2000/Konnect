@@ -16,7 +16,6 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
-import { FileText, Copy, Loader2 } from 'lucide-react';
 import layoutService from '@/services/layout';
 import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
@@ -53,7 +52,6 @@ export default function LayoutEditorPage() {
   const isUndoingOrRedoing = useRef(false);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [shareEmail, setShareEmail] = useState<string>('');
-  const [duplicating, setDuplicating] = useState<boolean>(false);
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -84,29 +82,6 @@ export default function LayoutEditorPage() {
         title: 'Error',
         description: 'Failed to share project'
       });
-    }
-  };
-
-  // Handle duplicate project
-  const handleDuplicateProject = async () => {
-    if (!projectId || !user) return;
-    
-    setDuplicating(true);
-    try {
-      const newProjectId = await projectService.duplicateProject(projectId as string, user.uid);
-      toast({
-        title: 'Success',
-        description: 'Project duplicated successfully'
-      });
-      router.push(`/dashboard/projects/${newProjectId}`);
-    } catch (error) {
-      console.error('Error duplicating project:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to duplicate project'
-      });
-      setDuplicating(false);
     }
   };
 
@@ -269,10 +244,12 @@ export default function LayoutEditorPage() {
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
-      position: [0, module.dimensions.height / 2, 0],
+      position: [0, module.dimensions.height / 2, 0], // Gunakan setengah tinggi modul untuk posisi Y awal
       rotation: [0, 0, 0],
       scale: [1, 1, 1]
     };
+    
+    console.log('Module drag start with dimensions:', module.dimensions);
     
     setModules(prev => [...prev, newModule]);
     setSelectedModuleId(newModule.id);
@@ -674,31 +651,6 @@ export default function LayoutEditorPage() {
                 </div>
                 
                 <div className='flex items-center gap-2 justify-center'>
-                  <Button 
-                    variant='outline'
-                    size='sm'
-                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#3CB371] text-[#3CB371] hover:bg-[#3CB371]/10'
-                    onClick={() => router.push(`/dashboard/matrix-calculator?projectId=${projectId}`)}
-                  >
-                    <FileText className='h-3 w-3' />
-                    <span>Generate Report</span>
-                  </Button>
-                  
-                  <Button 
-                    variant='outline'
-                    size='sm'
-                    onClick={handleDuplicateProject}
-                    disabled={duplicating}
-                    className='h-8 text-xs flex items-center gap-1 bg-white border-[#4A7AFF] text-[#4A7AFF] hover:bg-[#4A7AFF]/10'
-                  >
-                    {duplicating ? (
-                      <Loader2 className='h-3 w-3 animate-spin' />
-                    ) : (
-                      <Copy className='h-3 w-3' />
-                    )}
-                    <span>Duplicate</span>
-                  </Button>
-                  
                   <SaveLayoutDialog
                     layoutData={{
                       id: currentLayout?.id,

@@ -16,7 +16,6 @@ import { Separator } from "@/components/ui/separator";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { FileText, Loader2, X } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
-import { GeneratePdfButton } from "./GeneratePdfButton";
 
 interface CalculationDetailsModalProps {
   calculationId: string;
@@ -388,7 +387,8 @@ export function CalculationDetailsModal({
         {/* Add Dialog Footer with Generate PDF button */}
         {!loading && calculation && (
           <DialogFooter className="mt-4">
-            <GeneratePdfButton calculation={calculation} />
+            {/* Hapus tombol Generate PDF jika ada */}
+            {/* <GeneratePdfButton calculation={calculation} /> */}
           </DialogFooter>
         )}
       </DialogContent>

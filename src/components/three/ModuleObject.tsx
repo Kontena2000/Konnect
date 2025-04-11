@@ -66,11 +66,12 @@ export function ModuleObject({
     onUpdate: (updates) => onUpdate?.(module.id, updates)
   });
 
+  // Gunakan dimensi sebenarnya dari modul untuk posisi awal
   const initialPosition = useMemo(() => new Vector3(
     module.position[0],
-    module.position[1] + 5,
+    module.dimensions.height / 2, // Gunakan setengah tinggi modul untuk posisi Y awal
     module.position[2]
-  ), [module.position]);
+  ), [module.position, module.dimensions.height]);
 
   const updateShadowTransform = useCallback(() => {
     if (!meshRef.current) return;
@@ -272,7 +273,7 @@ export function ModuleObject({
   }, [module.id, onUpdate, updateShadowTransform]);
 
   return (
-    <group>
+    <group ref={groupRef}>
       <mesh
         ref={meshRef}
         position={[
@@ -319,7 +320,7 @@ export function ModuleObject({
         <ModuleAnimation
           meshRef={meshRef}
           initialPosition={initialPosition}
-          finalHeight={module.dimensions.height / 2}
+          finalHeight={module.dimensions.height / 2} // Gunakan setengah tinggi modul untuk posisi Y akhir
           onComplete={() => setAnimating(false)}
           onUpdate={updateShadowTransform}
         />

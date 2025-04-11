@@ -178,7 +178,7 @@ export function SceneContainer({
       const pos = new Vector3(...module.position);
       const box = new Box3().setFromCenterAndSize(
         pos,
-        new Vector3(module.dimensions.length, module.dimensions.height, module.dimensions.width)
+        new Vector3(module.dimensions.depth, module.dimensions.height, module.dimensions.width)
       );
       lines.push(
         new Line3(box.min, new Vector3(box.min.x, box.min.y, box.max.z)),
@@ -198,6 +198,24 @@ export function SceneContainer({
       ((event.clientX - rect.left) / rect.width) * 2 - 1,
       -((event.clientY - rect.top) / rect.height) * 2 + 1
     ));
+    
+    // Store the dragged module data for preview
+    const moduleData = event.dataTransfer.getData('application/json');
+    if (moduleData) {
+      try {
+        const draggedModule = JSON.parse(moduleData);
+        draggedModuleRef.current = draggedModule;
+        console.log('Dragged module dimensions from dataTransfer:', draggedModule.dimensions);
+        
+        // Ensure the preview dimensions are set correctly
+        if (draggedModule.dimensions) {
+          // Set preview height to match the module height
+          setPreviewHeight(draggedModule.dimensions.height);
+        }
+      } catch (e) {
+        console.error('Failed to parse dragged module data:', e);
+      }
+    }
   }, []);
 
   const handleDragLeave = useCallback(() => {
@@ -364,6 +382,13 @@ export function SceneContainer({
           <div className='flex items-center gap-2 mt-2'>
             <span className='text-xs text-muted-foreground'>Position: {previewPosition[0].toFixed(1)}, {previewPosition[2].toFixed(1)}</span>
           </div>
+          {draggedModuleRef.current?.dimensions && (
+            <div className='flex items-center gap-2'>
+              <span className='text-xs text-muted-foreground'>
+                Size: {draggedModuleRef.current.dimensions.width}m × {draggedModuleRef.current.dimensions.depth}m × {draggedModuleRef.current.dimensions.height}m
+              </span>
+            </div>
+          )}
         </div>
       )}
     </div>
