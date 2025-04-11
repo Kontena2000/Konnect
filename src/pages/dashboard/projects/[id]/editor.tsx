@@ -1,36 +1,23 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
 import { SceneContainer } from '@/components/three/SceneContainer';
 import { Toolbox } from '@/components/layout/Toolbox';
 import { useAuth } from '@/contexts/AuthContext';
-import { useToast } from '@/hooks/use-toast';
 import editorPreferencesService, { EditorPreferences } from '@/services/editor-preferences';
 import { Module } from '@/types/module';
-import { Connection, Layout } from '@/services/layout';
+import { Connection } from '@/services/layout';
 import { ErrorBoundary } from '@/components/ErrorBoundary';
 import firebaseMonitor from '@/services/firebase-monitor';
 import { getFirestoreSafely } from '@/lib/firebase';
 import { doc, getDoc } from 'firebase/firestore';
 import { Skeleton } from '@/components/ui/skeleton';
+import { SaveLayoutDialog } from '@/components/layout/SaveLayoutDialog';
 import { Button } from '@/components/ui/button';
+import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
-import projectService from '@/services/project';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
-import { LayoutSelector } from '@/components/layout/LayoutSelector';
-import { AuthUser } from '@/services/auth';
-import { 
-  Dialog, 
-  DialogContent, 
-  DialogDescription, 
-  DialogFooter, 
-  DialogHeader, 
-  DialogTitle, 
-  DialogTrigger 
-} from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Share } from 'lucide-react';
 
 interface EditorState {
   modules: Module[];
@@ -44,11 +31,9 @@ export default function LayoutEditorPage() {
   const [layout, setLayout] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const { user } = useAuth();
-  const { toast } = useToast();
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
-  const [shareEmail, setShareEmail] = useState<string>('');
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -58,164 +43,43 @@ export default function LayoutEditorPage() {
   const [editorPreferences, setEditorPreferences] = useState<EditorPreferences | null>(null);
   const [selectedModuleId, setSelectedModuleId] = useState<string>();
   const [transformMode, setTransformMode] = useState<'translate' | 'rotate' | 'scale'>('translate');
-  const [layouts, setLayouts] = useState<Layout[]>([]);
-  const [currentLayout, setCurrentLayout] = useState<Layout | null>(null);
-
-  // Handle share project
-  const handleShareProject = async () => {
-    if (!projectId || !shareEmail) return;
-    
-    try {
-      await projectService.shareProject(projectId as string, shareEmail);
-      toast({
-        title: 'Success',
-        description: `Project shared with ${shareEmail}`
-      });
-      setShareEmail('');
-    } catch (error) {
-      console.error('Error sharing project:', error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to share project'
-      });
-    }
-  };
-
-  // Handle layout change
-  const handleLayoutChange = useCallback((layout: Layout) => {
-    setCurrentLayout(layout);
-    
-    // Ensure all module positions and rotations are properly converted to numbers
-    if (layout.modules && Array.isArray(layout.modules)) {
-      const processedModules = layout.modules.map(module => {
-        // Create a deep copy to avoid modifying the original
-        const moduleCopy = JSON.parse(JSON.stringify(module));
-        
-        // Ensure position values are numbers
-        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
-        
-        // Ensure rotation values are numbers
-        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
-        
-        // Ensure scale values are numbers
-        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
-        
-        // Log the dimensions for debugging
-        console.log(`Module ${moduleCopy.id} dimensions:`, moduleCopy.dimensions);
-        
-        return moduleCopy;
-      });
-      
-      console.log('Setting modules with processed rotations:', processedModules.map(m => ({ id: m.id, rotation: m.rotation })));
-      setModules(processedModules);
-    } else {
-      setModules([]);
-    }
-    
-    setConnections(layout.connections || []);
-    
-    // Update URL to reflect the selected layout
-    if (projectId && layout.id) {
-      router.push(`/dashboard/projects/${projectId}/editor?layoutId=${layout.id}`, undefined, { shallow: true });
-    } else if (projectId) {
-      // If no layout ID (empty layout), just show the editor without layout ID in URL
-      router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
-    }
-  }, [projectId, router]);
-  
-  // Refresh layouts when needed
-  const refreshLayouts = useCallback(async () => {
-    if (!projectId || !user) return;
-    
-    try {
-      console.log('Refreshing layouts for project:', projectId);
-      const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
-      console.log('Fetched layouts:', projectLayouts.length);
-      setLayouts(projectLayouts);
-      
-      // If current layout was deleted, select another one
-      if (currentLayout && !projectLayouts.some(l => l.id === currentLayout.id)) {
-        console.log('Current layout was deleted, selecting another one');
-        if (projectLayouts.length > 0) {
-          handleLayoutChange(projectLayouts[0]);
-        } else {
-          // No layouts left, create empty state
-          console.log('No layouts left, creating empty state');
-          setCurrentLayout(null);
-          setModules([]);
-          setConnections([]);
-          router.push(`/dashboard/projects/${projectId}/editor`, undefined, { shallow: true });
-        }
-      }
-    } catch (error) {
-      console.error('Error refreshing layouts:', error);
-    }
-  }, [projectId, user, currentLayout, handleLayoutChange, router]);
-
-  // Handle layout create
-  const handleLayoutCreate = useCallback((layout: Layout) => {
-    setLayouts(prev => [...prev, layout]);
-    setCurrentLayout(layout);
-    
-    // Ensure all module positions and rotations are properly converted to numbers
-    if (layout.modules && Array.isArray(layout.modules)) {
-      const processedModules = layout.modules.map(module => {
-        // Create a deep copy to avoid modifying the original
-        const moduleCopy = JSON.parse(JSON.stringify(module));
-        
-        // Ensure position values are numbers
-        moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
-        
-        // Ensure rotation values are numbers
-        moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
-        
-        // Ensure scale values are numbers
-        moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
-        
-        return moduleCopy;
-      });
-      
-      setModules(processedModules);
-    } else {
-      setModules([]);
-    }
-    
-    setConnections(layout.connections || []);
-  }, []);
-
+  const [history, setHistory] = useState<Array<{ modules: Module[], connections: Connection[] }>>([]);
+  const [historyIndex, setHistoryIndex] = useState(-1);
   // Memoize heavy computations
   const memoizedModules = useMemo(() => modules, [modules]);
   const memoizedConnections = useMemo(() => connections, [connections]);
 
+  useEffect(() => {
+    if (modules.length > 0 || connections.length > 0) {
+      // Don't save if we're in the middle of an undo/redo operation
+      if (historyIndex >= 0 && 
+          history.length > 0 &&
+          JSON.stringify(history[historyIndex].modules) === JSON.stringify(modules) &&
+          JSON.stringify(history[historyIndex].connections) === JSON.stringify(connections)) {
+        return;
+      }
+      
+      // If we're not at the end of the history, truncate it
+      const newHistory = historyIndex < history.length - 1 
+        ? history.slice(0, historyIndex + 1) 
+        : [...history];
+      
+      newHistory.push({ modules: [...modules], connections: [...connections] });
+      setHistory(newHistory);
+      setHistoryIndex(newHistory.length - 1);
+    }
+  }, [modules, connections, history, historyIndex]);
+
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
-    // Log dimensi modul saat mulai drag
-    console.log('Module drag start with original dimensions:', module.dimensions);
-    
-    if (!module.dimensions) {
-      console.error('Module is missing dimensions:', module);
-      return;
-    }
-    
-    // Pastikan dimensi modul valid
-    const validDimensions = {
-      width: module.dimensions.width || 1,
-      height: module.dimensions.height || 1,
-      depth: module.dimensions.depth || 1
-    };
-    
     // Create a new module instance with unique ID
     const newModule: Module = {
       ...module,
       id: `${module.id}-${Date.now()}`,
-      position: [0, validDimensions.height / 2, 0], // Gunakan setengah tinggi modul untuk posisi Y awal
+      position: [0, module.dimensions.height / 2, 0],
       rotation: [0, 0, 0],
-      scale: [1, 1, 1],
-      dimensions: validDimensions // Pastikan dimensi yang benar digunakan
+      scale: [1, 1, 1]
     };
-    
-    console.log('New module created with dimensions:', newModule.dimensions);
     
     setModules(prev => [...prev, newModule]);
     setSelectedModuleId(newModule.id);
@@ -231,29 +95,9 @@ export default function LayoutEditorPage() {
     const startTime = performance.now();
     
     setModules(prev => {
-      const newModules = prev.map(module => {
-        if (module.id === moduleId) {
-          // Create a new module object with the updates
-          const updatedModule = { ...module };
-          
-          // Ensure position, rotation, and scale are properly formatted as numbers
-          if (updates.position) {
-            updatedModule.position = updates.position.map(Number) as [number, number, number];
-          }
-          
-          if (updates.rotation) {
-            updatedModule.rotation = updates.rotation.map(Number) as [number, number, number];
-            console.log('Updated module rotation:', updatedModule.rotation);
-          }
-          
-          if (updates.scale) {
-            updatedModule.scale = updates.scale.map(Number) as [number, number, number];
-          }
-          
-          return { ...updatedModule, ...updates };
-        }
-        return module;
-      });
+      const newModules = prev.map(module => 
+        module.id === moduleId ? { ...module, ...updates } : module
+      );
       
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
@@ -306,6 +150,33 @@ export default function LayoutEditorPage() {
       }, 50);
     }
   }, [redoStack, modules, connections]);
+
+  // Debounced save with performance monitoring
+  const saveTimeout = useRef<NodeJS.Timeout>();
+  const handleSave = useCallback(() => {
+    if (saveTimeout.current) {
+      clearTimeout(saveTimeout.current);
+    }
+
+    const startTime = performance.now();
+    saveTimeout.current = setTimeout(() => {
+      // Implement save logic here
+      const duration = performance.now() - startTime;
+      firebaseMonitor.logPerformanceMetric({
+        operationDuration: duration,
+        timestamp: Date.now()
+      });
+    }, 1000);
+  }, []);
+
+  // Cleanup timeouts
+  useEffect(() => {
+    return () => {
+      if (saveTimeout.current) {
+        clearTimeout(saveTimeout.current);
+      }
+    };
+  }, []);
 
   // Save state for undo when modules or connections change
   useEffect(() => {
@@ -377,66 +248,34 @@ export default function LayoutEditorPage() {
         
         setProject(projectData);
         
-        // Fetch all layouts for this project
-        const projectLayouts = await layoutService.getProjectLayouts(projectId as string);
-        setLayouts(projectLayouts);
-        
         // If layoutId is provided, fetch the layout
         if (layoutId) {
-          try {
-            const layoutRef = doc(db, 'layouts', layoutId as string);
-            const layoutSnap = await getDoc(layoutRef);
+          const layoutRef = doc(db, 'layouts', layoutId as string);
+          const layoutSnap = await getDoc(layoutRef);
+          
+          if (layoutSnap.exists()) {
+            const layoutData = {
+              id: layoutSnap.id,
+              ...layoutSnap.data()
+            } as any; // Cast to any to avoid TypeScript errors
             
-            if (layoutSnap.exists()) {
-              const layoutData = {
-                id: layoutSnap.id,
-                ...layoutSnap.data()
-              } as any; // Cast to any to avoid TypeScript errors
+            // Verify this layout belongs to the current project
+            if (layoutData.projectId === projectId) {
+              setLayout(layoutData);
               
-              // Verify this layout belongs to the current project
-              if (layoutData.projectId === projectId) {
-                setLayout(layoutData);
-                setCurrentLayout(layoutData);
-                
-                // Set modules and connections from layout data
-                if (layoutData.modules) {
-                  // Ensure all module positions and rotations are properly converted to numbers
-                  const processedModules = layoutData.modules.map((module: any) => {
-                    // Create a deep copy to avoid modifying the original
-                    const moduleCopy = JSON.parse(JSON.stringify(module));
-                    
-                    // Ensure position values are numbers
-                    moduleCopy.position = moduleCopy.position.map(Number) as [number, number, number];
-                    
-                    // Ensure rotation values are numbers
-                    moduleCopy.rotation = moduleCopy.rotation.map(Number) as [number, number, number];
-                    
-                    // Ensure scale values are numbers
-                    moduleCopy.scale = moduleCopy.scale.map(Number) as [number, number, number];
-                    
-                    return moduleCopy;
-                  });
-                  
-                  setModules(processedModules);
-                }
-                
-                if (layoutData.connections) {
-                  setConnections(layoutData.connections);
-                }
-              } else {
-                console.error('Layout does not belong to this project:', {
-                  layoutId,
-                  layoutProjectId: layoutData.projectId,
-                  currentProjectId: projectId
-                });
-                setError('Layout does not belong to this project');
+              // Set modules and connections from layout data
+              if (layoutData.modules) {
+                setModules(layoutData.modules);
+              }
+              
+              if (layoutData.connections) {
+                setConnections(layoutData.connections);
               }
             } else {
-              setError('Layout not found');
+              setError('Layout does not belong to this project');
             }
-          } catch (layoutError) {
-            console.error('Error fetching layout:', layoutError);
-            setError('Failed to load layout data');
+          } else {
+            setError('Layout not found');
           }
         }
       } catch (err) {
@@ -452,10 +291,10 @@ export default function LayoutEditorPage() {
   
   if (loading) {
     return (
-      <div className="flex items-center justify-center h-screen w-full">
-        <div className="space-y-4 text-center">
-          <Skeleton className="h-8 w-64 mx-auto" />
-          <Skeleton className="h-[calc(100vh-120px)] w-[90vw] max-w-5xl" />
+      <div className='flex items-center justify-center h-screen w-full'>
+        <div className='space-y-4 text-center'>
+          <Skeleton className='h-8 w-64 mx-auto' />
+          <Skeleton className='h-[calc(100vh-120px)] w-[90vw] max-w-5xl' />
         </div>
       </div>
     );
@@ -463,12 +302,12 @@ export default function LayoutEditorPage() {
   
   if (error) {
     return (
-      <div className="flex items-center justify-center h-screen w-full">
-        <div className="bg-destructive/10 p-6 rounded-md max-w-md">
-          <h2 className="text-lg font-medium text-destructive mb-2">Error</h2>
-          <p className="mb-4">{error}</p>
+      <div className='flex items-center justify-center h-screen w-full'>
+        <div className='bg-destructive/10 p-6 rounded-md max-w-md'>
+          <h2 className='text-lg font-medium text-destructive mb-2'>Error</h2>
+          <p className='mb-4'>{error}</p>
           <Button 
-            variant="outline" 
+            variant='outline' 
             onClick={() => router.push('/dashboard/projects')}
           >
             Back to Projects
@@ -480,9 +319,17 @@ export default function LayoutEditorPage() {
   
   return (
     <AppLayout fullWidth noPadding>
+      <Toolbox 
+          onModuleDragStart={handleModuleDragStart}
+          onSave={handleSave}
+          onUndo={handleUndo}
+          onRedo={handleRedo}
+          controlsRef={controlsRef}
+        />
+        
       <div className='h-screen w-screen overflow-hidden'>
         <ErrorBoundary>
-          <div className='absolute inset-0'>
+          <div className='inset-0'>
             <SceneContainer
               modules={memoizedModules}
               selectedModuleId={selectedModuleId}
@@ -495,35 +342,6 @@ export default function LayoutEditorPage() {
               editorPreferences={editorPreferences}
             />
           </div>
-          
-          {/* Layout selector with project actions */}
-          <div className='fixed top-4 left-0 right-0 z-10'>
-            <div className='max-w-2xl mx-auto'>
-              <div className='bg-background/80 backdrop-blur-sm p-3 rounded-md shadow-md flex items-center justify-center flex-wrap gap-4'>
-                <div className='flex items-center justify-center flex-grow sm:flex-grow-0'>
-                  <LayoutSelector
-                    projectId={projectId as string}
-                    layouts={layouts}
-                    currentLayout={currentLayout}
-                    onLayoutChange={handleLayoutChange}
-                    onLayoutCreate={handleLayoutCreate}
-                    onDeleteComplete={refreshLayouts}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          {/* Add Toolbox component */}
-          <Toolbox 
-            onModuleDragStart={handleModuleDragStart}
-            onUndo={handleUndo}
-            onRedo={handleRedo}
-            controlsRef={controlsRef}
-            currentLayout={currentLayout || undefined}
-            modules={modules}
-            connections={connections}
-          />
         </ErrorBoundary>
       </div>
     </AppLayout>
