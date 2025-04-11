@@ -643,12 +643,16 @@ export default function ProjectDetailsPage() {
                                 Total Project Cost
                               </h4>
                               <p className='text-xl font-bold text-green-600'>
-                                ${calculation.results.cost.totalProjectCost.toLocaleString()}
+                                ${typeof calculation.results.cost.totalProjectCost === 'number' 
+                                  ? calculation.results.cost.totalProjectCost.toLocaleString() 
+                                  : '0'}
                               </p>
                               <div className='text-xs text-muted-foreground mt-1'>
-                                ${(calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString()} per rack
+                                ${typeof calculation.results.cost.totalProjectCost === 'number' && calculation.totalRacks
+                                  ? (calculation.results.cost.totalProjectCost / calculation.totalRacks).toLocaleString() 
+                                  : '0'} per rack
                               </div>
-                              {calculation.results.cost.costPerKw && (
+                              {typeof calculation.results.cost.costPerKw === 'number' && (
                                 <div className='text-xs text-muted-foreground'>
                                   ${calculation.results.cost.costPerKw.toLocaleString()} per kW
                                 </div>
@@ -668,12 +672,12 @@ export default function ProjectDetailsPage() {
                                   ? calculation.results.power.totalPower.toLocaleString() 
                                   : '0'} kW
                               </p>
-                              {calculation.results.power.upsModules && (
+                              {typeof calculation.results.power.upsModules !== 'undefined' && (
                                 <div className='text-xs text-muted-foreground mt-1'>
                                   {calculation.results.power.upsModules} UPS Modules
                                 </div>
                               )}
-                              {calculation.results.power.redundancy && (
+                              {typeof calculation.results.power.redundancy !== 'undefined' && (
                                 <div className='text-xs text-muted-foreground'>
                                   {calculation.results.power.redundancy} Redundancy
                                 </div>
@@ -708,11 +712,9 @@ export default function ProjectDetailsPage() {
                                   </>
                                 )}
                               </p>
-                              {calculation.results.cooling.flowRate && (
+                              {typeof calculation.results.cooling.flowRate === 'number' && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  {typeof calculation.results.cooling.flowRate === 'number' 
-                                    ? calculation.results.cooling.flowRate.toLocaleString() 
-                                    : '0'} L/min Flow Rate
+                                  {calculation.results.cooling.flowRate.toLocaleString()} L/min Flow Rate
                                 </div>
                               )}
                             </div>

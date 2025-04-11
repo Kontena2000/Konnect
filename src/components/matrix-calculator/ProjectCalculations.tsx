@@ -194,7 +194,9 @@ export function ProjectCalculations({
                       <div className='md:col-span-3'>
                         <span className='text-muted-foreground'>Total Cost:</span>
                         <span className='ml-2 font-medium text-primary'>
-                          ${calculation.results.cost.totalProjectCost.toLocaleString()}
+                          ${typeof calculation.results.cost.totalProjectCost === 'number' 
+                            ? calculation.results.cost.totalProjectCost.toLocaleString() 
+                            : '0'}
                         </span>
                       </div>
                     )}
