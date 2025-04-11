@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
@@ -5,9 +6,6 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ThemeEditor } from "@/components/settings/ThemeEditor";
-import { FirebaseMonitor } from "@/components/settings/FirebaseMonitor";
 
 interface GeneralSettingsProps {
   userId: string;
@@ -101,21 +99,6 @@ export function GeneralSettings({ userId }: GeneralSettingsProps) {
           </Button>
         </CardContent>
       </Card>
-
-      <Tabs defaultValue="theme">
-        <TabsList>
-          <TabsTrigger value="theme">Theme Editor</TabsTrigger>
-          <TabsTrigger value="firebase">Firebase Monitor</TabsTrigger>
-        </TabsList>
-        
-        <TabsContent value="theme">
-          <ThemeEditor />
-        </TabsContent>
-        
-        <TabsContent value="firebase">
-          <FirebaseMonitor />
-        </TabsContent>
-      </Tabs>
     </div>
   );
 }
