@@ -35,6 +35,7 @@ export default function LayoutEditorPage() {
   const [error, setError] = useState<string | null>(null);
   const controlsRef = useRef<any>(null);
   const isUndoingOrRedoing = useRef(false);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // State
   const [modules, setModules] = useState<Module[]>([]);
@@ -213,7 +214,7 @@ export default function LayoutEditorPage() {
         console.log('Layout updated successfully:', layout.id);
         
         // Update local state to reflect the changes
-        setLayout((prev) => ({
+        setLayout((prev: any) => ({
           ...prev,
           ...layoutData,
           lastModified: new Date().toISOString()
@@ -270,10 +271,9 @@ export default function LayoutEditorPage() {
 
   // Cleanup timeouts
   useEffect(() => {
-    const currentTimeout = saveTimeout.current;
     return () => {
-      if (currentTimeout) {
-        clearTimeout(currentTimeout);
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
     };
   }, []);
