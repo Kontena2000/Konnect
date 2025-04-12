@@ -182,10 +182,10 @@ export default function LayoutEditorPage() {
         userId: user.uid,
         modules: modules.map(module => ({
           ...module,
-          // Ensure position, rotation, and scale are numbers
-          position: module.position.map(Number),
-          rotation: module.rotation.map(Number),
-          scale: module.scale.map(Number)
+          // Ensure position, rotation, and scale are numbers and correct type
+          position: module.position.map(Number) as [number, number, number],
+          rotation: module.rotation.map(Number) as [number, number, number],
+          scale: module.scale.map(Number) as [number, number, number]
         })),
         connections: connections.map(connection => ({
           ...connection,
@@ -213,14 +213,14 @@ export default function LayoutEditorPage() {
         console.log('Layout updated successfully:', layout.id);
         
         // Update local state to reflect the changes
-        setLayout(prev => ({
+        setLayout((prev: any) => ({
           ...prev,
           ...layoutData,
           lastModified: new Date().toISOString()
         }));
       } else {
         // Create new layout
-        const newLayoutId = await layoutService.createLayout(layoutData);
+        const newLayoutId = await layoutService.createLayout(layoutData as any);
         console.log('New layout created successfully:', newLayoutId);
         
         // Update URL to include the new layout ID
@@ -241,9 +241,9 @@ export default function LayoutEditorPage() {
       // Log performance
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
-        operationName: 'saveLayout',
+        timestamp: Date.now(),
         operationDuration: duration,
-        timestamp: Date.now()
+        type: 'saveLayout'
       });
       
       toast({
