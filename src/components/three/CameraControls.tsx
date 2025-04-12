@@ -54,43 +54,57 @@ export function CameraControls({
     };
 
     controls.setAzimuthalAngle = (angle: number) => {
-      // Calculate the current position in spherical coordinates
-      const spherical = new THREE.Spherical().setFromVector3(
-        new THREE.Vector3().subVectors(camera.position, controls.target)
-      );
-      
-      // Set the new theta (azimuthal angle)
-      spherical.theta = angle;
-      
-      // Convert back to cartesian coordinates
-      const newPosition = new THREE.Vector3().setFromSpherical(spherical);
-      
-      // Apply the new position relative to the target
-      camera.position.copy(newPosition.add(controls.target));
-      
-      // Update the camera
-      camera.lookAt(controls.target);
-      controls.update();
+      try {
+        // Get current distance from target
+        const distance = camera.position.distanceTo(controls.target);
+        
+        // Calculate new position
+        const x = controls.target.x + distance * Math.sin(angle);
+        const y = camera.position.y; // Keep the same height
+        const z = controls.target.z + distance * Math.cos(angle);
+        
+        // Set new position
+        camera.position.set(x, y, z);
+        camera.lookAt(controls.target);
+        controls.update();
+        
+        console.log('Set azimuthal angle to:', angle, 'New camera position:', camera.position);
+      } catch (error) {
+        console.error('Error in setAzimuthalAngle:', error);
+      }
     };
 
     controls.setPolarAngle = (angle: number) => {
-      // Calculate the current position in spherical coordinates
-      const spherical = new THREE.Spherical().setFromVector3(
-        new THREE.Vector3().subVectors(camera.position, controls.target)
-      );
-      
-      // Set the new phi (polar angle)
-      spherical.phi = angle;
-      
-      // Convert back to cartesian coordinates
-      const newPosition = new THREE.Vector3().setFromSpherical(spherical);
-      
-      // Apply the new position relative to the target
-      camera.position.copy(newPosition.add(controls.target));
-      
-      // Update the camera
-      camera.lookAt(controls.target);
-      controls.update();
+      try {
+        // Get current horizontal distance and azimuth
+        const horizontalDistance = Math.sqrt(
+          Math.pow(camera.position.x - controls.target.x, 2) +
+          Math.pow(camera.position.z - controls.target.z, 2)
+        );
+        
+        const currentAzimuth = Math.atan2(
+          camera.position.x - controls.target.x,
+          camera.position.z - controls.target.z
+        );
+        
+        // Calculate new height based on polar angle
+        const newHorizontalDistance = Math.sin(angle) * camera.position.distanceTo(controls.target);
+        const newHeight = controls.target.y + Math.cos(angle) * camera.position.distanceTo(controls.target);
+        
+        // Calculate new position
+        const x = controls.target.x + newHorizontalDistance * Math.sin(currentAzimuth);
+        const y = newHeight;
+        const z = controls.target.z + newHorizontalDistance * Math.cos(currentAzimuth);
+        
+        // Set new position
+        camera.position.set(x, y, z);
+        camera.lookAt(controls.target);
+        controls.update();
+        
+        console.log('Set polar angle to:', angle, 'New camera position:', camera.position);
+      } catch (error) {
+        console.error('Error in setPolarAngle:', error);
+      }
     };
 
     return () => {

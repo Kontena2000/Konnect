@@ -89,31 +89,21 @@ export function Toolbox({
   const handle3DView = () => {
     if (controlsRef?.current) {
       try {
-        // Set to isometric view
-        const distance = 15; // Distance from origin
-        const azimuthalAngle = Math.PI / 4; // 45 degrees
-        const polarAngle = Math.PI / 4; // 45 degrees
+        console.log('3D View button clicked, controlsRef:', controlsRef.current);
         
-        // Log for debugging
-        console.log('Setting 3D view with controlsRef:', controlsRef.current);
+        // Set camera position directly for isometric view
+        const camera = controlsRef.current.object;
+        const target = controlsRef.current.target;
+        const distance = 15;
         
-        // First try the direct method
-        if (typeof controlsRef.current.setAzimuthalAngle === 'function' && 
-            typeof controlsRef.current.setPolarAngle === 'function') {
-          controlsRef.current.setAzimuthalAngle(azimuthalAngle);
-          controlsRef.current.setPolarAngle(polarAngle);
-        } else {
-          // Fallback: manually position the camera
-          const target = controlsRef.current.target;
-          const x = target.x + distance * Math.sin(polarAngle) * Math.cos(azimuthalAngle);
-          const y = target.y + distance * Math.cos(polarAngle);
-          const z = target.z + distance * Math.sin(polarAngle) * Math.sin(azimuthalAngle);
-          
-          const camera = controlsRef.current.object;
-          camera.position.set(x, y, z);
-          camera.lookAt(target);
-          controlsRef.current.update();
-        }
+        // Position for isometric view (45° azimuth, 45° polar)
+        const x = target.x + distance * Math.sin(Math.PI/4) * Math.cos(Math.PI/4);
+        const y = target.y + distance * Math.sin(Math.PI/4);
+        const z = target.z + distance * Math.cos(Math.PI/4) * Math.cos(Math.PI/4);
+        
+        camera.position.set(x, y, z);
+        camera.lookAt(target);
+        controlsRef.current.update();
         
         toast({
           title: '3D View',
