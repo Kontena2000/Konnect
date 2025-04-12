@@ -242,8 +242,7 @@ export default function LayoutEditorPage() {
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
         timestamp: Date.now(),
-        operationDuration: duration,
-        type: 'saveLayout'
+        operationDuration: duration
       });
       
       toast({
