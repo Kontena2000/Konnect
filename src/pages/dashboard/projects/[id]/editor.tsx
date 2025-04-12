@@ -1,3 +1,4 @@
+
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -159,15 +160,14 @@ export default function LayoutEditorPage() {
     }
   }, [history, historyIndex]);
 
-  // Debounced save with performance monitoring
-  const saveTimeout = useRef<NodeJS.Timeout>();
+  // Save layout function
   const handleSave = useCallback(async () => {
     console.log('Save called, projectId:', projectId, 'user:', user);
     if (!projectId || !user) {
       toast({
-        title: 'Error',
-        description: 'Cannot save layout: missing project or user information',
-        variant: 'destructive'
+        title: "Error",
+        description: "Cannot save layout: missing project or user information",
+        variant: "destructive"
       });
       return;
     }
@@ -175,7 +175,7 @@ export default function LayoutEditorPage() {
     try {
       const startTime = performance.now();
       
-      // Prepare layout data
+      // Prepare layout data with proper type casting
       const layoutData = {
         name: layout?.name || `Layout ${new Date().toLocaleString()}`,
         projectId: projectId as string,
@@ -213,14 +213,20 @@ export default function LayoutEditorPage() {
         console.log('Layout updated successfully:', layout.id);
         
         // Update local state to reflect the changes
-        setLayout((prev: any) => ({
+        setLayout((prev) => ({
           ...prev,
           ...layoutData,
           lastModified: new Date().toISOString()
         }));
+        
+        toast({
+          title: "Success",
+          description: "Layout updated successfully",
+          duration: 2000
+        });
       } else {
         // Create new layout
-        const newLayoutId = await layoutService.createLayout(layoutData as any);
+        const newLayoutId = await layoutService.createLayout(layoutData);
         console.log('New layout created successfully:', newLayoutId);
         
         // Update URL to include the new layout ID
@@ -236,6 +242,12 @@ export default function LayoutEditorPage() {
           createdAt: new Date(),
           updatedAt: new Date()
         });
+        
+        toast({
+          title: "Success",
+          description: "New layout created successfully",
+          duration: 2000
+        });
       }
       
       // Log performance
@@ -244,29 +256,24 @@ export default function LayoutEditorPage() {
         timestamp: Date.now(),
         operationDuration: duration
       });
-      
-      toast({
-        title: 'Success',
-        description: 'Layout saved successfully',
-        duration: 2000
-      });
     } catch (err) {
       console.error('Error saving layout:', err);
       toast({
-        title: 'Error',
+        title: "Error",
         description: typeof err === 'object' && err !== null && 'message' in err 
           ? String(err.message) 
           : 'Failed to save layout',
-        variant: 'destructive'
+        variant: "destructive"
       });
     }
   }, [projectId, user, layout, modules, connections, router]);
 
   // Cleanup timeouts
   useEffect(() => {
+    const currentTimeout = saveTimeout.current;
     return () => {
-      if (saveTimeout.current) {
-        clearTimeout(saveTimeout.current);
+      if (currentTimeout) {
+        clearTimeout(currentTimeout);
       }
     };
   }, []);
