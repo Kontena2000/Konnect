@@ -1,4 +1,3 @@
-
 import { useThree } from "@react-three/fiber";
 import { ModuleObject } from "./ModuleObject";
 import { ConnectionLine } from "./ConnectionLine";
@@ -39,6 +38,7 @@ interface SceneElementsProps {
   onTransformStart?: () => void;
   onTransformEnd?: () => void;
   editorPreferences?: EditorPreferences | null;
+  controlsRef?: React.RefObject<any>;
 }
 
 export function SceneElements({
@@ -65,19 +65,19 @@ export function SceneElements({
   isTransforming,
   onTransformStart,
   onTransformEnd,
-  editorPreferences
+  editorPreferences,
+  controlsRef,
 }: SceneElementsProps) {
   const { camera } = useThree();
-  const controlsRef = useRef<any>(null);
 
   useEffect(() => {
-    const controls = controlsRef.current;
+    const controls = controlsRef?.current;
     return () => {
       if (controls) {
         controls.dispose();
       }
     };
-  }, []);
+  }, [controlsRef]);
 
   useEffect(() => {
     if (camera) {
@@ -100,13 +100,6 @@ export function SceneElements({
       <CameraControls 
         controlsRef={controlsRef}
         enabled={!isTransforming}
-        enableZoom={!isTransforming}
-        enablePan={!isTransforming}
-        enableRotate={!isTransforming}
-        minDistance={5}
-        maxDistance={50}
-        minPolarAngle={0}
-        maxPolarAngle={Math.PI / 2.1}
       />
       <GridHelper preferences={editorPreferences?.grid} />
 

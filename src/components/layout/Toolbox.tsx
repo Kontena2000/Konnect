@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -51,12 +50,114 @@ export function Toolbox({
   ];
 
   const handleSave = () => {
-    onSave?.();
-    toast({
-      title: 'Layout Saved',
-      description: 'Your layout changes have been saved successfully.',
-      duration: 2000
-    });
+    if (onSave) {
+      onSave();
+      toast({
+        title: 'Layout Saved',
+        description: 'Your layout changes have been saved successfully.',
+        duration: 2000
+      });
+    } else {
+      toast({
+        title: 'Save Failed',
+        description: 'Could not save the layout. Please try again.',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handle2DView = () => {
+    if (controlsRef?.current) {
+      try {
+        controlsRef.current.reset();
+        toast({
+          title: '2D View',
+          description: 'Switched to 2D top view',
+          duration: 1000
+        });
+      } catch (error) {
+        console.error('Error switching to 2D view:', error);
+        toast({
+          title: 'View Change Failed',
+          description: 'Could not switch to 2D view',
+          variant: 'destructive'
+        });
+      }
+    }
+  };
+
+  const handle3DView = () => {
+    if (controlsRef?.current) {
+      try {
+        // Set to isometric view
+        const distance = 15; // Distance from origin
+        const azimuthalAngle = Math.PI / 4; // 45 degrees
+        const polarAngle = Math.PI / 4; // 45 degrees
+        
+        // Log for debugging
+        console.log('Setting 3D view with controlsRef:', controlsRef.current);
+        
+        // First try the direct method
+        if (typeof controlsRef.current.setAzimuthalAngle === 'function' && 
+            typeof controlsRef.current.setPolarAngle === 'function') {
+          controlsRef.current.setAzimuthalAngle(azimuthalAngle);
+          controlsRef.current.setPolarAngle(polarAngle);
+        } else {
+          // Fallback: manually position the camera
+          const target = controlsRef.current.target;
+          const x = target.x + distance * Math.sin(polarAngle) * Math.cos(azimuthalAngle);
+          const y = target.y + distance * Math.cos(polarAngle);
+          const z = target.z + distance * Math.sin(polarAngle) * Math.sin(azimuthalAngle);
+          
+          const camera = controlsRef.current.object;
+          camera.position.set(x, y, z);
+          camera.lookAt(target);
+          controlsRef.current.update();
+        }
+        
+        toast({
+          title: '3D View',
+          description: 'Switched to 3D isometric view',
+          duration: 1000
+        });
+      } catch (error) {
+        console.error('Error switching to 3D view:', error);
+        toast({
+          title: 'View Change Failed',
+          description: 'Could not switch to 3D view',
+          variant: 'destructive'
+        });
+      }
+    } else {
+      console.error('Controls reference is not available');
+      toast({
+        title: 'View Change Failed',
+        description: 'Camera controls not available',
+        variant: 'destructive'
+      });
+    }
+  };
+
+  const handleUndo = () => {
+    if (onUndo) {
+      onUndo();
+      toast({
+        title: 'Undo',
+        description: 'Undid last action',
+        duration: 1000
+      });
+    }
+  };
+
+  const handleRedo = () => {
+    if (onRedo) {
+      onRedo();
+      toast({
+        title: 'Redo',
+        description: 'Redid last action',
+        duration: 1000
+      });
+    }
   };
 
   return (
@@ -180,7 +281,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={onUndo}
+                    onClick={handleUndo}
                     className='w-full'
                   >
                     <Undo className='h-4 w-4' />
@@ -197,7 +298,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={onRedo}
+                    onClick={handleRedo}
                     className='w-full'
                   >
                     <Redo className='h-4 w-4' />
@@ -215,11 +316,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={() => {
-                      if (controlsRef?.current) {
-                        controlsRef.current.reset();
-                      }
-                    }}
+                    onClick={handle2DView}
                     className='w-full'
                   >
                     <View className='h-4 w-4' />
@@ -236,12 +333,7 @@ export function Toolbox({
                   <Button 
                     variant='outline' 
                     size={collapsed ? 'icon' : 'default'}
-                    onClick={() => {
-                      if (controlsRef?.current) {
-                        controlsRef.current.setAzimuthalAngle(Math.PI / 4);
-                        controlsRef.current.setPolarAngle(Math.PI / 4);
-                      }
-                    }}
+                    onClick={handle3DView}
                     className='w-full'
                   >
                     <Grid className='h-4 w-4' />

@@ -1,7 +1,7 @@
-
 import { useRef, useEffect } from "react";
 import { OrbitControls } from "@react-three/drei";
 import { useThree } from "@react-three/fiber";
+import * as THREE from 'three';
 
 interface CameraControlsProps {
   controlsRef?: React.RefObject<any>;
@@ -47,18 +47,49 @@ export function CameraControls({
 
     // Add methods for camera position control
     controls.reset = () => {
-      camera.position.set(10, 10, 10);
+      // Set camera to top-down 2D view
+      camera.position.set(0, 20, 0);
       camera.lookAt(0, 0, 0);
       controls.update();
     };
 
     controls.setAzimuthalAngle = (angle: number) => {
-      controls.setAzimuthalAngle(angle);
+      // Calculate the current position in spherical coordinates
+      const spherical = new THREE.Spherical().setFromVector3(
+        new THREE.Vector3().subVectors(camera.position, controls.target)
+      );
+      
+      // Set the new theta (azimuthal angle)
+      spherical.theta = angle;
+      
+      // Convert back to cartesian coordinates
+      const newPosition = new THREE.Vector3().setFromSpherical(spherical);
+      
+      // Apply the new position relative to the target
+      camera.position.copy(newPosition.add(controls.target));
+      
+      // Update the camera
+      camera.lookAt(controls.target);
       controls.update();
     };
 
     controls.setPolarAngle = (angle: number) => {
-      controls.setPolarAngle(angle);
+      // Calculate the current position in spherical coordinates
+      const spherical = new THREE.Spherical().setFromVector3(
+        new THREE.Vector3().subVectors(camera.position, controls.target)
+      );
+      
+      // Set the new phi (polar angle)
+      spherical.phi = angle;
+      
+      // Convert back to cartesian coordinates
+      const newPosition = new THREE.Vector3().setFromSpherical(spherical);
+      
+      // Apply the new position relative to the target
+      camera.position.copy(newPosition.add(controls.target));
+      
+      // Update the camera
+      camera.lookAt(controls.target);
       controls.update();
     };
 

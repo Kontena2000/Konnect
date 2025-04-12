@@ -5,6 +5,7 @@ import type { EnvironmentalElement as ElementType, TerrainData } from "@/service
 import { Vector2, Vector3, Line3, Mesh } from "three";
 import { SceneElements } from "./SceneElements";
 import { EditorPreferences } from '@/services/editor-preferences';
+import { CameraControls } from './CameraControls';
 
 interface SceneContentProps {
   modules: Module[];
@@ -70,31 +71,38 @@ export function SceneContent({
   const { camera } = useThree();
 
   return (
-    <SceneElements
-      modules={modules}
-      selectedModuleId={selectedModuleId}
-      transformMode={transformMode}
-      onModuleSelect={onModuleSelect}
-      onModuleUpdate={onModuleUpdate}
-      onModuleDelete={onModuleDelete}
-      connections={connections}
-      environmentalElements={environmentalElements}
-      terrain={terrain}
-      onEnvironmentalElementSelect={onEnvironmentalElementSelect}
-      gridSnap={gridSnap}
-      isDraggingOver={isDraggingOver}
-      previewMesh={previewMesh}
-      rotationAngle={rotationAngle}
-      showGuides={showGuides}
-      snapPoints={snapPoints}
-      snapLines={snapLines}
-      previewPosition={previewPosition}
-      readOnly={readOnly}
-      setRotationAngle={setRotationAngle}
-      isTransforming={isTransforming}
-      onTransformStart={onTransformStart}
-      onTransformEnd={onTransformEnd}
-      editorPreferences={editorPreferences}
-    />
+    <>
+      <CameraControls 
+        controlsRef={controlsRef}
+        enabled={!isTransforming}
+      />
+      <SceneElements
+        modules={modules}
+        selectedModuleId={selectedModuleId}
+        transformMode={transformMode}
+        onModuleSelect={onModuleSelect}
+        onModuleUpdate={onModuleUpdate}
+        onModuleDelete={onModuleDelete}
+        connections={connections}
+        environmentalElements={environmentalElements}
+        terrain={terrain}
+        onEnvironmentalElementSelect={onEnvironmentalElementSelect}
+        gridSnap={gridSnap}
+        isDraggingOver={isDraggingOver}
+        previewMesh={previewMesh}
+        rotationAngle={rotationAngle}
+        showGuides={showGuides}
+        snapPoints={snapPoints}
+        snapLines={snapLines}
+        previewPosition={previewPosition}
+        readOnly={readOnly}
+        setRotationAngle={setRotationAngle}
+        isTransforming={isTransforming}
+        onTransformStart={onTransformStart}
+        onTransformEnd={onTransformEnd}
+        editorPreferences={editorPreferences}
+        controlsRef={controlsRef}
+      />
+    </>
   );
 }

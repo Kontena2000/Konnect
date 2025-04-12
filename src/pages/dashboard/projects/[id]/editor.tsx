@@ -70,6 +70,14 @@ export default function LayoutEditorPage() {
     }
   }, [modules, connections, history, historyIndex]);
 
+  // Initialize history with initial state
+  useEffect(() => {
+    if (modules.length > 0 && history.length === 0) {
+      setHistory([{ modules: [...modules], connections: [...connections] }]);
+      setHistoryIndex(0);
+    }
+  }, [modules, connections, history.length]);
+
   // Handle module drag start
   const handleModuleDragStart = useCallback((module: Module) => {
     // Create a new module instance with unique ID
@@ -117,6 +125,7 @@ export default function LayoutEditorPage() {
 
   // Undo handler
   const handleUndo = useCallback(() => {
+    console.log('Undo called, history length:', history.length, 'historyIndex:', historyIndex);
     if (history.length > 0 && historyIndex > 0) {
       const newIndex = historyIndex - 1;
       const previousState = history[newIndex];
@@ -134,6 +143,7 @@ export default function LayoutEditorPage() {
 
   // Redo handler
   const handleRedo = useCallback(() => {
+    console.log('Redo called, history length:', history.length, 'historyIndex:', historyIndex);
     if (history.length > 0 && historyIndex < history.length - 1) {
       const newIndex = historyIndex + 1;
       const nextState = history[newIndex];
@@ -152,6 +162,7 @@ export default function LayoutEditorPage() {
   // Debounced save with performance monitoring
   const saveTimeout = useRef<NodeJS.Timeout>();
   const handleSave = useCallback(async () => {
+    console.log('Save called, projectId:', projectId, 'user:', user);
     if (!projectId || !user) {
       toast({
         title: 'Error',
@@ -178,9 +189,11 @@ export default function LayoutEditorPage() {
       if (layout?.id) {
         // Update existing layout
         await layoutService.updateLayout(layout.id, layoutData);
+        console.log('Layout updated:', layout.id);
       } else {
         // Create new layout
         const newLayoutId = await layoutService.createLayout(layoutData);
+        console.log('New layout created:', newLayoutId);
         
         // Update URL to include the new layout ID
         router.replace({
