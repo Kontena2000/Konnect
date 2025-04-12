@@ -95,12 +95,20 @@ export function Toolbox({
         const camera = controlsRef.current.object;
         const target = controlsRef.current.target;
         
-        // Simple approach: set fixed isometric position
-        const distance = 15;
-        camera.position.set(distance, distance, distance);
+        // Set fixed isometric position (45° angles)
+        const distance = 20;
+        
+        // Calculate position using equal angles for isometric view
+        // This creates a true isometric view at 45° angles
+        const x = distance * Math.sqrt(1/3);
+        const y = distance * Math.sqrt(1/3);
+        const z = distance * Math.sqrt(1/3);
+        
+        // Set camera position and look at target
+        camera.position.set(x, y, z);
         camera.lookAt(target);
         
-        // Update controls
+        // Force update controls
         controlsRef.current.update();
         
         toast({
