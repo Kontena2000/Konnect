@@ -188,7 +188,7 @@ export default function LayoutEditorPage() {
       // Save layout
       if (layout?.id) {
         // Update existing layout
-        await layoutService.updateLayout(layout.id, layoutData);
+        await layoutService.updateLayout(layout.id, layoutData, user);
         console.log('Layout updated:', layout.id);
       } else {
         // Create new layout
@@ -402,6 +402,17 @@ export default function LayoutEditorPage() {
             />
           </div>
         </ErrorBoundary>
+      </div>
+      
+      {/* Add Save Button for direct access */}
+      <div className='absolute bottom-4 right-4 z-10'>
+        <Button 
+          onClick={handleSave}
+          className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+        >
+          <Save className='mr-2 h-4 w-4' />
+          Save Layout
+        </Button>
       </div>
     </AppLayout>
   );
