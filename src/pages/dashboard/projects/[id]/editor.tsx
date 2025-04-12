@@ -180,20 +180,48 @@ export default function LayoutEditorPage() {
         name: layout?.name || `Layout ${new Date().toLocaleString()}`,
         projectId: projectId as string,
         userId: user.uid,
-        modules: modules,
-        connections: connections,
+        modules: modules.map(module => ({
+          ...module,
+          // Ensure position, rotation, and scale are numbers
+          position: module.position.map(Number),
+          rotation: module.rotation.map(Number),
+          scale: module.scale.map(Number)
+        })),
+        connections: connections.map(connection => ({
+          ...connection,
+          // Ensure source and target points are numbers
+          sourcePoint: connection.sourcePoint.map(Number) as [number, number, number],
+          targetPoint: connection.targetPoint.map(Number) as [number, number, number],
+          // Ensure intermediate points are numbers if they exist
+          intermediatePoints: connection.intermediatePoints 
+            ? connection.intermediatePoints.map(point => point.map(Number) as [number, number, number]) 
+            : undefined
+        })),
         lastModified: new Date().toISOString(),
       };
+      
+      console.log('Saving layout with data:', { 
+        ...layoutData, 
+        modules: layoutData.modules.length, 
+        connections: layoutData.connections.length 
+      });
       
       // Save layout
       if (layout?.id) {
         // Update existing layout
         await layoutService.updateLayout(layout.id, layoutData, user);
-        console.log('Layout updated:', layout.id);
+        console.log('Layout updated successfully:', layout.id);
+        
+        // Update local state to reflect the changes
+        setLayout(prev => ({
+          ...prev,
+          ...layoutData,
+          lastModified: new Date().toISOString()
+        }));
       } else {
         // Create new layout
         const newLayoutId = await layoutService.createLayout(layoutData);
-        console.log('New layout created:', newLayoutId);
+        console.log('New layout created successfully:', newLayoutId);
         
         // Update URL to include the new layout ID
         router.replace({
@@ -202,7 +230,12 @@ export default function LayoutEditorPage() {
         }, undefined, { shallow: true });
         
         // Update local state
-        setLayout({ ...layoutData, id: newLayoutId });
+        setLayout({ 
+          ...layoutData, 
+          id: newLayoutId,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
       }
       
       // Log performance
@@ -222,7 +255,9 @@ export default function LayoutEditorPage() {
       console.error('Error saving layout:', err);
       toast({
         title: 'Error',
-        description: 'Failed to save layout',
+        description: typeof err === 'object' && err !== null && 'message' in err 
+          ? String(err.message) 
+          : 'Failed to save layout',
         variant: 'destructive'
       });
     }
