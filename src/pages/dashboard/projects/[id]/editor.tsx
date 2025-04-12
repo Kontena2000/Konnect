@@ -1,4 +1,3 @@
-
 import { useEffect, useState, useCallback, useRef, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -18,6 +17,7 @@ import { Button } from '@/components/ui/button';
 import { Save } from 'lucide-react';
 import layoutService from '@/services/layout';
 import { waitForFirebaseBootstrap } from '@/utils/firebaseBootstrap';
+import { toast } from '@/hooks/use-toast';
 
 interface EditorState {
   modules: Module[];
@@ -117,57 +117,103 @@ export default function LayoutEditorPage() {
 
   // Undo handler
   const handleUndo = useCallback(() => {
-    if (undoStack.length > 0) {
-      isUndoingOrRedoing.current = true;
-      const previousState = undoStack[undoStack.length - 1];
-      const currentState = { modules, connections };
+    if (history.length > 0 && historyIndex > 0) {
+      const newIndex = historyIndex - 1;
+      const previousState = history[newIndex];
       
-      setUndoStack(prev => prev.slice(0, -1));
-      setRedoStack(prev => [...prev, currentState]);
+      isUndoingOrRedoing.current = true;
       setModules(previousState.modules);
       setConnections(previousState.connections);
+      setHistoryIndex(newIndex);
       
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
       }, 50);
     }
-  }, [undoStack, modules, connections]);
+  }, [history, historyIndex]);
 
   // Redo handler
   const handleRedo = useCallback(() => {
-    if (redoStack.length > 0) {
-      isUndoingOrRedoing.current = true;
-      const nextState = redoStack[redoStack.length - 1];
-      const currentState = { modules, connections };
+    if (history.length > 0 && historyIndex < history.length - 1) {
+      const newIndex = historyIndex + 1;
+      const nextState = history[newIndex];
       
-      setUndoStack(prev => [...prev, currentState]);
-      setRedoStack(prev => prev.slice(0, -1));
+      isUndoingOrRedoing.current = true;
       setModules(nextState.modules);
       setConnections(nextState.connections);
+      setHistoryIndex(newIndex);
       
       setTimeout(() => {
         isUndoingOrRedoing.current = false;
       }, 50);
     }
-  }, [redoStack, modules, connections]);
+  }, [history, historyIndex]);
 
   // Debounced save with performance monitoring
   const saveTimeout = useRef<NodeJS.Timeout>();
-  const handleSave = useCallback(() => {
-    if (saveTimeout.current) {
-      clearTimeout(saveTimeout.current);
+  const handleSave = useCallback(async () => {
+    if (!projectId || !user) {
+      toast({
+        title: 'Error',
+        description: 'Cannot save layout: missing project or user information',
+        variant: 'destructive'
+      });
+      return;
     }
 
-    const startTime = performance.now();
-    saveTimeout.current = setTimeout(() => {
-      // Implement save logic here
+    try {
+      const startTime = performance.now();
+      
+      // Prepare layout data
+      const layoutData = {
+        name: layout?.name || `Layout ${new Date().toLocaleString()}`,
+        projectId: projectId as string,
+        userId: user.uid,
+        modules: modules,
+        connections: connections,
+        lastModified: new Date().toISOString(),
+      };
+      
+      // Save layout
+      if (layout?.id) {
+        // Update existing layout
+        await layoutService.updateLayout(layout.id, layoutData);
+      } else {
+        // Create new layout
+        const newLayoutId = await layoutService.createLayout(layoutData);
+        
+        // Update URL to include the new layout ID
+        router.replace({
+          pathname: router.pathname,
+          query: { ...router.query, layoutId: newLayoutId }
+        }, undefined, { shallow: true });
+        
+        // Update local state
+        setLayout({ ...layoutData, id: newLayoutId });
+      }
+      
+      // Log performance
       const duration = performance.now() - startTime;
       firebaseMonitor.logPerformanceMetric({
+        operationName: 'saveLayout',
         operationDuration: duration,
         timestamp: Date.now()
       });
-    }, 1000);
-  }, []);
+      
+      toast({
+        title: 'Success',
+        description: 'Layout saved successfully',
+        duration: 2000
+      });
+    } catch (err) {
+      console.error('Error saving layout:', err);
+      toast({
+        title: 'Error',
+        description: 'Failed to save layout',
+        variant: 'destructive'
+      });
+    }
+  }, [projectId, user, layout, modules, connections, router]);
 
   // Cleanup timeouts
   useEffect(() => {
