@@ -9,7 +9,6 @@ import { Vector2, Vector3, Line3, Mesh, Object3D, BufferAttribute, BufferGeometr
 import { EnvironmentalElement } from "@/components/environment/EnvironmentalElement";
 import { TerrainView } from "@/components/environment/TerrainView";
 import { GridHelper } from "./GridHelper";
-import { CameraControls } from "./CameraControls";
 import { Html } from "@react-three/drei";
 import { EditorPreferences } from "@/services/editor-preferences";
 
@@ -97,10 +96,6 @@ export function SceneElements({
         shadow-mapSize-height={2048}
       />
       
-      <CameraControls 
-        controlsRef={controlsRef}
-        enabled={!isTransforming}
-      />
       <GridHelper preferences={editorPreferences?.grid} />
 
       {terrain && <TerrainView terrain={terrain} />}

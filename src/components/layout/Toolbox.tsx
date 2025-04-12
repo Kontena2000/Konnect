@@ -91,22 +91,13 @@ export function Toolbox({
       try {
         console.log('3D View button clicked, controlsRef:', controlsRef.current);
         
-        // Directly set camera position for isometric view
+        // Get camera and target from controls
         const camera = controlsRef.current.object;
         const target = controlsRef.current.target;
         
-        // Set distance and angles for isometric view
+        // Simple approach: set fixed isometric position
         const distance = 15;
-        const azimuthalAngle = Math.PI / 4; // 45 degrees
-        const polarAngle = Math.PI / 4; // 45 degrees
-        
-        // Calculate position using spherical coordinates
-        const x = target.x + distance * Math.sin(polarAngle) * Math.cos(azimuthalAngle);
-        const y = target.y + distance * Math.cos(polarAngle);
-        const z = target.z + distance * Math.sin(polarAngle) * Math.sin(azimuthalAngle);
-        
-        // Set camera position and look at target
-        camera.position.set(x, y, z);
+        camera.position.set(distance, distance, distance);
         camera.lookAt(target);
         
         // Update controls
