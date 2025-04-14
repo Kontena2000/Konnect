@@ -318,6 +318,8 @@ export default function ProjectDetailsPage() {
     setSelectedCalculationId(calculationId);
     setCalculationModalOpen(true);
   };
+
+  
   
   const refreshCalculations = async () => {
     if (!id) return;
@@ -1122,7 +1124,7 @@ export default function ProjectDetailsPage() {
                             </div>
                           )}
                           
-                          {/* Power Requirements */}
+                          {/* Power Requirements */} 
                           {calculation.results?.power && (
                             <div className='bg-muted/10 p-3 rounded-md'>
                               <h4 className='text-sm font-medium mb-2 flex items-center gap-1'>
@@ -1130,20 +1132,20 @@ export default function ProjectDetailsPage() {
                                 Power Requirements
                               </h4>
                               <p className='text-xl font-bold text-amber-500'>
-                                {calculation.results.power.upsCapacity ? 
-                                  formatNumber(calculation.results.power.upsCapacity) : 
+                                {calculation.results.power.ups?.requiredCapacity ? 
+                                  formatNumber(calculation.results.power.ups.requiredCapacity) : 
                                   calculation.results.power.totalPower ? 
                                     formatNumber(calculation.results.power.totalPower) : '0'} kW
-                                {calculation.results.power.upsCapacity ? ' UPS Capacity' : ''}
+                                {calculation.results.power.ups?.requiredCapacity ? ' UPS Capacity' : ''}
                               </p>
-                              {calculation.results.power.upsModules && (
+                              {calculation.results.power.ups?.redundantModules && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  {calculation.results.power.upsModules} x {calculation.results.power.upsModuleSize || 250}kW UPS Modules
+                                  {calculation.results.power.ups.redundantModules} x {calculation.results.power.ups?.moduleSize || 250}kW UPS Modules
                                 </div>
                               )}
-                              {calculation.results.power.redundancy && (
+                              {calculation.results.power.ups?.redundancyMode && (
                                 <div className='text-xs text-muted-foreground'>
-                                  {calculation.results.power.redundancy} Redundancy
+                                  {calculation.results.power.ups.redundancyMode} Redundancy
                                 </div>
                               )}
                             </div>
@@ -1157,21 +1159,26 @@ export default function ProjectDetailsPage() {
                                 Cooling Solution
                               </h4>
                               <p className='text-xl font-bold text-blue-500'>
-                                {calculation.coolingType === 'hybrid' ? (
+                                {calculation.results.cooling.type === 'dlc' ? (
                                   <>
-                                    {formatNumber(calculation.results.cooling.dlcCapacity || 0)} kW DLC + {' '}
-                                    {formatNumber(calculation.results.cooling.airCapacity || 0)} kW Air
+                                    {formatNumber(calculation.results.cooling.dlcCoolingCapacity || 0)} kW DLC + {' '}
+                                    {formatNumber(calculation.results.cooling.residualCoolingCapacity || 0)} kW Air
                                   </>
                                 ) : (
                                   <>
-                                    {formatNumber(calculation.results.cooling.coolingCapacity || 
-                                      calculation.results.cooling.totalCapacity || 0)} kW
+                                    {formatNumber(calculation.results.cooling.totalCapacity || 0)} kW
+                                    {calculation.results.cooling.type ? ` ${calculation.results.cooling.type.charAt(0).toUpperCase() + calculation.results.cooling.type.slice(1)} Cooling` : ''}
                                   </>
                                 )}
                               </p>
-                              {calculation.results.cooling.flowRate && (
+                              {calculation.results.cooling.type === 'dlc' && calculation.results.cooling.dlcFlowRate && (
                                 <div className='text-xs text-muted-foreground mt-1'>
-                                  {formatNumber(calculation.results.cooling.flowRate)} L/min Flow Rate
+                                  {formatNumber(calculation.results.cooling.dlcFlowRate)} L/min Flow Rate
+                                </div>
+                              )}
+                              {calculation.results.cooling.type !== 'dlc' && calculation.results.cooling.rdhxUnits && (
+                                <div className='text-xs text-muted-foreground mt-1'>
+                                  {calculation.results.cooling.rdhxUnits} RDHX Units
                                 </div>
                               )}
                             </div>
