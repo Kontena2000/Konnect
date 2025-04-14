@@ -69,7 +69,7 @@ export function ModuleObject({
 
   const initialPosition = useMemo(() => new Vector3(
     module.position[0],
-    module.position[1] + 5,
+    module.position[1],
     module.position[2]
   ), [module.position]);
 

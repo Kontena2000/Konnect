@@ -365,11 +365,26 @@ export default function LayoutEditorPage() {
               
               // Set modules and connections from layout data
               if (layoutData.modules) {
-                setModules(layoutData.modules);
+                const processedModules = layoutData.modules.map(module => ({
+                  ...module,
+                  position: module.position.map(Number) as [number, number, number],
+                  rotation: module.rotation.map(Number) as [number, number, number],
+                  scale: module.scale.map(Number) as [number, number, number]
+                }));
+                setModules(processedModules);
+                console.log('Loaded modules with processed positions:', processedModules.length);
               }
               
               if (layoutData.connections) {
-                setConnections(layoutData.connections);
+                const processedConnections = layoutData.connections.map(connection => ({
+                  ...connection,
+                  sourcePoint: connection.sourcePoint.map(Number) as [number, number, number],
+                  targetPoint: connection.targetPoint.map(Number) as [number, number, number],
+                  intermediatePoints: connection.intermediatePoints 
+                    ? connection.intermediatePoints.map(point => point.map(Number) as [number, number, number]) 
+                    : undefined
+                }));
+                setConnections(processedConnections);
               }
             } else {
               setError('Layout does not belong to this project');
@@ -421,7 +436,7 @@ export default function LayoutEditorPage() {
     <AppLayout fullWidth noPadding>
       <Toolbox 
           onModuleDragStart={handleModuleDragStart}
-          onSave={handleSave}
+          onSave={() => document.getElementById('save-layout-trigger')?.click()}
           onUndo={handleUndo}
           onRedo={handleRedo}
           controlsRef={controlsRef}
@@ -445,15 +460,54 @@ export default function LayoutEditorPage() {
         </ErrorBoundary>
       </div>
       
-      {/* Add Save Button for direct access */}
+      {/* Add Save Button with modal dialog */}
       <div className='absolute bottom-4 right-4 z-10'>
-        <Button 
-          onClick={handleSave}
-          className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
-        >
-          <Save className='mr-2 h-4 w-4' />
-          Save Layout
-        </Button>
+        <SaveLayoutDialog
+          layoutData={{
+            id: layout?.id,
+            projectId: projectId as string,
+            name: layout?.name || '',
+            description: layout?.description || '',
+            modules: modules,
+            connections: connections
+          }}
+          onSaveComplete={(layoutId, projectId) => {
+            if (!layout?.id) {
+              router.replace({
+                pathname: router.pathname,
+                query: { ...router.query, layoutId }
+              }, undefined, { shallow: true });
+              
+              // Update local state
+              setLayout(prev => ({ 
+                ...prev,
+                id: layoutId,
+                projectId,
+                lastModified: new Date().toISOString()
+              }));
+            } else {
+              setLayout(prev => ({
+                ...prev,
+                lastModified: new Date().toISOString()
+              }));
+            }
+            
+            toast({
+              title: "Success",
+              description: layout?.id ? "Layout updated successfully" : "New layout created successfully",
+              duration: 2000
+            });
+          }}
+          trigger={
+            <Button 
+              id="save-layout-trigger"
+              className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+            >
+              <Save className='mr-2 h-4 w-4' />
+              Save Layout
+            </Button>
+          }
+        />
       </div>
     </AppLayout>
   );

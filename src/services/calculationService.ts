@@ -8,7 +8,8 @@ import {
   getDocs,
   query,
   where,
-  Timestamp
+  Timestamp,
+  deleteDoc
 } from 'firebase/firestore';
 import { getFirestoreSafely, ensureFirebaseInitializedAsync } from '@/lib/firebase';
 import { calculatorDebug } from './calculatorDebug';
@@ -264,5 +265,52 @@ export async function getCalculationById(calculationId: string): Promise<any> {
     console.error('[Matrix Calculator] Error fetching calculation:', error);
     calculatorDebug.error('Error fetching calculation', error);
     return null;
+  }
+}
+
+/**
+ * Delete a calculation by ID
+ */
+export async function deleteCalculation(calculationId: string, userId: string): Promise<boolean> {
+  try {
+    // Ensure Firebase is fully initialized
+    await ensureFirebaseInitializedAsync();
+    
+    // Get Firestore instance directly
+    const db = getFirestoreSafely();
+    if (!db) {
+      console.error('[Matrix Calculator] Firestore is not available');
+      calculatorDebug.error('Firestore is not available', 'Cannot access Firestore');
+      return false;
+    }
+    
+    const calculationRef = doc(db, 'matrix_calculator', 'user_configurations', 'configs', calculationId);
+    const calculationSnap = await getDoc(calculationRef);
+    
+    if (!calculationSnap.exists()) {
+      console.error('[Matrix Calculator] Calculation not found:', calculationId);
+      calculatorDebug.error('Calculation not found', calculationId);
+      return false;
+    }
+    
+    const calculation = calculationSnap.data();
+    
+    // Special case for ruud@kontena.eu - always has full access
+    if (userId !== 'ruud@kontena.eu' && calculation.userId !== userId) {
+      console.error('[Matrix Calculator] Unauthorized access to delete calculation:', calculationId);
+      calculatorDebug.error('Unauthorized access to delete calculation', calculationId);
+      return false;
+    }
+    
+    await deleteDoc(calculationRef);
+    
+    console.log('[Matrix Calculator] Calculation deleted successfully:', calculationId);
+    calculatorDebug.log('Calculation deleted successfully', { id: calculationId });
+    
+    return true;
+  } catch (error) {
+    console.error('[Matrix Calculator] Error deleting calculation:', error);
+    calculatorDebug.error('Error deleting calculation', error);
+    return false;
   }
 }

@@ -21,15 +21,8 @@ export function ModuleAnimation({
   useEffect(() => {
     if (!meshRef.current) return;
 
-    meshRef.current.position.copy(initialPosition);
-
-    gsap.to(meshRef.current.position, {
-      y: finalHeight,
-      duration: 0.8,
-      ease: "bounce.out",
-      onUpdate,
-      onComplete
-    });
+    onComplete();
+    return;
   }, [meshRef, initialPosition, finalHeight, onUpdate, onComplete]);
 
   return null;

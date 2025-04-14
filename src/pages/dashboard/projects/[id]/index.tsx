@@ -8,6 +8,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { 
   Dialog, 
   DialogContent, 
@@ -29,6 +30,7 @@ import {
   AlertDialogTrigger
 } from "@/components/ui/alert-dialog";
 import { FileText, Trash2, Edit, Save, Loader2, LayoutGrid, Calculator, Eye, ArrowLeft, Plus, Copy, Building, Mail, Phone, MapPin, Zap, Snowflake, DollarSign, Server, Thermometer, Download } from 'lucide-react';
+import { deleteCalculation } from '@/services/calculationService';
 import { Badge } from "@/components/ui/badge";
 import projectService, { Project } from "@/services/project";
 import layoutService, { Layout } from "@/services/layout";
@@ -39,6 +41,7 @@ import { collection, query, where, getDocs } from "firebase/firestore";
 import { DeleteLayoutDialog } from '@/components/layout/DeleteLayoutDialog';
 import { CalculationDetailsModal } from '@/components/matrix-calculator/CalculationDetailsModal';
 import { generateProjectPdfReport, captureLayoutImage } from '@/services/projectReportService';
+import { LoadingDialog } from "@/components/ui/loading-dialog";
 
 export default function ProjectDetailsPage() {
   const router = useRouter();
@@ -61,10 +64,16 @@ export default function ProjectDetailsPage() {
   const [selectedLayoutIds, setSelectedLayoutIds] = useState<string[]>([]);
   const [selectedCalculationIds, setSelectedCalculationIds] = useState<string[]>([]);
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [deletingCalculation, setDeletingCalculation] = useState(false);
+  const [deletingCalculationName, setDeletingCalculationName] = useState('');
+  const [deleteCalculationDialogOpen, setDeleteCalculationDialogOpen] = useState(false);
+  const [calculationToDelete, setCalculationToDelete] = useState<{id: string, name: string} | null>(null);
   
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    status: '',
     clientName: '',
     clientEmail: '',
     clientPhone: '',
@@ -98,6 +107,7 @@ export default function ProjectDetailsPage() {
         setFormData({
           name: projectData.name,
           description: projectData.description || '',
+          status: projectData.status || 'Planning',
           clientName: projectData.clientInfo?.name || '',
           clientEmail: projectData.clientInfo?.email || '',
           clientPhone: projectData.clientInfo?.phone || '',
@@ -168,6 +178,7 @@ export default function ProjectDetailsPage() {
       await projectService.updateProject(id as string, {
         name: formData.name,
         description: formData.description,
+        status: formData.status,
         clientInfo: updatedClientInfo
       }, user.uid);
       
@@ -175,6 +186,7 @@ export default function ProjectDetailsPage() {
         ...prev,
         name: formData.name,
         description: formData.description,
+        status: formData.status,
         clientInfo: {
           ...prev.clientInfo,
           name: formData.clientCompany,
@@ -262,34 +274,10 @@ export default function ProjectDetailsPage() {
     }
   };
 
-  const createNewLayout = async () => {
+  const createNewLayout = () => {
     if (!id) return;
     
-    setCreatingLayout(true);
-    try {
-      const layoutId = await layoutService.createLayout({
-        projectId: id as string,
-        name: "New Layout",
-        description: "Created on " + new Date().toLocaleDateString(),
-        modules: [],
-        connections: []
-      });
-      
-      toast({
-        title: 'Success',
-        description: 'New layout created successfully'
-      });
-      
-      router.push(`/dashboard/projects/${id}/editor?layoutId=${layoutId}`);
-    } catch (error) {
-      console.error("Error creating layout:", error);
-      toast({
-        variant: 'destructive',
-        title: 'Error',
-        description: 'Failed to create new layout'
-      });
-      setCreatingLayout(false);
-    }
+    router.push(`/dashboard/projects/${id}/editor`);
   };
 
   const createNewCalculation = () => {
@@ -329,6 +317,74 @@ export default function ProjectDetailsPage() {
   const handleViewCalculation = (calculationId: string) => {
     setSelectedCalculationId(calculationId);
     setCalculationModalOpen(true);
+  };
+  
+  const refreshCalculations = async () => {
+    if (!id) return;
+    
+    try {
+      const db = getFirestoreSafely();
+      if (!db) {
+        console.error('Firestore not available');
+        return;
+      }
+      
+      const calculationsQuery = query(
+        collection(db, 'matrix_calculator', 'user_configurations', 'configs'),
+        where('projectId', '==', id)
+      );
+      const calculationsSnapshot = await getDocs(calculationsQuery);
+      const calculationsData = calculationsSnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      }));
+      setCalculations(calculationsData);
+    } catch (error) {
+      console.error('Error refreshing calculations:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: 'Failed to refresh calculations'
+      });
+    }
+  };
+  
+  const handleDeleteCalculation = async (calculationId: string, calculationName: string = 'this calculation') => {
+    if (!user) return;
+    
+    try {
+      setDeletingCalculation(true);
+      setDeletingCalculationName(calculationName);
+      
+      await new Promise(resolve => setTimeout(resolve, 100));
+      
+      const success = await deleteCalculation(calculationId, user.uid);
+      
+      if (success) {
+        toast({
+          title: 'Success',
+          description: 'Calculation deleted successfully'
+        });
+        
+        refreshCalculations();
+      } else {
+        toast({
+          variant: 'destructive',
+          title: 'Error',
+          description: 'Failed to delete calculation'
+        });
+      }
+    } catch (error) {
+      console.error('Error deleting calculation:', error);
+      toast({
+        variant: 'destructive',
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete calculation'
+      });
+    } finally {
+      setDeletingCalculation(false);
+      setDeletingCalculationName('');
+    }
   };
 
   // Update the generateProjectReport function to capture actual layout images
@@ -580,6 +636,94 @@ export default function ProjectDetailsPage() {
                 <CardDescription>Detailed information about this project</CardDescription>
               </div>
               <div className='flex items-center gap-2'>
+                <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+                  <DialogTrigger asChild>
+                    <Button 
+                      variant='outline'
+                      size='sm'
+                      className='h-8 text-xs flex items-center gap-1 bg-white border-[#4A7AFF] text-[#4A7AFF] hover:bg-[#4A7AFF]/10'
+                    >
+                      <Edit className='h-3 w-3' />
+                      <span>Edit Project</span>
+                    </Button>
+                  </DialogTrigger>
+                  <DialogContent>
+                    <DialogHeader>
+                      <DialogTitle>Edit Project</DialogTitle>
+                      <DialogDescription>
+                        Update the project name and description.
+                      </DialogDescription>
+                    </DialogHeader>
+                    <div className='space-y-4 py-4'>
+                      <div className='space-y-2'>
+                        <Label htmlFor="name">Project Name</Label>
+                        <Input
+                          id="name"
+                          name="name"
+                          value={formData.name}
+                          onChange={handleInputChange}
+                          placeholder="Enter project name"
+                        />
+                      </div>
+                      <div className='space-y-2'>
+                        <Label htmlFor="description">Description</Label>
+                        <Textarea
+                          id="description"
+                          name="description"
+                          value={formData.description}
+                          onChange={handleInputChange}
+                          placeholder="Enter project description"
+                          rows={4}
+                        />
+                      </div>
+                      <div className='space-y-2'>
+                        <Label htmlFor="status">Status</Label>
+                        <Select
+                          name="status"
+                          value={formData.status}
+                          onValueChange={(value) => {
+                            setFormData(prev => ({
+                              ...prev,
+                              status: value
+                            }));
+                          }}
+                        >
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select status" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="Planning">Planning</SelectItem>
+                            <SelectItem value="in-progress">In Progress</SelectItem>
+                            <SelectItem value="completed">Completed</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button
+                        onClick={async () => {
+                          await handleSaveProject();
+                          setEditDialogOpen(false);
+                        }}
+                        disabled={saving}
+                        className='bg-[#4A7AFF] hover:bg-[#4A7AFF]/80 text-white'
+                      >
+                        {saving ? (
+                          <>
+                            <Loader2 className='mr-2 h-4 w-4 animate-spin' />
+                            Saving...
+                          </>
+                        ) : (
+                          <>
+                            <Save className='mr-2 h-4 w-4' />
+                            Save Changes
+                          </>
+                        )}
+                      </Button>
+                    </DialogFooter>
+                  </DialogContent>
+                </Dialog>
+                
                 <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
                   <DialogTrigger asChild>
                     <Button 
@@ -889,7 +1033,7 @@ export default function ProjectDetailsPage() {
                   )}
                 </Button>
               </div>
-              <div className='grid grid-cols-1 gap-4'>
+              <div className='grid grid-cols-2 gap-4'>
                 {calculations.length > 0 ? (
                   calculations.map((calculation) => (
                     <Card key={calculation.id} className='overflow-hidden hover:shadow-md transition-shadow border border-muted'>
@@ -919,6 +1063,21 @@ export default function ProjectDetailsPage() {
                             >
                               <Eye className='mr-2 h-4 w-4' />
                               View
+                            </Button>
+                            <Button 
+                              variant='outline' 
+                              size='sm'
+                              className='hover:bg-red-100 text-red-500 border-red-200'
+                              onClick={() => {
+                                setCalculationToDelete({
+                                  id: calculation.id,
+                                  name: calculation.name || 'Untitled Calculation'
+                                });
+                                setDeleteCalculationDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className='mr-2 h-4 w-4' />
+                              Delete
                             </Button>
                           </div>
                         </div>
@@ -1177,6 +1336,40 @@ export default function ProjectDetailsPage() {
         </div>
       </div>
 
+      {/* Loading Dialog for Calculation Deletion */}
+      <LoadingDialog 
+        open={deletingCalculation} 
+        title='Deleting Calculation' 
+        description={`Please wait while we delete ${deletingCalculationName || 'this calculation'}...`}
+      />
+      
+      {/* Delete Calculation Dialog */}
+      <AlertDialog open={deleteCalculationDialogOpen} onOpenChange={setDeleteCalculationDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Are you sure?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this calculation.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={() => {
+                setDeleteCalculationDialogOpen(false);
+                if (calculationToDelete) {
+                  handleDeleteCalculation(calculationToDelete.id, calculationToDelete.name);
+                }
+              }}
+              className='bg-red-500 hover:bg-red-600'
+            >
+              <Trash2 className='mr-2 h-4 w-4' />
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+      
       {/* Calculation Details Modal */}
       {selectedCalculationId && (
         <CalculationDetailsModal

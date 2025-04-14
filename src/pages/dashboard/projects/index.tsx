@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { AppLayout } from '@/components/layout/AppLayout';
 import { useAuth } from "@/contexts/AuthContext";
 import projectService, { Project, ProjectError } from "@/services/project";
-import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardTitle, CardContent, CardFooter } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Search, Plus, Loader2, Trash2, Clock, Calendar, Building2, Mail, Phone, MapPin, Copy } from 'lucide-react';
 import Link from "next/link";
@@ -16,13 +16,16 @@ import { getFirestoreSafely } from '@/lib/firebase';
 import { collection, query, where, getDocs } from 'firebase/firestore';
 import layoutService from '@/services/layout';
 import { LoadingDialog } from '@/components/ui/loading-dialog';
+import { getProjectCalculations } from '@/services/calculationService';
 
 export default function ProjectsPage() {
   const { user, loading: authLoading } = useAuth();
   const [projects, setProjects] = useState<Project[]>([]);
   const [projectLayoutCounts, setProjectLayoutCounts] = useState<Record<string, number>>({});
+  const [projectCalculationCounts, setProjectCalculationCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(true);
   const [loadingLayoutCounts, setLoadingLayoutCounts] = useState(false);
+  const [loadingCalculationCounts, setLoadingCalculationCounts] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState('newest');
   const [deletingProjectId, setDeletingProjectId] = useState<string | null>(null);
@@ -78,11 +81,40 @@ export default function ProjectsPage() {
       setLoadingLayoutCounts(false);
     }
   };
+  
+  const fetchCalculationCounts = async () => {
+    if (!projects.length || !user) return;
+    
+    setLoadingCalculationCounts(true);
+    const counts: Record<string, number> = {};
+    
+    try {
+      console.log('Fetching calculation counts for', projects.length, 'projects');
+      
+      for (const project of projects) {
+        try {
+          const calculations = await getProjectCalculations(project.id);
+          counts[project.id] = calculations.length;
+          console.log(`Project ${project.id} has ${calculations.length} calculations`);
+        } catch (error) {
+          console.error(`Error counting calculations for project ${project.id}:`, error);
+          counts[project.id] = 0;
+        }
+      }
+      
+      console.log('Final calculation counts:', counts);
+      setProjectCalculationCounts(counts);
+    } catch (error) {
+      console.error('Error fetching calculation counts:', error);
+    } finally {
+      setLoadingCalculationCounts(false);
+    }
+  };
 
-  // Call fetchLayoutCounts when projects change
   useEffect(() => {
     if (projects.length > 0 && user) {
       fetchLayoutCounts();
+      fetchCalculationCounts();
     }
   }, [projects, user]);
 
@@ -271,8 +303,17 @@ export default function ProjectsPage() {
             {filteredAndSortedProjects.map((project) => (
               <Card key={project.id} className='flex flex-col h-full shadow-sm hover:shadow-md transition-shadow'>
                 <CardHeader className='pb-4'>
+                  <div className='flex gap-2'>
+                    <Badge variant='outline' className={`${
+                      project.status === 'completed' ? 'bg-green-100 text-green-800' : 
+                      project.status === 'in-progress' ? 'bg-blue-100 text-blue-800' : 
+                      'bg-yellow-100 text-yellow-800'
+                    }`}>
+                      {project.status || 'Planning'}
+                    </Badge>
+                  </div>
                   <div className='flex justify-between items-start'>
-                    <div className='space-y-2'>
+                    <div className='space-y-2'> 
                       <CardTitle className='text-xl'>{project.name}</CardTitle>
                       <div className='flex items-center gap-2 text-sm text-muted-foreground'>
                         <Calendar className='h-4 w-4' />
@@ -338,24 +379,18 @@ export default function ProjectsPage() {
                           <span>{project.clientInfo.name}</span>
                         </div>
                       )}
-                      {project.clientInfo?.email && (
-                        <div className='flex items-center gap-2 text-sm'>
+                      <div className='flex items-center gap-2 text-sm'>
                           <Mail className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.email}</span>
+                          <span>{project.clientInfo.email || 'No Email'}</span>
                         </div>
-                      )}
-                      {project.clientInfo?.phone && (
-                        <div className='flex items-center gap-2 text-sm'>
+                      <div className='flex items-center gap-2 text-sm'>
                           <Phone className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.phone}</span>
+                          <span>{project.clientInfo.phone || 'No Phone'}</span>
                         </div>
-                      )}
-                      {project.clientInfo?.address && (
-                        <div className='flex items-center gap-2 text-sm'>
-                          <MapPin className='h-4 w-4 text-muted-foreground' />
-                          <span>{project.clientInfo.address}</span>
-                        </div>
-                      )}
+                      <div className='flex items-center gap-2 text-sm'>
+                        <MapPin className='h-4 w-4 text-muted-foreground' />
+                        <span>{project.clientInfo.address || 'No Address'}</span>
+                      </div>
                     </div>
 
                     <div className='flex items-center gap-2 text-sm text-muted-foreground'>
@@ -368,21 +403,31 @@ export default function ProjectsPage() {
                           <Loader2 className='h-3 w-3 mr-1 animate-spin' />
                         ) : (
                           <span>{projectLayoutCounts[project.id] || 0}</span>
-                        )} Layouts
+                        )} &nbsp; Layouts
                       </Badge>
-                      {project.status && (
-                        <Badge variant='secondary'>{project.status}</Badge>
-                      )}
+                      <Badge variant='outline' className='bg-yellow-50'>
+                        {loadingCalculationCounts ? (
+                          <Loader2 className='h-3 w-3 mr-1 animate-spin' />
+                        ) : (
+                          <span>{projectCalculationCounts[project.id] || 0}</span>
+                        )} &nbsp; Calculations
+                      </Badge>
+                      
                     </div>
                   </div>
-                  <div className='flex flex-col gap-4'>
+                  
+                </CardContent>
+                <CardFooter>
+                  <div className='w-full flex justify-center'>
+                    <center>
                     <Link href={`/dashboard/projects/${project.id}`} className='block'>
                       <Button variant='outline' className='w-full bg-background hover:bg-accent'>
                         Open Project
                       </Button>
                     </Link>
+                    </center>
                   </div>
-                </CardContent>
+                </CardFooter>
               </Card>
             ))}
           </div>

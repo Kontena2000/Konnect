@@ -9,6 +9,9 @@ import { useToast } from "@/hooks/use-toast";
 import layoutService from "@/services/layout";
 import { Module } from "@/types/module";
 import { Connection } from "@/types/connection";
+import { Button } from "@/components/ui/button";
+import { Save } from "lucide-react";
+import { SaveLayoutDialog } from "@/components/layout/SaveLayoutDialog";
 
 export default function BlankEditorPage() {
   const { user, loading } = useAuth();
@@ -51,33 +54,8 @@ export default function BlankEditorPage() {
     }
   }, [modules, connections, history, historyIndex]);
 
-  const handleSave = async () => {
-    if (!user) return;
-    
-    setSaving(true);
-    try {
-      await layoutService.createLayout({
-        name: 'Blank Layout',
-        description: 'Created from blank editor',
-        modules,
-        connections,
-        projectId: 'default' // You might want to change this to a real project ID
-      });
-      
-      toast({
-        title: 'Layout saved',
-        description: 'Your layout has been saved successfully.',
-      });
-    } catch (error) {
-      console.error('Error saving layout:', error);
-      toast({
-        title: 'Error saving layout',
-        description: 'There was a problem saving your layout.',
-        variant: 'destructive',
-      });
-    } finally {
-      setSaving(false);
-    }
+  const handleSave = () => {
+    document.getElementById('save-layout-trigger')?.click();
   };
 
   const handleModuleDragStart = (module: Module) => {
@@ -141,6 +119,35 @@ export default function BlankEditorPage() {
             onDropPoint={handleDropPoint}
           />
         </div>
+      </div>
+      
+      {/* Add Save Layout Dialog */}
+      <div className='absolute bottom-4 right-4 z-10'>
+        <SaveLayoutDialog
+          layoutData={{
+            projectId: 'default',
+            name: 'Blank Layout',
+            description: 'Created from blank editor',
+            modules: modules,
+            connections: connections
+          }}
+          onSaveComplete={(layoutId, projectId) => {
+            toast({
+              title: "Success",
+              description: "Layout saved successfully",
+              duration: 2000
+            });
+          }}
+          trigger={
+            <Button 
+              id="save-layout-trigger"
+              className='bg-[#F1B73A] hover:bg-[#F1B73A]/90 text-black'
+            >
+              <Save className='mr-2 h-4 w-4' />
+              Save Layout
+            </Button>
+          }
+        />
       </div>
     </AppLayout>
   );
