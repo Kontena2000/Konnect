@@ -144,7 +144,7 @@ export function CalculationDetailsModal({
                 <div className='bg-gray-50 p-4 rounded-lg border'>
                   <h3 className='text-lg font-medium mb-3'>Configuration Summary</h3>
                   <p className='text-base'>
-                    75kW per rack, Direct Liquid Cooling, 28 racks
+                    {calculation.kwPerRack}kW per rack, {calculation.coolingType === 'dlc' ? 'Direct Liquid Cooling' : calculation.coolingType === 'air' ? 'Air Cooling' : calculation.coolingType === 'hybrid' ? 'Hybrid Cooling' : 'Immersion Cooling'}, {calculation.totalRacks} racks
                   </p>
                 </div>
 
@@ -154,13 +154,13 @@ export function CalculationDetailsModal({
                   <div className='bg-gray-50 p-4 rounded-lg border'>
                     <h3 className='text-lg font-medium mb-2'>Total Project Cost</h3>
                     <p className='text-2xl font-bold text-amber-500'>
-                      $54,847,059
+                      {formatCurrency(calculation.results?.cost?.totalProjectCost)}
                     </p>
                     <p className='text-sm text-gray-600'>
-                      $1,958,824 per rack
+                      {formatCurrency(calculation.results?.cost?.costPerRack)} per rack
                     </p>
                     <p className='text-sm text-gray-600'>
-                      $10,000 per kW
+                      {formatCurrency(calculation.results?.cost?.costPerKw)} per kW
                     </p>
                   </div>
 
@@ -168,13 +168,13 @@ export function CalculationDetailsModal({
                   <div className='bg-gray-50 p-4 rounded-lg border'>
                     <h3 className='text-lg font-medium mb-2'>Power Requirements</h3>
                     <p className='text-2xl font-bold text-amber-500'>
-                      2520 kW UPS Capacity
+                      {formatNumber(calculation.results?.power?.ups?.requiredCapacity)} kW UPS Capacity
                     </p>
                     <p className='text-sm text-gray-600'>
-                      11 x 250kW UPS Modules
+                      {calculation.results?.power?.ups?.totalModulesNeeded} x {calculation.results?.power?.ups?.moduleSize}kW UPS Modules
                     </p>
                     <p className='text-sm text-gray-600'>
-                      N+1 Redundancy
+                      {calculation.redundancyMode || 'N+1'} Redundancy
                     </p>
                   </div>
 
@@ -182,11 +182,18 @@ export function CalculationDetailsModal({
                   <div className='bg-gray-50 p-4 rounded-lg border'>
                     <h3 className='text-lg font-medium mb-2'>Cooling Solution</h3>
                     <p className='text-2xl font-bold text-amber-500'>
-                      1575 kW DLC + 525 kW Air
+                      {formatNumber(calculation.results?.cooling?.totalCapacity)} kW Total
                     </p>
-                    <p className='text-sm text-gray-600'>
-                      393.75 L/min Flow Rate
-                    </p>
+                    {calculation.results?.cooling?.dlcCoolingCapacity && (
+                      <p className='text-sm text-gray-600'>
+                        {formatNumber(calculation.results?.cooling?.dlcCoolingCapacity)} kW DLC
+                      </p>
+                    )}
+                    {calculation.results?.cooling?.residualCoolingCapacity && (
+                      <p className='text-sm text-gray-600'>
+                        {formatNumber(calculation.results?.cooling?.residualCoolingCapacity)} kW Air
+                      </p>
+                    )}
                   </div>
                 </div>
 
@@ -208,17 +215,22 @@ export function CalculationDetailsModal({
                         <div>
                           <h4 className='font-medium mb-2'>Power Distribution</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('Current per Row:', '47150 A')}
-                            {renderDataRow('Busbar Size:', 'busbar800A')}
-                            {renderDataRow('Current per Rack:', '120 A')}
+                            {renderDataRow('Current per Row:', `${formatNumber(calculation.results?.electrical?.currentPerRow)} A`)}
+                            {renderDataRow('Busbar Size:', calculation.results?.electrical?.busbarSize)}
+                            {renderDataRow('Current per Rack:', `${formatNumber(calculation.results?.electrical?.currentPerRack)} A`)}
+                            {calculation.results?.electrical?.multiplicityWarning && (
+                              <div className='text-yellow-600 text-sm mt-2'>
+                                {calculation.results.electrical.multiplicityWarning}
+                              </div>
+                            )}
                           </div>
                         </div>
 
                         <div>
                           <h4 className='font-medium mb-2'>Rack PDUs</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('Type:', 'standard16 A')}
-                            {renderDataRow('Quantity:', '28')}
+                            {renderDataRow('Type:', calculation.results?.electrical?.rpdu)}
+                            {renderDataRow('Quantity:', calculation.totalRacks)}
                           </div>
                         </div>
                       </div>
@@ -226,18 +238,18 @@ export function CalculationDetailsModal({
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Tap-Off Boxes</h4>
                         <div className='space-y-2'>
-                          {renderDataRow('Type:', 'standard63 A')}
-                          {renderDataRow('Quantity:', '28')}
+                          {renderDataRow('Type:', calculation.results?.electrical?.tapOffBox)}
+                          {renderDataRow('Quantity:', calculation.totalRacks)}
                         </div>
                       </div>
 
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Costs</h4>
                         <div className='space-y-2'>
-                          {renderDataRow('Busbars:', '$5,484,706')}
-                          {renderDataRow('Tap-Off Boxes:', '$5,484,706')}
-                          {renderDataRow('Rack PDUs:', '$5,484,706')}
-                          {renderDataRow('Total Electrical:', '$16,454,118')}
+                          {renderDataRow('Busbars:', formatCurrency(calculation.results?.cost?.electrical?.busbar))}
+                          {renderDataRow('Tap-Off Boxes:', formatCurrency(calculation.results?.cost?.electrical?.tapOffBox))}
+                          {renderDataRow('Rack PDUs:', formatCurrency(calculation.results?.cost?.electrical?.rpdu))}
+                          {renderDataRow('Total Electrical:', formatCurrency(calculation.results?.cost?.electrical?.total))}
                         </div>
                       </div>
                     </div>
@@ -252,18 +264,22 @@ export function CalculationDetailsModal({
                         <div>
                           <h4 className='font-medium mb-2'>System Specifications</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('Cooling Type:', 'Direct Liquid Cooling')}
-                            {renderDataRow('Heat Rejection:', '2100 kW')}
-                            {renderDataRow('Water Usage:', '18,250 m³/year')}
+                            {renderDataRow('Cooling Type:', calculation.coolingType === 'dlc' ? 'Direct Liquid Cooling' : calculation.coolingType === 'air' ? 'Air Cooling' : calculation.coolingType === 'hybrid' ? 'Hybrid Cooling' : 'Immersion Cooling')}
+                            {renderDataRow('Total Capacity:', `${formatNumber(calculation.results?.cooling?.totalCapacity)} kW`)}
+                            {renderDataRow('PUE:', formatNumber(calculation.results?.cooling?.pue, 3))}
+                            {calculation.results?.cooling?.pipingSize && (
+                              renderDataRow('Piping Size:', calculation.results.cooling.pipingSize)
+                            )}
                           </div>
                         </div>
 
                         <div>
                           <h4 className='font-medium mb-2'>Performance</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('Cooling Power:', '2100 kW')}
-                            {renderDataRow('Flow Rate:', '393.75 L/min')}
-                            {renderDataRow('Efficiency:', '95.00%')}
+                            {renderDataRow('Cooling Power:', `${formatNumber(calculation.results?.cooling?.totalCapacity)} kW`)}
+                            {calculation.results?.cooling?.dlcFlowRate && (
+                              renderDataRow('Flow Rate:', `${formatNumber(calculation.results.cooling.dlcFlowRate)} L/min`)
+                            )}
                           </div>
                         </div>
                       </div>
@@ -271,19 +287,20 @@ export function CalculationDetailsModal({
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Cooling Breakdown</h4>
                         <div className='space-y-2'>
-                          {renderDataRow('DLC Capacity:', '1575 kW')}
-                          {renderDataRow('Air Capacity:', '525 kW')}
-                          {renderDataRow('Total Capacity:', '2100 kW')}
+                          {calculation.results?.cooling?.dlcCoolingCapacity && (
+                            renderDataRow('DLC Capacity:', `${formatNumber(calculation.results?.cooling?.dlcCoolingCapacity)} kW`)
+                          )}
+                          {calculation.results?.cooling?.residualCoolingCapacity && (
+                            renderDataRow('Air Capacity:', `${formatNumber(calculation.results?.cooling?.residualCoolingCapacity)} kW`)
+                          )}
+                          {renderDataRow('Total Capacity:', `${formatNumber(calculation.results?.cooling?.totalCapacity)} kW`)}
                         </div>
                       </div>
 
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Costs</h4>
                         <div className='space-y-2'>
-                          {renderDataRow('Equipment Cost:', '$10,969,412')}
-                          {renderDataRow('Installation Cost:', '$5,484,706')}
-                          {renderDataRow('Annual Operating Cost:', '$1,096,941')}
-                          {renderDataRow('Total Cooling Cost:', '$16,454,118')}
+                          {renderDataRow('Total Cooling:', formatCurrency(calculation.results?.cost?.cooling))}
                         </div>
                       </div>
                     </div>
@@ -298,39 +315,47 @@ export function CalculationDetailsModal({
                         <div>
                           <h4 className='font-medium mb-2'>UPS System</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('UPS Capacity:', '2520 kW')}
-                            {renderDataRow('UPS Modules:', '11 x 250kW')}
-                            {renderDataRow('Redundancy:', 'N+1')}
+                            {renderDataRow('UPS Capacity:', `${formatNumber(calculation.results?.power?.ups?.requiredCapacity)} kW`)}
+                            {renderDataRow('UPS Modules:', `${calculation.results?.power?.ups?.totalModulesNeeded} x ${calculation.results?.power?.ups?.moduleSize}kW`)}
+                            {renderDataRow('Redundancy:', calculation.redundancyMode || 'N+1')}
+                            {renderDataRow('Frames Needed:', calculation.results?.power?.ups?.framesNeeded)}
+                            {renderDataRow('Frame Size:', calculation.results?.power?.ups?.frameSize)}
                           </div>
                         </div>
 
                         <div>
-                          <h4 className='font-medium mb-2'>Power Metrics</h4>
+                          <h4 className='font-medium mb-2'>Battery System</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('IT Load:', '2100 kW')}
-                            {renderDataRow('PUE:', '1.200')}
-                            {renderDataRow('Annual Energy:', '22,075 MWh')}
+                            {renderDataRow('Runtime:', `${calculation.results?.power?.battery?.runtime} minutes`)}
+                            {renderDataRow('Energy Needed:', `${formatNumber(calculation.results?.power?.battery?.energyNeeded)} kWh`)}
+                            {renderDataRow('Cabinets Needed:', calculation.results?.power?.battery?.cabinetsNeeded)}
+                            {renderDataRow('Total Weight:', `${formatNumber(calculation.results?.power?.battery?.totalWeight)} kg`)}
                           </div>
                         </div>
                       </div>
 
-                      <div className='mt-4'>
-                        <h4 className='font-medium mb-2'>Power Breakdown</h4>
-                        <div className='space-y-2'>
-                          {renderDataRow('IT Equipment:', '2100 kW')}
-                          {renderDataRow('Cooling Systems:', '210 kW')}
-                          {renderDataRow('Other Overhead:', '210 kW')}
-                          {renderDataRow('Total Power:', '2520 kW')}
+                      {calculation.results?.power?.generator?.included && (
+                        <div className='mt-4'>
+                          <h4 className='font-medium mb-2'>Generator System</h4>
+                          <div className='space-y-2'>
+                            {renderDataRow('Capacity:', `${formatNumber(calculation.results?.power?.generator?.capacity)} kW`)}
+                            {renderDataRow('Model:', calculation.results?.power?.generator?.model)}
+                            {renderDataRow('Tank Size:', `${formatNumber(calculation.results?.power?.generator?.fuel?.tankSize)} L`)}
+                            {renderDataRow('Consumption:', `${formatNumber(calculation.results?.power?.generator?.fuel?.consumption)} L/h`)}
+                            {renderDataRow('Runtime:', `${formatNumber(calculation.results?.power?.generator?.fuel?.runtime)} h`)}
+                          </div>
                         </div>
-                      </div>
+                      )}
 
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Costs</h4>
                         <div className='space-y-2'>
-                          {renderDataRow('UPS Cost:', '$10,969,412')}
-                          {renderDataRow('Generators Cost:', '$5,484,706')}
-                          {renderDataRow('Annual Energy Cost:', '$2,207,500')}
-                          {renderDataRow('Total Power Cost:', '$16,454,118')}
+                          {renderDataRow('UPS System:', formatCurrency(calculation.results?.cost?.power?.ups))}
+                          {renderDataRow('Battery System:', formatCurrency(calculation.results?.cost?.power?.battery))}
+                          {calculation.results?.power?.generator?.included && (
+                            renderDataRow('Generator System:', formatCurrency(calculation.results?.cost?.power?.generator))
+                          )}
+                          {renderDataRow('Total Power Systems:', formatCurrency(calculation.results?.cost?.power?.total))}
                         </div>
                       </div>
                     </div>
@@ -343,22 +368,23 @@ export function CalculationDetailsModal({
                       
                       <div className='grid grid-cols-1 md:grid-cols-2 gap-6 mb-4'>
                         <div>
-                          <h4 className='font-medium mb-2'>Capital Expenditure</h4>
+                          <h4 className='font-medium mb-2'>Equipment Costs</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('Power Infrastructure:', '$16,454,118')}
-                            {renderDataRow('Cooling Infrastructure:', '$16,454,118')}
-                            {renderDataRow('Racks & Enclosures:', '$5,484,706')}
-                            {renderDataRow('Building & Construction:', '$16,454,118')}
+                            {renderDataRow('Electrical Distribution:', formatCurrency(calculation.results?.cost?.electrical?.total))}
+                            {renderDataRow('Cooling Systems:', formatCurrency(calculation.results?.cost?.cooling))}
+                            {renderDataRow('Power Systems:', formatCurrency(calculation.results?.cost?.power?.total))}
+                            {renderDataRow('Infrastructure:', formatCurrency(calculation.results?.cost?.infrastructure))}
+                            {renderDataRow('Sustainability:', formatCurrency(calculation.results?.cost?.sustainability))}
+                            {renderDataRow('Total Equipment:', formatCurrency(calculation.results?.cost?.equipmentTotal))}
                           </div>
                         </div>
 
                         <div>
-                          <h4 className='font-medium mb-2'>Operating Expenditure</h4>
+                          <h4 className='font-medium mb-2'>Additional Costs</h4>
                           <div className='space-y-2'>
-                            {renderDataRow('Annual Energy Cost:', '$2,207,500')}
-                            {renderDataRow('Annual Cooling Cost:', '$1,096,941')}
-                            {renderDataRow('Annual Maintenance:', '$1,645,412')}
-                            {renderDataRow('Total Annual OpEx:', '$4,949,853')}
+                            {renderDataRow('Installation:', formatCurrency(calculation.results?.cost?.installation))}
+                            {renderDataRow('Engineering:', formatCurrency(calculation.results?.cost?.engineering))}
+                            {renderDataRow('Contingency:', formatCurrency(calculation.results?.cost?.contingency))}
                           </div>
                         </div>
                       </div>
@@ -366,10 +392,9 @@ export function CalculationDetailsModal({
                       <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Total Project Costs</h4>
                         <div className='space-y-2'>
-                          {renderDataRow('Total Infrastructure Cost:', '$54,847,059')}
-                          {renderDataRow('Cost per Rack:', '$1,958,824')}
-                          {renderDataRow('Cost per kW:', '$10,000')}
-                          {renderDataRow('Total Project Cost:', '$54,847,059')}
+                          {renderDataRow('Total Project Cost:', formatCurrency(calculation.results?.cost?.totalProjectCost))}
+                          {renderDataRow('Cost per Rack:', formatCurrency(calculation.results?.cost?.costPerRack))}
+                          {renderDataRow('Cost per kW:', formatCurrency(calculation.results?.cost?.costPerKw))}
                         </div>
                       </div>
                     </div>
