@@ -298,6 +298,41 @@ export function CalculationDetailsModal({
                       </div>
 
                       <div className='mt-4'>
+                        <h4 className='font-medium mb-2'>Cooler Details</h4>
+                        <div className='space-y-2'>
+                          {calculation.coolingType === 'dlc' && (
+                            <>
+                              {renderDataRow('Cooler Model:', 'TCS310A-XHT')}
+                              {renderDataRow('Pump Model:', 'Grundfos')}
+                              {renderDataRow('Buffer Tank:', 'Standard')}
+                            </>
+                          )}
+                          {calculation.coolingType === 'hybrid' && (
+                            <>
+                              {renderDataRow('DLC Cooler Model:', 'TCS310A-XHT')}
+                              {renderDataRow('Pump Model:', 'Grundfos')}
+                              {renderDataRow('Buffer Tank:', 'Standard')}
+                              {renderDataRow('RDHX Model:', calculation.results?.cooling?.rdhxModel || 'Standard')}
+                              {renderDataRow('RDHX Units:', calculation.results?.cooling?.rdhxUnits || 1)}
+                            </>
+                          )}
+                          {calculation.coolingType === 'air' && (
+                            <>
+                              {renderDataRow('RDHX Model:', calculation.results?.cooling?.rdhxModel || 'Standard')}
+                              {renderDataRow('RDHX Units:', calculation.results?.cooling?.rdhxUnits || 1)}
+                            </>
+                          )}
+                          {calculation.coolingType === 'immersion' && (
+                            <>
+                              {renderDataRow('Tank Model:', 'Immersion Tank')}
+                              {renderDataRow('CDU Model:', 'Immersion CDU')}
+                              {renderDataRow('Tanks Needed:', calculation.results?.cooling?.tanksNeeded || 1)}
+                            </>
+                          )}
+                        </div>
+                      </div>
+
+                      <div className='mt-4'>
                         <h4 className='font-medium mb-2'>Costs</h4>
                         <div className='space-y-2'>
                           {renderDataRow('Total Cooling:', formatCurrency(calculation.results?.cost?.cooling))}
