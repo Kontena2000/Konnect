@@ -18,12 +18,12 @@ import ModelImporter from '@/components/settings/ModelImporter';
 import { useRouter } from 'next/router';
 
 export default function SettingsPage() {
-  const { user } = useAuth();
+  const { user,role } = useAuth();
   const [preferences, setPreferences] = useState<EditorPreferences | null>(null);
   const router = useRouter();
   const { tab } = router.query;
   const [activeTab, setActiveTab] = useState('general');
-
+ 
   useEffect(() => {
     if (tab && typeof tab === 'string') {
       setActiveTab(tab);
@@ -79,7 +79,7 @@ export default function SettingsPage() {
           </TabsContent>
 
           <TabsContent value='modules' className='space-y-6'>
-            <ModuleManager userId={user?.uid || ''} userRole={user?.role} />
+            <ModuleManager userId={user?.uid || ''} userRole={role ?? ''} />
           </TabsContent>
 
           <TabsContent value='layout-editor' className='space-y-6'>
@@ -88,8 +88,8 @@ export default function SettingsPage() {
 
           <TabsContent value='matrix-calculator' className='space-y-6'>
             <MatrixCalculatorSettings userId={user?.uid || ''} />
-            <CalculationSettings readOnly={user?.role !== 'admin'} />
-            <PricingEditor readOnly={user?.role !== 'admin'} />
+            <CalculationSettings readOnly={role !== 'admin'} />
+            <PricingEditor readOnly={role !== 'admin'} />
           </TabsContent>
 
           <TabsContent value='3d-models' className='space-y-6'>

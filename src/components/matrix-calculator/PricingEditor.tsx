@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { getFirestore, doc, getDoc, setDoc, collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, collection, addDoc, serverTimestamp, DocumentReference } from 'firebase/firestore';
 import { DEFAULT_PRICING } from '@/constants/calculatorConstants';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,9 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Save, RotateCcw } from "lucide-react";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { useToast } from "@/hooks/use-toast";
+import { getFirestoreSafely, ensureFirebaseInitializedAsync } from '@/lib/firebase';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface PricingEditorProps {
   readOnly?: boolean;
@@ -20,6 +23,9 @@ export function PricingEditor({ readOnly = false, onSave }: PricingEditorProps) 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [activeCategory, setActiveCategory] = useState('electrical');
+  const [errorDetails, setErrorDetails] = useState<string | null>(null);
+  const { toast } = useToast();
+  const { user, role } = useAuth();
   
   // Available categories
   const categories = [
@@ -34,23 +40,66 @@ export function PricingEditor({ readOnly = false, onSave }: PricingEditorProps) 
     async function loadPricing() {
       try {
         setLoading(true);
-        const db = getFirestore();
-        const pricingDoc = await getDoc(doc(db, 'matrix_calculator', 'pricing_matrix'));
+        setErrorDetails(null);
         
-        if (pricingDoc.exists()) {
-          setPricing(pricingDoc.data());
-        } else {
-          setPricing(DEFAULT_PRICING);
+        console.log('[PricingEditor] Starting to load pricing data');
+        
+        const initialized = await ensureFirebaseInitializedAsync();
+        console.log('[PricingEditor] Firebase initialized:', initialized);
+        
+        const db = getFirestoreSafely();
+        
+        if (!db) {
+          const errorMsg = 'Firestore is not available';
+          console.error('[PricingEditor]', errorMsg);
+          setErrorDetails(errorMsg);
+          toast({
+            title: 'Error',
+            description: 'Could not connect to database',
+            variant: 'destructive'
+          });
+          return;
         }
-      } catch (error) {
-        console.error('Error loading pricing data:', error);
+        
+        console.log('[PricingEditor] Attempting to fetch pricing matrix document');
+        
+        try {
+          const pricingDocRef = doc(db, 'matrix_calculator', 'pricing_matrix');
+          console.log('[PricingEditor] Document reference created:', pricingDocRef.path);
+          
+          const pricingDoc = await getDoc(pricingDocRef);
+          console.log('[PricingEditor] Document fetch result:', pricingDoc.exists() ? 'Document exists' : 'Document does not exist');
+          
+          if (pricingDoc.exists()) {
+            const data = pricingDoc.data();
+            console.log('[PricingEditor] Document data retrieved successfully');
+            setPricing(data);
+          } else {
+            console.log('[PricingEditor] Document does not exist, using default pricing');
+            setPricing(DEFAULT_PRICING);
+          }
+        } catch (docError: any) {
+          const errorMsg = `Error fetching pricing document: ${docError.message || 'Unknown error'}`;
+          console.error('[PricingEditor]', errorMsg);
+          setErrorDetails(errorMsg);
+          throw docError;
+        }
+      } catch (error: any) {
+        const errorMsg = `Error loading pricing data: ${error.message || 'Unknown error'}`;
+        console.error('[PricingEditor]', errorMsg);
+        setErrorDetails(errorMsg);
+        toast({
+          title: 'Error',
+          description: 'Failed to load pricing data',
+          variant: 'destructive'
+        });
       } finally {
         setLoading(false);
       }
     }
     
     loadPricing();
-  }, []);
+  }, [toast]);
   
   // Handle price change
   const handlePriceChange = (subcategory: string, field: string, value: string) => {
@@ -71,27 +120,89 @@ export function PricingEditor({ readOnly = false, onSave }: PricingEditorProps) 
     
     try {
       setSaving(true);
-      const db = getFirestore();
+      setErrorDetails(null);
       
-      // Save to main pricing document
-      await setDoc(doc(db, 'matrix_calculator', 'pricing_matrix'), pricing);
+      console.log('[PricingEditor] Starting to save pricing data');
+      console.log('[PricingEditor] User:', user?.email, 'Role:', role);
       
-      // Add to version history
-      await addDoc(collection(db, 'matrix_calculator', 'version_history'), {
-        type: 'pricing_update',
-        pricing: pricing,
-        timestamp: serverTimestamp(),
-        updatedBy: 'admin' // Replace with actual user info
-      });
+      const initialized = await ensureFirebaseInitializedAsync();
+      console.log('[PricingEditor] Firebase initialized:', initialized);
       
-      if (onSave) {
-        onSave(pricing);
+      const db = getFirestoreSafely();
+      
+      if (!db) {
+        const errorMsg = 'Firestore is not available';
+        console.error('[PricingEditor]', errorMsg);
+        setErrorDetails(errorMsg);
+        toast({
+          title: 'Error',
+          description: 'Could not connect to database',
+          variant: 'destructive'
+        });
+        return;
       }
       
-      alert('Pricing saved successfully');
-    } catch (error) {
-      console.error('Error saving pricing:', error);
-      alert('Error saving pricing data');
+      if (!pricing || typeof pricing !== 'object') {
+        const errorMsg = 'Invalid pricing data structure';
+        console.error('[PricingEditor]', errorMsg, pricing);
+        setErrorDetails(errorMsg);
+        toast({
+          title: 'Error',
+          description: errorMsg,
+          variant: 'destructive'
+        });
+        return;
+      }
+      
+      console.log('[PricingEditor] Pricing data to save:', JSON.stringify(pricing));
+      
+      try {
+        const pricingDocRef: DocumentReference = doc(db, 'matrix_calculator', 'pricing_matrix');
+        console.log('[PricingEditor] Document reference created:', pricingDocRef.path);
+        
+        // Save to main pricing document
+        await setDoc(pricingDocRef, pricing);
+        console.log('[PricingEditor] Pricing data saved successfully');
+        
+        // Add to version history
+        try {
+          const historyCollectionRef = collection(db, 'matrix_calculator', 'version_history');
+          await addDoc(historyCollectionRef, {
+            type: 'pricing_update',
+            pricing: pricing,
+            timestamp: serverTimestamp(),
+            updatedBy: user?.email || 'unknown'
+          });
+          console.log('[PricingEditor] Version history updated successfully');
+        } catch (historyError: any) {
+          console.warn('[PricingEditor] Failed to update version history:', historyError.message);
+        }
+        
+        if (onSave) {
+          onSave(pricing);
+        }
+        
+        toast({
+          title: 'Success',
+          description: 'Pricing saved successfully',
+          variant: 'default'
+        });
+      } catch (saveError: any) {
+        const errorMsg = `Error saving pricing document: ${saveError.message || 'Unknown error'}`;
+        console.error('[PricingEditor]', errorMsg);
+        setErrorDetails(errorMsg);
+        throw saveError;
+      }
+    } catch (error: any) {
+      const errorMsg = `Failed to save pricing data: ${error.message || 'Unknown error'}`;
+      console.error('[PricingEditor] Error saving pricing:', error);
+      setErrorDetails(errorMsg);
+      
+      toast({
+        title: 'Error',
+        description: errorMsg,
+        variant: 'destructive'
+      });
     } finally {
       setSaving(false);
     }

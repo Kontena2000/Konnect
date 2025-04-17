@@ -127,12 +127,14 @@ export function DeleteLayoutDialog({
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogTrigger asChild>
           {trigger || (
+
             <Button 
-              variant="destructive" 
-              size="icon"
-              title="Delete layout"
+            variant='outline' 
+            size='sm'
+            className='hover:bg-red-100 text-red-500 border-red-200'
             >
-              <Trash2 className="h-4 w-4" />
+            <Trash2 className='mr-2 h-4 w-4' />
+            Delete
             </Button>
           )}
         </DialogTrigger>
